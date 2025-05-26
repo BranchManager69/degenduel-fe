@@ -62,9 +62,16 @@ interface CountdownApiResponse {
 interface MiniDecryptionTimerProps {
   targetDate: Date; // Fallback if API fails or no end_time
   onClick?: () => void;
+  isVisible?: boolean; // Controls visibility for main timer handoff
+  delayedEntrance?: boolean; // Enables delayed entrance animation
 }
 
-export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ targetDate: propTargetDate, onClick }) => {
+export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ 
+  targetDate: propTargetDate, 
+  onClick, 
+  isVisible = true,
+  delayedEntrance = false 
+}) => {
   const [timeRemaining, setTimeRemaining] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [urgencyLevel, setUrgencyLevel] = useState(0); // 0: Normal, 1: Warning (Yellow), 2: Critical (Red), 3: Complete/Status
   const [isEffectivelyComplete, setIsEffectivelyComplete] = useState(false);
@@ -76,7 +83,7 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ target
   const calculateMiniTimeRemaining = useCallback(() => {
     if (!effectiveTargetDate || isNaN(effectiveTargetDate.getTime())) {
       setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      setUrgencyLevel(3); // Indicates completion or issue
+      setUrgencyLevel(4); // Indicates completion or issue
       setIsEffectivelyComplete(true);
       return;
     }
@@ -86,7 +93,7 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ target
 
     if (difference <= 0) {
       setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      setUrgencyLevel(3); // Countdown finished
+      setUrgencyLevel(4); // Countdown finished
       setIsEffectivelyComplete(true);
       return;
     }
@@ -100,12 +107,14 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ target
     setIsEffectivelyComplete(false);
 
     const totalSeconds = difference / 1000;
-    if (totalSeconds <= 10) {
-      setUrgencyLevel(2); // Critical
-    } else if (totalSeconds <= 60) {
-      setUrgencyLevel(1); // Warning
+    if (totalSeconds <= 3600) { // Less than 1 hour = Red (Critical)
+      setUrgencyLevel(3); // Critical (Red)
+    } else if (totalSeconds <= 172800) { // Less than 2 days = Yellow (Warning)  
+      setUrgencyLevel(2); // Warning (Yellow)
+    } else if (totalSeconds <= 604800) { // Less than 7 days = Purple (New level)
+      setUrgencyLevel(1); // Purple (New)
     } else {
-      setUrgencyLevel(0); // Normal
+      setUrgencyLevel(0); // Normal (Green)
     }
   }, [effectiveTargetDate]);
 
@@ -133,10 +142,12 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ target
                 setIsEffectivelyComplete(initialTotalSeconds <= 0);
                 // Set initial urgency based on API's total_seconds
                 if (initialTotalSeconds <= 0) {
+                    setUrgencyLevel(4);
+                } else if (initialTotalSeconds <= 3600) {
                     setUrgencyLevel(3);
-                } else if (initialTotalSeconds <= 10) {
+                } else if (initialTotalSeconds <= 172800) {
                     setUrgencyLevel(2);
-                } else if (initialTotalSeconds <= 60) {
+                } else if (initialTotalSeconds <= 604800) {
                     setUrgencyLevel(1);
                 } else {
                     setUrgencyLevel(0);
@@ -157,7 +168,7 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ target
         } else {
           setEffectiveTargetDate(null);
           setIsEffectivelyComplete(true); // No valid date, treat as complete/error
-          setUrgencyLevel(3);
+          setUrgencyLevel(4);
         }
       } catch (error) {
         console.error('Failed to fetch countdown data for MiniTimer:', error);
@@ -169,7 +180,7 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ target
         } else {
           setEffectiveTargetDate(null);
           setIsEffectivelyComplete(true);
-          setUrgencyLevel(3);
+          setUrgencyLevel(4);
         }
       }
     };
@@ -185,12 +196,12 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ target
         const timer = setInterval(calculateMiniTimeRemaining, 1000);
         return () => clearInterval(timer);
     } else if (isEffectivelyComplete) {
-        // If complete, ensure time is zeroed out and urgency is set to 3
+        // If complete, ensure time is zeroed out and urgency is set to 4
         setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        setUrgencyLevel(3);
+        setUrgencyLevel(4);
     } else if (!effectiveTargetDate) { // No valid date at all
         setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        setUrgencyLevel(3);
+        setUrgencyLevel(4);
         setIsEffectivelyComplete(true);
     }
   }, [calculateMiniTimeRemaining, effectiveTargetDate, isEffectivelyComplete]);
@@ -223,10 +234,13 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ target
       digitFontClass = textFontClass; // No digits, status text uses text font
     } else { // Countdown is active
       // Countdown is active, determine colors by urgencyLevel (already set by calculateMiniTimeRemaining)
-      if (urgencyLevel === 1) { // Yellow - Warning
+      if (urgencyLevel === 1) { // Purple (< 7 days)
+        beaconColorClass = "bg-black/60 border-purple-400/70 text-[#a855f7]";
+        shadowClass = "shadow-lg shadow-purple-700/40";
+      } else if (urgencyLevel === 2) { // Yellow (< 2 days)
         beaconColorClass = "bg-black/60 border-yellow-400/70 text-[#ffcc00]";
         shadowClass = "shadow-lg shadow-yellow-700/40";
-      } else if (urgencyLevel === 2) { // Red - Critical
+      } else if (urgencyLevel === 3) { // Red (< 1 hour)
         beaconColorClass = "bg-black/60 border-red-500/70 text-[#ff5050]";
         shadowClass = "shadow-lg shadow-red-700/50";
       }
@@ -253,9 +267,9 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ target
   const { digits, unit, statusText, beaconColorClass, digitFontClass, textFontClass, shadowClass } = getBeaconContent();
 
   const pulseAnimation = {
-    scale: urgencyLevel === 2 ? [1, 1.03, 1] : (isEffectivelyComplete && !tokenAddress ? 1 : [1, 1.01, 1]), // No pulse for verifying state
+    scale: urgencyLevel === 3 ? [1, 1.05, 1] : urgencyLevel === 2 ? [1, 1.03, 1] : (isEffectivelyComplete && !tokenAddress ? 1 : [1, 1.01, 1]), // No pulse for verifying state
     transition: { 
-      duration: urgencyLevel === 2 ? 1 : (urgencyLevel === 1 ? 2 : (isEffectivelyComplete ? 4 : 2)), // Slower pulse if just normal countdown
+      duration: urgencyLevel === 3 ? 0.5 : urgencyLevel === 2 ? 1 : urgencyLevel === 1 ? 1.8 : (isEffectivelyComplete ? 4 : 2.5), // Faster pulse as urgency increases
       repeat: Infinity, 
       ease: "easeInOut" 
     }
@@ -274,15 +288,37 @@ export const MiniDecryptionTimer: React.FC<MiniDecryptionTimerProps> = ({ target
     return null; // Or a very minimal loading indicator if preferred for fixed position element
   }
 
+  if (!isVisible) {
+    return null;
+  }
+
+  const entranceAnimation = delayedEntrance ? {
+    initial: { opacity: 0, scale: 0, y: -100 },
+    animate: { 
+      opacity: 1, 
+      scale: 1, 
+      y: 0,
+      transition: { 
+        delay: 0.5, // Small delay after main timer disappears
+        type: "spring", 
+        stiffness: 300, 
+        damping: 20,
+        duration: 0.8
+      }
+    }
+  } : {
+    initial: { opacity: 0, scale: 0.5 },
+    animate: { opacity: 1, scale: 1 }
+  };
 
   return (
     <motion.div
       className={`fixed bottom-5 right-5 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center cursor-pointer z-50 ${beaconColorClass} ${shadowClass} ${textFontClass}`}
       onClick={onClick}
-      initial={{ opacity: 0, scale: 0.5 }}
-      animate={{ opacity: 1, ...pulseAnimation }}
+      initial={entranceAnimation.initial}
+      animate={{ ...entranceAnimation.animate, ...pulseAnimation }}
       whileHover={{ scale: 1.1 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      transition={entranceAnimation.animate.transition || { type: "spring", stiffness: 300, damping: 20 }}
     >
       {statusText ? (
         statusText === "..." ? (

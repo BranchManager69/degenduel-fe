@@ -58,13 +58,29 @@ interface CountdownApiResponse {
 }
 // --- END NEW INTERFACES ---
 
-export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
-  targetDate: propTargetDate = new Date('2025-03-15T18:00:00-05:00') // Fallback if API fails
+interface FloatingTimerProps extends DecryptionTimerProps {
+  enableFloating?: boolean;
+  onMorphComplete?: () => void;
+}
+
+export const DecryptionTimer: React.FC<FloatingTimerProps> = ({
+  targetDate: propTargetDate = new Date('2025-03-15T18:00:00-05:00'), // Fallback if API fails
+  enableFloating = false,
+  onMorphComplete
 }) => {
   const [apiData, setApiData] = useState<CountdownApiResponse | null>(null);
   const { contractAddress: revealedAddress } = useLaunchEvent();
   
   const [effectiveTargetDate, setEffectiveTargetDate] = useState<Date | null>(null);
+  
+  // Floating animation states
+  const [floatingPhase, setFloatingPhase] = useState<'static' | 'lifting' | 'morphing' | 'mini'>('static');
+  const [isFloating, setIsFloating] = useState(false);
+  
+  // Copy and transition states
+  const [showCopiedMessage, setShowCopiedMessage] = useState(false);
+  const [showTransitionFlash, setShowTransitionFlash] = useState(false);
+  const [hasShownComplete, setHasShownComplete] = useState(false);
 
   const [timeRemaining, setTimeRemaining] = useState({
     days: 0,
@@ -78,7 +94,7 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
   const calculateTimeRemaining = useCallback(() => {
     if (!effectiveTargetDate || isNaN(effectiveTargetDate.getTime())) {
       setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      setUrgencyLevel(3); // Indicates completion or issue
+      setUrgencyLevel(4); // Indicates completion or issue
       return;
     }
 
@@ -87,7 +103,7 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
     
     if (difference <= 0) {
       setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      setUrgencyLevel(3); // Countdown finished
+      setUrgencyLevel(4); // Countdown finished
       return;
     }
     
@@ -100,12 +116,14 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
     
     const totalSeconds = difference / 1000; // Use raw difference for urgency
     
-    if (totalSeconds <= 10) {
-      setUrgencyLevel(2); // Critical
-    } else if (totalSeconds <= 60) {
-      setUrgencyLevel(1); // Warning
+    if (totalSeconds <= 3600) { // Less than 1 hour = Red (Critical)
+      setUrgencyLevel(3); // Critical (Red)
+    } else if (totalSeconds <= 172800) { // Less than 2 days = Yellow (Warning)  
+      setUrgencyLevel(2); // Warning (Yellow)
+    } else if (totalSeconds <= 604800) { // Less than 7 days = Purple (New level)
+      setUrgencyLevel(1); // Purple (New)
     } else {
-      setUrgencyLevel(0); // Normal
+      setUrgencyLevel(0); // Normal (Green)
     }
   }, [effectiveTargetDate]); // Depends on effectiveTargetDate
   
@@ -169,25 +187,129 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
       setUrgencyLevel(3);
     }
   }, [calculateTimeRemaining, effectiveTargetDate]);
-  
-  const isComplete = urgencyLevel === 3 && // urgencyLevel 3 means complete or issue
+
+  // Floating animation sequence
+  useEffect(() => {
+    if (!enableFloating) return;
+
+    const startFloatingSequence = () => {
+      // Phase 1: Lift off after 5 seconds
+      setTimeout(() => {
+        setFloatingPhase('lifting');
+        setIsFloating(true);
+      }, 5000);
+
+      // Phase 2: Start morphing after 6 seconds  
+      setTimeout(() => {
+        setFloatingPhase('morphing');
+      }, 6000);
+
+      // Phase 3: Complete morph to mini after 8 seconds
+      setTimeout(() => {
+        setFloatingPhase('mini');
+        onMorphComplete?.();
+      }, 8000);
+    };
+
+    startFloatingSequence();
+  }, [enableFloating, onMorphComplete]);
+
+  // Handle copy to clipboard
+  const handleCopyAddress = useCallback(async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setShowCopiedMessage(true);
+      setTimeout(() => setShowCopiedMessage(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy address:', err);
+    }
+  }, []);
+
+  const isComplete = urgencyLevel === 4 && // urgencyLevel 4 means complete or issue
                    timeRemaining.days === 0 && 
                    timeRemaining.hours === 0 && 
                    timeRemaining.minutes === 0 && 
                    timeRemaining.seconds === 0;
+
+  // Trigger flash effect when countdown completes
+  useEffect(() => {
+    if (isComplete && !hasShownComplete) {
+      setShowTransitionFlash(true);
+      setHasShownComplete(true);
+      setTimeout(() => setShowTransitionFlash(false), 1000);
+    }
+  }, [isComplete, hasShownComplete]);
   
   const tokenAddress = revealedAddress || apiData?.token_address || apiData?.token_info?.address || apiData?.token_config?.address || '';
   const shouldShowCountdown = apiData ? apiData.enabled !== false : true; // Default to true if apiData is null
 
-  const displayTitle = apiData?.title || (isComplete ? (tokenAddress ? "CONTRACT REVEALED" : "VERIFYING CONTRACT...") : "COUNTDOWN ACTIVE");
+  const displayTitle = apiData?.title || (isComplete ? (tokenAddress ? "CONTRACT REVEALED" : "VERIFYING CONTRACT...") : "$DUEL MINT");
   const displayMessage = apiData?.message || (isComplete && !tokenAddress ? "Awaiting secure transmission..." : "");
+
+  // Animation variants for floating phases
+  const floatingVariants = {
+    static: {
+      position: 'relative' as const,
+      zIndex: 1,
+      scale: 1,
+      x: 0,
+      y: 0,
+      width: 'auto',
+      height: 'auto'
+    },
+    lifting: {
+      position: 'fixed' as const,
+      zIndex: 9999,
+      scale: 1,
+      x: 0,
+      y: 0,
+      width: 'auto', 
+      height: 'auto'
+    },
+    morphing: {
+      position: 'fixed' as const,
+      zIndex: 9999,
+      scale: 0.3,
+      x: 'calc(100vw - 120px)',
+      y: 'calc(100vh - 120px)',
+      width: 80,
+      height: 80,
+      borderRadius: '50%'
+    },
+    mini: {
+      position: 'fixed' as const,
+      zIndex: 9999,
+      scale: 0.25,
+      x: 'calc(100vw - 100px)',
+      y: 'calc(100vh - 100px)', 
+      width: 64,
+      height: 64,
+      borderRadius: '50%'
+    }
+  };
+
+  // Don't render if morphing is complete (mini timer will take over)
+  if (floatingPhase === 'mini') {
+    return null;
+  }
 
   return (
     <motion.div
-      className="bg-black/30 border-2 border-green-500/60 rounded-xl shadow-lg shadow-green-900/20 overflow-hidden"
-      layout
+      className={`bg-black/30 border-2 border-green-500/60 rounded-xl shadow-lg shadow-green-900/20 overflow-hidden ${
+        isFloating ? 'fixed' : 'relative'
+      }`}
+      variants={floatingVariants}
+      animate={floatingPhase}
+      layout={!isFloating}
       transition={{
-        layout: { type: "spring", bounce: 0.2, duration: 0.8 }
+        layout: { type: "spring", bounce: 0.2, duration: 0.8 },
+        position: { duration: 1 },
+        scale: { duration: 2, ease: "easeInOut" },
+        x: { duration: 2, ease: "easeInOut" },
+        y: { duration: 2, ease: "easeInOut" },
+        width: { duration: 2, ease: "easeInOut" },
+        height: { duration: 2, ease: "easeInOut" },
+        borderRadius: { duration: 2, ease: "easeInOut" }
       }}
     >
       {!shouldShowCountdown && apiData ? (
@@ -200,32 +322,98 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
           </div>
         </div>
       ) : isComplete && tokenAddress ? (
-        <div className="py-4">
-          <div className="text-2xl font-fira-code text-[#33ff66] mb-6 flex items-center justify-center">
-            <span className="inline-block h-3 w-3 bg-green-400 mr-3 rounded-full"></span>
+        <motion.div 
+          className="py-4"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          {/* Flash overlay */}
+          {showTransitionFlash && (
+            <motion.div 
+              className="absolute inset-0 bg-white z-50 rounded-xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.8, 0] }}
+              transition={{ duration: 1, ease: "easeInOut" }}
+            />
+          )}
+
+          <motion.div 
+            className="text-2xl font-fira-code text-[#33ff66] mb-6 flex items-center justify-center"
+            initial={{ y: -20 }}
+            animate={{ y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <span className="inline-block h-3 w-3 bg-green-400 mr-3 rounded-full animate-pulse"></span>
             {apiData?.token_info?.name ? apiData.token_info.name.toUpperCase() : (apiData?.title || "CONTRACT REVEALED")}
-            <span className="inline-block h-3 w-3 bg-green-400 ml-3 rounded-full"></span>
-          </div>
+            <span className="inline-block h-3 w-3 bg-green-400 ml-3 rounded-full animate-pulse"></span>
+          </motion.div>
           
-          <div className="relative bg-black/60 border-2 border-green-500/50 rounded-md p-5 shadow-lg shadow-green-900/40 mx-4">
+          <motion.div 
+            className="relative bg-black/70 border-2 border-green-500/60 rounded-lg p-4 shadow-2xl shadow-green-900/50 mx-4"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            {/* Corner decorations */}
             <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-green-400/80 -translate-x-1 -translate-y-1"></div>
             <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-green-400/80 translate-x-1 -translate-y-1"></div>
             <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-green-400/80 -translate-x-1 translate-y-1"></div>
             <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-green-400/80 translate-x-1 translate-y-1"></div>
             
-            <div className="text-xl font-fira-code text-[#33ff66] break-all tracking-wide p-2 text-shadow-sm shadow-green-500/50">
-              {tokenAddress}
+            {/* Copyable contract address */}
+            <div 
+              className="group flex items-center justify-center cursor-pointer hover:bg-green-500/10 rounded-md p-2 transition-all duration-200"
+              onClick={() => handleCopyAddress(tokenAddress)}
+            >
+              <div className="text-lg md:text-xl font-mono font-bold text-[#33ff66] tracking-wider text-center truncate max-w-full overflow-hidden whitespace-nowrap">
+                {tokenAddress}
+              </div>
+              
+              {/* Copy icon */}
+              <div className="ml-3 flex-shrink-0">
+                <svg 
+                  className="w-5 h-5 text-green-400 group-hover:text-green-300 transition-colors duration-200" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" 
+                  />
+                </svg>
+              </div>
             </div>
+
+            {/* Copied message */}
+            {showCopiedMessage && (
+              <motion.div 
+                className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-500 text-white text-xs px-2 py-1 rounded-md"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                Copied!
+              </motion.div>
+            )}
+            
+            {/* Token symbol */}
             {apiData?.token_info?.symbol && (
-              <div className="mt-1 text-center text-sm text-green-400/80 font-fira-code">
+              <div className="mt-3 text-center text-sm text-green-400/80 font-fira-code">
                 Symbol: ${apiData.token_info.symbol}
               </div>
             )}
-            <div className="mt-3 text-right text-green-300/90 text-xs font-fira-code">
-              VERIFIED ✓
+            
+            {/* Verification status */}
+            <div className="mt-3 text-right text-green-300/90 text-xs font-fira-code flex items-center justify-end">
+              <span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+              VERIFIED
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       ) : isComplete && !tokenAddress ? ( // Still complete, but no address revealed yet
         <div className="py-4">
           <div className="text-2xl font-fira-code text-[#ffcc00] mb-6 flex items-center justify-center">
@@ -267,163 +455,205 @@ export const DecryptionTimer: React.FC<DecryptionTimerProps> = ({
                style={{
                  backgroundColor: "rgba(0,0,0,0.2)",
                }}>
-            <div className="grid grid-cols-4 gap-0 w-full">
+            <div className="flex items-center justify-center w-full space-x-2">
               {(() => {
                 const getTextColor = () => {
                   switch(urgencyLevel) {
-                    case 1:
+                    case 1: // Purple (< 7 days)
+                      return "#a855f7";
+                    case 2: // Yellow (< 2 days)
                       return "#ffcc00";
-                    case 2:
+                    case 3: // Red (< 1 hour)
                       return "#ff5050";
-                    case 3:
+                    case 4: // Complete
                       return "#33ff66";
-                    default:
+                    default: // Green (normal)
                       return "#33ff66";
                   }
                 };
 
                 const getShadowColor = () => {
                   switch(urgencyLevel) {
-                    case 1:
+                    case 1: // Purple (< 7 days)
+                      return "rgba(168, 85, 247, 0.7)";
+                    case 2: // Yellow (< 2 days)
                       return "rgba(255, 204, 0, 0.7)";
-                    case 2:
-                      return "rgba(255, 50, 50, 0.7)";
-                    case 3:
+                    case 3: // Red (< 1 hour)
+                      return "rgba(255, 80, 80, 0.7)";
+                    case 4: // Complete
                       return "rgba(51, 255, 102, 0.7)";
-                    default:
+                    default: // Green (normal)
                       return "rgba(51, 255, 102, 0.7)";
                   }
                 };
                 
-                const getBorderColor = () => {
-                  switch(urgencyLevel) {
-                    case 1:
-                      return "rgba(255, 204, 0, 0.3)";
-                    case 2:
-                      return "rgba(255, 50, 50, 0.3)";
-                    case 3:
-                      return "rgba(51, 255, 102, 0.3)";
-                    default:
-                      return "rgba(51, 255, 102, 0.3)";
-                  }
-                };
 
                 const textColor = getTextColor();
                 const shadowColor = getShadowColor();
-                const borderColor = getBorderColor();
                 
                 return (
-                  <>
-                    <div className="flex flex-col items-center border-r px-2" 
-                         style={{ borderColor: borderColor }}>
-                      <motion.div 
-                        className="text-5xl md:text-7xl lg:text-8xl font-fira-code font-bold tracking-tight tabular-nums text-center w-full"
-                        style={{ color: textColor, textShadow: `0 0 15px ${shadowColor}` }}
-                        animate={{ 
-                          opacity: urgencyLevel >= 2 ? [1, 0.8, 1] : 1,
-                          textShadow: [
-                            `0 0 5px ${shadowColor}`,
-                            `0 0 ${urgencyLevel >= 2 ? '15' : '12'}px ${shadowColor}`,
-                            `0 0 5px ${shadowColor}`
-                          ]
-                        }}
-                        transition={{
-                          duration: urgencyLevel >= 2 ? 0.5 : 2,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      >
-                        {timeRemaining.days.toString().padStart(2, '0')}
-                      </motion.div>
-                      <div className="text-lg sm:text-xl font-fira-code font-bold tracking-wider mt-1 text-center" 
-                           style={{ color: textColor, opacity: 0.9 }}>
-                        DAYS
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col items-center border-r px-2" 
-                         style={{ borderColor: borderColor }}>
-                      <motion.div 
-                        className="text-5xl md:text-7xl lg:text-8xl font-fira-code font-bold tracking-tight tabular-nums text-center w-full"
-                        style={{ color: textColor, textShadow: `0 0 15px ${shadowColor}` }}
-                        animate={{ 
-                          opacity: urgencyLevel >= 2 ? [1, 0.8, 1] : 1,
-                          textShadow: [
-                            `0 0 5px ${shadowColor}`,
-                            `0 0 ${urgencyLevel >= 2 ? '15' : '12'}px ${shadowColor}`,
-                            `0 0 5px ${shadowColor}`
-                          ]
-                        }}
-                        transition={{
-                          duration: urgencyLevel >= 2 ? 0.5 : 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          delay: 0.1
-                        }}
-                      >
-                        {timeRemaining.hours.toString().padStart(2, '0')}
-                      </motion.div>
-                      <div className="text-lg sm:text-xl font-fira-code font-bold tracking-wider mt-1 text-center" 
-                           style={{ color: textColor, opacity: 0.9 }}>
-                        HRS
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col items-center border-r px-2" 
-                         style={{ borderColor: borderColor }}>
-                      <motion.div 
-                        className="text-5xl md:text-7xl lg:text-8xl font-fira-code font-bold tracking-tight tabular-nums text-center w-full"
-                        style={{ color: textColor, textShadow: `0 0 15px ${shadowColor}` }}
-                        animate={{ 
-                          opacity: urgencyLevel >= 2 ? [1, 0.8, 1] : 1,
-                          textShadow: [
-                            `0 0 5px ${shadowColor}`,
-                            `0 0 ${urgencyLevel >= 2 ? '15' : '12'}px ${shadowColor}`,
-                            `0 0 5px ${shadowColor}`
-                          ]
-                        }}
-                        transition={{
-                          duration: urgencyLevel >= 2 ? 0.5 : 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          delay: 0.2
-                        }}
-                      >
-                        {timeRemaining.minutes.toString().padStart(2, '0')}
-                      </motion.div>
-                      <div className="text-lg sm:text-xl font-fira-code font-bold tracking-wider mt-1 text-center" 
-                           style={{ color: textColor, opacity: 0.9 }}>
-                        MIN
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col items-center px-2">
-                      <motion.div 
-                        className="text-5xl md:text-7xl lg:text-8xl font-fira-code font-bold tracking-tight tabular-nums text-center w-full"
-                        style={{ color: textColor, textShadow: `0 0 15px ${shadowColor}` }}
-                        animate={{ 
-                          opacity: urgencyLevel >= 2 ? [1, 0.8, 1] : 1,
-                          textShadow: [
-                            `0 0 5px ${shadowColor}`,
-                            `0 0 ${urgencyLevel >= 2 ? '15' : '12'}px ${shadowColor}`,
-                            `0 0 5px ${shadowColor}`
-                          ]
-                        }}
-                        transition={{
-                          duration: urgencyLevel >= 2 ? 0.5 : 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          delay: 0.3
-                        }}
-                      >
-                        {timeRemaining.seconds.toString().padStart(2, '0')}
-                      </motion.div>
-                      <div className="text-lg sm:text-xl font-fira-code font-bold tracking-wider mt-1 text-center" 
-                           style={{ color: textColor, opacity: 0.9 }}>
-                        SEC
-                      </div>
-                    </div>
-                  </>
+                  <div className="flex items-center justify-center">
+                    {/* Days */}
+                    <motion.span 
+                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black tracking-tight tabular-nums"
+                      style={{ 
+                        color: textColor, 
+                        textShadow: `0 0 15px ${shadowColor}`,
+                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                      }}
+                      animate={{ 
+                        opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
+                        textShadow: [
+                          `0 0 5px ${shadowColor}`,
+                          `0 0 ${urgencyLevel === 3 ? '20' : urgencyLevel === 2 ? '15' : '12'}px ${shadowColor}`,
+                          `0 0 5px ${shadowColor}`
+                        ]
+                      }}
+                      transition={{
+                        duration: urgencyLevel === 3 ? 0.3 : urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 1.5 : 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      {timeRemaining.days.toString().padStart(2, '0')}
+                    </motion.span>
+
+                    {/* Colon */}
+                    <motion.span 
+                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black mx-2"
+                      style={{ 
+                        color: textColor, 
+                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                      }}
+                      animate={{ 
+                        opacity: [1, 0.3, 1]
+                      }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      :
+                    </motion.span>
+
+                    {/* Hours */}
+                    <motion.span 
+                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black tracking-tight tabular-nums"
+                      style={{ 
+                        color: textColor, 
+                        textShadow: `0 0 15px ${shadowColor}`,
+                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                      }}
+                      animate={{ 
+                        opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
+                        textShadow: [
+                          `0 0 5px ${shadowColor}`,
+                          `0 0 ${urgencyLevel === 3 ? '20' : urgencyLevel === 2 ? '15' : '12'}px ${shadowColor}`,
+                          `0 0 5px ${shadowColor}`
+                        ]
+                      }}
+                      transition={{
+                        duration: urgencyLevel === 3 ? 0.3 : urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 1.5 : 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0.1
+                      }}
+                    >
+                      {timeRemaining.hours.toString().padStart(2, '0')}
+                    </motion.span>
+
+                    {/* Colon */}
+                    <motion.span 
+                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black mx-2"
+                      style={{ 
+                        color: textColor,
+                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                      }}
+                      animate={{ 
+                        opacity: [1, 0.3, 1]
+                      }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0.5
+                      }}
+                    >
+                      :
+                    </motion.span>
+
+                    {/* Minutes */}
+                    <motion.span 
+                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black tracking-tight tabular-nums"
+                      style={{ 
+                        color: textColor, 
+                        textShadow: `0 0 15px ${shadowColor}`,
+                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                      }}
+                      animate={{ 
+                        opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
+                        textShadow: [
+                          `0 0 5px ${shadowColor}`,
+                          `0 0 ${urgencyLevel === 3 ? '20' : urgencyLevel === 2 ? '15' : '12'}px ${shadowColor}`,
+                          `0 0 5px ${shadowColor}`
+                        ]
+                      }}
+                      transition={{
+                        duration: urgencyLevel === 3 ? 0.3 : urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 1.5 : 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0.2
+                      }}
+                    >
+                      {timeRemaining.minutes.toString().padStart(2, '0')}
+                    </motion.span>
+
+                    {/* Colon */}
+                    <motion.span 
+                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black mx-2"
+                      style={{ 
+                        color: textColor,
+                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                      }}
+                      animate={{ 
+                        opacity: [1, 0.3, 1]
+                      }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      :
+                    </motion.span>
+
+                    {/* Seconds */}
+                    <motion.span 
+                      className="text-6xl md:text-8xl lg:text-9xl font-mono font-black tracking-tight tabular-nums"
+                      style={{ 
+                        color: textColor, 
+                        textShadow: `0 0 15px ${shadowColor}`,
+                        fontFamily: "'Courier New', 'Monaco', 'Menlo', monospace"
+                      }}
+                      animate={{ 
+                        opacity: urgencyLevel === 3 ? [1, 0.7, 1] : (urgencyLevel === 2 ? [1, 0.85, 1] : 1),
+                        textShadow: [
+                          `0 0 5px ${shadowColor}`,
+                          `0 0 ${urgencyLevel === 3 ? '20' : urgencyLevel === 2 ? '15' : '12'}px ${shadowColor}`,
+                          `0 0 5px ${shadowColor}`
+                        ]
+                      }}
+                      transition={{
+                        duration: urgencyLevel === 3 ? 0.3 : urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 1.5 : 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0.3
+                      }}
+                    >
+                      {timeRemaining.seconds.toString().padStart(2, '0')}
+                    </motion.span>
+                  </div>
                 );
               })()}
             </div>

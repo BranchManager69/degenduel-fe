@@ -32,7 +32,6 @@ import { DecryptionTimer } from '../../../components/layout/DecryptionTimer';
 import { MiniDecryptionTimer } from "../../../components/layout/DecryptionTimerMini";
 // Hooks
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
-import { useIsVisible } from '../../../hooks/ui/useIsVisible';
 import { useLaunchEvent } from "../../../hooks/websocket/topic-hooks/useLaunchEvent";
 import { useSystemSettings } from "../../../hooks/websocket/topic-hooks/useSystemSettings";
 // DD API
@@ -73,7 +72,16 @@ export const LandingPage: React.FC = () => {
   const isMounted = useRef(true);
 
   const mainTimerContainerRef = useRef<HTMLDivElement>(null);
-  const mainTimerIsVisible = useIsVisible(mainTimerContainerRef as React.RefObject<Element>, { threshold: 0.1 });
+  
+  // Floating timer coordination
+  const [mainTimerFloating, setMainTimerFloating] = useState(false);
+  const [showMiniTimer, setShowMiniTimer] = useState(false);
+
+  // Handle floating timer sequence
+  const handleMainTimerMorphComplete = useCallback(() => {
+    setMainTimerFloating(false); // Hide main timer
+    setShowMiniTimer(true); // Show mini timer with delayed entrance
+  }, []);
   
   // const { trackEvent } = useAnalytics(); // If 'trackEvent' error persists, we may need to review useAnalytics hook
   // const { isMobile, isTablet, isDesktop } = useScreenSize(); // Marked for removal if unused
@@ -122,6 +130,12 @@ export const LandingPage: React.FC = () => {
         if (isMounted.current) {
           setAnimationPhase(3);
           setAnimationDone(true);
+          // Start floating timer sequence 2 seconds after main animation is done
+          setTimeout(() => {
+            if (isMounted.current) {
+              setMainTimerFloating(true);
+            }
+          }, 2000);
         }
       }, 2500);
       return () => {
@@ -440,7 +454,9 @@ export const LandingPage: React.FC = () => {
 
                   {/* Decryption Timer */}
                   <DecryptionTimer
-                    targetDate={fallbackDateForTimers} 
+                    targetDate={fallbackDateForTimers}
+                    enableFloating={mainTimerFloating}
+                    onMorphComplete={handleMainTimerMorphComplete}
                   />
 
                 </motion.div>
@@ -698,10 +714,12 @@ export const LandingPage: React.FC = () => {
 
         </section>
 
-        {/* Mini Timer - Appears when main timer is not visible */}
-        {!mainTimerIsVisible && (
+        {/* Mini Timer - Appears when floating sequence is complete */}
+        {showMiniTimer && (
           <MiniDecryptionTimer
             targetDate={fallbackDateForTimers}
+            isVisible={showMiniTimer}
+            delayedEntrance={true}
             onClick={() => {
               mainTimerContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }}

@@ -39,6 +39,29 @@ NEVER REWRITE THE WEBSOCKET SYSTEM FROM SCRATCH. Always work incrementally with 
 
 ## Server Operations
 
+### Development Server Configuration
+
+- Development build command: `npm run build:dev` 
+  - Builds to https://dev.degenduel.me 
+  - Outputs to `/dist-dev` folder 
+  - Uses port 3005
+  - Runs with `degenduel-api-test` on PM2
+
+- Production build command: `npm run build:prod`
+  - Builds to main site
+  - Outputs to `/dist` folder
+  - Uses port 3004
+  - Runs with `degenduel-api` on PM2
+
+### Server Restart Aliases
+
+- `ddre`: Simultaneously restarts both servers and starts streaming production logs
+- `npm run re`: Restarts servers without opening monitoring logs
+
+### Server Startup Notes
+- Server startup takes approximately 45 seconds to become fully available
+- When checking calls after restart, use `sleep` to account for initialization time
+
 ### Background Processes
 - ALWAYS run build commands and pm2 operations in the background by appending `&` to the command
 - Example: `npm run build:prod &`

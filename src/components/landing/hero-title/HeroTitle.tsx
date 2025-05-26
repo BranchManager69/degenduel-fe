@@ -120,7 +120,7 @@ export const HeroTitle: React.FC<{
   // Font variations
   const fonts = [
     { name: "Silkscreen", type: "monospace" },
-    { name: "Orbitron", type: "sans-serif" },
+    { name: "Inter", type: "sans-serif" },
     { name: "Audiowide", type: "cursive" },
     { name: "Press Start 2P", type: "cursive" },
     { name: "VT323", type: "monospace" },
@@ -1188,7 +1188,7 @@ export const HeroTitle: React.FC<{
 
       {/* Font imports */}
       <link
-        href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Orbitron:wght@400;700&family=Audiowide&family=Press+Start+2P&family=VT323&family=Chakra+Petch:wght@400;700&family=Staatliches&family=Bungee&family=Wallpoet&family=Teko:wght@400;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Inter:wght@400;700&family=Audiowide&family=Press+Start+2P&family=VT323&family=Chakra+Petch:wght@400;700&family=Staatliches&family=Bungee&family=Wallpoet&family=Teko:wght@400;700&display=swap"
         rel="stylesheet"
       />
     </div>
