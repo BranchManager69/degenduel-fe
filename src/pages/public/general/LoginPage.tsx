@@ -30,7 +30,6 @@ const LoginPage: React.FC = () => {
   const { user } = useMigratedAuth(); // Changed to useMigratedAuth
   const navigate = useNavigate();
   const location = useLocation();
-  const [showDebugger, setShowDebugger] = useState(true);
   
   // Get the path to redirect to after login (default to home)
   const from = location.state?.from?.pathname || "/";
