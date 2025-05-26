@@ -21,6 +21,7 @@ import SocialAccountsPanel from "../../components/profile/SocialAccountsPanel";
 import { UserStatsSection } from "../../components/profile/user-stats/UserStatsSection";
 import UserProfileExtras from "../../components/UserProfileExtras";
 import { AuthDebugPanel } from "../../components/debug";
+import { MCPTokenManagement } from "../../components/mcp/MCPTokenManagement";
 import { useStore } from "../../store/useStore";
 
 // Private Profile Page
@@ -150,6 +151,17 @@ export const PrivateProfilePage: React.FC = () => {
               {/* Social Accounts Panel */}
               <SocialAccountsPanel />
 
+            </motion.div>
+
+            {/* AI Assistant Access */}
+            <motion.div
+              key="mcp-access"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-4"
+            >
+              <MCPTokenManagement />
             </motion.div>
 
             {/* Achievements & Contest History (2 columns) */}

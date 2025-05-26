@@ -155,7 +155,7 @@ export const UnifiedWebSocketStatus: React.FC<UnifiedWebSocketStatusProps> = ({
         <div className={`h-3 w-3 rounded-full ${status.dotColor}`}></div>
         
         {/* Tooltip for detailed connection info */}
-        <div className="absolute bottom-full left-0 mb-2 w-64 p-2 bg-dark-300 border border-dark-400 rounded text-xs opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 cursor-help z-50">
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-2 bg-dark-300 border border-dark-400 rounded text-xs opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 cursor-help z-50">
           <div className="text-gray-200 font-medium mb-1">WebSocket Status: <span className={status.color}>{status.text}</span></div>
           <div className="text-gray-400 break-words">{getConnectionDetails()}</div>
           {showReconnectInfo && isReconnecting && (

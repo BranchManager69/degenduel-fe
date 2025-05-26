@@ -131,6 +131,7 @@ const WalletPage = lazy(() => import('./pages/authenticated/WalletPage'));
 const ContestChatExample = lazy(() => import('./pages/examples/ContestChatExample'));
 
 // Public routes lazy loaded
+const DegenDuelMCPPortal = lazy(() => import('./pages/public/general/DegenDuelMCPPortal').then(module => ({ default: module.DegenDuelMCPPortal })));
 const ContestBrowser = lazy(() => import('./pages/public/contests/ContestBrowserPage').then(module => ({ default: module.ContestBrowser })));
 const ContestDetails = lazy(() => import('./pages/public/contests/ContestDetailPage').then(module => ({ default: module.ContestDetails })));
 const ContestLobby = lazy(() => import('./pages/public/contests/ContestLobbyPage').then(module => ({ default: module.ContestLobby })));
@@ -370,6 +371,9 @@ const AppContent: React.FC = () => {
           
           {/* Auth Routes */}
           <Route path="/login" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><LoginPage /></Suspense></MaintenanceGuard>} />
+          
+          {/* DegenDuel MCP Portal Route */}
+          <Route path="/mcp" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><DegenDuelMCPPortal /></Suspense></MaintenanceGuard>} />
           
           {/* Static Pages */}
           <Route path="/faq" element={<Suspense fallback={<LoadingFallback />}><FAQ /></Suspense>} />

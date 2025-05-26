@@ -350,8 +350,7 @@ export const Footer: React.FC = () => {
           >
             
             {/* Left side - Links with horizontal scroll if needed */}
-            {/* [NEW 4/30/2025 - WAIT, HORIZONTAL SCROLL?! WHY?! WHAT?! IS THAT BAD?!?!] */}
-            <div className="flex items-center gap-6 overflow-x-auto no-scrollbar min-w-0 pl-4">
+            <div className="flex items-center gap-6 min-w-0 pl-4 flex-wrap">
               
               {/* Check if user is authenticated (is therefore assumed to be a pre-launch beta user) [OR] if we're past launch date/initial reveal (is now fully public) */}
               {(isAuthenticated || new Date() >= new Date(import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME || '2025-12-31T23:59:59-05:00')) ? (
@@ -371,7 +370,7 @@ export const Footer: React.FC = () => {
                       to="/platform"
                       className="text-sm text-gray-400 hover:text-brand-400 whitespace-nowrap"
                     >
-                      Poop
+                      Platform
                     </Link>
                     <Link
                       to="/faq"

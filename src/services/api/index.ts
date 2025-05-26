@@ -10,6 +10,7 @@ console.log("API_URL configuration in use:", {
 import { admin } from "./admin";
 import { balance } from "./balance";
 import { contests } from "./contests";
+import { mcp } from "./mcp";
 import { portfolio } from "./portfolio";
 import { stats } from "./stats";
 import { tokens } from "./tokens";
@@ -23,6 +24,7 @@ export const ddApi = {
   stats,
   admin,
   contests,
+  mcp,
   portfolio,
   balance,
   transactions,
