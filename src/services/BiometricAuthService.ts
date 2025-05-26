@@ -35,17 +35,17 @@ export class BiometricAuthService {
   private isAvailable: boolean = false;
 
   constructor() {
-    // Check if WebAuthn is available in this browser
-    this.isAvailable = typeof window !== 'undefined' && 
-                      !!window.PublicKeyCredential && 
-                      !!navigator.credentials;
-    
+    // Check if WebAuthn is available in this browser - be more permissive
+    this.isAvailable = typeof window !== 'undefined' &&
+      !!window.PublicKeyCredential &&
+      !!navigator.credentials;
+
     if (this.isAvailable) {
       authDebug('BiometricAuth', 'WebAuthn is available in this browser');
     } else {
       authDebug('BiometricAuth', 'WebAuthn is NOT available in this browser');
     }
-    
+
     // Add to window for debugging
     if (typeof window !== 'undefined') {
       (window as any).debugBiometricAuth = () => this.debugInfo();
@@ -78,8 +78,8 @@ export class BiometricAuthService {
    * @returns Promise resolving to the credential ID if successful
    */
   public async registerCredential(
-    userId: string, 
-    username: string, 
+    userId: string,
+    username: string,
     options?: {
       nickname?: string;
       authenticatorType?: 'platform' | 'cross-platform';
@@ -93,25 +93,25 @@ export class BiometricAuthService {
       // Step 1: Get challenge from server
       const nickname = options?.nickname || username;
       const authenticatorType = options?.authenticatorType || 'platform';
-      
+
       // Get registration options from server
       const challengeResponse = await this.getRegistrationChallenge(userId, {
         nickname,
         authenticatorType
       });
-      
+
       const publicKeyOptions = this.prepareRegistrationOptions(
-        challengeResponse, 
-        username, 
+        challengeResponse,
+        username,
         authenticatorType
       );
-      
+
       // Step 2: Create credential
       authDebug('BiometricAuth', 'Creating credential with options:', publicKeyOptions);
       const credential = await navigator.credentials.create({
         publicKey: publicKeyOptions
       }) as PublicKeyCredential;
-      
+
       if (!credential) {
         throw new Error('Failed to create credential');
       }
@@ -119,12 +119,12 @@ export class BiometricAuthService {
       // Step 3: Send credential to server for verification
       const attestationResponse = this.prepareAttestationResponse(credential);
       const verificationResponse = await this.verifyRegistration(attestationResponse);
-      
+
       authDebug('BiometricAuth', 'Credential registered successfully', verificationResponse);
       return verificationResponse.credentialId;
     } catch (error) {
       authDebug('BiometricAuth', 'Error registering credential', error);
-      
+
       // Handle specific WebAuthn errors for better user experience
       if (error instanceof Error) {
         if (error.name === 'NotSupportedError') {
@@ -135,7 +135,7 @@ export class BiometricAuthService {
           throw new Error('The operation is insecure (the hostname might not be valid)');
         }
       }
-      
+
       throw error;
     }
   }
@@ -155,13 +155,13 @@ export class BiometricAuthService {
       // Step 1: Get challenge from server
       const challengeResponse = await this.getAuthenticationChallenge(userId);
       const publicKeyOptions = this.prepareAuthenticationOptions(challengeResponse);
-      
+
       // Step 2: Get credential
       authDebug('BiometricAuth', 'Getting credential with options:', publicKeyOptions);
       const assertion = await navigator.credentials.get({
         publicKey: publicKeyOptions
       }) as PublicKeyCredential;
-      
+
       if (!assertion) {
         throw new Error('Failed to get credential');
       }
@@ -169,7 +169,7 @@ export class BiometricAuthService {
       // Step 3: Send assertion to server for verification
       const assertionResponse = this.prepareAssertionResponse(assertion);
       const verificationResponse = await this.verifyAuthentication(assertionResponse);
-      
+
       authDebug('BiometricAuth', 'Authentication successful', verificationResponse);
       return verificationResponse.token;
     } catch (error) {
@@ -197,7 +197,7 @@ export class BiometricAuthService {
    * Get registration challenge from server
    */
   private async getRegistrationChallenge(
-    userId: string, 
+    userId: string,
     options?: {
       nickname?: string;
       authenticatorType?: 'platform' | 'cross-platform';
@@ -205,10 +205,10 @@ export class BiometricAuthService {
   ): Promise<any> {
     const nickname = options?.nickname;
     const authenticatorType = options?.authenticatorType || 'platform';
-    
-    return await getBiometricRegistrationOptions(userId, { 
-      nickname, 
-      authenticatorType 
+
+    return await getBiometricRegistrationOptions(userId, {
+      nickname,
+      authenticatorType
     });
   }
 
@@ -216,13 +216,13 @@ export class BiometricAuthService {
    * Prepare registration options for WebAuthn
    */
   private prepareRegistrationOptions(
-    challengeResponse: any, 
-    username: string, 
+    challengeResponse: any,
+    username: string,
     authenticatorType: 'platform' | 'cross-platform' = 'platform'
   ): PublicKeyCredentialCreationOptions {
     // Convert base64 challenge to ArrayBuffer
     const challenge = this.base64UrlToArrayBuffer(challengeResponse.challenge);
-    
+
     // Base options
     const options: PublicKeyCredentialCreationOptions = {
       challenge,
@@ -247,7 +247,7 @@ export class BiometricAuthService {
         requireResidentKey: false
       }
     };
-    
+
     // Include excludeCredentials if provided by server
     if (challengeResponse.excludeCredentials && Array.isArray(challengeResponse.excludeCredentials)) {
       options.excludeCredentials = challengeResponse.excludeCredentials.map((cred: any) => ({
@@ -256,7 +256,7 @@ export class BiometricAuthService {
         transports: cred.transports || ['internal']
       }));
     }
-    
+
     return options;
   }
 
@@ -265,7 +265,7 @@ export class BiometricAuthService {
    */
   private prepareAttestationResponse(credential: PublicKeyCredential): any {
     const attestationResponse = credential.response as AuthenticatorAttestationResponse;
-    
+
     return {
       id: credential.id,
       rawId: this.arrayBufferToBase64Url(credential.rawId),
@@ -297,16 +297,16 @@ export class BiometricAuthService {
   private prepareAuthenticationOptions(challengeResponse: any): PublicKeyCredentialRequestOptions {
     // Convert base64 challenge to ArrayBuffer
     const challenge = this.base64UrlToArrayBuffer(challengeResponse.challenge);
-    
+
     // Convert allowCredentials if present
-    const allowCredentials = challengeResponse.allowCredentials 
+    const allowCredentials = challengeResponse.allowCredentials
       ? challengeResponse.allowCredentials.map((credential: any) => ({
-          id: this.base64UrlToArrayBuffer(credential.id),
-          type: 'public-key',
-          transports: credential.transports || ['internal']
-        }))
+        id: this.base64UrlToArrayBuffer(credential.id),
+        type: 'public-key',
+        transports: credential.transports || ['internal']
+      }))
       : [];
-    
+
     return {
       challenge,
       timeout: 60000,
@@ -321,7 +321,7 @@ export class BiometricAuthService {
    */
   private prepareAssertionResponse(credential: PublicKeyCredential): any {
     const assertionResponse = credential.response as AuthenticatorAssertionResponse;
-    
+
     return {
       id: credential.id,
       rawId: this.arrayBufferToBase64Url(credential.rawId),
@@ -330,8 +330,8 @@ export class BiometricAuthService {
         authenticatorData: this.arrayBufferToBase64Url(assertionResponse.authenticatorData),
         clientDataJSON: this.arrayBufferToBase64Url(assertionResponse.clientDataJSON),
         signature: this.arrayBufferToBase64Url(assertionResponse.signature),
-        userHandle: assertionResponse.userHandle 
-          ? this.arrayBufferToBase64Url(assertionResponse.userHandle) 
+        userHandle: assertionResponse.userHandle
+          ? this.arrayBufferToBase64Url(assertionResponse.userHandle)
           : null
       }
     };
@@ -342,17 +342,17 @@ export class BiometricAuthService {
    */
   private async verifyAuthentication(assertionResponse: any): Promise<any> {
     const response = await verifyBiometricAuthentication(assertionResponse);
-    
+
     // Store tokens in TokenManager if available
     if (response.token) {
       tokenManagerService.setToken(
-        TokenType.JWT, 
-        response.token, 
-        tokenManagerService.estimateExpiration(response.token), 
+        TokenType.JWT,
+        response.token,
+        tokenManagerService.estimateExpiration(response.token),
         'biometric'
       );
     }
-    
+
     return response;
   }
 
@@ -405,20 +405,20 @@ export class BiometricAuthService {
     const paddedBase64 = base64Url
       .replace(/-/g, '+')
       .replace(/_/g, '/');
-    
+
     // Add padding if needed
     const padding = paddedBase64.length % 4;
-    const padded = padding 
-      ? paddedBase64 + '===='.substring(0, 4 - padding) 
+    const padded = padding
+      ? paddedBase64 + '===='.substring(0, 4 - padding)
       : paddedBase64;
-    
+
     const binary = atob(padded);
     const bytes = new Uint8Array(binary.length);
-    
+
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i);
     }
-    
+
     return bytes.buffer;
   }
 }

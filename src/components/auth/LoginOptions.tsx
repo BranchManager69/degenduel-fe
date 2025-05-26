@@ -8,12 +8,13 @@
  * Auth methods:
  * 1. web3 - Connect Wallet (uses ConnectWalletButton, a universal web3 wallet connector)
  * 2. Social - Twitter (uses TwitterLoginButton)
- * 3. Passkey - Biometric authentication (uses BiometricAuthButton)
+ * 3. Social - Discord (uses DiscordLoginButton)
+ * 4. Passkey - Passkey authentication (uses BiometricAuthButton)
  * 
  * ?. Consolidated login button (uses ConsolidatedLoginButton (???))
  * 
  * @author BranchManager69
- * @version 1.9.1
+ * @version 1.9.2
  * @created 2025-02-14
  * @updated 2025-05-24
  */
@@ -37,7 +38,8 @@ import {
     BiometricAuthButton,
     ConnectWalletButton,
     ConsolidatedLoginButton,
-    TwitterLoginButton,
+    DiscordLoginButton,
+    TwitterLoginButton
 } from "./index";
 
 // Login Options component
@@ -114,30 +116,54 @@ const LoginOptions = () => {
                       </p>
                     </div>
                     
-                    {/* Link Twitter Account */}
-                    <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md">
-                      <div className="absolute inset-0 bg-[#1DA1F2]/10 group-hover:bg-[#1DA1F2]/20 transition-colors duration-300"></div>
-                      <TwitterLoginButton 
-                        linkMode={true}
-                        className="w-full h-12" 
-                      />
+                    {/* Link for EZ Login subtitle */}
+                    <div className="text-center mb-3">
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                        Link for EZ Login
+                      </p>
                     </div>
                     
-                    {/* Register/Use Passkey */}
+                    {/* Link Options (3 compact squares) */}
+                    <div className="grid grid-cols-3 gap-3">
+                      {/* Link Twitter Account - Icon Only */}
+                      <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md aspect-square">
+                        <div className="absolute inset-0 bg-[#1DA1F2]/10 group-hover:bg-[#1DA1F2]/20 transition-colors duration-300"></div>
+                        <div className="w-full h-full z-10 relative flex items-center justify-center">
+                          <TwitterLoginButton 
+                        linkMode={true}
+                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden text-transparent"
+                      />
+                        </div>
+                    </div>
+                    
+                      {/* Link Discord Account - Icon Only */}
+                      <div className="relative p-0.5 bg-gradient-to-r from-[#5865F2]/40 to-[#5865F2]/80 rounded-md group overflow-hidden shadow-md aspect-square">
+                      <div className="absolute inset-0 bg-[#5865F2]/10 group-hover:bg-[#5865F2]/20 transition-colors duration-300"></div>
+                        <div className="w-full h-full z-10 relative flex items-center justify-center">
+                      <DiscordLoginButton 
+                        linkMode={true}
+                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden text-transparent"
+                      />
+                        </div>
+                    </div>
+                    
+                      {/* Register/Use Passkey - Icon Only */}
                     {showBiometricOption && (
-                      <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md">
+                        <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md aspect-square">
                         <div className="absolute inset-0 bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors duration-300"></div>
+                          <div className="w-full h-full z-10 relative flex items-center justify-center">
                         <BiometricAuthButton 
                           mode={isRegistered ? "authenticate" : "register"}
-                          buttonStyle="default"
-                          className="w-full h-12 bg-transparent hover:bg-transparent"
-                          showAvailabilityIndicator={true}
-                          onError={(error) => console.error("Biometric auth error:", error)}
+                              buttonStyle="icon-only"
+                              className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0"
+                              onError={(error) => console.error("Passkey auth error:", error)}
                         />
+                          </div>
                       </div>
                     )}
+                    </div>
                     
-                    <div className="relative">
+                    <div className="relative mt-6">
                       <Divider>
                         <span className="px-3 text-xs font-semibold text-gray-400 bg-dark-200 rounded-full">
                           account
@@ -154,7 +180,7 @@ const LoginOptions = () => {
                         className="w-full h-12 bg-transparent hover:bg-transparent border-transparent text-white font-bold flex items-center justify-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"></path>
                         </svg>
                         Sign Out
                       </Button>
@@ -163,46 +189,55 @@ const LoginOptions = () => {
                 ) : (
                   // NOT AUTHENTICATED - Show login options
                   <>
-                    {/* Wallet Connect Button */}
+                    {/* Login Options */}
+                    <div className="space-y-4">
+                      {/* Primary: Wallet Connection (full width) */}
                     <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
-                      <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-brand-500/20 transition-colors duration-300"></div>
+                        <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
                       <ConnectWalletButton 
-                        className="w-full h-12"
-                        size="lg"
+                          className="w-full h-12 z-10 relative"
                       />
                     </div>
                     
-                    <div className="relative">
-                      <Divider>
-                        <span className="px-3 text-xs font-semibold text-gray-400 bg-dark-200 rounded-full">
-                          or continue with
-                        </span>
-                      </Divider>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-3">
-                      {/* Twitter Login */}
-                      <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md">
-                        <div className="absolute inset-0 bg-[#1DA1F2]/10 group-hover:bg-[#1DA1F2]/20 transition-colors duration-300"></div>
+                      {/* Secondary: Social & Passkey Login Options (3 compact squares) */}
+                      <div className="grid grid-cols-3 gap-2">
+                        {/* Twitter Login - Icon Only */}
+                        <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md aspect-square">
+                          <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
+                          <div className="w-full h-full z-10 relative flex items-center justify-center">
                         <TwitterLoginButton 
                           linkMode={false}
-                          className="w-full h-12" 
+                              className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden text-transparent"
                         />
+                          </div>
                       </div>
 
-                      {/* Biometric/Passkey Login - only shown if available */}
+                        {/* Discord Login - Icon Only */}
+                        <div className="relative p-0.5 bg-gradient-to-r from-[#5865F2]/40 to-[#5865F2]/80 rounded-md group overflow-hidden shadow-md aspect-square">
+                          <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
+                          <div className="w-full h-full z-10 relative flex items-center justify-center">
+                        <DiscordLoginButton 
+                          linkMode={false}
+                              className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden text-transparent"
+                        />
+                          </div>
+                      </div>
+
+                        {/* Passkey Login - Icon Only (if available) */}
                       {isAvailable && (
-                        <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md">
-                          <div className="absolute inset-0 bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors duration-300"></div>
+                          <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md aspect-square">
+                            <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
+                            <div className="w-full h-full z-10 relative flex items-center justify-center">
                           <BiometricAuthButton 
-                            mode="authenticate" // Always authenticate for unauthenticated users
-                            buttonStyle="default"
-                            className="w-full h-12 bg-transparent hover:bg-transparent"
-                            showAvailabilityIndicator={true}
-                            onError={(error) => console.error("Biometric auth error:", error)}
+                                mode="authenticate"
+                                buttonStyle="icon-only"
+                                className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0"
+                                onError={(error) => console.error("Passkey auth error:", error)}
                           />
+                            </div>
                         </div>
                       )}
+                      </div>
                     </div>
                   </>
                 )}

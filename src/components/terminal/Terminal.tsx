@@ -33,6 +33,16 @@ import { useStore } from '../../store/useStore';
 import { COMPONENT_METADATA } from '../dynamic/ComponentRegistry';
 import DynamicUIManager, { setGlobalUIHandler } from '../dynamic/DynamicUIManager';
 
+// Import proper type for ref
+interface DynamicUIManagerHandle {
+  handleUIAction: (action: any) => void;
+  getActiveComponents: () => any[];
+  removeComponent: (componentId: string) => void;
+  updateComponent: (componentId: string, data: any) => void;
+  clearAllComponents: () => void;
+  getComponentState: (componentId: string) => any;
+}
+
 // Import Terminal components
 import { commandMap } from './commands';
 import { TerminalConsole } from './components/TerminalConsole';
@@ -108,7 +118,7 @@ export const Terminal = ({ config, onCommandExecuted, size = 'large' }: Terminal
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   
   // Dynamic UI Manager ref
-  const dynamicUIRef = useRef<{ handleUIAction: (action: any) => void }>(null);
+  const dynamicUIRef = useRef<DynamicUIManagerHandle>(null);
   
   // Once CA reveal animation completes, set this state
   useEffect(() => {

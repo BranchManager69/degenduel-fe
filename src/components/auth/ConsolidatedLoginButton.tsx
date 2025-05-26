@@ -7,7 +7,7 @@
  * Perfect for mobile interfaces where space is at a premium
  * 
  * @author BranchManager69
- * @version 1.9.2
+ * @version 1.9.3
  * @created 2025-02-14
  * @updated 2025-05-24
  */
@@ -20,6 +20,7 @@ import { useStore } from '../../store/useStore';
 import { Button } from '../ui/Button';
 import BiometricAuthButton from './BiometricAuthButton';
 import ConnectWalletButton from './ConnectWalletButton';
+import DiscordLoginButton from './DiscordLoginButton';
 import TwitterLoginButton from './TwitterLoginButton';
 
 interface ConsolidatedLoginButtonProps {
@@ -161,41 +162,65 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
               {isAuthenticated ? (
                 // AUTHENTICATED USER - Show account management options
                 <>
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Link Twitter Account */}
-                    <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md">
+                  {/* Link for EZ Login subtitle */}
+                  <div className="text-center mb-3">
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                      Link for EZ Login
+                    </p>
+                  </div>
+                  
+                  {/* Link Options (3 compact squares) */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Link Twitter Account - Icon Only */}
+                    <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md aspect-square">
                       <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
+                      <div className="w-full h-full z-10 relative flex items-center justify-center">
                       <TwitterLoginButton 
                         linkMode={true}
-                        className="w-full h-10 z-10 relative font-bold text-xs" 
-                        onClick={handleLoginClick} 
-                      />
+                          className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden text-transparent"
+                          onClick={handleLoginClick}
+                        />
+                      </div>
                     </div>
                     
-                    {/* Register/Use Passkey */}
+                    {/* Link Discord Account - Icon Only */}
+                    <div className="relative p-0.5 bg-gradient-to-r from-[#5865F2]/40 to-[#5865F2]/80 rounded-md group overflow-hidden shadow-md aspect-square">
+                      <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
+                      <div className="w-full h-full z-10 relative flex items-center justify-center">
+                        <DiscordLoginButton 
+                          linkMode={true}
+                          className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden text-transparent"
+                        onClick={handleLoginClick} 
+                      />
+                      </div>
+                    </div>
+                    
+                    {/* Register/Use Passkey - Icon Only */}
                     {showBiometricOption && (
-                      <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md">
+                      <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md aspect-square">
                         <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
+                        <div className="w-full h-full z-10 relative flex items-center justify-center">
                         <BiometricAuthButton 
                           mode={isRegistered ? "authenticate" : "register"}
-                          buttonStyle="minimal"
-                          className="w-full h-10 z-10 relative bg-transparent hover:bg-transparent font-bold text-xs"
+                            buttonStyle="icon-only"
+                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0"
                           onSuccess={handleLoginClick}
-                          onError={(error) => console.error("Biometric auth error:", error)}
+                            onError={(error) => console.error("Passkey auth error:", error)}
                         />
+                        </div>
                       </div>
                     )}
                   </div>
                   
                   {/* Logout Option (full width below) */}
-                  <div className="relative p-0.5 bg-gradient-to-r from-red-500/40 to-red-600/80 rounded-md group overflow-hidden shadow-md mt-2">
+                  <div className="relative p-0.5 bg-gradient-to-r from-red-500/40 to-red-600/80 rounded-md group overflow-hidden shadow-md mt-4">
                     <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
                     <button 
                       onClick={handleLogout}
                       className="w-full h-10 z-10 relative bg-transparent hover:bg-transparent font-bold text-white flex items-center justify-center gap-2 text-xs"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"></path>
                       </svg>
                       Sign Out
                     </button>
@@ -204,7 +229,7 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
               ) : (
                 // NOT AUTHENTICATED - Show login options
                 <>
-                  {/* Wallet Connection */}
+                  {/* Primary: Wallet Connection (full width) */}
               <div className="relative p-0.5 bg-gradient-to-r from-brand-500/40 to-purple-600/80 rounded-md group overflow-hidden shadow-md">
                 <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
                 <ConnectWalletButton 
@@ -213,14 +238,47 @@ const ConsolidatedLoginButton: React.FC<ConsolidatedLoginButtonProps> = ({
                 />
               </div>
               
-                  {/* Twitter Login */}
-              <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md">
+                  {/* Secondary: Social & Passkey Login Options (3 compact squares) */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Twitter Login - Icon Only */}
+                    <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md aspect-square">
                 <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
+                      <div className="w-full h-full z-10 relative flex items-center justify-center">
                 <TwitterLoginButton 
                       linkMode={false}
-                      className="w-full h-12 z-10 relative font-bold" 
+                          className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden text-transparent"
+                          onClick={handleLoginClick}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Discord Login - Icon Only */}
+                    <div className="relative p-0.5 bg-gradient-to-r from-[#5865F2]/40 to-[#5865F2]/80 rounded-md group overflow-hidden shadow-md aspect-square">
+                      <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
+                      <div className="w-full h-full z-10 relative flex items-center justify-center">
+                        <DiscordLoginButton 
+                          linkMode={false}
+                          className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden text-transparent"
                   onClick={handleLoginClick} 
                 />
+                      </div>
+                    </div>
+                    
+                    {/* Passkey Login - Icon Only (if available) */}
+                    {isAvailable && (
+                      <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md aspect-square">
+                        <div className="absolute inset-0 bg-dark-500/80 group-hover:bg-dark-500/60 transition-colors duration-300"></div>
+                        <div className="w-full h-full z-10 relative flex items-center justify-center">
+                          <BiometricAuthButton 
+                            mode="authenticate"
+                            buttonStyle="icon-only"
+                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0"
+                            onSuccess={handleLoginClick}
+                            onError={(error) => console.error("Passkey auth error:", error)}
+                          />
+                        </div>
+                      </div>
+                    )}
               </div>
                 </>
               )}

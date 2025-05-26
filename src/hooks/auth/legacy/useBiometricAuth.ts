@@ -18,7 +18,10 @@ export const useBiometricAuth = () => {
 
   // Only check if biometric auth is available in this browser
   useEffect(() => {
-    const available = BiometricAuthService.canUseBiometrics();
+    // Just check if WebAuthn exists - let the button handle detailed checks
+    const available = typeof window !== 'undefined' &&
+      !!window.PublicKeyCredential &&
+      !!navigator.credentials;
     setIsAvailable(available);
 
     // Clear registration status when user logs out

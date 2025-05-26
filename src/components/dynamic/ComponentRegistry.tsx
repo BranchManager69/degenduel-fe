@@ -26,6 +26,10 @@ const AlertPanel = lazy(() => import('./components/AlertPanel'));
 const PerformanceMetrics = lazy(() => import('./components/PerformanceMetrics'));
 const LiquidityPools = lazy(() => import('./components/LiquidityPools'));
 const TransactionHistory = lazy(() => import('./components/TransactionHistory'));
+const ContestLeaderboard = lazy(() => import('./components/ContestLeaderboard'));
+const LiveActivityFeed = lazy(() => import('./components/LiveActivityFeed'));
+const UserComparison = lazy(() => import('./components/UserComparison'));
+const TokenAnalysis = lazy(() => import('./components/TokenAnalysis'));
 
 // Component registry mapping
 const COMPONENT_REGISTRY: Record<ComponentType, React.LazyExoticComponent<React.ComponentType<DynamicComponentProps>>> = {
@@ -40,6 +44,10 @@ const COMPONENT_REGISTRY: Record<ComponentType, React.LazyExoticComponent<React.
   performance_metrics: PerformanceMetrics,
   liquidity_pools: LiquidityPools,
   transaction_history: TransactionHistory,
+  contest_leaderboard: ContestLeaderboard,
+  live_activity_feed: LiveActivityFeed,
+  user_comparison: UserComparison,
+  token_analysis: TokenAnalysis,
 };
 
 // Component metadata for AI to understand what each component does
@@ -126,6 +134,34 @@ export const COMPONENT_METADATA: Record<ComponentType, {
     use_cases: ["transaction review", "trading history", "tax reporting"],
     required_data: ["transaction data", "trade history"],
     example_prompts: ["transaction history", "my trades", "show transactions"]
+  },
+  contest_leaderboard: {
+    name: "Contest Leaderboard",
+    description: "Live contest rankings and participant performance",
+    use_cases: ["contest tracking", "competitive analysis", "rank monitoring"],
+    required_data: ["contest data", "participant rankings", "performance metrics"],
+    example_prompts: ["contest leaderboard", "show rankings", "who's winning"]
+  },
+  live_activity_feed: {
+    name: "Live Activity Feed",
+    description: "Real-time platform activity and events",
+    use_cases: ["activity monitoring", "event tracking", "platform pulse"],
+    required_data: ["activity events", "user actions", "system events"],
+    example_prompts: ["live activity", "what's happening", "recent activity"]
+  },
+  user_comparison: {
+    name: "User Comparison",
+    description: "Compare user performance and statistics",
+    use_cases: ["performance comparison", "competitive analysis", "benchmarking"],
+    required_data: ["user profiles", "performance metrics", "statistics"],
+    example_prompts: ["compare users", "vs other traders", "performance comparison"]
+  },
+  token_analysis: {
+    name: "Token Analysis",
+    description: "Deep dive technical and fundamental token analysis",
+    use_cases: ["investment research", "token evaluation", "market analysis"],
+    required_data: ["token metrics", "technical indicators", "fundamental data"],
+    example_prompts: ["analyze token", "token research", "deep dive analysis"]
   }
 };
 
