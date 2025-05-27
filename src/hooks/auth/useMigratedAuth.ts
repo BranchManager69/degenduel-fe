@@ -40,6 +40,10 @@ interface NormalizedAuthAPI {
   getAccessToken: () => Promise<string | null>;
   linkTwitter: () => Promise<string>;
   isTwitterLinked: () => boolean;
+  linkDiscord: () => Promise<string>;
+  isDiscordLinked: () => boolean;
+  linkPasskey: () => Promise<void>;
+  isPasskeyLinked: () => boolean;
 
   // Properties from UnifiedAuthContextType
   activeMethod: AuthMethod | null;
@@ -93,6 +97,10 @@ export function useMigratedAuth(): NormalizedAuthAPI {
     getAccessToken: authContextValue.getAccessToken,
     linkTwitter: authContextValue.linkTwitter,
     isTwitterLinked: () => authContextValue.isTwitterLinked, // Wrap boolean in function
+    linkDiscord: authContextValue.linkDiscord,
+    isDiscordLinked: () => authContextValue.isDiscordLinked, // Wrap boolean in function
+    linkPasskey: authContextValue.linkPasskey,
+    isPasskeyLinked: () => authContextValue.isPasskeyLinked, // Wrap boolean in function
   };
 }
 

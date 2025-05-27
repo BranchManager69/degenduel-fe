@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { motion } from "framer-motion";
 import { MCPTokenManagement } from "../../../components/mcp/MCPTokenManagement";
 import { MCPUserGuide } from "../../../components/mcp/MCPUserGuide";
@@ -6,6 +6,24 @@ import { useAuth } from "../../../contexts/UnifiedAuthContext";
 
 export const DegenDuelMCPPortal: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const userGuideRef = useRef<HTMLDivElement>(null);
+
+  const scrollToSetup = (setupType: string) => {
+    if (userGuideRef.current) {
+      const setupSection = userGuideRef.current.querySelector('[data-setup-section]');
+      if (setupSection) {
+        setupSection.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start'
+        });
+        // Trigger the setup type selection after scroll
+        setTimeout(() => {
+          const event = new CustomEvent('selectSetup', { detail: setupType });
+          window.dispatchEvent(event);
+        }, 500);
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 relative overflow-hidden">
@@ -76,10 +94,10 @@ export const DegenDuelMCPPortal: React.FC = () => {
             transition={{ delay: 0.5 }}
           >
             {[
-              { icon: "🤖", text: "Claude Desktop", color: "cyan" },
-              { icon: "💻", text: "Cursor IDE", color: "purple" },
-              { icon: "🌊", text: "Windsurf", color: "pink" },
-              { icon: "🚀", text: "Any MCP Client", color: "yellow" }
+              { icon: "🤖", text: "Claude Desktop", color: "cyan", setupKey: "claude" },
+              { icon: "💻", text: "Cursor IDE", color: "purple", setupKey: "cursor" },
+              { icon: "🌊", text: "Windsurf", color: "pink", setupKey: "windsurf" },
+              { icon: "🚀", text: "Any MCP Client", color: "yellow", setupKey: "claude" }
             ].map((pill, index) => (
               <motion.div
                 key={index}
@@ -88,9 +106,10 @@ export const DegenDuelMCPPortal: React.FC = () => {
                   pill.color === 'purple' ? 'from-purple-500/20 to-purple-600/10 border-purple-400/30' :
                   pill.color === 'pink' ? 'from-pink-500/20 to-pink-600/10 border-pink-400/30' :
                   'from-yellow-500/20 to-yellow-600/10 border-yellow-400/30'
-                } border backdrop-blur-sm`}
+                } border backdrop-blur-sm cursor-pointer`}
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => scrollToSetup(pill.setupKey)}
               >
                 <span className="text-lg mr-2">{pill.icon}</span>
                 <span className="text-white font-medium">{pill.text}</span>
@@ -153,6 +172,7 @@ export const DegenDuelMCPPortal: React.FC = () => {
 
           {/* User Guide Section */}
           <motion.div
+            ref={userGuideRef}
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}

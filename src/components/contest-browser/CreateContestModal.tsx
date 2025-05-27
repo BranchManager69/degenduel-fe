@@ -51,14 +51,13 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 }) => {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [showBucketOptions, setShowBucketOptions] = React.useState(false);
+  const [showAdvancedOptions, setShowAdvancedOptions] = React.useState(false);
 
   const getNextHourDateTime = () => {
     const now = new Date();
-    // Subtract 5 hours from the current time, then set to the next hour
-    const adjustedTime = new Date(
-      now.setHours(now.getHours() - 5 + 1, 0, 0, 0),
-    );
+    // Use user's local timezone, set to current hour with minutes/seconds zeroed
+    const adjustedTime = new Date(now);
+    adjustedTime.setMinutes(0, 0, 0); // Zero out minutes and seconds for clean hour
     return adjustedTime.toISOString().slice(0, 16);
   };
 
@@ -86,8 +85,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     start_time: getNextHourDateTime(),
     end_time: new Date(
       new Date(getNextHourDateTime()).getTime() +
-        60 * 60 * 1000 -
-        5 * 60 * 60 * 1000,
+        60 * 60 * 1000,
     )
       .toISOString()
       .slice(0, 16),
@@ -96,7 +94,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     max_participants: 20,
     allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     settings: {
-      difficulty: "shark",
+      difficulty: "guppy",
       tokenTypesAllowed: [],
       startingPortfolioValue: "1000",
     } as Omit<ContestSettings, 'minParticipants' | 'maxParticipants'>,
@@ -360,12 +358,57 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           <div className="overflow-y-auto p-6 space-y-6 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300">
             <form onSubmit={handleSubmit} className="space-y-6">
               {userRole === 'user' && (
-                <div className="p-3 bg-brand-900/30 border border-brand-500/30 rounded-md text-sm text-brand-300">
-                  {availableCredits !== undefined && availableCredits > 0 ? (
-                    <p>This will use 1 of your {availableCredits} available credit(s).</p>
-                  ) : (
-                    <p className="text-yellow-400">You currently have no contest credits. <a href="/contest-credits" className="underline hover:text-yellow-300">Get credits</a>.</p>
-                  )}
+                <div className={`p-4 rounded-lg border ${
+                  availableCredits !== undefined && availableCredits > 0 
+                    ? 'bg-green-900/20 border-green-600/30' 
+                    : 'bg-red-900/20 border-red-600/30'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      {availableCredits !== undefined && availableCredits > 0 ? (
+                        <>
+                          <div className="flex items-center text-green-400 font-semibold mb-1">
+                            <span className="text-lg mr-2">✓</span>
+                            Contest Credit Available
+                          </div>
+                          <p className="text-green-300 text-sm">
+                            This will use 1 of your {availableCredits} available credit{availableCredits > 1 ? 's' : ''}.
+                          </p>
+                          <p className="text-green-200/70 text-xs mt-1">
+                            Remaining after creation: {availableCredits - 1} credit{availableCredits - 1 !== 1 ? 's' : ''}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center text-red-400 font-semibold mb-1">
+                            <span className="text-lg mr-2">⚠</span>
+                            No Contest Credits
+                          </div>
+                          <p className="text-red-300 text-sm mb-2">
+                            You need 1 contest credit to create a custom contest.
+                          </p>
+                          <p className="text-red-200/70 text-xs">
+                            Cost: 69,420 DUEL tokens = 1 Credit
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    <div className="ml-4">
+                      {availableCredits !== undefined && availableCredits > 0 ? (
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-400">{availableCredits}</div>
+                          <div className="text-xs text-green-300">Credits</div>
+                        </div>
+                      ) : (
+                        <a 
+                          href="/contest-credits" 
+                          className="inline-flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors"
+                        >
+                          Get Credits
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -381,49 +424,6 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                     className="w-full text-gray-100 bg-dark-300"
                     required
                   />
-                </div>
-
-                {/* Collapsible Bucket Selection */}
-                <div className="col-span-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowBucketOptions(!showBucketOptions)}
-                    className="flex justify-between items-center w-full px-4 py-2 bg-dark-300 rounded-lg text-gray-300 hover:bg-dark-400 transition-colors"
-                  >
-                    <span className="text-sm font-medium">
-                      Token Buckets ({formData.allowed_buckets.length} Selected)
-                    </span>
-                    <svg
-                      className={`w-5 h-5 transform transition-transform ${
-                        showBucketOptions ? "rotate-180" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
-                  {showBucketOptions && (
-                    <div className="mt-2">
-                      <MultiSelect
-                        value={formData.allowed_buckets}
-                        onChange={(buckets) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            allowed_buckets: buckets,
-                          }))
-                        }
-                        options={bucketOptions}
-                        className="w-full"
-                      />
-                    </div>
-                  )}
                 </div>
 
                 <div>
@@ -475,7 +475,6 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                   />
                 </div>
 
-
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Duel Starts
@@ -503,51 +502,96 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                     required
                   />
                 </div>
+              </div>
 
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Contest Settings
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-dark-300 rounded-md border border-dark-400">
+              {/* Advanced Options Section */}
+              <div className="col-span-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                  className="flex justify-between items-center w-full px-4 py-2 bg-dark-300 rounded-lg text-gray-300 hover:bg-dark-400 transition-colors"
+                >
+                  <span className="text-sm font-medium">
+                    Advanced Options
+                  </span>
+                  <svg
+                    className={`w-5 h-5 transform transition-transform ${
+                      showAdvancedOptions ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+                {showAdvancedOptions && (
+                  <div className="mt-4 p-4 bg-dark-300 rounded-md border border-dark-400 space-y-4">
+                    {/* Token Buckets */}
                     <div>
-                      <label className="block text-sm text-gray-400 mb-1">
-                        Class
+                      <label className="block text-sm font-medium text-gray-400 mb-2">
+                        Token Buckets ({formData.allowed_buckets.length} Selected)
                       </label>
-                      <Select
-                        value={formData.settings.difficulty}
-                        onChange={(value: string) =>
+                      <MultiSelect
+                        value={formData.allowed_buckets}
+                        onChange={(buckets) =>
                           setFormData((prev) => ({
                             ...prev,
-                            settings: { ...prev.settings, difficulty: value },
+                            allowed_buckets: buckets,
                           }))
                         }
-                        options={[
-                          { value: "guppy", label: "Guppy" },
-                          { value: "tadpole", label: "Tadpole" },
-                          { value: "squid", label: "Squid" },
-                          { value: "dolphin", label: "Dolphin" },
-                          { value: "shark", label: "Shark" },
-                          { value: "whale", label: "Whale" },
-                        ]}
-                        className="w-full text-gray-100 bg-dark-400 border-dark-500"
+                        options={bucketOptions}
+                        className="w-full"
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-1">
-                        Starting Portfolio Value (SOL)
-                      </label>
-                      <Input
-                        type="text"
-                        name="settings.startingPortfolioValue"
-                        value={formData.settings.startingPortfolioValue}
-                        onChange={(e) => setFormData(prev => ({...prev, settings: {...prev.settings, startingPortfolioValue: e.target.value }}))}
-                        className="w-full text-gray-100 bg-dark-400 border-dark-500"
-                        placeholder="e.g., 1000"
-                      />
+                    {/* Class and Starting Portfolio Value */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">
+                          Class
+                        </label>
+                        <Select
+                          value={formData.settings.difficulty}
+                          onChange={(value: string) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              settings: { ...prev.settings, difficulty: value },
+                            }))
+                          }
+                          options={[
+                            { value: "guppy", label: "Guppy" },
+                            { value: "tadpole", label: "Tadpole" },
+                            { value: "squid", label: "Squid" },
+                            { value: "dolphin", label: "Dolphin" },
+                            { value: "shark", label: "Shark" },
+                            { value: "whale", label: "Whale" },
+                          ]}
+                          className="w-full text-gray-100 bg-dark-400 border-dark-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">
+                          Starting Portfolio Value (SOL)
+                        </label>
+                        <Input
+                          type="text"
+                          name="settings.startingPortfolioValue"
+                          value={formData.settings.startingPortfolioValue}
+                          onChange={(e) => setFormData(prev => ({...prev, settings: {...prev.settings, startingPortfolioValue: e.target.value }}))}
+                          className="w-full text-gray-100 bg-dark-400 border-dark-500"
+                          placeholder="e.g., 1000"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div>

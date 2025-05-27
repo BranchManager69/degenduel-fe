@@ -30,7 +30,7 @@ import type { SortDirection, SortField } from "../../../types/sort";
 // Contest browser page
 export const ContestBrowser: React.FC = () => {
   const navigate = useNavigate();
-  const { isAdministrator } = useMigratedAuth();
+  const { isAdministrator, isAuthenticated, getToken } = useMigratedAuth();
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +42,34 @@ export const ContestBrowser: React.FC = () => {
   const [showCompleted, setShowCompleted] = useState(false);
   const [showCancelled, setShowCancelled] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [availableCredits, setAvailableCredits] = useState<number | undefined>(undefined);
+
+  // Fetch user credits
+  const fetchUserCredits = async () => {
+    if (!isAuthenticated) {
+      setAvailableCredits(0);
+      return;
+    }
+
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      const response = await fetch('/api/contests/credits/balance', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setAvailableCredits(data.data.available_credits || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch user credits:', error);
+      setAvailableCredits(0);
+    }
+  };
 
   // Fetch contests
   const fetchContests = async () => {
@@ -84,6 +112,7 @@ export const ContestBrowser: React.FC = () => {
   // Use effect to fetch contests and set up periodic maintenance check
   useEffect(() => {
     fetchContests();
+    fetchUserCredits();
 
     // Set up periodic maintenance check
     const maintenanceCheckInterval = setInterval(async () => {
@@ -253,7 +282,7 @@ export const ContestBrowser: React.FC = () => {
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
             </h1>
-            {isAdministrator && (
+            {isAuthenticated && (
               <CreateContestButton
                 onCreateClick={() => setIsCreateModalOpen(true)}
               />
@@ -426,13 +455,17 @@ export const ContestBrowser: React.FC = () => {
           <CreateContestModal
             isOpen={isCreateModalOpen}
             onClose={() => setIsCreateModalOpen(false)}
-            userRole="admin"
-            onSuccess={fetchContests}
+            userRole={isAdministrator ? "admin" : "user"}
+            availableCredits={availableCredits}
+            onSuccess={() => {
+              fetchContests();
+              fetchUserCredits(); // Refresh credits after contest creation
+            }}
           />
         </div>
       </div>
       
-      {/* Sidebar Terminal - Didi Assistant for Contest Help */}
+      {/* Terminal - Didi Assistant for Contest Help */}
       <Terminal
         config={{
           RELEASE_DATE: config.RELEASE_DATE.TOKEN_LAUNCH_DATETIME,
@@ -443,7 +476,6 @@ export const ContestBrowser: React.FC = () => {
             TIME: config.RELEASE_DATE.DISPLAY.LAUNCH_TIME
           }
         }}
-        layoutMode="sidebar"
         position={{ side: 'right' }}
         size="contracted"
       />

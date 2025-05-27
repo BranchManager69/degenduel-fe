@@ -162,7 +162,20 @@ export const TokenSelection: React.FC = () => {
   
   useEffect(() => {
     const fetchContest = async () => {
-      if (!contestId) return;
+      if (!contestId || contestId === 'undefined' || contestId === 'null') {
+        console.error("Invalid contest ID:", contestId);
+        toast.error("Invalid contest ID", { duration: 5000 });
+        return;
+      }
+      
+      // Validate that contestId is a valid number
+      const numericId = parseInt(contestId, 10);
+      if (isNaN(numericId) || numericId <= 0) {
+        console.error("Contest ID must be a valid number:", contestId);
+        toast.error("Invalid contest ID format", { duration: 5000 });
+        return;
+      }
+      
       try {
         console.log("🏆 PortfolioTokenSelectionPage: Fetching contest:", contestId);
         const data = await ddApi.contests.getById(contestId);
@@ -321,12 +334,20 @@ export const TokenSelection: React.FC = () => {
   }, [selectedTokens, memoizedTokens, contest?.name]);
 
   const handleSubmit = async () => {
-    if (!contest || !contestId) {
+    if (!contest || !contestId || contestId === 'undefined' || contestId === 'null') {
       console.error("Submit failed: Missing contest data:", {
         contest,
         contestId,
       });
       toast.error("Contest information not available");
+      return;
+    }
+    
+    // Validate that contestId is a valid number
+    const numericId = parseInt(contestId, 10);
+    if (isNaN(numericId) || numericId <= 0) {
+      console.error("Submit failed: Invalid contest ID format:", contestId);
+      toast.error("Invalid contest ID format");
       return;
     }
 

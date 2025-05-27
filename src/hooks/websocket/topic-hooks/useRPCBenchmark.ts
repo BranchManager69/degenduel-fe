@@ -85,7 +85,7 @@ export function useRPCBenchmark() {
   }) => {
     // Handle successful RPC benchmark data responses
     if (message.type === 'RESPONSE' &&
-      message.action === 'rpc-benchmarks/latest' &&
+      (message.action === 'getRpcBenchmarks' || message.action === 'rpc-benchmarks/latest') &&
       message.data) {
       console.log('[RPC Benchmark] Received data:', message.data);
       updateData(message.data);
@@ -147,12 +147,12 @@ export function useRPCBenchmark() {
     }
   }, [updateData]);
 
-  // Set up WebSocket connection - only if we need authenticated access
+  // Set up WebSocket connection - system for data, admin for triggering
   const ws = useUnifiedWebSocket(
     'rpc-benchmark-hook',
     [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR, DDExtendedMessageType.ACKNOWLEDGMENT],
     handleMessage,
-    [TopicType.SYSTEM]
+    [TopicType.SYSTEM, TopicType.ADMIN] // Need both topics for reading data (system) and triggering (admin)
   );
 
   // Fetch latest benchmark data when connected
@@ -162,17 +162,17 @@ export function useRPCBenchmark() {
     }
 
     setIsLoading(true);
-    return ws.request(TopicType.SYSTEM, 'rpc-benchmarks/latest');
+    return ws.request(TopicType.SYSTEM, 'getRpcBenchmarks');
   }, [ws]);
 
-  // Trigger a new benchmark run
+  // Trigger a new benchmark run (requires admin authentication)
   const triggerBenchmark = useCallback(() => {
-    if (!ws.isConnected) {
+    if (!ws.isConnected || !ws.isAuthenticated) {
       return false;
     }
 
     setIsBenchmarkRunning(true);
-    return ws.request(TopicType.SYSTEM, 'rpc-benchmarks/trigger');
+    return ws.request(TopicType.ADMIN, 'rpc-benchmarks/trigger'); // Use ADMIN topic for triggering
   }, [ws]);
 
   // Request initial data when connected
@@ -181,6 +181,11 @@ export function useRPCBenchmark() {
 
     // Subscribe to system topic (public)
     ws.subscribe(['system']);
+    
+    // Subscribe to admin topic if authenticated (for trigger capabilities)
+    if (ws.isAuthenticated) {
+      ws.subscribe(['admin']);
+    }
 
     // Fetch initial data
     fetchLatestBenchmarkData();
@@ -188,9 +193,12 @@ export function useRPCBenchmark() {
     return () => {
       if (ws.isConnected) {
         ws.unsubscribe(['system']);
+        if (ws.isAuthenticated) {
+          ws.unsubscribe(['admin']);
+        }
       }
     };
-  }, [ws.isConnected]);
+  }, [ws.isConnected, ws.isAuthenticated, fetchLatestBenchmarkData]);
 
   // Reset loading state after a timeout if we're still loading
   useEffect(() => {

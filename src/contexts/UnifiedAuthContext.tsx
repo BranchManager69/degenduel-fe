@@ -40,11 +40,17 @@ export interface UnifiedAuthContextType extends AuthStatus {
   
   // Account linking
   linkTwitter: () => Promise<string>;
+  linkDiscord: () => Promise<string>;
+  linkPasskey: () => Promise<void>;
   
   // Auth method status - use direct property checks
   isWalletAuth: boolean;
   isTwitterAuth: boolean;
   isTwitterLinked: boolean;
+  isDiscordAuth: boolean;
+  isDiscordLinked: boolean;
+  isPasskeyAuth: boolean;
+  isPasskeyLinked: boolean;
   
   // Auth refresh
   checkAuth: () => Promise<boolean>;
@@ -75,10 +81,18 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     wallet: boolean;
     twitter: boolean;
     twitterLinked: boolean;
+    discord: boolean;
+    discordLinked: boolean;
+    passkey: boolean;
+    passkeyLinked: boolean;
   }>({
     wallet: false,
     twitter: false,
-    twitterLinked: false
+    twitterLinked: false,
+    discord: false,
+    discordLinked: false,
+    passkey: false,
+    passkeyLinked: false
   });
   
   // Handle auth state changes
@@ -172,6 +186,8 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     // Otherwise infer from available data (???)
     if (user.wallet_address) return 'wallet';
     if (user.twitter_id) return 'twitter';
+    if (user.discord_id) return 'discord';
+    if (user.passkey_id) return 'passkey';
     
     // Default to session if no other indicators
     return 'session';
@@ -183,7 +199,11 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
       setMethodStatuses({
         wallet: false,
         twitter: false,
-        twitterLinked: false
+        twitterLinked: false,
+        discord: false,
+        discordLinked: false,
+        passkey: false,
+        passkeyLinked: false
       });
       return;
     }
@@ -193,8 +213,12 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     setMethodStatuses({
       wallet: activeMethod === 'wallet',
       twitter: activeMethod === 'twitter',
+      discord: activeMethod === 'discord',
+      passkey: activeMethod === 'passkey',
       // For linking status, check for IDs regardless of active method
-      twitterLinked: !!user.twitter_id
+      twitterLinked: !!user.twitter_id,
+      discordLinked: !!user.discord_id,
+      passkeyLinked: !!user.passkey_id
     });
   };
   
@@ -214,11 +238,73 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     
     // Account linking
     linkTwitter: authService.linkTwitter.bind(authService),
+    linkDiscord: async () => {
+      window.location.href = '/api/auth/discord/link';
+      return 'redirect_initiated';
+    },
+    linkPasskey: async () => {
+      // Call the WebAuthn registration endpoint
+      const response = await fetch('/api/auth/passkey/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await authService.getToken(TokenType.JWT)}`
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Failed to initiate passkey registration: ${error}`);
+      }
+      
+      const { challenge, user: userInfo } = await response.json();
+      
+      // Create WebAuthn credential
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge: new Uint8Array(Object.values(challenge)),
+          rp: {
+            name: "DegenDuel",
+            id: window.location.hostname
+          },
+          user: userInfo,
+          pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+          timeout: 60000,
+          attestation: "direct"
+        }
+      });
+      
+      if (!credential) {
+        throw new Error('Failed to create passkey credential');
+      }
+      
+      // Send credential to server for verification
+      const verifyResponse = await fetch('/api/auth/passkey/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await authService.getToken(TokenType.JWT)}`
+        },
+        body: JSON.stringify({ credential })
+      });
+      
+      if (!verifyResponse.ok) {
+        const error = await verifyResponse.text();
+        throw new Error(`Failed to verify passkey: ${error}`);
+      }
+      
+      // Refresh auth state to pick up the new passkey
+      await authService.checkAuth();
+    },
     
     // Auth method status
     isWalletAuth: methodStatuses.wallet,
     isTwitterAuth: methodStatuses.twitter,
     isTwitterLinked: methodStatuses.twitterLinked,
+    isDiscordAuth: methodStatuses.discord,
+    isDiscordLinked: methodStatuses.discordLinked,
+    isPasskeyAuth: methodStatuses.passkey,
+    isPasskeyLinked: methodStatuses.passkeyLinked || false,
     
     // Auth refresh
     checkAuth: authService.checkAuth.bind(authService),

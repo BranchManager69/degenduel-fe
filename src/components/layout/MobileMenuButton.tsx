@@ -16,7 +16,7 @@ import { Link } from "react-router-dom";
 
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../store/useStore";
-import { ConsolidatedLoginButton } from "../auth";
+import { SimpleWalletButton } from "../auth";
 
 // Import shared menu components and configuration
 import { getMenuItems } from './menu/menuConfig';
@@ -406,7 +406,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                     <div className="px-3 py-2 bg-dark-300/40 border-b border-brand-500/20">
                       <div className="flex flex-col gap-2">
                         {/* Login Options Section */}
-                        <ConsolidatedLoginButton onLoginComplete={() => setIsOpen(false)} isCompact={isCompact} />
+                        <SimpleWalletButton onLoginComplete={() => setIsOpen(false)} isCompact={isCompact} />
                         
                         <Link
                           to="/login"

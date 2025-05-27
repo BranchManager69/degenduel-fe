@@ -1046,6 +1046,33 @@ export const AdminDashboard: React.FC = () => {
                     </Link>
                   </motion.div>
 
+                  {/* Admin Wallet Dashboard Button */}
+                  <motion.div
+                    className="bg-dark-200/75 backdrop-blur-lg border-2 border-purple-500/40 hover:border-purple-500/60 p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/20"
+                    whileHover={{ scale: 1.02, y: -4 }}
+                  >
+                    <Link to="/admin/wallet-dashboard" className="block h-full">
+                      <div className="flex items-center mb-3">
+                        <div className="text-2xl text-purple-300 mr-3 group-hover:scale-110 transition-transform duration-300">
+                          🏦
+                        </div>
+                        <h3 className="text-lg font-bold text-purple-300 font-display tracking-wide">
+                          Admin Wallet Dashboard
+                        </h3>
+                      </div>
+                      
+                      <div className="w-1/3 h-px bg-gradient-to-r from-purple-500/70 to-transparent mb-3"></div>
+                      
+                      <p className="text-gray-300 text-sm font-mono">
+                        <span className="text-purple-200">→</span> Manage custodial wallets with bulk operations
+                      </p>
+                      
+                      <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                        <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-purple-500/70"></div>
+                      </div>
+                    </Link>
+                  </motion.div>
+
                   {/* Liquidity Simulator Button */}
                   <motion.div
                     className="bg-dark-200/75 backdrop-blur-lg border-2 border-green-500/40 hover:border-green-500/60 p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-green-500/20"

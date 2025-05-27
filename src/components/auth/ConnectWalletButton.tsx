@@ -12,7 +12,7 @@
  * @updated 2025-05-24 - Updated to match uniform button styling
  */
 
-import { WalletName } from "@solana/wallet-adapter-base";
+import { WalletName, WalletReadyState } from "@solana/wallet-adapter-base";
 import { useWallet } from "@solana/wallet-adapter-react";
 import axios from 'axios';
 import React, { useCallback, useState } from 'react';
@@ -138,6 +138,78 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
     }
   }, [auth, disconnect, onError]);
 
+  // Build correct deep link URLs as per official wallet documentation
+  const buildBrowseLink = useCallback((base: 'phantom' | 'solflare', dappUrl: string) => {
+    const encoded = encodeURIComponent(dappUrl);
+    const encodedRef = encodeURIComponent(window.location.origin);
+    return base === 'phantom'
+      ? `https://phantom.app/ul/browse/${encoded}?ref=${encodedRef}`
+      : `https://solflare.com/ul/v1/browse/${encoded}?ref=${encodedRef}`;
+  }, []);
+
+  // Mobile wallet deep link using proper universal links and iframe detection
+  const tryMobileWalletDeepLink = useCallback(() => {
+    const currentUrl = window.location.href;
+    
+    // Create hidden iframe for deep link detection (recommended by Phantom docs)
+    const testAppInstalled = (deepLinkUrl: string) => {
+      return new Promise<boolean>((resolve) => {
+        let resolved = false;
+        
+        // Create hidden iframe to test deep link
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = deepLinkUrl;
+        document.body.appendChild(iframe);
+        
+        // Use visibilitychange for better detection accuracy
+        const handleVisibilityChange = () => {
+          if (document.hidden && !resolved) {
+            resolved = true;
+            resolve(true);
+          }
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        // Fallback timeout (3s as recommended for better mobile compatibility)
+        setTimeout(() => {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          if (iframe.parentNode) {
+            document.body.removeChild(iframe);
+          }
+          if (!resolved) {
+            resolved = true;
+            resolve(false);
+          }
+        }, 3000);
+      });
+    };
+    
+    // Try Phantom first with proper universal link
+    const phantomDeepLink = buildBrowseLink('phantom', currentUrl);
+    
+    testAppInstalled(phantomDeepLink).then(phantomInstalled => {
+      if (phantomInstalled) {
+        console.log('Phantom app detected and opened');
+        return;
+      }
+      
+      // Try Solflare if Phantom not installed
+      const solflareDeepLink = buildBrowseLink('solflare', currentUrl);
+      
+      testAppInstalled(solflareDeepLink).then(solflareInstalled => {
+        if (solflareInstalled) {
+          console.log('Solflare app detected and opened');
+          return;
+        }
+        
+        // Neither installed, redirect to Phantom download as fallback
+        window.open('https://phantom.app/download', '_blank');
+      });
+    });
+  }, [buildBrowseLink]);
+
   // Auto-authenticate when wallet connects
   React.useEffect(() => {
     if (connected && publicKey && !auth.isAuthenticated && !isLoading) {
@@ -163,9 +235,23 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
           variant="gradient"
           className={`w-full font-bold flex items-center justify-center ${sizeClasses[size]}`}
           onClick={() => {
-            const installedWallets = wallets.filter(wallet => wallet.readyState === 'Installed');
-            if (installedWallets.length === 1) {
-              handleWalletSelect(installedWallets[0].adapter.name);
+            // Use proper wallet detection that includes Loadable state
+            const detectedWallets = wallets.filter(wallet => 
+              wallet.readyState !== WalletReadyState.Unsupported &&
+              wallet.readyState !== WalletReadyState.NotDetected
+            );
+            
+            // If no wallets detected, try deep linking to mobile wallet apps
+            if (detectedWallets.length === 0) {
+              const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+              if (isMobile) {
+                tryMobileWalletDeepLink();
+                return;
+              }
+            }
+            
+            if (detectedWallets.length === 1) {
+              handleWalletSelect(detectedWallets[0].adapter.name);
             } else {
               setShowWalletOptions(!showWalletOptions);
             }
@@ -182,8 +268,22 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
             </>
           ) : (
             <>
-              Connect Wallet
-              {wallets.filter(wallet => wallet.readyState === 'Installed').length > 1 && (
+              {(() => {
+                const detectedWallets = wallets.filter(wallet => 
+                  wallet.readyState !== WalletReadyState.Unsupported &&
+                  wallet.readyState !== WalletReadyState.NotDetected
+                );
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                
+                if (detectedWallets.length === 0 && isMobile) {
+                  return "Open Wallet App";
+                }
+                return "Connect Wallet";
+              })()}
+              {wallets.filter(wallet => 
+                wallet.readyState !== WalletReadyState.Unsupported &&
+                wallet.readyState !== WalletReadyState.NotDetected
+              ).length > 1 && (
                 <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -195,7 +295,10 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
         {/* Wallet Options Dropdown */}
         {showWalletOptions && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-dark-400/90 backdrop-blur-sm border border-brand-500/30 rounded-md shadow-xl z-50 max-h-60 overflow-y-auto">
-            {wallets.filter(wallet => wallet.readyState === 'Installed').map((wallet) => (
+            {wallets.filter(wallet => 
+              wallet.readyState !== WalletReadyState.Unsupported &&
+              wallet.readyState !== WalletReadyState.NotDetected
+            ).map((wallet) => (
               <button
                 key={wallet.adapter.name}
                 onClick={() => handleWalletSelect(wallet.adapter.name)}
@@ -207,14 +310,17 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
                   className="w-6 h-6"
                 />
                 {wallet.adapter.name}
+                {wallet.readyState === WalletReadyState.Loadable && (
+                  <span className="text-xs ml-auto text-blue-400">Loadable</span>
+                )}
               </button>
             ))}
-            {wallets.filter(wallet => wallet.readyState === 'NotDetected').length > 0 && (
+            {wallets.filter(wallet => wallet.readyState === WalletReadyState.NotDetected).length > 0 && (
               <>
                 <div className="px-3 py-1 text-xs text-gray-400 border-t border-dark-300/50 mt-1">
                   Not Installed
                 </div>
-                {wallets.filter(wallet => wallet.readyState === 'NotDetected').map((wallet) => (
+                {wallets.filter(wallet => wallet.readyState === WalletReadyState.NotDetected).map((wallet) => (
                   <button
                     key={wallet.adapter.name}
                     onClick={() => window.open(wallet.adapter.url, '_blank')}

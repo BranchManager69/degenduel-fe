@@ -7,7 +7,7 @@
  * This hook depends on the WebSocketManager component being mounted in the application
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useStore } from '../../store/useStore';
 import { ConnectionState, DDExtendedMessageType } from './types';
 
@@ -183,19 +183,34 @@ export function useUnifiedWebSocket<T = any>(
     return instance.sendMessage(requestMessage);
   }, []); // Empty dependency array since instance is stable
 
-  // Return functions for interacting with the WebSocket
-  return {
-    sendMessage: (message: any) => instance!.sendMessage(message),
-    isConnected: instance.connectionState === ConnectionState.CONNECTED ||
-      instance.connectionState === ConnectionState.AUTHENTICATED,
-    isAuthenticated: instance.connectionState === ConnectionState.AUTHENTICATED,
-    connectionState: instance.connectionState,
-    error: instance.connectionError,
-    // Add higher-level methods
-    subscribe,
-    unsubscribe,
-    request
-  };
+  // Return functions for interacting with the WebSocket - MEMOIZED to prevent infinite loops
+  return useMemo(() => {
+    if (!instance) {
+      return {
+        sendMessage: () => false,
+        isConnected: false,
+        isAuthenticated: false,
+        connectionState: ConnectionState.CONNECTING,
+        error: "Connecting...",
+        subscribe: () => false,
+        unsubscribe: () => false,
+        request: () => false
+      };
+    }
+
+    return {
+      sendMessage: (message: any) => instance!.sendMessage(message),
+      isConnected: instance!.connectionState === ConnectionState.CONNECTED ||
+        instance!.connectionState === ConnectionState.AUTHENTICATED,
+      isAuthenticated: instance!.connectionState === ConnectionState.AUTHENTICATED,
+      connectionState: instance!.connectionState,
+      error: instance!.connectionError,
+      // Add higher-level methods
+      subscribe,
+      unsubscribe,
+      request
+    };
+  }, [instance, subscribe, unsubscribe, request]);
 }
 
 export default useUnifiedWebSocket;

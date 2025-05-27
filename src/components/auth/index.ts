@@ -23,6 +23,8 @@ export { default as QRCodeAuth } from './QRCodeAuth';
 // Export login components
 export { default as ConnectWalletButton } from './ConnectWalletButton';
 export { default as ConsolidatedLoginButton } from './ConsolidatedLoginButton';
+export { default as SimpleWalletButton } from './SimpleWalletButton';
+export { default as SocialAuthPanel } from './SocialAuthPanel';
 export { default as LoginOptions } from './LoginOptions';
 export { default as WalletDebugger } from './WalletDebugger';
 

@@ -15,6 +15,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 // @ts-ignore - JSX component without TypeScript definitions
 import LoginOptions from "../../../components/auth/LoginOptions";
+import { SimpleWalletButton, SocialAuthPanel } from "../../../components/auth";
 import WalletDebugger from "../../../components/auth/WalletDebugger";
 import Logo from "../../../components/ui/Logo";
 import { authDebug } from "../../../config/config";
@@ -98,7 +99,7 @@ const LoginPage: React.FC = () => {
           <Logo size="lg" animated={true} />
         </motion.div>
 
-        {/* Login options panel */}
+        {/* Clean Login Panel */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -107,8 +108,26 @@ const LoginPage: React.FC = () => {
             delay: 0.3,
             ease: [0.22, 1, 0.36, 1]
           }}
+          className="space-y-6"
         >
-          <LoginOptions />
+          {/* Primary Wallet Login - Full Width */}
+          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg p-6">
+            <h3 className="text-white font-semibold mb-4 text-center">Connect with Wallet</h3>
+            <SimpleWalletButton className="w-full" />
+          </div>
+
+          {/* Alternative Login Methods */}
+          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg p-6">
+            <h3 className="text-white font-semibold mb-4 text-center">Alternative Login</h3>
+            <SocialAuthPanel 
+              mode="login" 
+              layout="grid"
+              onComplete={() => {
+                const storedPath = localStorage.getItem("auth_redirect_path");
+                navigate(storedPath || "/");
+              }}
+            />
+          </div>
         </motion.div>
       </motion.div>
       

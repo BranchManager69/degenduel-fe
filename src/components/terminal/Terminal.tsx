@@ -610,25 +610,38 @@ export const Terminal = ({
 
   // Load position from localStorage on mount
   useEffect(() => {
-    const savedPosition = localStorage.getItem('terminal-minimized-position');
-    if (savedPosition) {
-      try {
-        const pos = JSON.parse(savedPosition);
-        // Basic validation to ensure it's within reasonable bounds
-        if (typeof pos.x === 'number' && typeof pos.y === 'number') {
-          // Allow dragging mostly off-screen, but keep a small portion visible
-          const iconSize = 70;
-          const minVisible = 20; // Keep 20px visible
-          pos.x = Math.max(-iconSize + minVisible, Math.min(pos.x, window.innerWidth - minVisible));
-          pos.y = Math.max(-iconSize + minVisible, Math.min(pos.y, window.innerHeight - minVisible));
-          setInitialPosition(pos);
+    // Check if this is a fresh page load (refresh) vs navigation
+    const isPageRefresh = sessionStorage.getItem('page-navigation') === null;
+    
+    if (isPageRefresh) {
+      // Fresh page load - clear saved position and use default
+      localStorage.removeItem('terminal-minimized-position');
+      console.log('[Terminal] Fresh page load detected, using default position');
+    } else {
+      // Navigation within app - try to restore saved position
+      const savedPosition = localStorage.getItem('terminal-minimized-position');
+      if (savedPosition) {
+        try {
+          const pos = JSON.parse(savedPosition);
+          // Basic validation to ensure it's within reasonable bounds
+          if (typeof pos.x === 'number' && typeof pos.y === 'number') {
+            // Allow dragging mostly off-screen, but keep a small portion visible
+            const iconSize = 70;
+            const minVisible = 20; // Keep 20px visible
+            pos.x = Math.max(-iconSize + minVisible, Math.min(pos.x, window.innerWidth - minVisible));
+            pos.y = Math.max(-iconSize + minVisible, Math.min(pos.y, window.innerHeight - minVisible));
+            setInitialPosition(pos);
+          }
+        } catch (e) {
+          console.error("Failed to parse saved terminal position:", e);
+          // Fallback to default if parsing fails or data is invalid
+          localStorage.removeItem('terminal-minimized-position'); 
         }
-      } catch (e) {
-        console.error("Failed to parse saved terminal position:", e);
-        // Fallback to default if parsing fails or data is invalid
-        localStorage.removeItem('terminal-minimized-position'); 
       }
     }
+    
+    // Mark that we've navigated (for subsequent page changes)
+    sessionStorage.setItem('page-navigation', 'true');
     // Set up the constraint ref to the body for viewport-wide dragging
     // A more specific parent element could be used if the terminal should be constrained to a part of the UI
     // For now, document.body effectively means viewport constraints when used with position:fixed
@@ -935,10 +948,9 @@ export const Terminal = ({
           transition={{ duration: 0.4, type: 'spring' }}
           style={{ 
             position: 'fixed',
-            left: initialPosition.x === 0 && initialPosition.y === 0 ? '50%' : undefined,
-            top: initialPosition.x === 0 && initialPosition.y === 0 ? undefined : undefined,
-            bottom: initialPosition.x === 0 && initialPosition.y === 0 ? '20px' : undefined,
-            transform: initialPosition.x === 0 && initialPosition.y === 0 ? 'translateX(-50%) translateY(2px)' : undefined,
+            right: initialPosition.x === 0 && initialPosition.y === 0 ? '20px' : undefined,
+            top: initialPosition.x === 0 && initialPosition.y === 0 ? '50%' : undefined,
+            transform: initialPosition.x === 0 && initialPosition.y === 0 ? 'translateY(-50%)' : undefined,
           }}
           onClick={(_event) => {
             // Prevent opening if user just finished dragging

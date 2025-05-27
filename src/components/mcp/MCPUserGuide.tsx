@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "../toast/ToastContext";
 
@@ -19,6 +19,18 @@ export const MCPUserGuide: React.FC = () => {
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
   const [copiedItems, setCopiedItems] = useState<{ [key: string]: boolean }>({});
   const { addToast } = useToast();
+
+  // Listen for setup selection events from pill buttons
+  useEffect(() => {
+    const handleSetupSelection = (event: CustomEvent) => {
+      setActiveSetup(event.detail);
+    };
+
+    window.addEventListener('selectSetup', handleSetupSelection as EventListener);
+    return () => {
+      window.removeEventListener('selectSetup', handleSetupSelection as EventListener);
+    };
+  }, []);
 
   const copyToClipboard = async (text: string, label: string, itemKey?: string) => {
     try {
@@ -135,39 +147,23 @@ export const MCPUserGuide: React.FC = () => {
       icon: "📊",
       prompts: [
         "How is my portfolio performing in the current contest?",
-        "What's my trading strategy success rate?",
         "Show me the contest leaderboard and analyze top performers",
-        "Which tokens should I consider for my next trade?"
+        "Which tokens should I consider for my next trade?",
+        "Based on current market conditions, what's a good strategy?"
       ]
     },
     {
-      category: "Token Research & Discovery",
+      category: "Token Research & Market Intelligence",
       icon: "🚀",
       prompts: [
         "What are the top trending tokens right now?",
         "Find me new token launches from today",
-        "Analyze BONK's price history and trends",
         "Show me the biggest gainers and losers",
-        "What tokens have the highest volume today?"
-      ]
-    },
-    {
-      category: "Market Intelligence",
-      icon: "📈",
-      prompts: [
+        "What tokens have the highest volume today?",
         "Give me a market overview with insights",
         "What's driving today's market movements?",
-        "Compare SOL vs ETH performance this week",
-        "Find tokens similar to [your favorite token]"
-      ]
-    },
-    {
-      category: "Trading Strategy",
-      icon: "🎯",
-      prompts: [
-        "Based on current market conditions, what's a good strategy?",
-        "Analyze risk levels of tokens in my watchlist",
-        "What time frames show the best trading patterns?"
+        "Compare SOL vs TITCOIN performance this week",
+        "Find tokens similar to ASSCOIN"
       ]
     }
   ];
@@ -423,6 +419,7 @@ export const MCPUserGuide: React.FC = () => {
       {/* Setup Instructions */}
       <motion.div 
         className="relative group"
+        data-setup-section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
@@ -628,105 +625,409 @@ export const MCPUserGuide: React.FC = () => {
       </motion.div>
 
       {/* Example Prompts */}
-      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
-        <h2 className="text-2xl font-bold mb-6">What You Can Ask Your AI Assistant</h2>
-        <div className="grid md:grid-cols-2 gap-6">
-          {examplePrompts.map((category, index) => (
-            <div key={index} className="space-y-3">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <span>{category.icon}</span>
-                {category.category}
-              </h3>
-              <div className="space-y-2">
-                {category.prompts.map((prompt, promptIndex) => (
-                  <div
-                    key={promptIndex}
-                    className="bg-dark-300/50 rounded-md p-3 border border-gray-600 cursor-pointer hover:border-brand-500/50 transition-colors"
-                    onClick={() => copyToClipboard(prompt, "Prompt")}
+      <motion.div 
+        className="relative group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.9 }}
+      >
+        <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
+        <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-8">
+          <motion.div
+            className="flex items-center gap-3 mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.0 }}
+          >
+            <span className="text-3xl">💬</span>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-400 text-transparent bg-clip-text">
+              What You Can Ask Your AI Assistant
+            </h2>
+          </motion.div>
+          <motion.div 
+            className="grid md:grid-cols-2 gap-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.1 }}
+          >
+            {examplePrompts.map((category, index) => (
+              <motion.div 
+                key={index} 
+                className="relative group"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2 + index * 0.1 }}
+              >
+                <div className="absolute -inset-1 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
+                <div className="relative bg-slate-900/60 backdrop-blur-lg rounded-xl border border-slate-600/40 p-6 h-full">
+                  <motion.div
+                    className="flex items-center gap-3 mb-4"
+                    whileHover={{ scale: 1.05 }}
                   >
-                    <p className="text-gray-300 italic text-sm">"{prompt}"</p>
+                    <motion.span 
+                      className="text-2xl"
+                      animate={{ rotate: [0, 5, -5, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
+                    >
+                      {category.icon}
+                    </motion.span>
+                    <h3 className="font-bold text-lg text-slate-100">{category.category}</h3>
+                  </motion.div>
+                  <div className="space-y-3">
+                    {category.prompts.map((prompt, promptIndex) => (
+                      <motion.div
+                        key={promptIndex}
+                        className="relative group cursor-pointer"
+                        onClick={() => copyToClipboard(prompt, "Prompt", `prompt-${index}-${promptIndex}`)}
+                        whileHover={{ scale: 1.02, x: 5 }}
+                        whileTap={{ scale: 0.98 }}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 1.3 + index * 0.1 + promptIndex * 0.05 }}
+                      >
+                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/30 to-purple-500/30 rounded-lg blur opacity-0 group-hover:opacity-100 transition duration-300"></div>
+                        <div className="relative bg-slate-800/60 rounded-lg p-4 border border-slate-600/30 group-hover:border-cyan-400/50 transition-all duration-300">
+                          <p className="text-slate-300 italic text-sm leading-relaxed">"{prompt}"</p>
+                          <motion.div 
+                            className="absolute top-2 right-2 text-xs text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                            initial={{ scale: 0 }}
+                            whileHover={{ scale: 1 }}
+                          >
+                            <AnimatePresence mode="wait">
+                              {copiedItems[`prompt-${index}-${promptIndex}`] ? (
+                                <motion.span
+                                  key="copied"
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  exit={{ scale: 0 }}
+                                  className="text-green-400"
+                                >
+                                  ✅
+                                </motion.span>
+                              ) : (
+                                <motion.span
+                                  key="copy"
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  exit={{ scale: 0 }}
+                                >
+                                  📋
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
+                          </motion.div>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          ))}
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Security Features */}
-      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-green-500/20 p-6">
-        <h2 className="text-2xl font-bold mb-4 text-green-300">Security & Privacy</h2>
-        <div className="grid md:grid-cols-2 gap-4">
-          {[
-            "Your token is secure - Only you can see it, encrypted in our database",
-            "Limited scope - AI can only access your DegenDuel data, nothing else",
-            "Revokable anytime - Instantly disable access with one click",
-            "1-year expiration - Automatically expires for security",
-            "No trading access - AI can view data but cannot make trades"
-          ].map((feature, index) => (
-            <div key={index} className="flex items-start gap-3">
-              <div className="text-green-400 mt-1">✅</div>
-              <span className="text-green-200 text-sm">{feature}</span>
-            </div>
-          ))}
+      <motion.div 
+        className="relative group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.0 }}
+      >
+        <div className="absolute -inset-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
+        <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-8">
+          <motion.div
+            className="flex items-center gap-3 mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.1 }}
+          >
+            <motion.span 
+              className="text-3xl"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              🔒
+            </motion.span>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 text-transparent bg-clip-text">
+              Security & Privacy
+            </h2>
+          </motion.div>
+          <motion.div 
+            className="grid md:grid-cols-2 gap-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2 }}
+          >
+            {[
+              "Your token is secure - Only you can see it",
+              "Limited scope - AI can only access your DegenDuel data, nothing else"
+            ].map((feature, index) => (
+              <motion.div 
+                key={index} 
+                className="flex items-start gap-4 group"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.3 + index * 0.1 }}
+                whileHover={{ scale: 1.02, x: 5 }}
+              >
+                <motion.div 
+                  className="text-green-400 mt-1 text-xl"
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+                >
+                  ✅
+                </motion.div>
+                <span className="text-green-200 leading-relaxed group-hover:text-green-100 transition-colors">
+                  {feature}
+                </span>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Troubleshooting */}
-      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-brand-500/20 p-6">
-        <button
-          onClick={() => setShowTroubleshooting(!showTroubleshooting)}
-          className="w-full flex justify-between items-center text-2xl font-bold mb-4"
-        >
-          <span>Troubleshooting</span>
-          <span className={`transform transition-transform ${showTroubleshooting ? 'rotate-180' : ''}`}>
-            ▼
-          </span>
-        </button>
-        
-        {showTroubleshooting && (
-          <div className="space-y-4">
-            {troubleshootingFAQs.map((faq, index) => (
-              <div key={index} className="border border-gray-600 rounded-md">
-                <div className="p-4">
-                  <h3 className="font-semibold text-yellow-300 mb-2">{faq.question}</h3>
-                  <pre className="text-gray-300 text-sm whitespace-pre-wrap">{faq.answer}</pre>
-                </div>
-              </div>
-            ))}
-            <div className="bg-blue-900/20 border border-blue-500/20 rounded-md p-4">
-              <p className="text-blue-200">
-                <strong>Still having issues?</strong> Contact support with your error message and which AI assistant you're using.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
+      <motion.div 
+        className="relative group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.1 }}
+      >
+        <div className="absolute -inset-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
+        <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-8">
+          <motion.button
+            onClick={() => setShowTroubleshooting(!showTroubleshooting)}
+            className="w-full flex justify-between items-center mb-6 group"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2 }}
+          >
+            <motion.div className="flex items-center gap-3">
+              <motion.span 
+                className="text-3xl"
+                animate={{ rotate: [0, 15, -15, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                🛠️
+              </motion.span>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 text-transparent bg-clip-text">
+                Troubleshooting
+              </h2>
+            </motion.div>
+            <motion.span 
+              className={`text-2xl text-yellow-400 transform transition-transform duration-300 ${showTroubleshooting ? 'rotate-180' : ''}`}
+              whileHover={{ scale: 1.1 }}
+            >
+              ▼
+            </motion.span>
+          </motion.button>
+          
+          <AnimatePresence>
+            {showTroubleshooting && (
+              <motion.div 
+                className="space-y-6"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {troubleshootingFAQs.map((faq, index) => (
+                  <motion.div 
+                    key={index} 
+                    className="relative group"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                  >
+                    <div className="absolute -inset-1 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-300"></div>
+                    <div className="relative bg-slate-900/60 backdrop-blur-lg rounded-xl border border-slate-600/40 p-6">
+                      <motion.h3 
+                        className="font-bold text-xl mb-4 text-yellow-300 flex items-center gap-2"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 + index * 0.1 }}
+                      >
+                        <motion.span
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
+                        >
+                          ⚠️
+                        </motion.span>
+                        {faq.question}
+                      </motion.h3>
+                      <motion.pre 
+                        className="text-slate-300 whitespace-pre-wrap leading-relaxed"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 + index * 0.1 }}
+                      >
+                        {faq.answer}
+                      </motion.pre>
+                    </div>
+                  </motion.div>
+                ))}
+                <motion.div 
+                  className="relative group"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: troubleshootingFAQs.length * 0.1 }}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                >
+                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-300"></div>
+                  <div className="relative bg-blue-900/30 backdrop-blur-lg rounded-xl border border-blue-500/30 p-6">
+                    <motion.div
+                      className="flex items-center gap-3 mb-3"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <motion.span
+                        className="text-2xl"
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                      >
+                        🎧
+                      </motion.span>
+                      <span className="font-bold text-xl text-blue-300">Still Need Help?</span>
+                    </motion.div>
+                    <motion.p 
+                      className="text-blue-200 leading-relaxed"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                    >
+                      Contact support with your error message and which AI assistant you're using. We're here to help!
+                    </motion.p>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
 
       {/* Pro Tips */}
-      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg border border-orange-500/20 p-6">
-        <h2 className="text-2xl font-bold mb-4 text-orange-300">Pro Tips</h2>
-        <div className="space-y-3">
-          {[
-            "Ask follow-up questions - Once AI analyzes your portfolio, ask \"What would you change?\"",
-            "Combine insights - \"Compare my performance to the contest winners\"",
-            "Real-time updates - Ask about the same token multiple times for live updates",
-            "Strategy planning - \"If I have $1000, what's the optimal contest strategy?\""
-          ].map((tip, index) => (
-            <div key={index} className="flex items-start gap-3">
-              <div className="text-orange-400 mt-1">🔥</div>
-              <span className="text-orange-200 text-sm">{tip}</span>
-            </div>
-          ))}
+      <motion.div 
+        className="relative group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.2 }}
+      >
+        <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
+        <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-8">
+          <motion.div
+            className="flex items-center gap-3 mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.3 }}
+          >
+            <motion.span 
+              className="text-3xl"
+              animate={{ 
+                scale: [1, 1.2, 1],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              💡
+            </motion.span>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-400 text-transparent bg-clip-text">
+              Pro Tips
+            </h2>
+          </motion.div>
+          <motion.div 
+            className="space-y-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.4 }}
+          >
+            {[
+              "Ask follow-up questions - Once AI analyzes your portfolio, ask \"What would you change?\"",
+              "Combine insights - \"Compare my performance to the contest winners\"",
+              "Real-time updates - Ask about the same token multiple times for live updates",
+              "Strategy planning - \"If I have $1000, what's the optimal contest strategy?\""
+            ].map((tip, index) => (
+              <motion.div 
+                key={index} 
+                className="flex items-start gap-4 group"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.5 + index * 0.1 }}
+                whileHover={{ scale: 1.02, x: 5 }}
+              >
+                <motion.div 
+                  className="text-orange-400 mt-1 text-xl flex-shrink-0"
+                  animate={{ 
+                    scale: [1, 1.3, 1],
+                    rotate: [0, 15, -15, 0]
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, delay: index * 0.5 }}
+                >
+                  🔥
+                </motion.div>
+                <span className="text-orange-200 leading-relaxed group-hover:text-orange-100 transition-colors">
+                  {tip}
+                </span>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* CTA */}
-      <div className="text-center bg-gradient-to-r from-brand-500/20 to-purple-500/20 rounded-lg p-8 border border-brand-500/30">
-        <p className="text-xl text-gray-200 italic">
-          Ready to supercharge your trading with AI? Generate your token above and connect your assistant in under 2 minutes!
-        </p>
-      </div>
+      <motion.div 
+        className="relative group text-center"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.3 }}
+      >
+        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
+        <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-12">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 1.4, type: "spring", bounce: 0.3 }}
+          >
+            <motion.p 
+              className="text-2xl text-slate-200 italic leading-relaxed max-w-4xl mx-auto"
+              animate={{ 
+                backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+              }}
+              style={{
+                backgroundImage: "linear-gradient(90deg, #06b6d4, #8b5cf6, #ec4899, #06b6d4)",
+                backgroundSize: "200% 200%",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text"
+              }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            >
+              Ready to supercharge your trading with AI? Generate your token above and connect your assistant in under 2 minutes!
+            </motion.p>
+            <motion.div
+              className="flex justify-center mt-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.6 }}
+            >
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-4xl"
+              >
+                🚀
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </motion.div>
     </div>
   );
 };

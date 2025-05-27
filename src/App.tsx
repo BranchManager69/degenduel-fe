@@ -109,6 +109,7 @@ const LogForwarderDebugLazy = lazy(() => import('./pages/admin/LogForwarderDebug
 
 // Admin routes lazy loaded
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const AdminWalletDashboard = lazy(() => import('./pages/admin/AdminWalletDashboard'));
 const AiTesting = lazy(() => import('./pages/admin/AiTesting').then(module => ({ default: module.AiTesting })));
 const ClientErrorsPage = lazy(() => import('./pages/admin/ClientErrorsPage'));
 const ConnectionDebugger = lazy(() => import('./pages/admin/ConnectionDebugger').then(module => ({ default: module.ConnectionDebugger })));
@@ -446,6 +447,7 @@ const AppContent: React.FC = () => {
           <Route path="/admin/system-reports" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><SystemReports /></Suspense></AdminRoute>} />
           <Route path="/admin/client-errors" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><ClientErrorsPage /></Suspense></AdminRoute>} />
           <Route path="/admin" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><AdminDashboard /></Suspense></AdminRoute>} />
+          <Route path="/admin/wallet-dashboard" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Admin Wallet Dashboard..." />}><AdminWalletDashboard /></Suspense></AdminRoute>} />
           <Route path="/admin/ip-ban" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><IpBanManagementPage /></Suspense></AdminRoute>} />
           <Route path="/admin/vanity-wallets" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><VanityWalletManagementPage /></Suspense></AdminRoute>} />
           <Route path="/admin/contest-management/regenerate-image/:contestId" element={<AdminRoute><div>Contest Image Generator Page</div></AdminRoute>} />

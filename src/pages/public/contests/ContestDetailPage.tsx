@@ -110,7 +110,17 @@ export const ContestDetails: React.FC = () => {
   }, [isAuthenticated, user?.wallet_address]);
 
   const fetchContest = async () => {
-    if (!id) return;
+    if (!id || id === 'undefined' || id === 'null') {
+      setError('Invalid contest ID');
+      return;
+    }
+    
+    // Validate that ID is a valid number
+    const numericId = parseInt(id, 10);
+    if (isNaN(numericId) || numericId <= 0) {
+      setError('Invalid contest ID format');
+      return;
+    }
 
     try {
       setIsLoading(true);

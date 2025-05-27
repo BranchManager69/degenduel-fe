@@ -20,7 +20,7 @@ import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
 import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
 import { useStore } from "../../store/useStore";
 // import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
-import { ConsolidatedLoginButton } from "../auth";
+import { SimpleWalletButton } from "../auth";
 import MiniLogo from "../logo/MiniLogo";
 import NanoLogo from "../logo/NanoLogo";
 import { MobileMenuButton } from './MobileMenuButton'; // TEMP
@@ -189,9 +189,9 @@ export const Header: React.FC = () => {
                     exit={{ opacity: 0, x: 10 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <ConsolidatedLoginButton 
+                    <SimpleWalletButton 
                       onLoginComplete={() => {
-                        console.log("[Header] Login complete callback triggered from ConsolidatedLoginButton");
+                        console.log("[Header] Login complete callback triggered from SimpleWalletButton");
                       }}
                       isCompact={isCompact}
                     />

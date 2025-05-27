@@ -36,15 +36,8 @@ export const CreateContestPage: React.FC = () => {
 
   useEffect(() => {
     const fetchUserCredits = async () => {
-      if (isAuthenticated && isAdministrator) {
-        // Admins don't need a credit check, assume effectively infinite
-        setAvailableCredits(999); 
-        setCreditsLoading(false);
-        return;
-      }
-      
-      if (isAuthenticated && !isAdministrator) {
-        // For regular users, fetch credit stats
+      if (isAuthenticated) {
+        // Fetch credit stats for authenticated users
         setCreditsLoading(true);
         try {
           const token = await getToken();
@@ -52,22 +45,22 @@ export const CreateContestPage: React.FC = () => {
              throw new Error('Authentication token not available');
           }
 
-          const response = await fetch('/api/contests/credits?stats_only=true', {
+          const response = await fetch('/api/contests/credits/balance', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
           });
 
           if (!response.ok) {
-            console.error(`Failed to fetch credit stats: ${response.status}`);
-            throw new Error('Failed to fetch credit stats');
+            console.error(`Failed to fetch credit balance: ${response.status}`);
+            throw new Error('Failed to fetch credit balance');
           }
 
           const data = await response.json();
           if (data.success && data.data) {
-            setAvailableCredits(data.data.unused || 0);
+            setAvailableCredits(data.data.available_credits || 0);
           } else {
-            console.error("Failed to parse credit stats response:", data);
+            console.error("Failed to parse credit balance response:", data);
             setAvailableCredits(0);
           }
         } catch (error) {
