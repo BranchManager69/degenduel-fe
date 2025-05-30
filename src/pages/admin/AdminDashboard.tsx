@@ -14,6 +14,7 @@ import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
 import { StartContest } from "../../components/ApiPlaygroundParts/StartContest";
 import { UserDetail } from "../../components/ApiPlaygroundParts/UserDetail";
 import { LazyLoad } from "../../components/shared/LazyLoad";
+import { TokenDiscoveryFeed } from "../../components/tokens-list/TokenDiscoveryFeed";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 
@@ -1617,9 +1618,9 @@ export const AdminDashboard: React.FC = () => {
             </LazyLoad>
           </div>
 
-          {/* Admin Logs Panel - 25% width on desktop, full width on mobile */}
+          {/* Admin Logs Panel & Token Discovery - 25% width on desktop, full width on mobile */}
           <div className="lg:col-span-1">
-            <div className="sticky top-6 space-y-6 max-h-screen overflow-hidden">
+            <div className="sticky top-6 space-y-6 max-h-screen overflow-y-auto">
               <LazyLoad
                 placeholder={
                   <div className="animate-pulse">
@@ -1634,6 +1635,28 @@ export const AdminDashboard: React.FC = () => {
                 rootMargin="50px" // Smaller margin as this is typically visible at page load
               >
                 <AdminLogsPanel />
+              </LazyLoad>
+
+              {/* Token Discovery Feed */}
+              <LazyLoad
+                placeholder={
+                  <div className="animate-pulse">
+                    <div className="bg-dark-300/30 h-10 w-full rounded-t-lg"></div>
+                    <div className="bg-dark-200/40 p-4 rounded-b-lg space-y-3">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="bg-dark-300/20 h-12 rounded"></div>
+                      ))}
+                    </div>
+                  </div>
+                }
+                rootMargin="50px"
+              >
+                <TokenDiscoveryFeed 
+                  maxDisplay={10}
+                  showHeader={true}
+                  showChainBadges={true}
+                  className="max-h-96"
+                />
               </LazyLoad>
             </div>
           </div>

@@ -163,7 +163,7 @@ export function useRPCBenchmark() {
 
     setIsLoading(true);
     return ws.request(TopicType.SYSTEM, 'getRpcBenchmarks');
-  }, [ws]);
+  }, [ws.isConnected, ws.request]);
 
   // Trigger a new benchmark run (requires admin authentication)
   const triggerBenchmark = useCallback(() => {
@@ -173,7 +173,7 @@ export function useRPCBenchmark() {
 
     setIsBenchmarkRunning(true);
     return ws.request(TopicType.ADMIN, 'rpc-benchmarks/trigger'); // Use ADMIN topic for triggering
-  }, [ws]);
+  }, [ws.isConnected, ws.isAuthenticated, ws.request]);
 
   // Request initial data when connected
   useEffect(() => {
@@ -198,7 +198,7 @@ export function useRPCBenchmark() {
         }
       }
     };
-  }, [ws.isConnected, ws.isAuthenticated, fetchLatestBenchmarkData]);
+  }, [ws.isConnected, ws.isAuthenticated, ws.subscribe, ws.unsubscribe, fetchLatestBenchmarkData]);
 
   // Reset loading state after a timeout if we're still loading
   useEffect(() => {

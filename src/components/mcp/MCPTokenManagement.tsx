@@ -86,16 +86,16 @@ export const MCPTokenManagement: React.FC = () => {
 
   if (initialLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <motion.h2 
-          className="text-4xl font-black bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-transparent bg-clip-text relative"
+          className="text-2xl sm:text-3xl lg:text-4xl font-black bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-transparent bg-clip-text relative"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           🤖 AI Assistant Access
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-purple-500/20 to-pink-500/20 blur-xl animate-pulse"></div>
         </motion.h2>
-        <div className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-8">
+        <div className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-4 sm:p-6 lg:p-8">
           <motion.div 
             className="flex items-center justify-center space-x-3"
             initial={{ opacity: 0 }}
@@ -106,7 +106,7 @@ export const MCPTokenManagement: React.FC = () => {
               animate={{ rotate: 360 }}
               transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             />
-            <span className="text-slate-300 text-lg">Loading your AI connection...</span>
+            <span className="text-slate-300 text-base sm:text-lg">Loading your AI connection...</span>
           </motion.div>
         </div>
       </div>
@@ -115,12 +115,12 @@ export const MCPTokenManagement: React.FC = () => {
 
   return (
     <motion.div 
-      className="space-y-8"
+      className="space-y-4 sm:space-y-6 lg:space-y-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
       <motion.h2 
-        className="text-4xl font-black bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-transparent bg-clip-text relative"
+        className="text-2xl sm:text-3xl lg:text-4xl font-black bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-transparent bg-clip-text relative"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -129,13 +129,13 @@ export const MCPTokenManagement: React.FC = () => {
       </motion.h2>
 
       <motion.div 
-        className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-8"
+        className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-4 sm:p-6 lg:p-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
         <motion.p 
-          className="text-slate-300 mb-6 text-lg leading-relaxed"
+          className="text-slate-300 mb-4 sm:mb-6 text-base sm:text-lg leading-relaxed"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
@@ -165,14 +165,14 @@ export const MCPTokenManagement: React.FC = () => {
           ) : (
             <motion.div 
               key="generate-token"
-              className="text-center py-12"
+              className="text-center py-6 sm:py-8 lg:py-12"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
             >
               <motion.div
-                className="text-6xl mb-6"
+                className="text-4xl sm:text-5xl lg:text-6xl mb-4 sm:mb-6"
                 animate={{ 
                   scale: [1, 1.1, 1],
                   rotate: [0, 5, -5, 0]
@@ -185,11 +185,11 @@ export const MCPTokenManagement: React.FC = () => {
               >
                 🎯
               </motion.div>
-              <p className="text-slate-400 mb-8 text-lg">Ready to unlock AI-powered trading insights?</p>
+              <p className="text-slate-400 mb-6 sm:mb-8 text-base sm:text-lg">Ready to unlock AI-powered trading insights?</p>
               <motion.button
                 onClick={generateToken}
                 disabled={loading}
-                className="relative px-10 py-4 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 text-white font-bold text-lg rounded-2xl overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative px-6 sm:px-8 lg:px-10 py-3 sm:py-4 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 text-white font-bold text-base sm:text-lg rounded-2xl overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 initial={{ opacity: 0, y: 20 }}
@@ -197,7 +197,7 @@ export const MCPTokenManagement: React.FC = () => {
                 transition={{ delay: 0.3 }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative flex items-center space-x-3">
+                <div className="relative flex items-center space-x-2 sm:space-x-3">
                   {loading ? (
                     <>
                       <motion.div

@@ -15,7 +15,6 @@ import React, { useState } from 'react';
 import { FloatingBelieveButton } from './FloatingBelieveButton';
 import { FloatingDexscreenerButton } from './FloatingDexscreenerButton';
 import { FloatingJupButton } from './FloatingJupButton';
-import { FloatingBirdeyeButton } from './FloatingPumpButton';
 
 interface FloatingButtonStackProps {
   tokenAddress?: string | null;
@@ -52,11 +51,6 @@ const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({
       id: 'believe', 
       component: FloatingBelieveButton, 
       color: 'emerald'
-    },
-    { 
-      id: 'birdeye', 
-      component: FloatingBirdeyeButton, 
-      color: 'orange'
     },
     { 
       id: 'dexscreener', 
@@ -116,8 +110,8 @@ const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({
 
   return (
     <motion.div
-      className="fixed left-6 z-50 flex flex-col-reverse space-y-reverse space-y-4"
-      style={{ bottom: '1.5rem' }}
+      className="fixed left-6 z-50 flex flex-col-reverse space-y-reverse space-y-3 opacity-75"
+      style={{ bottom: '5rem' }}
       variants={containerVariants}
       initial="hidden"
       animate="visible"

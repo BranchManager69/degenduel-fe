@@ -476,7 +476,6 @@ export const ContestBrowser: React.FC = () => {
             TIME: config.RELEASE_DATE.DISPLAY.LAUNCH_TIME
           }
         }}
-        position={{ side: 'right' }}
         size="contracted"
       />
     </div>

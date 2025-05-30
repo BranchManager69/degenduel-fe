@@ -42,10 +42,14 @@
  */
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Loader2, RefreshCw, Settings, TrendingUp, WifiOff } from "lucide-react";
-import React, { ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, Loader2, Settings, TrendingUp, WifiOff } from "lucide-react";
+// RefreshCw removed - uncomment when refresh button is restored
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, ReactElement } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
+import { useHotTokensData } from "../../hooks/data/useHotTokensData";
+import { useLaunchEvent } from "../../hooks/websocket/topic-hooks/useLaunchEvent";
+import { useTokenProfiles } from "../../hooks/websocket/topic-hooks/useTokenProfiles";
 import { getContestImageUrl } from "../../lib/imageUtils";
 import { useStore } from "../../store/useStore";
 import type { Contest, Token } from "../../types";
@@ -55,8 +59,7 @@ interface Props {
   loading: boolean;
   isCompact?: boolean;
   maxTokens?: number;
-  storeError?: string | null;
-  systemError?: string | null;
+  // Note: Error handling managed via WebSocket context, no systemError prop needed
 }
 
 const TICKER_DEBUG_MODE = false;
@@ -64,16 +67,25 @@ const TICKER_DEBUG_MODE = false;
 const HOVER_PAUSE_DELAY_MS = 100; // Small delay before hover-pause engages
 const INTERACTION_RESUME_DELAY_MS = 3000; // 3 seconds
 
+
 export const UnifiedTicker: React.FC<Props> = ({
   contests: initialContests = [],
   loading: contestsLoadingProp = true,
   isCompact = false,
   maxTokens = 20,
-  storeError,
-  systemError,
 }) => {
   const { maintenanceMode } = useStore();
   const navigate = useNavigate();
+  
+  // Get launch event data for DUEL token state
+  const { contractAddress: duelContractAddress, revealTime } = useLaunchEvent();
+  const isRevealed = Boolean(duelContractAddress && revealTime);
+  
+  // Get token profile discoveries for "New on DEX" notifications
+  const { latestProfile, isConnected: isTokenProfilesConnected } = useTokenProfiles();
+  
+  // Error handling is managed through WebSocket context and token data hooks
+  // Real errors are handled via isDataConnected, connection state, and grace periods
   
   // Helper function to format time until contest starts
   const formatTimeUntilStart = (startTime: string): string => {
@@ -143,23 +155,51 @@ export const UnifiedTicker: React.FC<Props> = ({
   };
   
   // ====================================
-  // PROPER UNIFIED WEBSOCKET (FIXED!)
+  // OPTIMIZED HOT TOKENS DATA (NEW!)
+  // ====================================
+  const {
+    tokens: hotTokens,
+    isLoading: hotTokensLoading,
+    refresh: refreshHotTokens,
+    isConnected: isHotTokensConnected,
+    error: hotTokensError
+  } = useHotTokensData(useMemo(() => ({
+    limit: maxTokens,
+    algorithm: 'hot',
+    filters: {
+      minMarketCap: 50000,
+      minVolume: 50000,
+      minLiquidity: 10000,
+      onlyActive: true,
+      dataFreshness: 300
+    }
+  }), [maxTokens]));
+
+  // ====================================
+  // FALLBACK TO OLD SYSTEM IF NEEDED
   // ====================================
   const {
     tokens: standardizedTokens,
     isLoading: tokensAreLoading,
     refresh: refreshTokenData,
     isConnected: isDataConnected,
-    lastUpdate: tokenDataLastUpdate,
   } = useStandardizedTokenData("all");
+
+  // Determine which data source to use
+  const useHotTokensEndpoint = !hotTokensError && isHotTokensConnected;
+  const finalTokens = useHotTokensEndpoint ? hotTokens : standardizedTokens;
+  const finalIsLoading = useHotTokensEndpoint ? hotTokensLoading : tokensAreLoading;
+  const finalRefresh = useHotTokensEndpoint ? refreshHotTokens : refreshTokenData;
+  const finalIsConnected = useHotTokensEndpoint ? isHotTokensConnected : isDataConnected;
+  // finalLastUpdate removed - not needed for current implementation
   
   // ====================================
   // REST OF TICKER LOGIC
   // ====================================
   const [currentContests, setCurrentContests] = useState<Contest[]>(initialContests);
-  const [activeTab, setActiveTab] = useState<"all" | "contests" | "tokens">("tokens");
+  const [activeTab, setActiveTab] = useState<"all" | "contests" | "tokens">("all");
   const [viewportWidth, setViewportWidth] = useState<number>(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  // const [isRefreshing, setIsRefreshing] = useState(false); // Commented out - uncomment when refresh button is restored
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const scrollableContentRef = useRef<HTMLDivElement>(null);
@@ -182,11 +222,20 @@ export const UnifiedTicker: React.FC<Props> = ({
   
   // Dynamic padding based on floating tabs width to prevent content overlap
   const [tabsWidth, setTabsWidth] = useState(160); // Default fallback
+  
+  // "New on DEX" notification state
+  const [newTokenNotification, setNewTokenNotification] = useState<{
+    tokenAddress: string;
+    description?: string;
+    chainId: string;
+    url?: string;
+    showUntil: number; // timestamp when to hide
+  } | null>(null);
 
   const isOverallLoading = useMemo(() => {
-    const overall = contestsLoadingProp || tokensAreLoading;
+    const overall = contestsLoadingProp || finalIsLoading;
     return overall;
-  }, [contestsLoadingProp, tokensAreLoading]);
+  }, [contestsLoadingProp, finalIsLoading]);
 
   useEffect(() => {
     if (TICKER_DEBUG_MODE) {
@@ -196,21 +245,21 @@ export const UnifiedTicker: React.FC<Props> = ({
 
   useEffect(() => {
     if (TICKER_DEBUG_MODE) {
-      console.log(`UnifiedTicker: FIXED tokensAreLoading changed to: ${tokensAreLoading}`);
+      console.log(`UnifiedTicker: Using ${useHotTokensEndpoint ? 'HOT TOKENS' : 'FALLBACK'} endpoint. Loading: ${finalIsLoading}`);
     }
-  }, [tokensAreLoading]);
+  }, [finalIsLoading, useHotTokensEndpoint]);
 
   useEffect(() => {
     setCurrentContests(initialContests);
   }, [initialContests]);
 
   useEffect(() => {
-    if (isDataConnected && refreshTokenData) {
-      refreshTokenData();
-      const intervalId = setInterval(() => { if (refreshTokenData) refreshTokenData(); }, 30000);
+    if (finalIsConnected && finalRefresh) {
+      finalRefresh();
+      const intervalId = setInterval(() => { if (finalRefresh) finalRefresh(); }, 30000);
       return () => clearInterval(intervalId);
     }
-  }, [isDataConnected, refreshTokenData]);
+  }, [finalIsConnected, finalRefresh]);
 
   useEffect(() => {
     const updateWidth = () => {
@@ -291,7 +340,7 @@ export const UnifiedTicker: React.FC<Props> = ({
   useEffect(() => {
     const GRACE_PERIOD_MS = 8000; // 8 seconds buffer, same as Footer
 
-    if (!isDataConnected) {
+    if (!finalIsConnected) {
       // Just disconnected
       if (wsDisconnectTime === null) {
         const now = Date.now();
@@ -305,12 +354,12 @@ export const UnifiedTicker: React.FC<Props> = ({
 
         return () => clearTimeout(timeout);
       }
-    } else if (isDataConnected) {
+    } else if (finalIsConnected) {
       // Reconnected - clear grace period
       setWsDisconnectTime(null);
       setIsInWsGracePeriod(false);
     }
-  }, [isDataConnected, wsDisconnectTime]);
+  }, [finalIsConnected, wsDisconnectTime]);
 
   // Measure floating tabs width for proper content padding
   useEffect(() => {
@@ -337,16 +386,51 @@ export const UnifiedTicker: React.FC<Props> = ({
       clearTimeout(timeoutId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [activeTab, isRefreshing]); // Re-measure when tabs change
+  }, [activeTab]); // Re-measure when tabs change (isRefreshing removed - was for refresh button)
 
+  // Handle "New on DEX" notifications when new tokens are discovered
+  useEffect(() => {
+    if (latestProfile && isTokenProfilesConnected) {
+      const now = Date.now();
+      const NOTIFICATION_DURATION = 12000; // Show for 12 seconds
+      
+      // Only show notification if it's a different token than current notification
+      if (!newTokenNotification || newTokenNotification.tokenAddress !== latestProfile.tokenAddress) {
+        setNewTokenNotification({
+          tokenAddress: latestProfile.tokenAddress,
+          description: latestProfile.description,
+          chainId: latestProfile.chainId,
+          url: latestProfile.url,
+          showUntil: now + NOTIFICATION_DURATION
+        });
+        
+        // Auto-hide after duration
+        const hideTimer = setTimeout(() => {
+          setNewTokenNotification(null);
+        }, NOTIFICATION_DURATION);
+        
+        return () => clearTimeout(hideTimer);
+      }
+    }
+  }, [latestProfile, isTokenProfilesConnected, newTokenNotification]);
+
+  // Clean up expired notifications
+  useEffect(() => {
+    if (newTokenNotification && Date.now() > newTokenNotification.showUntil) {
+      setNewTokenNotification(null);
+    }
+  }, [newTokenNotification]);
+
+  // MANUAL REFRESH FUNCTION COMMENTED OUT - Uncomment when refresh button is restored
+  /*
   const handleManualRefresh = useCallback(async () => {
     if (TICKER_DEBUG_MODE) {
-      console.log("UnifiedTicker: Manual refresh triggered via unified system.");
+      console.log(`UnifiedTicker: Manual refresh triggered via ${useHotTokensEndpoint ? 'HOT TOKENS' : 'FALLBACK'} system.`);
     }
     setIsRefreshing(true);
     try {
-      if (refreshTokenData) {
-        refreshTokenData();
+      if (finalRefresh) {
+        finalRefresh();
       }
     } catch (error) {
       console.error("UnifiedTicker: Error during manual refresh:", error);
@@ -354,98 +438,70 @@ export const UnifiedTicker: React.FC<Props> = ({
       setTimeout(() => {
         setIsRefreshing(false);
         if (TICKER_DEBUG_MODE) {
-          console.log("UnifiedTicker: Manual refresh complete via unified system.");
+          console.log(`UnifiedTicker: Manual refresh complete via ${useHotTokensEndpoint ? 'HOT TOKENS' : 'FALLBACK'} system.`);
         }
         lastTimestampRef.current = 0;
         setMeasurementNonce(prev => prev + 1);
       }, 500);
     }
-  }, [refreshTokenData]);
+  }, [finalRefresh, useHotTokensEndpoint]);
+  */
 
   const significantChanges = useMemo(() => {
-    if (!standardizedTokens) return [];
+    if (!finalTokens) return [];
     
-    if (TICKER_DEBUG_MODE) {
-      console.log(`UnifiedTicker: Processing ${standardizedTokens.length} raw tokens`);
-    }
-    
-    // HARD MINIMUM REQUIREMENTS - IMMEDIATE DISQUALIFIERS
-    const validTokens = (standardizedTokens as Token[]).filter(
-      (token: Token): token is Token => {
-        // Must have a symbol and name (no empty strings)
+    if (useHotTokensEndpoint) {
+      // NEW: Using optimized backend hot tokens - no client-side filtering needed!
+      if (TICKER_DEBUG_MODE) {
+        console.log(`UnifiedTicker: Using OPTIMIZED HOT TOKENS endpoint - ${finalTokens.length} pre-filtered tokens received`);
+        console.log(`UnifiedTicker: Hot tokens already sorted by server-side algorithm`);
+      }
+      return finalTokens as Token[];
+    } else {
+      // FALLBACK: Using old logic for compatibility when new endpoint unavailable
+      if (TICKER_DEBUG_MODE) {
+        console.log(`UnifiedTicker: FALLBACK - Processing ${finalTokens.length} raw tokens with client-side filtering`);
+      }
+
+      // Apply basic filtering for fallback mode
+      const tokensToProcess = (finalTokens as Token[]).slice(0, 200);
+      
+      const validTokens = tokensToProcess.filter((token: Token): token is Token => {
         const hasValidSymbol = Boolean(token.symbol && token.symbol.trim() !== '');
         const hasValidName = Boolean(token.name && token.name.trim() !== '');
-        
-        // Must have defined price and change values (even if 0)
-        const hasValidData = token.change24h !== undefined && 
-                            token.price !== undefined;
-        
-        // HARD MINIMUM: $10,000 minimum liquidity - IMMEDIATE DISQUALIFIER
+        const hasValidData = token.change24h !== undefined && token.price !== undefined;
         const liquidityUSD = Number(token.liquidity?.usd || 0);
         const hasMinLiquidity = liquidityUSD >= 10000;
-        
-        // HARD MINIMUM: $50,000 minimum volume - IMMEDIATE DISQUALIFIER  
         const volume = Number(token.volume24h) || 0;
         const hasMinVolume = volume >= 50000;
-        
-        // HARD MINIMUM: $50,000 minimum market cap - IMMEDIATE DISQUALIFIER
         const marketCap = Number(token.marketCap) || 0;
         const hasMinMarketCap = marketCap >= 50000;
-        
-        // HARD MINIMUM: Must be active (allowed in portfolios/contests) - IMMEDIATE DISQUALIFIER
         const isActiveForPortfolios = token.status === "active";
         
-        // HARD MINIMUM: Price data must be fresh (within 5 minutes) - IMMEDIATE DISQUALIFIER
-        const now = new Date();
-        const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutes ago
-        const hasFreshData = tokenDataLastUpdate ? tokenDataLastUpdate >= fiveMinutesAgo : false;
-        
-        const isValid = hasValidSymbol && hasValidName && hasValidData && 
-                       hasMinLiquidity && hasMinVolume && hasMinMarketCap && 
-                       isActiveForPortfolios && hasFreshData;
-        
-        if (TICKER_DEBUG_MODE && !isValid) {
-          console.log(`UnifiedTicker: DISQUALIFIED token - Symbol: "${token.symbol}", Name: "${token.name}", Liquidity: $${liquidityUSD}, Volume: $${volume}, MarketCap: $${marketCap}, isActive: ${isActiveForPortfolios}, hasFreshData: ${hasFreshData}, lastUpdate: ${tokenDataLastUpdate?.toISOString()}`);
-        }
-        
-        return isValid;
+        return hasValidSymbol && hasValidName && hasValidData && 
+               hasMinLiquidity && hasMinVolume && hasMinMarketCap && isActiveForPortfolios;
+      });
+      
+      // Fallback hot score calculation
+      const getHotScore = (token: Token) => {
+        const change = Number(token.change24h) || 0;
+        const volume = Number(token.volume24h) || 0;
+        const marketCap = Number(token.marketCap) || 0;
+        const absChange = Math.abs(change);
+        return (absChange * 10) + (Math.log10(Math.max(volume, 1)) * 2) + (Math.log10(Math.max(marketCap, 1)) * 0.5);
+      };
+      
+      const hotTokens = validTokens
+        .sort((a: Token, b: Token) => getHotScore(b) - getHotScore(a))
+        .slice(0, maxTokens);
+      
+      if (TICKER_DEBUG_MODE) {
+        console.log(`UnifiedTicker: FALLBACK mode - ${hotTokens.length} tokens after client-side filtering`);
       }
-    );
-    
-    if (TICKER_DEBUG_MODE) {
-      console.log(`UnifiedTicker: ${validTokens.length} valid tokens after filtering`);
+      
+      return hotTokens;
     }
-    
-    // Apply DegenDuel HOT TOKENS algorithm (same as hot tokens component)
-    const getHotScore = (token: Token) => {
-      const change = Number(token.change24h) || 0;
-      const volume = Number(token.volume24h) || 0;
-      const marketCap = Number(token.marketCap) || 0;
-      const absChange = Math.abs(change);
-      // Higher score for tokens with high volatility, decent volume, and reasonable market cap
-      return (absChange * 10) + (Math.log10(Math.max(volume, 1)) * 2) + (Math.log10(Math.max(marketCap, 1)) * 0.5);
-    };
-    
-    const hotTokens = validTokens
-      .sort((a: Token, b: Token) => getHotScore(b) - getHotScore(a))
-      .slice(0, maxTokens);
-    
-    if (TICKER_DEBUG_MODE) {
-      console.log(`UnifiedTicker: Using DegenDuel HOT algorithm - ${hotTokens.length} trending tokens`);
-      if (hotTokens.length > 0) {
-        console.log(`UnifiedTicker: Top trending tokens:`, hotTokens.slice(0, 3).map(t => ({
-          symbol: t.symbol,
-          name: t.name,
-          hotScore: getHotScore(t).toFixed(2),
-          change24h: t.change24h,
-          volume24h: t.volume24h,
-          hasImage: Boolean(t.images?.imageUrl)
-        })));
-      }
-    }
-    
-    return hotTokens;
-  }, [standardizedTokens, maxTokens, tokenDataLastUpdate]);
+  }, [finalTokens, maxTokens, useHotTokensEndpoint]);
   
   const sortedContests = useMemo(() => {
     if (!currentContests) return [];
@@ -460,13 +516,207 @@ export const UnifiedTicker: React.FC<Props> = ({
     );
   }, [currentContests]);
 
+  // Create DUEL announcement separately (only shows once, never cloned)
+  const duelAnnouncementItem = useMemo(() => {
+    
+    if (isRevealed && duelContractAddress) {
+      // Post-reveal: DUEL has landed! Link to contests page
+      
+      return (
+        <motion.div
+          key="duel-live-announcement"
+          className="inline-flex items-center px-3 py-1 mx-2 rounded-xl cursor-pointer transition-all duration-500 whitespace-nowrap duel-announcement-blur"
+          style={{
+            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(168, 85, 247, 0.12), rgba(59, 130, 246, 0.08))',
+            backdropFilter: 'blur(12px) saturate(1.2)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1)'
+          }}
+          onClick={() => navigate('/contests')}
+          whileHover={{ 
+            scale: 1.02,
+            backdropFilter: 'blur(16px) saturate(1.4)',
+            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 4px 12px rgba(34, 197, 94, 0.15)'
+          }}
+          animate={{
+            boxShadow: [
+              'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 8px rgba(34, 197, 94, 0.15)',
+              'inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 2px 6px rgba(0, 0, 0, 0.05), 0 0 12px rgba(168, 85, 247, 0.2)', 
+              'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 4px rgba(0, 0, 0, 0.08), 0 0 10px rgba(59, 130, 246, 0.15)',
+              'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 8px rgba(34, 197, 94, 0.15)'
+            ]
+          }}
+          transition={{ 
+            boxShadow: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+            scale: { duration: 0.3, ease: "easeOut" },
+            backdropFilter: { duration: 0.3 }
+          }}
+        >
+          <motion.div 
+            className="w-2 h-2 bg-green-400 rounded-full mr-1.5"
+            animate={{ scale: [1, 1.3, 1] }}
+            transition={{ duration: 1, repeat: Infinity }}
+          />
+          <span className="text-sm font-bold bg-gradient-to-r from-green-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+            $DUEL
+          </span>
+          <span className="text-sm font-medium text-green-300 ml-0.5">
+            has landed! Live Duels begin June 1.
+          </span>
+          <motion.svg 
+            className="w-4 h-4 ml-1.5 text-green-400" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </motion.svg>
+        </motion.div>
+      );
+    } else {
+      // Pre-reveal: DUEL mints today! Link to Discord
+      return (
+        <motion.div
+          key="duel-countdown-announcement"
+          className="inline-flex items-center px-3 py-1 mx-2 rounded-xl cursor-pointer whitespace-nowrap duel-announcement-blur"
+          onClick={() => window.open('https://discord.gg/dduel', '_blank', 'noopener,noreferrer')}
+          style={{
+            background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(34, 197, 94, 0.06), rgba(59, 130, 246, 0.08))',
+            backdropFilter: 'blur(12px) saturate(1.2)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 3px rgba(0, 0, 0, 0.1)'
+          }}
+          animate={{
+            background: [
+              'linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(34, 197, 94, 0.06), rgba(59, 130, 246, 0.08))',
+              'linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.08), rgba(168, 85, 247, 0.06))',
+              'linear-gradient(135deg, rgba(59, 130, 246, 0.09), rgba(168, 85, 247, 0.07), rgba(34, 197, 94, 0.08))',
+              'linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(34, 197, 94, 0.06), rgba(59, 130, 246, 0.08))'
+            ],
+            boxShadow: [
+              'inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 6px rgba(168, 85, 247, 0.1)',
+              'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05), 0 0 8px rgba(34, 197, 94, 0.12)',
+              'inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 1px 4px rgba(0, 0, 0, 0.08), 0 0 7px rgba(59, 130, 246, 0.11)',
+              'inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 6px rgba(168, 85, 247, 0.1)'
+            ]
+          }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <motion.div 
+            className="w-2 h-2 bg-purple-400 rounded-full mr-1.5"
+            animate={{ 
+              backgroundColor: ['rgb(168 85 247)', 'rgb(34 197 94)', 'rgb(59 130 246)', 'rgb(168 85 247)'],
+              scale: [1, 1.2, 1] 
+            }}
+            transition={{ 
+              backgroundColor: { duration: 3, repeat: Infinity },
+              scale: { duration: 2, repeat: Infinity }
+            }}
+          />
+          <span className="text-sm font-bold bg-gradient-to-r from-purple-400 via-green-400 to-blue-400 bg-clip-text text-transparent">
+            $DUEL
+          </span>
+          <span className="text-sm font-medium text-gray-300 ml-0.5">
+            mints today! Live Duels begin June 1. 🚀
+          </span>
+        </motion.div>
+      );
+    }
+  }, [isRevealed, duelContractAddress]);
+
+  // Create "New on DEX" notification item
+  const newTokenNotificationItem = useMemo(() => {
+    if (!newTokenNotification) return null;
+
+    const truncateAddress = (address: string) => {
+      return `${address.slice(0, 6)}...${address.slice(-4)}`;
+    };
+
+    const chainDisplayName = newTokenNotification.chainId === 'solana' ? 'SOL' : 
+                            newTokenNotification.chainId === 'ethereum' ? 'ETH' : 
+                            newTokenNotification.chainId.toUpperCase();
+
+    const handleNotificationClick = () => {
+      if (newTokenNotification.url) {
+        window.open(newTokenNotification.url, '_blank', 'noopener,noreferrer');
+      }
+    };
+
+    return (
+      <motion.div
+        key={`new-token-notification-${newTokenNotification.tokenAddress}`}
+        className="inline-flex items-center px-3 py-1 mx-2 rounded-xl cursor-pointer transition-all duration-500 whitespace-nowrap"
+        style={{
+          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.06))',
+          backdropFilter: 'blur(12px) saturate(1.3)',
+          border: '1px solid rgba(34, 197, 94, 0.2)',
+          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 8px rgba(34, 197, 94, 0.15)'
+        }}
+        onClick={handleNotificationClick}
+        whileHover={{ 
+          scale: 1.02,
+          backdropFilter: 'blur(16px) saturate(1.5)',
+          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 4px 12px rgba(34, 197, 94, 0.25)'
+        }}
+        animate={{
+          opacity: 1, 
+          x: 0,
+          boxShadow: [
+            'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 8px rgba(34, 197, 94, 0.15)',
+            'inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 3px 10px rgba(34, 197, 94, 0.2)', 
+            'inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 8px rgba(34, 197, 94, 0.15)'
+          ]
+        }}
+        transition={{ 
+          opacity: { duration: 0.5 },
+          x: { duration: 0.5 },
+          boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+          scale: { duration: 0.3, ease: "easeOut" },
+          backdropFilter: { duration: 0.3 }
+        }}
+        initial={{ opacity: 0, x: -20 }}
+        exit={{ opacity: 0, x: 20 }}
+      >
+        <motion.div 
+          className="w-2 h-2 bg-green-400 rounded-full mr-1.5"
+          animate={{ 
+            scale: [1, 1.4, 1],
+            backgroundColor: ['rgb(34 197 94)', 'rgb(16 185 129)', 'rgb(34 197 94)']
+          }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        />
+        <span className="text-sm font-bold text-green-400 mr-1">
+          New on DEX:
+        </span>
+        <span className="text-sm font-medium text-green-300 mr-1.5">
+          {truncateAddress(newTokenNotification.tokenAddress)}
+        </span>
+        <span className="text-xs text-green-200/80 bg-green-500/20 px-1.5 py-0.5 rounded mr-1.5">
+          {chainDisplayName}
+        </span>
+        {newTokenNotification.description && (
+          <span className="text-sm text-green-200/90 max-w-[200px] truncate mr-1.5">
+            {newTokenNotification.description}
+          </span>
+        )}
+        <motion.svg 
+          className="w-4 h-4 text-green-400" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+          animate={{ rotate: [0, 5, -5, 0] }}
+          transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </motion.svg>
+      </motion.div>
+    );
+  }, [newTokenNotification]);
+
+  // Main ticker items computation
   const originalTickerItems = useMemo(() => {
-    let items: ReactElement[] = [];
-    const showError = !!storeError;
-    const showSystemError = !!systemError;
-
-    if (showError || showSystemError) return [];
-
     const contestItems =
       activeTab === "all" || activeTab === "contests"
         ? sortedContests.map((contest, index) => {
@@ -553,26 +803,33 @@ export const UnifiedTicker: React.FC<Props> = ({
           })
         : [];
     
+    let items: ReactElement[] = [];
+    
     if (activeTab === "all") {
-        // Intersperse contests and tokens for better variety
+        // Intersperse contests and tokens for better variety, with DUEL announcement and new token notification at the start
         const maxLength = Math.max(contestItems.length, tokenItems.length);
-        items = [];
+        items = [duelAnnouncementItem];
+        if (newTokenNotificationItem) items.push(newTokenNotificationItem);
         for (let i = 0; i < maxLength; i++) {
           if (i < contestItems.length) items.push(contestItems[i]);
           if (i < tokenItems.length) items.push(tokenItems[i]);
         }
     } else if (activeTab === "contests") {
-        items = contestItems;
+        items = [duelAnnouncementItem];
+        if (newTokenNotificationItem) items.push(newTokenNotificationItem);
+        items.push(...contestItems);
     } else {
-        items = tokenItems;
+        items = [duelAnnouncementItem];
+        if (newTokenNotificationItem) items.push(newTokenNotificationItem);
+        items.push(...tokenItems);
     }
     
-    if (items.length === 0 && !isOverallLoading && !showError && !showSystemError) {
-        const message = (!isDataConnected && !isInWsGracePeriod) ? "WEBSOCKET OFFLINE" : 
-                        activeTab === "contests" ? "NO ACTIVE DUELS" :
-                        activeTab === "tokens" ? "NO SIGNIFICANT TOKEN MOVEMENT" :
-                        "NO DATA AVAILABLE";
-        const icon = (!isDataConnected && !isInWsGracePeriod) ? <WifiOff className="w-3 h-3 mr-1.5 text-orange-400" /> : 
+    if (items.length === 0 && !isOverallLoading) {
+        const message = (!finalIsConnected && !isInWsGracePeriod) ? "NOT CONNECTED" : 
+                        activeTab === "contests" ? "NO HOT DUELS" :
+                        activeTab === "tokens" ? "TRENCHES QUIET" :
+                        "TRENCHES ASLEEP";
+        const icon = (!finalIsConnected && !isInWsGracePeriod) ? <WifiOff className="w-3 h-3 mr-1.5 text-orange-400" /> : 
                      <AlertTriangle className="w-3 h-3 mr-1.5 text-yellow-400" />;
         items.push(
             <div key="no-data-ticker" className="flex items-center justify-center px-4 py-2 h-full w-full text-center"> {/* This key is fine */}
@@ -582,7 +839,7 @@ export const UnifiedTicker: React.FC<Props> = ({
         );
     }
     return items;
-  }, [activeTab, sortedContests, significantChanges, storeError, systemError, isOverallLoading, isDataConnected, isInWsGracePeriod]);
+  }, [activeTab, sortedContests, significantChanges, isOverallLoading, finalIsConnected, isInWsGracePeriod, isRevealed, duelContractAddress, newTokenNotificationItem]);
 
   // Auto-start animation when content is ready and overflows (after originalTickerItems is defined)
   useEffect(() => {
@@ -696,7 +953,7 @@ export const UnifiedTicker: React.FC<Props> = ({
         const baseKey = "clone"; 
         if (actualContentWidthRef.current < viewportWidth * 1.5) { 
             while (currentRenderWidth < viewportWidth * 2.5 && numClones < 10) {
-                itemsToRender.push(originalTickerItems.map((item, index) => {
+                itemsToRender.push(originalTickerItems.map((item: ReactElement, index: number) => {
                     const originalKey = item.key || `orig-idx-${index}`; 
                     return React.cloneElement(item, { key: `${baseKey}-${numClones}-${originalKey}` });
                 }));
@@ -704,7 +961,7 @@ export const UnifiedTicker: React.FC<Props> = ({
                 numClones++;
             }
         } else { 
-            itemsToRender.push(originalTickerItems.map((item, index) => {
+            itemsToRender.push(originalTickerItems.map((item: ReactElement, index: number) => {
               const originalKey = item.key || `orig-idx-${index}`; 
               return React.cloneElement(item, { key: `${baseKey}-0-${originalKey}` });
             }));
@@ -795,30 +1052,14 @@ export const UnifiedTicker: React.FC<Props> = ({
       console.log(`UnifiedTicker: renderTickerContentArea CALLED. isOverallLoading: ${isOverallLoading}, ContestsLoading: ${contestsLoadingProp}, TokensLoading: ${tokensAreLoading}, scrollableContentRef.current exists: ${!!scrollableContentRef.current}, originalTickerItems.length: ${originalTickerItems.length}`);
     }
 
-    const showError = !!storeError;
-    const showSystemError = !!systemError;
+    const showSystemError = false; // No system error prop, errors handled via WebSocket context
     const isLoadingNoData = isOverallLoading && originalTickerItems.length === 0;
-
-    if (showError) {
-      // Clean up error message for production
-      const isProduction = import.meta.env.PROD || window.location.hostname === 'degenduel.me';
-      const displayError = isProduction 
-        ? 'DegenDuel servers are down.' 
-        : storeError;
-      
-      return (
-        <div className="flex items-center justify-center px-4 py-2 h-full w-full bg-red-500/10 text-red-300" ref={viewportRef}>
-          <AlertTriangle className="w-4 h-4 mr-2 text-red-400" />
-          <span className="text-xs font-medium">{displayError}</span>
-        </div>
-      );
-    }
     if (showSystemError) {
       // Clean up system error message for production
       const isProduction = import.meta.env.PROD || window.location.hostname === 'degenduel.me';
       const displayError = isProduction 
         ? 'System maintenance in progress' 
-        : systemError;
+        : null; // No system error display needed
         
       return (
         <div className="flex items-center justify-center px-4 py-2 h-full w-full bg-orange-500/10 text-orange-300" ref={viewportRef}>
@@ -871,16 +1112,16 @@ export const UnifiedTicker: React.FC<Props> = ({
           style={{ willChange: "transform", transform: `translateX(${translateXRef.current}px)` }}
         >
           {(() => {
-            clonedItems.forEach((item, index) => {
+            clonedItems.forEach((item: ReactElement, index: number) => {
               if (item === null || item === undefined) {
-                console.error(`UnifiedTicker: Found null or undefined item in clonedItems at index ${index}!`, "Full clonedItems snapshot:", clonedItems.map(ci => ci === null ? 'null' : ci === undefined ? 'undefined' : ci?.key));
+                console.error(`UnifiedTicker: Found null or undefined item in clonedItems at index ${index}!`, "Full clonedItems snapshot:", clonedItems.map((ci: ReactElement) => ci === null ? 'null' : ci === undefined ? 'undefined' : ci?.key));
               } else if (typeof item !== 'object' || !React.isValidElement(item)) {
-                console.error(`UnifiedTicker: Found non-element in clonedItems at index ${index}! Item:`, item, "Full clonedItems snapshot:", clonedItems.map(ci => ci === null ? 'null' : ci === undefined ? 'undefined' : ci?.key));
+                console.error(`UnifiedTicker: Found non-element in clonedItems at index ${index}! Item:`, item, "Full clonedItems snapshot:", clonedItems.map((ci: ReactElement) => ci === null ? 'null' : ci === undefined ? 'undefined' : ci?.key));
               } else if (item.key === "" || item.key === null || item.key === undefined) {
-                console.error(`UnifiedTicker: Rendering item with problematic key! Index: ${index}, Key: '${item.key}', Item Type: ${item.type?.toString()}`, "Full clonedItems snapshot:", clonedItems.map(ci => ci === null ? 'null' : ci === undefined ? 'undefined' : ci?.key));
+                console.error(`UnifiedTicker: Rendering item with problematic key! Index: ${index}, Key: '${item.key}', Item Type: ${item.type?.toString()}`, "Full clonedItems snapshot:", clonedItems.map((ci: ReactElement) => ci === null ? 'null' : ci === undefined ? 'undefined' : ci?.key));
               }
             });
-            return clonedItems.map((item) => item);
+            return clonedItems.map((item: ReactElement) => item);
           })()}
         </div>
       </div>
@@ -962,6 +1203,7 @@ export const UnifiedTicker: React.FC<Props> = ({
         >
           PRICES
         </motion.button>
+        {/* REFRESH BUTTON HIDDEN - Remove comments to restore functionality
         <button 
           key="tab-refresh"
           onClick={handleManualRefresh}
@@ -972,11 +1214,12 @@ export const UnifiedTicker: React.FC<Props> = ({
           <span className={`${(isRefreshing || (isOverallLoading && originalTickerItems.length === 0)) ? 'hidden' : 'inline-block'}`}><RefreshCw size={10}/></span>
           <span className={`${(isRefreshing || (isOverallLoading && originalTickerItems.length === 0)) ? 'inline-block animate-spin' : 'hidden'}`}><Loader2 size={10}/></span>
         </button>
+        */}
       </AnimatePresence>
     </div>
   );
 
-  const currentHeightClass = storeError || systemError ? isCompact ? "h-10" : "h-12" : isCompact ? "h-10 sm:h-10" : "h-12 sm:h-12";
+  const currentHeightClass = isCompact ? "h-10 sm:h-10" : "h-12 sm:h-12";
 
   if (maintenanceMode) {
     return (
@@ -1029,14 +1272,14 @@ export const UnifiedTicker: React.FC<Props> = ({
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(153,0,255,0.03),transparent_20%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(0,225,255,0.03),transparent_20%)]" />
       </div>
-      <motion.div  className="absolute inset-x-0 top-0 pointer-events-none" animate={{ boxShadow: storeError ? "0 1px 6px rgba(239, 68, 68, 0.4)" : systemError ? "0 1px 6px rgba(249, 115, 22, 0.4)" : activeTab === "tokens" ? "0 1px 6px rgba(0, 225, 255, 0.3)" :  activeTab === "contests" ? "0 1px 6px rgba(153, 51, 255, 0.3)" :"0 1px 6px rgba(100, 100, 150, 0.2)" }} >
-        <motion.div className="h-[1px] bg-gradient-to-r from-transparent to-transparent" animate={{ backgroundImage: storeError ? "linear-gradient(to right, transparent, rgba(239, 68, 68, 0.5), transparent)" : systemError ? "linear-gradient(to right, transparent, rgba(249, 115, 22, 0.5), transparent)" : activeTab === "tokens" ? "linear-gradient(to right, transparent, rgba(0, 225, 255, 0.5), transparent)" :  activeTab === "contests" ? "linear-gradient(to right, transparent, rgba(153, 51, 255, 0.5), transparent)" : "linear-gradient(to right, transparent, rgba(100,100,150,0.3), rgba(100,100,150,0.3), transparent)"}} />
+      <motion.div  className="absolute inset-x-0 top-0 pointer-events-none" animate={{ boxShadow: activeTab === "tokens" ? "0 1px 6px rgba(0, 225, 255, 0.3)" :  activeTab === "contests" ? "0 1px 6px rgba(153, 51, 255, 0.3)" :"0 1px 6px rgba(100, 100, 150, 0.2)" }} >
+        <motion.div className="h-[1px] bg-gradient-to-r from-transparent to-transparent" animate={{ backgroundImage: activeTab === "tokens" ? "linear-gradient(to right, transparent, rgba(0, 225, 255, 0.5), transparent)" :  activeTab === "contests" ? "linear-gradient(to right, transparent, rgba(153, 51, 255, 0.5), transparent)" : "linear-gradient(to right, transparent, rgba(100,100,150,0.3), rgba(100,100,150,0.3), transparent)"}} />
       </motion.div>
-      <motion.div className="absolute inset-x-0 bottom-0 pointer-events-none" animate={{ boxShadow: storeError ? "0 -1px 6px rgba(239, 68, 68, 0.4)" : systemError ? "0 -1px 6px rgba(249, 115, 22, 0.4)" : activeTab === "tokens" ? "0 -1px 6px rgba(0, 225, 255, 0.3)" : activeTab === "contests" ? "0 -1px 6px rgba(153, 51, 255, 0.3)" : "0 -1px 6px rgba(100, 100, 150, 0.2)" }} >
-        <motion.div className="h-[1px] bg-gradient-to-r from-transparent to-transparent" animate={{ backgroundImage: storeError ? "linear-gradient(to right, transparent, rgba(239, 68, 68, 0.5), transparent)" : systemError ? "linear-gradient(to right, transparent, rgba(249, 115, 22, 0.5), transparent)" : activeTab === "tokens" ? "linear-gradient(to right, transparent, rgba(0, 225, 255, 0.5), transparent)" :  activeTab === "contests" ? "linear-gradient(to right, transparent, rgba(153, 51, 255, 0.5), transparent)" : "linear-gradient(to right, transparent, rgba(100,100,150,0.3), rgba(100,100,150,0.3), transparent)"}} />
+      <motion.div className="absolute inset-x-0 bottom-0 pointer-events-none" animate={{ boxShadow: activeTab === "tokens" ? "0 -1px 6px rgba(0, 225, 255, 0.3)" : activeTab === "contests" ? "0 -1px 6px rgba(153, 51, 255, 0.3)" : "0 -1px 6px rgba(100, 100, 150, 0.2)" }} >
+        <motion.div className="h-[1px] bg-gradient-to-r from-transparent to-transparent" animate={{ backgroundImage: activeTab === "tokens" ? "linear-gradient(to right, transparent, rgba(0, 225, 255, 0.5), transparent)" :  activeTab === "contests" ? "linear-gradient(to right, transparent, rgba(153, 51, 255, 0.5), transparent)" : "linear-gradient(to right, transparent, rgba(100,100,150,0.3), rgba(100,100,150,0.3), transparent)"}} />
       </motion.div>
       
-      {(!storeError && !systemError && (originalTickerItems.length > 0 || isOverallLoading)) && floatingTabs}
+      {(originalTickerItems.length > 0 || isOverallLoading) && floatingTabs}
       
       {renderTickerContentArea()}
 
@@ -1096,13 +1339,40 @@ export const UnifiedTicker: React.FC<Props> = ({
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
+        
+        .duel-announcement-blur {
+          position: relative;
+          overflow: visible;
+        }
+        
+        .duel-announcement-blur::before {
+          content: '';
+          position: absolute;
+          inset: -2px;
+          border-radius: inherit;
+          background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+          filter: blur(1px);
+          z-index: -1;
+          opacity: 0.6;
+        }
+        
+        .duel-announcement-blur::after {
+          content: '';
+          position: absolute;
+          inset: -1px;
+          border-radius: inherit;
+          background: inherit;
+          filter: blur(2px);
+          z-index: -2;
+          opacity: 0.3;
+        }
         `
       }} />
       
       <div className="debug-info hidden absolute bottom-full left-0 mb-1 p-2 bg-dark-800 text-xs text-white z-50 opacity-80 rounded">
         <div>Size: {viewportWidth}px</div>
         <div>Contests: {sortedContests.length}, Tokens: {significantChanges.length}</div>
-        <div>WebSocket: {isDataConnected ? 'Connected' : 'Disconnected'}</div>
+        <div>WebSocket: {finalIsConnected ? 'Connected' : 'Disconnected'} ({useHotTokensEndpoint ? 'HOT' : 'FALLBACK'})</div>
         <div>Grace Period: {isInWsGracePeriod ? 'Active' : 'Inactive'}</div>
       </div>
     </div>

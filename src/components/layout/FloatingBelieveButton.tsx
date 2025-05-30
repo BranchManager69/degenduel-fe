@@ -62,7 +62,7 @@ export const FloatingBelieveButton: React.FC<FloatingBelieveButtonProps> = ({
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
       <motion.div
-        className="w-14 h-14 md:w-16 md:h-16 backdrop-blur-md border rounded-full overflow-hidden relative shadow-lg transition-all duration-300"
+        className="w-10 h-10 md:w-12 md:h-12 backdrop-blur-md border rounded-full overflow-hidden relative shadow-lg transition-all duration-300"
         style={{ 
           backgroundColor: '#00D044',
           borderColor: 'rgba(0, 208, 68, 0.5)' 

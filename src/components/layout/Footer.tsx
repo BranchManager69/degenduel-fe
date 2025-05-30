@@ -7,7 +7,6 @@ import { ConnectionState, useWebSocket } from "../../contexts/UnifiedWebSocketCo
 import { useScrollFooter } from "../../hooks/ui/useScrollFooter";
 import { DDExtendedMessageType, DDExtendedMessageType as MessageType } from '../../hooks/websocket/types';
 import { useStore } from "../../store/useStore";
-import RPCBenchmarkFooter from "../admin/RPCBenchmarkFooter";
 
 export const Footer: React.FC = () => {
   const unifiedWs = useWebSocket();
@@ -30,6 +29,7 @@ export const Footer: React.FC = () => {
   // Grace period state for connection issues
   const [disconnectTime, setDisconnectTime] = useState<number | null>(null);
   const [isInGracePeriod, setIsInGracePeriod] = useState(false);
+  const [isInServerUpdatePeriod, setIsInServerUpdatePeriod] = useState(false);
 
   // Handle passcode entry
   const handlePasscodeInput = (digit: string) => {
@@ -47,9 +47,10 @@ export const Footer: React.FC = () => {
 
   const clearPasscode = () => setPasscodeInput('');
 
-  // Handle grace period for disconnections
+  // Handle two-tier grace period for disconnections
   useEffect(() => {
-    const GRACE_PERIOD_MS = 8000; // 8 seconds buffer
+    const GRACE_PERIOD_MS = 8000; // 8 seconds - brief user issues
+    const SERVER_UPDATE_PERIOD_MS = 60000; // 60 seconds - server restarts
 
     if (!unifiedWs.isConnected && unifiedWs.connectionState === ConnectionState.DISCONNECTED) {
       // Just disconnected
@@ -57,18 +58,29 @@ export const Footer: React.FC = () => {
         const now = Date.now();
         setDisconnectTime(now);
         setIsInGracePeriod(true);
+        setIsInServerUpdatePeriod(false);
 
-        // Set timeout to end grace period
-        const timeout = setTimeout(() => {
+        // First timeout: end grace period, start server update period
+        const graceTimeout = setTimeout(() => {
           setIsInGracePeriod(false);
+          setIsInServerUpdatePeriod(true);
         }, GRACE_PERIOD_MS);
 
-        return () => clearTimeout(timeout);
+        // Second timeout: end server update period
+        const serverUpdateTimeout = setTimeout(() => {
+          setIsInServerUpdatePeriod(false);
+        }, SERVER_UPDATE_PERIOD_MS);
+
+        return () => {
+          clearTimeout(graceTimeout);
+          clearTimeout(serverUpdateTimeout);
+        };
       }
     } else if (unifiedWs.isConnected) {
-      // Reconnected - clear grace period
+      // Reconnected - clear all grace periods
       setDisconnectTime(null);
       setIsInGracePeriod(false);
+      setIsInServerUpdatePeriod(false);
     }
   }, [unifiedWs.isConnected, unifiedWs.connectionState, disconnectTime]);
 
@@ -107,7 +119,7 @@ export const Footer: React.FC = () => {
 
   // Get styles based on server status and unified WebSocket connection
   const getStatusStyles = () => {
-    let status: 'online' | 'gigaonline' | 'maintenance' | 'offline' | 'error' = 'online';
+    let status: 'online' | 'gigaonline' | 'maintenance' | 'offline' | 'error' | 'serverupdating' = 'online';
     let message = 'Server is operating normally';
     
     // Base styles depending on server status
@@ -152,6 +164,14 @@ export const Footer: React.FC = () => {
         animate: "",
         dotSize: "w-4 h-4 sm:w-5 sm:h-5",
       },
+      serverupdating: {
+        bgColor: "bg-cyan-500/10",
+        dotColor: "bg-cyan-500",
+        shadow: "shadow-[0_0_10px_rgba(6,182,212,0.5)]",
+        textColor: "text-cyan-400",
+        animate: "animate-pulse",
+        dotSize: "w-4 h-4 sm:w-5 sm:h-5",
+      },
       unknown: {
         bgColor: "bg-gray-500/10",
         dotColor: "bg-gray-500",
@@ -171,10 +191,13 @@ export const Footer: React.FC = () => {
       status = 'offline';
       message = unifiedWs.connectionError || 'Server unavailable. Connection closed.';
     } else if (unifiedWs.connectionState === ConnectionState.DISCONNECTED) {
-      // Apply grace period for disconnections
+      // Apply two-tier grace period for disconnections
       if (isInGracePeriod) {
-        status = 'error'; // Show as "CONNECTING" during grace period
+        status = 'error'; // Show as "CONNECTING" during first 8 seconds
         message = 'Connecting...';
+      } else if (isInServerUpdatePeriod) {
+        status = 'serverupdating'; // Show as "SERVER UPDATING" during 8-60 seconds
+        message = 'Server updating, please wait...';
       } else {
         status = 'offline';
         message = unifiedWs.connectionError || 'Disconnected. Check your internet connection.';
@@ -201,10 +224,13 @@ export const Footer: React.FC = () => {
       status = 'online'; // GREEN for just connected (your requested change)
       message = 'Connected to data service';
     } else {
-      // Apply grace period for general disconnection
+      // Apply two-tier grace period for general disconnection
       if (isInGracePeriod) {
         status = 'error';
         message = 'Connecting...';
+      } else if (isInServerUpdatePeriod) {
+        status = 'serverupdating';
+        message = 'Server updating, please wait...';
       } else {
         status = 'offline';
         message = 'Not connected';
@@ -222,6 +248,10 @@ export const Footer: React.FC = () => {
     // Handle gigaonline status text
     if (status === 'gigaonline') {
       displayText = 'ONLINE';
+    }
+    // Handle server updating status text
+    if (status === 'serverupdating') {
+      displayText = 'SERVER UPDATING';
     }
 
     return {
@@ -353,6 +383,23 @@ export const Footer: React.FC = () => {
           </div>
         )}
         
+        {/* Server updating state background */}
+        {styles.statusText === 'SERVER UPDATING' && (
+          <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
+            {/* Soft cyan gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-l from-cyan-500/15 via-cyan-500/5 to-transparent" />
+            
+            {/* Pulsing effect for server updating state */}
+            <div 
+              className="absolute right-0 top-0 bottom-0 w-32 animate-pulse"
+              style={{
+                background: 'radial-gradient(circle at right, rgba(6,182,212,0.3) 0%, transparent 70%)',
+                animationDuration: '1.5s'
+              }}
+            />
+          </div>
+        )}
+        
         {/* Online state background */}
         {styles.statusText === 'ONLINE' && (
           <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
@@ -468,12 +515,20 @@ export const Footer: React.FC = () => {
                       <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                     </svg>
                   </a>
+
+                  {/* Branch attribution */}
+                  <a 
+                    href="https://branch.bet" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[200ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"
+                    title="by Branch"
+                  >
+                    {/* Branch emoji */}
+                    <span className="text-lg sm:text-xl text-gray-500 hover:text-brand-400 transition-colors">🌿</span>
+                  </a>
                 </div>
                 
-                {/* RPC/Database Metrics (visible to all users) */}
-                <div className="ml-2 pl-2 border-l border-gray-700 overflow-hidden">
-                  <RPCBenchmarkFooter compactMode={isCompact} />
-                </div>
               </div>
             </div>
 
@@ -537,7 +592,8 @@ export const Footer: React.FC = () => {
                         styles.statusText === 'ONLINE' ? 'rgba(147,51,234,0.2)' :
                         styles.statusText === 'MAINTENANCE' ? 'rgba(234,179,8,0.2)' :
                         styles.statusText === 'ERROR' ? 'rgba(249,115,22,0.2)' :
-                        styles.statusText === 'OFFLINE' ? 'rgba(239,68,68,0.2)' : // Explicitly handle offline
+                        styles.statusText === 'OFFLINE' ? 'rgba(239,68,68,0.2)' :
+                        styles.statusText === 'SERVER UPDATING' ? 'rgba(6,182,212,0.2)' : // Cyan for server updating
                         'rgba(128,128,128,0.2)' // Fallback for unknown, though derived status should cover known states
                       }, 0 8px 10px -6px rgba(0,0,0,0.3)`
                     }}
@@ -640,6 +696,7 @@ export const Footer: React.FC = () => {
                           styles.statusText === 'MAINTENANCE' ? 'text-yellow-400' : 
                           styles.statusText === 'ERROR' ? 'text-orange-400' : // Consistent error color
                           styles.statusText === 'OFFLINE' ? 'text-red-400' : // Consistent offline color
+                          styles.statusText === 'SERVER UPDATING' ? 'text-cyan-400' : // Cyan for server updating
                           'text-gray-400' // Fallback
                         }>
                           {styles.statusText}
@@ -908,18 +965,6 @@ Last Check: ${new Date().toLocaleTimeString()}
 
             </div>
 
-            {/* Center Content */}
-            <div className="flex justify-center items-center absolute left-1/2 transform -translate-x-1/2">
-              {/* Branch attribution for all users */}
-              <a 
-                href="https://branch.bet" 
-                className="hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out opacity-70 hover:opacity-100 p-2 -m-2 rounded-md hover:bg-gray-800/20 shadow-sm hover:shadow-md"
-                title="by Branch"
-              >
-                {/* Branch emoji */}
-                <span className="text-lg sm:text-xl text-gray-500 hover:text-brand-400 transition-colors">🌿</span>
-              </a>
-            </div>
 
           </div>
         </div>

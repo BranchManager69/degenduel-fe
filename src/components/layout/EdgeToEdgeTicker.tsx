@@ -26,7 +26,6 @@ interface EdgeToEdgeTickerProps {
   loading?: boolean;
   isCompact?: boolean;
   maxTokens?: number;
-  storeError?: string | null;
 }
 
 /**
@@ -41,7 +40,6 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = (props) => {
     loading: initialLoading = true,
     isCompact: compactOverrideProp,
     maxTokens = 15,
-    storeError,
   } = props;
 
   // Use header scroll state to sync with header compact mode by default
@@ -175,13 +173,12 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = (props) => {
           finalIsCompact ? 'h-10' : 'h-12 sm:h-12' // Adjusted non-compact height
         }`}
       >
-        {/* Core UnifiedTicker component */}
+        {/* Core UnifiedTicker component - passes through all DUEL announcement logic */}
         <UnifiedTicker 
           contests={joinableContests}
           loading={loading}
           isCompact={finalIsCompact}
           maxTokens={maxTokens}
-          storeError={storeError}
         />
       </div>
 

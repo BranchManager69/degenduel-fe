@@ -43,7 +43,7 @@ export { TerminalInput } from './components/TerminalInput';
 export { ContractDisplay } from './components/ContractDisplay';
 
 // Commands
-export { commandMap } from './commands';
+// REMOVED: export { commandMap } from './commands';
 
 // Configuration
 export interface Config {

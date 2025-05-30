@@ -22,7 +22,6 @@ import { SimpleWalletButton } from "../auth";
 import { getMenuItems } from './menu/menuConfig';
 import { NotificationsDropdown } from './menu/NotificationsDropdown';
 import {
-  BiometricAuthComponent,
   MenuBackdrop,
   MenuDivider,
   SectionHeader,
@@ -382,7 +381,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                         key={item.id}
                         to={item.to} 
                         icon={item.icon} 
-                        badge={item.badge}
+                        badge={(item as any).badge}
                         onClick={() => setIsOpen(false)}
                         variants={itemVariants}
                       >
@@ -391,14 +390,14 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                     ))}
                     
                     
-                    {/* Add Biometric Authentication Option */}
-                    <MenuDivider />
+                    {/* COMMENTED OUT: Biometric Authentication Option */}
+                    {/* <MenuDivider />
                     <BiometricAuthComponent 
                       userId={user.wallet_address} 
                       onClose={() => setIsOpen(false)} 
                       menuItemClass="flex items-center gap-2 px-4 py-2 text-sm text-blue-300 hover:bg-blue-500/20 hover:backdrop-blur-md hover:text-blue-200 rounded-lg transition-all duration-300"
                     />
-                    <MenuDivider />
+                    <MenuDivider /> */}
                   </>
                 ) : (
                   <>
@@ -455,7 +454,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                   <Link
                     to="/mcp"
                     className="relative group overflow-hidden transition-all duration-300 ease-out
-                      flex items-center gap-3 mx-3 px-3 py-2.5 text-sm rounded-md
+                      flex items-center justify-between mx-3 px-3 py-2.5 text-sm rounded-md
                       bg-gradient-to-r from-purple-600/20 via-pink-500/20 to-purple-600/20
                       border border-purple-500/30 hover:border-purple-400/50
                       text-purple-200 hover:text-white
@@ -471,25 +470,45 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                       <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
                     </div>
                     
-                    <svg
-                      className="relative w-4 h-4 transition-all duration-300 text-purple-200 group-hover:text-purple-100 group-hover:scale-110"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                    </svg>
-                    <span className="relative flex-1 font-semibold tracking-wide group-hover:text-shadow-sm">MCP</span>
+                    <span className="relative font-semibold tracking-wide group-hover:text-shadow-sm whitespace-nowrap">Connect to Degen MCP</span>
                     
                     {/* Subtle pulse indicator */}
                     <div className="relative w-2 h-2 rounded-full bg-purple-400 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="absolute inset-0 rounded-full bg-purple-300 animate-ping opacity-40 group-hover:opacity-60" />
                     </div>
                   </Link>
+                </motion.div>
+
+                {/* Twitter/X Section - Special Styling for Mobile */}
+                <motion.div variants={itemVariants}>
+                  <a
+                    href="https://degenduel.me/api/auth/twitter/login"
+                    className="relative group overflow-hidden transition-all duration-300 ease-out
+                      flex items-center justify-between mx-3 px-3 py-2.5 text-sm rounded-md
+                      bg-gradient-to-r from-blue-600/20 via-cyan-500/20 to-blue-600/20
+                      border border-blue-500/30 hover:border-blue-400/50
+                      text-blue-200 hover:text-white
+                      hover:shadow-[0_0_12px_rgba(59,130,246,0.4)]"
+                    onClick={() => setIsOpen(false)}
+                    role="menuitem"
+                  >
+                    {/* Background shine effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                    
+                    {/* Scan line effect */}
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
+                    </div>
+                    
+                    <span className="relative font-semibold tracking-wide group-hover:text-shadow-sm whitespace-nowrap">Connect with X</span>
+                    
+                    {/* X icon */}
+                    <div className="relative w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      </svg>
+                    </div>
+                  </a>
                 </motion.div>
 
                 {/* Disconnect button (if logged in) */}

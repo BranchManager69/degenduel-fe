@@ -54,16 +54,16 @@ export const DegenDuelMCPPortal: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
+        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12"
       >
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-16"
+          className="text-center mb-8 sm:mb-12 lg:mb-16"
         >
           <motion.h1 
-            className="text-6xl md:text-7xl lg:text-8xl font-black mb-6 relative"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 sm:mb-6 relative"
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", bounce: 0.4, duration: 1 }}
@@ -75,7 +75,7 @@ export const DegenDuelMCPPortal: React.FC = () => {
           </motion.h1>
           
           <motion.p 
-            className="text-xl md:text-2xl text-slate-300 max-w-4xl mx-auto mb-8 leading-relaxed"
+            className="text-lg sm:text-xl md:text-2xl text-slate-300 max-w-4xl mx-auto mb-6 sm:mb-8 leading-relaxed"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
@@ -88,7 +88,7 @@ export const DegenDuelMCPPortal: React.FC = () => {
 
           {/* Feature Pills */}
           <motion.div 
-            className="flex flex-wrap justify-center gap-4 mb-12"
+            className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-8 sm:mb-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
@@ -101,7 +101,7 @@ export const DegenDuelMCPPortal: React.FC = () => {
             ].map((pill, index) => (
               <motion.div
                 key={index}
-                className={`px-6 py-3 rounded-full bg-gradient-to-r ${
+                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-gradient-to-r ${
                   pill.color === 'cyan' ? 'from-cyan-500/20 to-cyan-600/10 border-cyan-400/30' :
                   pill.color === 'purple' ? 'from-purple-500/20 to-purple-600/10 border-purple-400/30' :
                   pill.color === 'pink' ? 'from-pink-500/20 to-pink-600/10 border-pink-400/30' :
@@ -111,14 +111,14 @@ export const DegenDuelMCPPortal: React.FC = () => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => scrollToSetup(pill.setupKey)}
               >
-                <span className="text-lg mr-2">{pill.icon}</span>
-                <span className="text-white font-medium">{pill.text}</span>
+                <span className="text-base sm:text-lg mr-1 sm:mr-2">{pill.icon}</span>
+                <span className="text-white font-medium text-sm sm:text-base">{pill.text}</span>
               </motion.div>
             ))}
           </motion.div>
         </motion.div>
 
-        <div className="space-y-16">
+        <div className="space-y-8 sm:space-y-12 lg:space-y-16">
           {/* Token Management Section */}
           {isAuthenticated && (
             <motion.div
@@ -128,7 +128,7 @@ export const DegenDuelMCPPortal: React.FC = () => {
               className="relative group"
             >
               <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
-              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 md:p-12">
+              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-4 sm:p-6 md:p-8 lg:p-12">
                 <MCPTokenManagement />
               </div>
             </motion.div>
@@ -143,23 +143,23 @@ export const DegenDuelMCPPortal: React.FC = () => {
               className="relative group"
             >
               <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
-              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center">
+              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 sm:p-8 lg:p-12 text-center">
                 <motion.div
-                  className="text-6xl mb-6"
+                  className="text-4xl sm:text-5xl lg:text-6xl mb-4 sm:mb-6"
                   animate={{ rotate: [0, 10, -10, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
                   🔐
                 </motion.div>
-                <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-purple-400 text-transparent bg-clip-text">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-cyan-400 to-purple-400 text-transparent bg-clip-text">
                   Connect Your Wallet to Unlock
                 </h2>
-                <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-lg sm:text-xl text-slate-300 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed">
                   Generate your secure MCP token and connect AI assistants to your DegenDuel account. 
                   Your AI trading companion awaits!
                 </p>
                 <motion.div 
-                  className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full text-white font-bold text-lg"
+                  className="inline-flex items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full text-white font-bold text-base sm:text-lg"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >

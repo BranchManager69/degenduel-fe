@@ -53,12 +53,6 @@ export const WalletDetailsSection: React.FC<{ user: User }> = ({ user }) => (
         </div>
       </div>
       
-      <Link to="/wallet" className="text-xs text-brand-400 hover:text-brand-300 transition-colors duration-200 flex justify-end items-center">
-        <span>View wallet details</span>
-        <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-        </svg>
-      </Link>
     </div>
   </div>
 );

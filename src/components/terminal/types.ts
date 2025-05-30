@@ -38,8 +38,6 @@ export interface TerminalProps {
   };
   onCommandExecuted?: (command: string, response: string) => void;
   size?: TerminalSize; // Size prop for controlling terminal dimensions
-  layoutMode?: TerminalLayoutMode; // Layout mode for positioning
-  position?: TerminalPosition; // Additional positioning options
 }
 
 // Define a union type for console output items - can be string or JSX

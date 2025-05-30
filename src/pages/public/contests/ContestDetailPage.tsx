@@ -396,16 +396,6 @@ export const ContestDetails: React.FC = () => {
     }
   };
 
-  // Button is disabled in these cases
-  const isButtonDisabled = () => {
-    const displayStatus = getDisplayStatus;
-    return (
-      !isWalletConnected ||
-      (!isParticipating && 
-        (displayStatus === "completed" || 
-         displayStatus === "active"))
-    );
-  };
 
   // Loading skeleton UI
   if (isLoading)
@@ -625,40 +615,55 @@ export const ContestDetails: React.FC = () => {
                 )}
               </div>
               
-              {/* Contest Title and Description */}
-              <div className="space-y-3 max-w-3xl">
-                <h1 className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 animate-gradient-x">
-                  {contest.name}
-                </h1>
-                <p className="text-base sm:text-lg text-gray-300">
+              {/* Contest Title and Description - Enhanced */}
+              <div className="space-y-4 max-w-4xl">
+                <div className="relative">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 animate-gradient-x leading-tight">
+                    {contest.name}
+                  </h1>
+                  {/* Subtle glow effect */}
+                  <div className="absolute inset-0 text-3xl sm:text-4xl lg:text-5xl font-bold text-brand-400/20 blur-sm -z-10">
+                    {contest.name}
+                  </div>
+                </div>
+                <p className="text-base sm:text-lg text-gray-200 leading-relaxed backdrop-blur-sm bg-dark-200/20 rounded-lg p-4 border-l-4 border-brand-400/30">
                   {contest.description}
                 </p>
                 
-                {/* Countdown Timer with status indicator */}
-                <div className="flex items-center gap-3 mt-4">
-                  <span className="text-sm text-gray-400">
-                    {displayStatus === "active" ? "Ends in:" : 
-                    displayStatus === "pending" ? "Starts in:" : 
-                    displayStatus === "cancelled" ? "Cancelled:" : "Ended:"}
-                  </span>
+                {/* Enhanced Countdown Timer with status indicator */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-6">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      displayStatus === "active" ? "bg-green-400 animate-pulse" :
+                      displayStatus === "pending" ? "bg-blue-400 animate-pulse" :
+                      displayStatus === "cancelled" ? "bg-red-400" : "bg-gray-400"
+                    }`} />
+                    <span className="text-sm font-medium text-gray-300">
+                      {displayStatus === "active" ? "Ends in:" : 
+                      displayStatus === "pending" ? "Starts in:" : 
+                      displayStatus === "cancelled" ? "Cancelled:" : "Ended:"}
+                    </span>
+                  </div>
                   
-                  {displayStatus === "cancelled" ? (
-                    <span className="line-through text-red-400 text-lg font-medium italic">
-                      {new Date(contest.end_time).toLocaleDateString()}
-                    </span>
-                  ) : displayStatus !== "completed" ? (
-                    <div className="text-xl font-bold text-brand-400 animate-pulse">
-                      <CountdownTimer
-                        targetDate={displayStatus === "active" ? contest.end_time : contest.start_time}
-                        onComplete={handleCountdownComplete}
-                        showSeconds={true}
-                      />
-                    </div>
-                  ) : (
-                    <span className="text-xl font-bold text-gray-500">
-                      {new Date(contest.end_time).toLocaleDateString()}
-                    </span>
-                  )}
+                  <div className="bg-dark-200/40 backdrop-blur-sm rounded-xl px-4 py-3 border border-brand-400/20">
+                    {displayStatus === "cancelled" ? (
+                      <span className="line-through text-red-400 text-lg font-medium italic">
+                        {new Date(contest.end_time).toLocaleDateString()}
+                      </span>
+                    ) : displayStatus !== "completed" ? (
+                      <div className="text-2xl sm:text-xl font-bold text-brand-400">
+                        <CountdownTimer
+                          targetDate={displayStatus === "active" ? contest.end_time : contest.start_time}
+                          onComplete={handleCountdownComplete}
+                          showSeconds={true}
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-xl font-bold text-gray-500">
+                        {new Date(contest.end_time).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Share Button - Desktop Only */}
@@ -1086,30 +1091,7 @@ export const ContestDetails: React.FC = () => {
                         <p className="text-gray-400">
                           No duelers have entered yet.
                         </p>
-                        {!isParticipating && displayStatus === "pending" && (
-                          <div className="mt-4">
-                            <button
-                              onClick={handleJoinContest}
-                              disabled={!isWalletConnected}
-                              className="px-4 py-2 bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 hover:text-brand-300 rounded-md transition-colors duration-300 flex items-center gap-2"
-                            >
-                              <svg
-                                className="w-5 h-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                />
-                              </svg>
-                              <span>Be the First to Join</span>
-                            </button>
-                          </div>
-                        )}
+                        {/* Remove desktop duplicate button - use only the main floating one */}
                       </div>
                     </div>
                   )
@@ -1120,30 +1102,7 @@ export const ContestDetails: React.FC = () => {
                         Duelers
                       </h3>
                       <p className="text-gray-400">No duelers yet.</p>
-                      {!isParticipating && displayStatus === "pending" && (
-                        <div className="mt-4">
-                          <button
-                            onClick={handleJoinContest}
-                            disabled={!isWalletConnected}
-                            className="px-4 py-2 bg-brand-500/20 text-brand-400 hover:bg-brand-500/30 hover:text-brand-300 rounded-md transition-colors duration-300 flex items-center gap-2"
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                              />
-                            </svg>
-                            <span>Be the First to Join</span>
-                          </button>
-                        </div>
-                      )}
+                      {/* Remove second desktop duplicate button - use only the main floating one */}
                     </div>
                   </div>
                 )}
@@ -1152,174 +1111,53 @@ export const ContestDetails: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Floating Action Button - With Safe Distance from Footer */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-dark-100 to-transparent z-20" style={{ bottom: 'calc(env(safe-area-inset-bottom) + 60px)' }}>
-          <div className="max-w-md mx-auto">
-            {/* Mobile Action Button */}
+        {/* Enhanced Mobile/Desktop Action Button - Properly accounting for footer states */}
+        <div className="fixed bottom-0 left-0 right-0 p-3 md:p-4 bg-gradient-to-t from-dark-100 via-dark-100/95 to-transparent z-50" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
+          <div className="max-w-lg md:max-w-md mx-auto relative">
+            {/* Coming Soon Overlay - Better Mobile Design */}
+            <div className="absolute inset-0 z-10 bg-dark-100/98 backdrop-blur-sm rounded-2xl md:rounded-xl border-2 border-brand-400/40 md:border-brand-400/30 flex flex-col items-center justify-center shadow-2xl">
+              <div className="relative w-full p-4 md:p-0">
+                {/* Animated glow effect - More prominent on mobile */}
+                <div className="absolute -inset-3 md:-inset-2 bg-gradient-to-r from-brand-400 to-cyan-400 rounded-2xl md:rounded-lg blur opacity-75 animate-pulse"></div>
+                
+                {/* Coming Soon Content - Mobile Optimized */}
+                <div className="relative bg-dark-200/95 px-6 md:px-6 py-6 md:py-4 rounded-2xl md:rounded-lg border border-brand-400/30">
+                  <div className="flex items-center justify-center gap-3 mb-3 md:mb-2">
+                    <svg className="w-7 h-7 md:w-6 md:h-6 text-brand-400 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-xl md:text-lg font-bold text-brand-400 uppercase tracking-wide">Coming Soon</span>
+                  </div>
+                  <p className="text-base md:text-sm text-gray-200 text-center leading-relaxed">
+                    Contest functionality launches in the next few days!
+                  </p>
+                  <div className="mt-3 md:mt-2 text-sm md:text-xs text-brand-300 text-center font-medium">
+                    Get ready to compete 🚀
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Main Action Button (disabled underneath overlay) - Enhanced for mobile */}
             <button
               onClick={handleJoinContest}
-              disabled={isButtonDisabled()}
-              className={`
-                w-full relative group overflow-hidden text-sm py-4 shadow-lg 
-                ${displayStatus === "cancelled" 
-                  ? "bg-red-900/10 shadow-red-500/20 border-red-500/30 text-red-400" 
-                  : displayStatus === "active" 
-                    ? (isParticipating ? "bg-green-500/20 shadow-green-500/20 border-green-500/30 text-green-400" : "bg-dark-300/50 text-gray-400 cursor-not-allowed")
-                    : displayStatus === "completed"
-                      ? (isParticipating ? "bg-gray-500/20 shadow-gray-500/20 border-gray-500/30 text-gray-300" : "bg-dark-300/50 text-gray-400 cursor-not-allowed")
-                      : (isParticipating ? "bg-dark-300/90 shadow-brand-500/20 border-brand-400/50 text-brand-400" : "bg-gradient-to-r from-brand-500 to-brand-600 shadow-brand-500/20 text-white")
-                }`}
+              disabled={true}
+              className="w-full relative group overflow-hidden text-base md:text-sm py-5 md:py-4 shadow-2xl bg-gradient-to-r from-brand-500/20 to-brand-600/20 border-2 border-brand-400/40 md:border-brand-400/30 text-brand-400/60 rounded-2xl md:rounded-xl cursor-not-allowed touch-manipulation"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-              <span className="relative flex items-center justify-center gap-2">
-                <span className="font-medium">{getButtonLabel()}</span>
-                {!isButtonDisabled() && (
-                  <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                )}
+              <div className="absolute inset-0 bg-gradient-to-r from-white/8 via-white/4 to-white/8 opacity-50" />
+              <span className="relative flex items-center justify-center gap-3 md:gap-2">
+                <span className="font-semibold md:font-medium text-lg md:text-base">{getButtonLabel()}</span>
+                <svg className="w-6 h-6 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
               </span>
             </button>
             
             {error && (
-              <div className="mt-2 text-xs text-red-400 text-center animate-glitch bg-dark-100/95 rounded-lg py-2">
+              <div className="mt-3 md:mt-2 text-sm md:text-xs text-red-400 text-center animate-glitch bg-dark-100/98 rounded-xl md:rounded-lg py-3 md:py-2 border border-red-500/30 backdrop-blur-sm">
                 {error}
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Floating Action Button (FAB) on desktop */}
-        <div className="hidden md:block fixed top-24 md:top-32 right-6 md:right-10 z-40">
-          <div className="relative group">
-            {/* Animated glow effect for certain states */}
-            {!isButtonDisabled() && displayStatus !== "cancelled" && (
-              <div className="absolute -inset-1 bg-gradient-to-r from-brand-400 to-cyan-400 rounded-lg blur opacity-75 group-hover:opacity-100 animate-pulse-slow"></div>
-            )}
-            
-            <button
-              onClick={handleJoinContest}
-              disabled={isButtonDisabled()}
-              className={`
-                relative flex items-center gap-2 px-6 md:px-8 py-4 md:py-5 
-                ${displayStatus === "cancelled" 
-                  ? "bg-red-900/10 border-2 border-red-500/30 text-red-400" 
-                  : displayStatus === "active" 
-                    ? (isParticipating 
-                        ? "bg-green-500/20 border-2 border-green-500/30 text-green-400" 
-                        : "bg-dark-300/50 border-2 border-gray-500/20 text-gray-400 cursor-not-allowed")
-                    : displayStatus === "completed"
-                      ? (isParticipating 
-                          ? "bg-gray-500/20 border-2 border-gray-500/30 text-gray-300" 
-                          : "bg-dark-300/50 border-2 border-gray-500/20 text-gray-400 cursor-not-allowed")
-                      : (isParticipating 
-                          ? "bg-dark-300/90 border-2 border-brand-400/30 text-brand-400" 
-                          : "bg-gradient-to-r from-brand-500 to-brand-600 border-2 border-white/10 text-white shadow-2xl")
-                }
-                font-bold text-lg md:text-xl rounded-lg transform hover:scale-105 transition-all duration-300`}
-            >
-              {/* Icon based on state */}
-              {displayStatus === "active" && isParticipating ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              ) : displayStatus === "completed" && isParticipating ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-              ) : displayStatus === "pending" && isParticipating ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
-              ) : displayStatus === "cancelled" ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              ) : displayStatus === "pending" && !isButtonDisabled() ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 mr-2 animate-bounce-slow"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              ) : null}
-              
-              <span>{getButtonLabel()}</span>
-              
-              {!isButtonDisabled() && (
-                <svg
-                  className="w-6 h-6 transform group-hover:translate-x-1 transition-transform"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M14 5l7 7m0 0l-7 7m7-7H3"
-                  />
-                </svg>
-              )}
-            </button>
           </div>
         </div>
       </div>

@@ -37,7 +37,7 @@ const VOLUME_BOT_FEATURES: VolumeBotFeature[] = [
   { id: 'multi-swap', name: 'Multi-Swap', icon: '📊', description: 'Execute same swap across multiple wallets simultaneously', category: 'jupiter', isActive: false },
   { id: 'arbitrage', name: 'Arbitrage Hunter', icon: '🎯', description: 'Find and execute arbitrage opportunities', category: 'jupiter', isActive: false },
   { id: 'dca-bot', name: 'DCA Bot', icon: '💰', description: 'Dollar-cost-average into positions across wallets', category: 'jupiter', isActive: false },
-  { id: 'bulk-buyer', name: 'Bulk Buyer', icon: '🛒', description: 'Buy same token across multiple wallets', category: 'jupiter', isActive: false },
+  { id: 'bulk-buyer', name: 'Bulk Buyer', icon: '🛒', description: 'Buy same token across multiple wallets', category: 'jupiter', isActive: true },
   { id: 'bulk-seller', name: 'Bulk Seller', icon: '💸', description: 'Sell positions across multiple wallets', category: 'jupiter', isActive: false },
   { id: 'rebalancer', name: 'Portfolio Rebalancer', icon: '⚖️', description: 'Maintain target allocations via Jupiter', category: 'jupiter', isActive: false },
   { id: 'random-trader', name: 'Random Trader', icon: '🎲', description: 'Random buy/sell for volume generation', category: 'jupiter', isActive: false },
@@ -60,6 +60,7 @@ interface VolumeBotToolsCenterProps {
   onJumble: (walletIds: string[], rounds: number, minSol: number) => void;
   onDisperse: (sourceWalletId: string, targetWalletIds: string[], amountPerWallet: number) => void;
   onJupiterSwap: (walletIds: string[], inputMint: string, outputMint: string, amount: number, slippageBps: number) => void;
+  onBulkBuy: (walletIds: string[], targetMint: string, solPercentage: number, slippageBps: number, executionStrategy: string, staggerDelay: number) => void;
   isConnected: boolean;
   userRole: 'admin' | 'superadmin';
   jumbleProgress?: {
@@ -84,6 +85,13 @@ interface VolumeBotToolsCenterProps {
   isJumbling: boolean;
   isDispersing: boolean;
   isJupiterSwapping: boolean;
+  isBulkBuying: boolean;
+  bulkBuyProgress?: {
+    phase: 'calculating_amounts' | 'getting_quotes' | 'executing' | 'complete';
+    buysCompleted?: number;
+    totalBuys?: number;
+    status?: string;
+  };
 }
 
 const VolumeBotToolsCenter: React.FC<VolumeBotToolsCenterProps> = ({
@@ -93,14 +101,17 @@ const VolumeBotToolsCenter: React.FC<VolumeBotToolsCenterProps> = ({
   onJumble,
   onDisperse,
   onJupiterSwap,
+  onBulkBuy,
   isConnected,
   userRole,
   jumbleProgress,
   disperseProgress,
   jupiterSwapProgress,
+  bulkBuyProgress,
   isJumbling,
   isDispersing,
-  isJupiterSwapping
+  isJupiterSwapping,
+  isBulkBuying
 }) => {
   const [jumbleRounds, setJumbleRounds] = useState(10);
   const [minSolPerWallet, setMinSolPerWallet] = useState(0.01);
@@ -116,15 +127,22 @@ const VolumeBotToolsCenter: React.FC<VolumeBotToolsCenterProps> = ({
   const [jupiterOutputMint, setJupiterOutputMint] = useState<string>('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'); // USDC
   const [jupiterAmount, setJupiterAmount] = useState(0.1);
   const [jupiterSlippageBps, setJupiterSlippageBps] = useState(50); // 0.5%
+  const [showBulkBuyConfig, setShowBulkBuyConfig] = useState(false);
+  const [bulkBuyTargetMint, setBulkBuyTargetMint] = useState<string>('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'); // USDC default
+  const [bulkBuySolPercentage, setBulkBuySolPercentage] = useState(50); // 50% of SOL balance
+  const [bulkBuySlippageBps, setBulkBuySlippageBps] = useState(100); // 1%
+  const [bulkBuyExecutionStrategy, setBulkBuyExecutionStrategy] = useState<'staggered' | 'simultaneous' | 'hybrid'>('staggered');
+  const [bulkBuyStaggerDelay, setBulkBuyStaggerDelay] = useState(200); // 200ms default
 
   useEffect(() => {
-    if (isJumbling || isDispersing || isJupiterSwapping) {
+    if (isJumbling || isDispersing || isJupiterSwapping || isBulkBuying) {
       setIsMobileExpanded(false);
       setShowJumblerConfig(false);
       setShowDisperserConfig(false);
       setShowJupiterSwapConfig(false);
+      setShowBulkBuyConfig(false);
     }
-  }, [isJumbling, isDispersing, isJupiterSwapping]);
+  }, [isJumbling, isDispersing, isJupiterSwapping, isBulkBuying]);
 
   const handleStartJumble = useCallback(() => {
     if (selectedWallets.length === 0) return;
@@ -167,12 +185,27 @@ const VolumeBotToolsCenter: React.FC<VolumeBotToolsCenterProps> = ({
     setShowJupiterSwapConfig(false);
   }, [selectedWallets, jupiterInputMint, jupiterOutputMint, jupiterAmount, jupiterSlippageBps, onJupiterSwap]);
 
+  const handleStartBulkBuy = useCallback(() => {
+    if (selectedWallets.length === 0) return;
+    
+    onBulkBuy(
+      selectedWallets.map(w => w.id),
+      bulkBuyTargetMint,
+      bulkBuySolPercentage,
+      bulkBuySlippageBps,
+      bulkBuyExecutionStrategy,
+      bulkBuyStaggerDelay
+    );
+    setShowBulkBuyConfig(false);
+  }, [selectedWallets, bulkBuyTargetMint, bulkBuySolPercentage, bulkBuySlippageBps, bulkBuyExecutionStrategy, bulkBuyStaggerDelay, onBulkBuy]);
+
   const handleFeatureClick = useCallback((feature: VolumeBotFeature) => {
     if (feature.isActive) {
       // Close all other configs first
       setShowJumblerConfig(false);
       setShowDisperserConfig(false);
       setShowJupiterSwapConfig(false);
+      setShowBulkBuyConfig(false);
       
       if (feature.id === 'jumbler') {
         setShowJumblerConfig(true);
@@ -184,6 +217,8 @@ const VolumeBotToolsCenter: React.FC<VolumeBotToolsCenterProps> = ({
         }
       } else if (feature.id === 'jupiter-swap') {
         setShowJupiterSwapConfig(true);
+      } else if (feature.id === 'bulk-buyer') {
+        setShowBulkBuyConfig(true);
       }
     }
   }, [disperseSourceWallet, selectedWallets]);
@@ -194,6 +229,13 @@ const VolumeBotToolsCenter: React.FC<VolumeBotToolsCenterProps> = ({
   const sourceWallet = selectedWallets.find(w => w.id === disperseSourceWallet);
   const targetWalletsCount = selectedWallets.filter(w => w.id !== disperseSourceWallet).length;
   const totalDisperseAmount = targetWalletsCount * disperseAmountPerWallet;
+  
+  // Bulk buy calculations
+  const totalBulkBuySOL = selectedWallets.reduce((sum, w) => {
+    const walletSOL = w.balance_sol || 0;
+    return sum + (walletSOL * bulkBuySolPercentage / 100);
+  }, 0);
+  const avgSolPerWallet = selectedWallets.length > 0 ? totalBulkBuySOL / selectedWallets.length : 0;
 
   const categoryLabels = {
     core: '🎵 Core',
@@ -664,6 +706,166 @@ const VolumeBotToolsCenter: React.FC<VolumeBotToolsCenterProps> = ({
                   </div>
                 </motion.div>
               )}
+              
+              {showBulkBuyConfig && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="border-t border-gray-600/40 p-6 bg-dark-300/20"
+                >
+                  <h3 className="text-lg font-cyber text-green-300 mb-4">🛒 Bulk Buyer Configuration</h3>
+                  
+                  <div className="space-y-4">
+                    {/* Target Token Selection */}
+                    <div>
+                      <label className="block text-gray-400 text-sm font-mono mb-2">Target Token</label>
+                      <select
+                        value={bulkBuyTargetMint}
+                        onChange={(e) => setBulkBuyTargetMint(e.target.value)}
+                        className="w-full bg-dark-300/50 border border-gray-600/40 rounded px-3 py-2 text-gray-300 font-mono"
+                        disabled={isBulkBuying}
+                      >
+                        <option value="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v">USDC</option>
+                        <option value="Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB">USDT</option>
+                        <option value="mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So">mSOL</option>
+                        <option value="7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs">ETH</option>
+                        <option value="DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263">BONK</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-gray-400 text-sm font-mono mb-2">SOL % per Wallet</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          step="1"
+                          value={bulkBuySolPercentage}
+                          onChange={(e) => setBulkBuySolPercentage(Math.max(1, Math.min(100, parseInt(e.target.value) || 50)))}
+                          className="w-full bg-dark-300/50 border border-gray-600/40 rounded px-3 py-2 text-gray-300 font-mono"
+                          disabled={isBulkBuying}
+                        />
+                        <div className="text-xs text-gray-500 mt-1">{bulkBuySolPercentage}% of each wallet's SOL</div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-400 text-sm font-mono mb-2">Slippage %</label>
+                        <input
+                          type="number"
+                          min="10"
+                          max="1000"
+                          step="10"
+                          value={bulkBuySlippageBps}
+                          onChange={(e) => setBulkBuySlippageBps(Math.max(10, parseInt(e.target.value) || 100))}
+                          className="w-full bg-dark-300/50 border border-gray-600/40 rounded px-3 py-2 text-gray-300 font-mono"
+                          disabled={isBulkBuying}
+                        />
+                        <div className="text-xs text-gray-500 mt-1">{(bulkBuySlippageBps / 100).toFixed(2)}%</div>
+                      </div>
+                    </div>
+
+                    {/* Execution Strategy */}
+                    <div>
+                      <label className="block text-gray-400 text-sm font-mono mb-2">Execution Strategy</label>
+                      <select
+                        value={bulkBuyExecutionStrategy}
+                        onChange={(e) => setBulkBuyExecutionStrategy(e.target.value as 'staggered' | 'simultaneous' | 'hybrid')}
+                        className="w-full bg-dark-300/50 border border-gray-600/40 rounded px-3 py-2 text-gray-300 font-mono"
+                        disabled={isBulkBuying}
+                      >
+                        <option value="staggered">⏱️ Staggered (Stealth Volume)</option>
+                        <option value="simultaneous">🎯 Simultaneous (Max Impact)</option>
+                        <option value="hybrid">🌊 Hybrid (Momentum Building)</option>
+                      </select>
+                    </div>
+
+                    {/* Stagger Delay Control */}
+                    {bulkBuyExecutionStrategy === 'staggered' && (
+                      <div>
+                        <label className="block text-gray-400 text-sm font-mono mb-2">
+                          Stagger Delay: {bulkBuyStaggerDelay}ms
+                        </label>
+                        <input
+                          type="range"
+                          min="50"
+                          max="2000"
+                          step="50"
+                          value={bulkBuyStaggerDelay}
+                          onChange={(e) => setBulkBuyStaggerDelay(parseInt(e.target.value))}
+                          className="w-full"
+                          disabled={isBulkBuying}
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>50ms (Fast)</span>
+                          <span>2000ms (Slow)</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Volume Summary */}
+                    <div className="bg-dark-300/50 rounded-lg p-3 border border-green-500/30">
+                      <div className="text-green-300 text-xs font-mono mb-1">Volume Summary</div>
+                      <div className="text-xs font-mono text-gray-300 space-y-1">
+                        <div>Wallets: {selectedWallets.length} wallets buying simultaneously</div>
+                        <div>Total SOL: {totalBulkBuySOL.toFixed(4)} SOL ({bulkBuySolPercentage}% of {totalSOL.toFixed(4)} SOL)</div>
+                        <div>Avg per Wallet: {avgSolPerWallet.toFixed(4)} SOL each</div>
+                        <div>Max Slippage: {(bulkBuySlippageBps / 100).toFixed(2)}%</div>
+                      </div>
+                    </div>
+
+                    {/* Progress Display */}
+                    {bulkBuyProgress && (
+                      <div className="bg-dark-300/50 rounded-lg p-4 border border-green-500/30">
+                        <h4 className="font-mono text-sm text-green-300 mb-2">Progress</h4>
+                        
+                        {bulkBuyProgress.buysCompleted !== undefined && bulkBuyProgress.totalBuys && (
+                          <div className="mb-2">
+                            <div className="flex justify-between text-xs font-mono text-gray-400 mb-1">
+                              <span>Buy {bulkBuyProgress.buysCompleted}/{bulkBuyProgress.totalBuys}</span>
+                              <span>{Math.round((bulkBuyProgress.buysCompleted / bulkBuyProgress.totalBuys) * 100)}%</span>
+                            </div>
+                            <div className="w-full bg-dark-400 rounded-full h-2">
+                              <div 
+                                className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${(bulkBuyProgress.buysCompleted / bulkBuyProgress.totalBuys) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="text-xs font-mono text-gray-300">
+                          {bulkBuyProgress.status || 'Running...'}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleStartBulkBuy}
+                        disabled={!isConnected || selectedWallets.length === 0 || totalBulkBuySOL === 0 || isBulkBuying}
+                        className={`
+                          flex-1 py-2 rounded-lg font-cyber tracking-wider transition-all duration-300
+                          ${isBulkBuying || !isConnected || selectedWallets.length === 0 || totalBulkBuySOL === 0
+                            ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed' 
+                            : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/30'
+                          }
+                        `}
+                      >
+                        {isBulkBuying ? 'BUYING...' : '🛒 START BULK BUY'}
+                      </button>
+                      
+                      <button
+                        onClick={() => setShowBulkBuyConfig(false)}
+                        className="px-4 py-2 bg-gray-600/30 hover:bg-gray-600/50 text-gray-300 rounded-lg transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </AnimatePresence>
           </motion.div>
         </AnimatePresence>
@@ -1033,6 +1235,96 @@ const VolumeBotToolsCenter: React.FC<VolumeBotToolsCenterProps> = ({
                             
                             <button
                               onClick={() => setShowJupiterSwapConfig(false)}
+                              className="px-4 py-2 bg-gray-600/30 hover:bg-gray-600/50 text-gray-300 rounded-lg transition-colors text-sm"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    {showBulkBuyConfig && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="border-t border-gray-600/40 p-4 bg-dark-300/20"
+                      >
+                        <h3 className="text-lg font-cyber text-green-300 mb-3">🛒 Bulk Buyer</h3>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-gray-400 text-sm font-mono mb-1">Target Token</label>
+                            <select
+                              value={bulkBuyTargetMint}
+                              onChange={(e) => setBulkBuyTargetMint(e.target.value)}
+                              className="w-full bg-dark-300/50 border border-gray-600/40 rounded px-3 py-2 text-gray-300 font-mono text-sm"
+                              disabled={isBulkBuying}
+                            >
+                              <option value="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v">USDC</option>
+                              <option value="Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB">USDT</option>
+                              <option value="mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So">mSOL</option>
+                              <option value="DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263">BONK</option>
+                            </select>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-gray-400 text-sm font-mono mb-1">SOL %</label>
+                              <input
+                                type="number"
+                                min="1"
+                                max="100"
+                                step="5"
+                                value={bulkBuySolPercentage}
+                                onChange={(e) => setBulkBuySolPercentage(Math.max(1, Math.min(100, parseInt(e.target.value) || 50)))}
+                                className="w-full bg-dark-300/50 border border-gray-600/40 rounded px-3 py-2 text-gray-300 font-mono text-sm"
+                                disabled={isBulkBuying}
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-gray-400 text-sm font-mono mb-1">Slippage</label>
+                              <input
+                                type="number"
+                                min="10"
+                                max="1000"
+                                step="10"
+                                value={bulkBuySlippageBps}
+                                onChange={(e) => setBulkBuySlippageBps(Math.max(10, parseInt(e.target.value) || 100))}
+                                className="w-full bg-dark-300/50 border border-gray-600/40 rounded px-3 py-2 text-gray-300 font-mono text-sm"
+                                disabled={isBulkBuying}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="bg-dark-300/50 rounded p-2 border border-green-500/30">
+                            <div className="text-xs font-mono text-gray-300">
+                              {selectedWallets.length} wallets • {totalBulkBuySOL.toFixed(3)} SOL total
+                              <div className="text-green-400">
+                                {bulkBuySolPercentage}% • {(bulkBuySlippageBps / 100).toFixed(1)}% slippage
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleStartBulkBuy}
+                              disabled={!isConnected || selectedWallets.length === 0 || totalBulkBuySOL === 0 || isBulkBuying}
+                              className={`
+                                flex-1 py-2 rounded-lg font-cyber tracking-wider transition-all duration-300 text-sm
+                                ${isBulkBuying || !isConnected || selectedWallets.length === 0 || totalBulkBuySOL === 0
+                                  ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed' 
+                                  : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
+                                }
+                              `}
+                            >
+                              {isBulkBuying ? 'BUYING...' : '🛒 BUY'}
+                            </button>
+                            
+                            <button
+                              onClick={() => setShowBulkBuyConfig(false)}
                               className="px-4 py-2 bg-gray-600/30 hover:bg-gray-600/50 text-gray-300 rounded-lg transition-colors text-sm"
                             >
                               Cancel

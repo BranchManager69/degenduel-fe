@@ -184,15 +184,15 @@ export const MCPUserGuide: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-6 sm:space-y-8 lg:space-y-12">
       {/* Hero Section */}
       <motion.div 
-        className="text-center space-y-6"
+        className="text-center space-y-4 sm:space-y-6"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <motion.h1 
-          className="text-5xl md:text-6xl font-black bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-transparent bg-clip-text relative"
+          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-transparent bg-clip-text relative"
           initial={{ scale: 0.9 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", bounce: 0.4 }}
@@ -201,7 +201,7 @@ export const MCPUserGuide: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-purple-500/20 to-pink-500/20 blur-2xl animate-pulse"></div>
         </motion.h1>
         <motion.p 
-          className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed"
+          className="text-lg sm:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
@@ -212,7 +212,7 @@ export const MCPUserGuide: React.FC = () => {
 
       {/* Benefits Grid */}
       <motion.div 
-        className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+        className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
@@ -241,16 +241,16 @@ export const MCPUserGuide: React.FC = () => {
               benefit.color === 'yellow' ? 'from-yellow-500 to-yellow-600' :
               'from-red-500 to-red-600'
             } rounded-2xl blur opacity-0 group-hover:opacity-25 transition duration-1000`}></div>
-            <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-6 h-full">
+            <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-slate-600/50 p-4 sm:p-6 h-full">
               <motion.div 
-                className="text-4xl mb-4"
+                className="text-2xl sm:text-3xl lg:text-4xl mb-3 sm:mb-4"
                 animate={{ rotate: [0, 5, -5, 0] }}
                 transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
               >
                 {benefit.icon}
               </motion.div>
-              <h3 className="font-bold text-xl mb-3 text-slate-100">{benefit.title}</h3>
-              <p className="text-slate-400 leading-relaxed">{benefit.desc}</p>
+              <h3 className="font-bold text-lg sm:text-xl mb-2 sm:mb-3 text-slate-100">{benefit.title}</h3>
+              <p className="text-slate-400 text-sm sm:text-base leading-relaxed">{benefit.desc}</p>
             </div>
           </motion.div>
         ))}
@@ -271,13 +271,13 @@ export const MCPUserGuide: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
           >
-            <span className="text-3xl">📦</span>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-cyan-400 text-transparent bg-clip-text">
+            <span className="text-2xl sm:text-3xl">📦</span>
+            <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-400 to-cyan-400 text-transparent bg-clip-text">
               Installation
             </h2>
           </motion.div>
           <motion.p 
-            className="text-slate-300 mb-6 text-lg"
+            className="text-slate-300 mb-4 sm:mb-6 text-base sm:text-lg"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
@@ -292,12 +292,12 @@ export const MCPUserGuide: React.FC = () => {
           >
             <div className="bg-slate-900/80 rounded-xl p-6 border border-slate-600/50 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-cyan-500/5"></div>
-              <pre className="text-lg text-slate-200 font-mono relative z-10">
+              <pre className="text-sm sm:text-base lg:text-lg text-slate-200 font-mono relative z-10 break-all">
                 npm install -g degenduel-mcp-server
               </pre>
               <motion.button
                 onClick={() => copyToClipboard("npm install -g degenduel-mcp-server", "Installation command", "install-cmd")}
-                className="absolute top-3 right-3 px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-500 text-white rounded-lg font-medium hover:from-green-600 hover:to-cyan-600 transition-all duration-200 flex items-center gap-2"
+                className="absolute top-2 right-2 sm:top-3 sm:right-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-green-500 to-cyan-500 text-white rounded-lg font-medium hover:from-green-600 hover:to-cyan-600 transition-all duration-200 flex items-center gap-1 sm:gap-2 text-sm"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -352,12 +352,12 @@ export const MCPUserGuide: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
           >
-            <span className="text-3xl">⚡</span>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+            <span className="text-2xl sm:text-3xl">⚡</span>
+            <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
               How It Works
             </h2>
           </motion.div>
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {[
               { number: 1, title: "Install MCP Server", desc: "One-time npm install (above)", icon: "📦", color: "cyan" },
               { number: 2, title: "Generate Token", desc: "Create a secure token above (takes 5 seconds)", icon: "🔑", color: "purple" },
@@ -372,12 +372,12 @@ export const MCPUserGuide: React.FC = () => {
                 transition={{ delay: 0.9 + index * 0.1 }}
               >
                 <motion.div 
-                  className={`w-16 h-16 bg-gradient-to-r ${
+                  className={`w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-gradient-to-r ${
                     step.color === 'cyan' ? 'from-cyan-500 to-cyan-600' :
                     step.color === 'purple' ? 'from-purple-500 to-purple-600' :
                     step.color === 'pink' ? 'from-pink-500 to-pink-600' :
                     'from-green-500 to-green-600'
-                  } rounded-full flex items-center justify-center text-2xl font-black mx-auto mb-4 text-white shadow-lg`}
+                  } rounded-full flex items-center justify-center text-lg sm:text-xl lg:text-2xl font-black mx-auto mb-3 sm:mb-4 text-white shadow-lg`}
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   animate={{ 
                     boxShadow: [
@@ -395,7 +395,7 @@ export const MCPUserGuide: React.FC = () => {
                   {step.number}
                 </motion.div>
                 <motion.div
-                  className="text-2xl mb-3"
+                  className="text-xl sm:text-2xl mb-2 sm:mb-3"
                   animate={{ 
                     scale: [1, 1.1, 1],
                     rotate: [0, 5, -5, 0]
@@ -408,8 +408,8 @@ export const MCPUserGuide: React.FC = () => {
                 >
                   {step.icon}
                 </motion.div>
-                <h3 className="font-bold text-lg mb-3 text-slate-100">{step.title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{step.desc}</p>
+                <h3 className="font-bold text-base sm:text-lg mb-2 sm:mb-3 text-slate-100">{step.title}</h3>
+                <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">{step.desc}</p>
               </motion.div>
             ))}
           </div>

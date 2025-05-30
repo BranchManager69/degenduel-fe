@@ -674,10 +674,13 @@ export const TokensPage: React.FC = () => {
         </div>
       
         <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
-          {/* Header with metadata and admin controls */}
-          <div className="flex justify-between items-start mb-4 sm:mb-8">
-            <OptimizedTokensHeader metadata={metadata} />
-            {user?.is_admin && (
+          <div className="grid grid-cols-1 gap-6">
+            {/* Main Content - Full width */}
+            <div className="col-span-1">
+              {/* Header with metadata and admin controls */}
+              <div className="flex justify-between items-start mb-4 sm:mb-8">
+                <OptimizedTokensHeader metadata={metadata} />
+                {user?.is_admin && (
               <Button
                 onClick={() => setIsAddTokenModalOpen(true)}
                 className="ml-4 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 relative group overflow-hidden"
@@ -838,11 +841,13 @@ export const TokensPage: React.FC = () => {
             )}
           </div>
           
-          {/* Cyberpunk footer accent */}
-          <div className="mt-10 mb-6 relative h-1 w-full overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/30 to-transparent"></div>
-            <div className="absolute top-0 left-1/4 right-1/4 h-px bg-brand-500/60"></div>
-            <div className="absolute left-1/2 top-0 w-px h-4 -translate-x-1/2 bg-brand-500/60 -translate-y-1/2"></div>
+              {/* Cyberpunk footer accent */}
+              <div className="mt-10 mb-6 relative h-1 w-full overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/30 to-transparent"></div>
+                <div className="absolute top-0 left-1/4 right-1/4 h-px bg-brand-500/60"></div>
+                <div className="absolute left-1/2 top-0 w-px h-4 -translate-x-1/2 bg-brand-500/60 -translate-y-1/2"></div>
+              </div>
+            </div>
           </div>
           
           {/* Modals */}

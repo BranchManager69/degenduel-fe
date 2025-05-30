@@ -74,7 +74,20 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
   }, [select, connect]);
 
   const handleAuthenticate = useCallback(async () => {
+    console.log('ConnectWalletButton: handleAuthenticate called', {
+      connected,
+      publicKey: publicKey?.toBase58(),
+      signMessage: !!signMessage,
+      authIsAuthenticated: auth.isAuthenticated,
+      authUser: auth.user?.wallet_address
+    });
+
     if (!connected || !publicKey || !signMessage) {
+      console.log('ConnectWalletButton: Wallet not ready for authentication', {
+        connected,
+        publicKey: !!publicKey,
+        signMessage: !!signMessage
+      });
       setError("Wallet not connected.");
       return;
     }
@@ -84,6 +97,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
 
     try {
       const walletAddress = publicKey.toBase58();
+      console.log('ConnectWalletButton: Starting authentication for', walletAddress);
 
       if (auth.user?.wallet_address && auth.user.wallet_address === walletAddress) {
          console.log("ConnectWalletButton: Already authenticated with this DegenDuel account for this wallet.");
@@ -92,20 +106,31 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
          return;
       }
 
+      console.log('ConnectWalletButton: Getting challenge nonce...');
       await getChallengeNonce(walletAddress);
 
       const signMessageWrapper = async (messageToSign: Uint8Array) => {
         if (!signMessage) {
           throw new Error('Wallet signing function not available.');
         }
+        console.log('ConnectWalletButton: Signing message...');
         const signature = await signMessage(messageToSign);
+        console.log('ConnectWalletButton: Message signed successfully');
         return { signature }; 
       };
 
-      await auth.loginWithWallet(walletAddress, signMessageWrapper);
+      console.log('ConnectWalletButton: Calling auth.loginWithWallet...');
+      const result = await auth.loginWithWallet(walletAddress, signMessageWrapper);
+      console.log('ConnectWalletButton: Authentication successful!', { user: result });
       onSuccess?.();
     } catch (err) {
       console.error('ConnectWalletButton: Error during authentication:', err);
+      console.error('ConnectWalletButton: Error details:', {
+        message: err instanceof Error ? err.message : String(err),
+        response: (err as any)?.response?.data,
+        status: (err as any)?.response?.status,
+        statusText: (err as any)?.response?.statusText
+      });
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during authentication.';
       setError(errorMessage);
       onError?.(err instanceof Error ? err : new Error(errorMessage));
@@ -212,7 +237,16 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
 
   // Auto-authenticate when wallet connects
   React.useEffect(() => {
+    console.log('ConnectWalletButton: Auto-auth effect triggered', {
+      connected,
+      publicKey: publicKey?.toBase58(),
+      authIsAuthenticated: auth.isAuthenticated,
+      isLoading,
+      shouldTriggerAuth: connected && publicKey && !auth.isAuthenticated && !isLoading
+    });
+    
     if (connected && publicKey && !auth.isAuthenticated && !isLoading) {
+      console.log('ConnectWalletButton: Triggering auto-authentication');
       handleAuthenticate();
     }
   }, [connected, publicKey, auth.isAuthenticated, isLoading, handleAuthenticate]);

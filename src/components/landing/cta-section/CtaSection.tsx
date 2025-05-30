@@ -166,7 +166,7 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
                 <div className="relative flex items-center justify-between space-x-6 text-2xl font-cyber">
                   <span className="bg-gradient-to-r from-brand-300 to-brand-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-brand-200">
-                    CONNECT
+                    DUEL NOW
                   </span>
                   <svg
                     className="w-7 h-7 text-brand-400 group-hover:text-white transform group-hover:translate-x-2 transition-all"
@@ -188,8 +188,46 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
         </RouterLink>
       )}
 
-      {/* Secondary buttons row - two buttons side by side with same color */}
-      <div className="flex flex-col sm:flex-row w-full max-w-md gap-4 justify-between">
+      {/* Follow us on X section - prominent social call-to-action */}
+      <div className="w-full max-w-md mb-4">
+        <a
+          href="https://x.com/degenduelme"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full block"
+          aria-label="Follow DegenDuel on X (Twitter)"
+        >
+          <button className="w-full relative group overflow-hidden">
+            <div className="relative clip-edges bg-gradient-to-r from-blue-400 to-cyan-500 p-[1px] transition-all duration-300 group-hover:from-blue-300 group-hover:to-cyan-400 shadow-md shadow-blue-900/20">
+              <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-6 py-3">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                <div className="relative flex items-center justify-center space-x-3 text-lg font-cyber">
+                  <span className="text-xl">𝕏</span>
+                  <span className="bg-gradient-to-r from-blue-300 to-cyan-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-blue-200">
+                    FOLLOW US ON X
+                  </span>
+                  <svg
+                    className="w-5 h-5 text-blue-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </button>
+        </a>
+      </div>
+
+      {/* Secondary buttons row - two buttons side by side */}
+      <div className="flex flex-row w-full max-w-md gap-4 justify-between">
         {/* GAMEPLAY button */}
         <RouterLink to="/how-it-works" className="w-full sm:w-[48%]">
           <button 

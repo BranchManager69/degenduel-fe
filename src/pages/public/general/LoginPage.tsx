@@ -113,7 +113,7 @@ const LoginPage: React.FC = () => {
           {/* Primary Wallet Login - Full Width */}
           <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg p-6">
             <h3 className="text-white font-semibold mb-4 text-center">Connect with Wallet</h3>
-            <SimpleWalletButton className="w-full" />
+            <SimpleWalletButton className="w-full" isCompact={false} />
           </div>
 
           {/* Alternative Login Methods */}

@@ -27,9 +27,6 @@ import EnhancedIntroLogo from "../../../components/logo/EnhancedIntroLogo"; // E
 import { FEATURE_FLAGS } from "../../../config/config";
 import { isContestCurrentlyUnderway } from "../../../lib/utils";
 import { Contest } from "../../../types";
-// Decryption Timer
-import { DecryptionTimer } from '../../../components/layout/DecryptionTimer';
-import { MiniDecryptionTimer } from "../../../components/layout/DecryptionTimerMini";
 // Hooks
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useLaunchEvent } from "../../../hooks/websocket/topic-hooks/useLaunchEvent";
@@ -71,19 +68,8 @@ export const LandingPage: React.FC = () => {
   
   const isMounted = useRef(true);
 
-  const mainTimerContainerRef = useRef<HTMLDivElement>(null);
-  
-  // Floating timer coordination
-  const [mainTimerFloating, setMainTimerFloating] = useState(false);
-  const [showMiniTimer, setShowMiniTimer] = useState(false);
-  
   // Countdown completion state
   const [isCountdownComplete, setIsCountdownComplete] = useState(false);
-
-  // Handle scroll-based timer sequence
-  const handleMainTimerMorphComplete = useCallback((scrolledDown: boolean) => {
-    setShowMiniTimer(scrolledDown); // Show mini timer when scrolled down, hide when scrolled up
-  }, []);
   
   // const { trackEvent } = useAnalytics(); // If 'trackEvent' error persists, we may need to review useAnalytics hook
   // const { isMobile, isTablet, isDesktop } = useScreenSize(); // Marked for removal if unused
@@ -132,12 +118,6 @@ export const LandingPage: React.FC = () => {
         if (isMounted.current) {
           setAnimationPhase(3);
           setAnimationDone(true);
-          // Start floating timer sequence 2 seconds after main animation is done
-          setTimeout(() => {
-            if (isMounted.current) {
-              setMainTimerFloating(true);
-            }
-          }, 2000);
         }
       }, 2500);
       return () => {
@@ -235,8 +215,9 @@ export const LandingPage: React.FC = () => {
       const timerExpired = fallbackDateForTimers.getTime() <= now.getTime();
       const hasRevealedAddress = !!(websocketContractAddress || websocketContractRevealed);
       
-      // Countdown is complete if timer expired AND we have a revealed contract address
-      setIsCountdownComplete(timerExpired && hasRevealedAddress);
+      // Countdown is complete if timer expired OR we have a revealed contract address
+      // This allows buttons to work immediately when either condition is met
+      setIsCountdownComplete(timerExpired || hasRevealedAddress);
     };
 
     checkCountdownComplete();
@@ -521,22 +502,6 @@ export const LandingPage: React.FC = () => {
 
                 </motion.div>
 
-                {/* Countdown Timer Component - uses new state */}
-                <motion.div // Keep this motion.div if it was part of the structure, or simplify to a normal div
-                  ref={mainTimerContainerRef} 
-                  className="my-8 md:my-12 w-full max-w-3xl mx-auto"
-                  // Remove variants={childVariants} if this specific div doesn't need it
-                  // or ensure childVariants is correctly defined and used if it should animate
-                >
-
-                  {/* Decryption Timer */}
-                  <DecryptionTimer
-                    targetDate={fallbackDateForTimers}
-                    enableFloating={mainTimerFloating}
-                    onMorphComplete={handleMainTimerMorphComplete}
-                  />
-
-                </motion.div>
 
                 {/* CTAs - Now using the CtaSection component */}
                 <CtaSection user={user} animationPhase={animationPhase} />
@@ -674,8 +639,8 @@ export const LandingPage: React.FC = () => {
                     <div className="relative">
                       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                         
-                        {/* Add significant bottom margin to prevent footer overlap */}
-                        <div className="mb-32">
+                        {/* Contest sections container */}
+                        <div className="mb-8">
                           {/* Use the shared ContestSection component for active contests */}
                           {activeContests.length > 0 && (
                             <ContestSection
@@ -738,17 +703,6 @@ export const LandingPage: React.FC = () => {
 
         </section>
 
-        {/* Mini Timer - Appears when scrolled down */}
-        {showMiniTimer && (
-          <MiniDecryptionTimer
-            targetDate={fallbackDateForTimers}
-            isVisible={showMiniTimer}
-            delayedEntrance={false}
-            onClick={() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-          />
-        )}
       </div>
 
       {/* Enhanced Floating Action Buttons Stack */}

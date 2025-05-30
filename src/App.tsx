@@ -30,10 +30,10 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 // Wallet providers
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { 
+import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-  TrustWalletAdapter 
+  TrustWalletAdapter
 } from "@solana/wallet-adapter-wallets";
 
 // Other providers of dubious quality:
@@ -68,8 +68,8 @@ import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import LoadingFallback from "./components/shared/LoadingFallback";
 import { Terminal } from "./components/terminal/Terminal";
-import { useNotifications } from './hooks/websocket/topic-hooks/useNotifications';
-import { useSystemSettings } from './hooks/websocket/topic-hooks/useSystemSettings';
+// import { useNotifications } from './hooks/websocket/topic-hooks/useNotifications';
+// import { useSystemSettings } from './hooks/websocket/topic-hooks/useSystemSettings';
 
 // Wallet adapter styles (if this is the old wallet adapter, we removed it)
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -181,13 +181,15 @@ export const useDegenDuelRpc = () => {
 const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { rpcEndpoint } = useSolanaConnection(); // Get the dynamically chosen endpoint from your context
   
-  // Use empty wallet list to rely on Standard Wallet protocol for auto-detection
+  // Use minimal wallet list - Phantom & Solflare now use Standard Wallet protocol
   // Configure wallet adapters
   const wallets: Adapter[] = useMemo(
     () => [
+      new TrustWalletAdapter(),
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
-      new TrustWalletAdapter(),
+      // PhantomWalletAdapter & SolflareWalletAdapter removed - they now use Standard Wallet
+      // Nevermind, I put them back. They disappeared from the list.
     ],
     []
   );
@@ -285,8 +287,8 @@ const AppContent: React.FC = () => {
   const { user } = useMigratedAuth();
 
   // State and hooks for error banners
-  const { error: notificationsError } = useNotifications();
-  const { error: systemSettingsError } = useSystemSettings(); // Renamed for clarity
+  // const { error: notificationsError } = useNotifications();
+  // const { error: systemSettingsError } = useSystemSettings(); // Renamed for clarity
   //const [showNotificationErrorBanner, setShowNotificationErrorBanner] = useState(false);
   //const [showSystemSettingsErrorBanner, setShowSystemSettingsErrorBanner] = useState(false);
   // const { isCompact: isHeaderCompact } = useScrollHeader(50); // To dynamically position banners
@@ -346,7 +348,7 @@ const AppContent: React.FC = () => {
       <Header />
       
       {/* EdgeToEdgeTicker */}
-      <EdgeToEdgeTicker storeError={notificationsError || systemSettingsError} />
+      <EdgeToEdgeTicker />
       
       {/* WalletBalanceTicker */}
       {user && <WalletBalanceTicker isCompact={true} />}
@@ -498,7 +500,7 @@ const AppContent: React.FC = () => {
                   TIME: config.RELEASE_DATE.DISPLAY.LAUNCH_TIME
               }
           }}
-          size="contracted"
+          size="middle"
       />
 
       {/* Footer */}

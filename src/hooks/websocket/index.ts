@@ -63,6 +63,7 @@ export const TopicType = {
   // Market data topics
   MARKET_DATA: SOCKET_TYPES.MARKET_DATA,
   TOKEN_DATA: SOCKET_TYPES.TOKEN_DATA,
+  TOKEN_PROFILES: SOCKET_TYPES.TOKEN_PROFILES,
 
   // User data topics
   USER: 'user',
@@ -114,7 +115,6 @@ export * from './topic-hooks/useNotifications';
 export * from './topic-hooks/usePortfolio';
 export * from './topic-hooks/usePortfolioUpdates';
 export * from './topic-hooks/usePriceAlerts';
-export * from './topic-hooks/useRPCBenchmark';
 export * from './topic-hooks/useServerStatus';
 export * from './topic-hooks/useService';
 export * from './topic-hooks/useSkyDuel';
@@ -125,6 +125,7 @@ export * from './topic-hooks/useTokenSchedulerStatus';
 export * from './topic-hooks/useTradeEvents';
 export * from './topic-hooks/useUserEvents';
 export * from './topic-hooks/useVanityDashboard';
+export * from './topic-hooks/useTokenProfiles';
 export { useWallet };
 
 // DEPRECATED - The individual WebSocket hooks below will be replaced

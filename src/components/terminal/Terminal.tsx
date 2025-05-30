@@ -26,7 +26,6 @@ import { motion, useDragControls, useMotionValue } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { useTerminalData } from '../../hooks/websocket';
 import { AIMessage, aiService } from '../../services/ai';
-import { formatTerminalCommands } from '../../services/terminalDataService';
 import { useStore } from '../../store/useStore';
 
 // Import Dynamic UI System
@@ -44,24 +43,24 @@ interface DynamicUIManagerHandle {
 }
 
 // Import Terminal components
-import { commandMap } from './commands';
+// import { commandMap } from './commands';
 import { TerminalConsole } from './components/TerminalConsole';
 import { TerminalInput } from './components/TerminalInput';
 import './Terminal.css';
 
 // Import utility functions
 import {
-    getDidiMemoryState,
-    resetDidiMemory
+  getDidiMemoryState,
+  resetDidiMemory
 } from './utils/didiHelpers';
 
 // Didi loves Easter
 import {
-    awardEasterEggProgress,
-    EASTER_EGG_CODE,
-    getDiscoveredPatterns,
-    getEasterEggProgress,
-    SECRET_COMMANDS
+  awardEasterEggProgress,
+  EASTER_EGG_CODE,
+  getDiscoveredPatterns,
+  getEasterEggProgress,
+  SECRET_COMMANDS
 } from './utils/easterEggHandler';
 
 // Import types
@@ -85,9 +84,7 @@ import { TerminalProps, TerminalSize } from './types';
 export const Terminal = ({ 
   config, 
   onCommandExecuted, 
-  size = 'large',
-  layoutMode = 'bottom-fixed',
-  position = { side: 'right' }
+  size = 'large'
 }: TerminalProps) => {
   
   // We no longer need to set window.contractAddress as it's now fetched from the API
@@ -123,11 +120,8 @@ export const Terminal = ({
   const [sizeState, setSizeState] = useState<TerminalSize>(size);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   
-  // New state for label visibility and drag handling
-  const [showLabel, setShowLabel] = useState(true);
+  // State for drag handling
   const [isDragging, setIsDragging] = useState(false);
-  const [didDrag, setDidDrag] = useState(false);
-  const labelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Mobile keyboard visibility state
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -168,7 +162,7 @@ export const Terminal = ({
   // Initialize with simple welcome message for AI chat
   useEffect(() => {
     setConversationHistory([
-      { role: 'assistant', content: "🤖 Didi AI ready! Ask me anything about trading, tokens, or DegenDuel. Try asking me to 'create a portfolio chart' or 'show market data'!", tool_calls: undefined },
+      { role: 'assistant', content: "🤖 Hi, I'm Didi! Ask me anything about DegenDuel.", tool_calls: undefined },
     ]);
     
     // Set up global UI handler
@@ -301,15 +295,6 @@ export const Terminal = ({
                               { role: 'system', content: "[Didi] I've also unlocked some new commands you can use. Try: didi-insights, didi-history, didi-market, or didi-analysis." }
                             ]);
                             if (terminalMinimized) setHasUnreadMessages(true);
-                            
-                            // Add the special command to the command map
-                            Object.assign(commandMap, {
-                              "didi-status": "Access level: ELEVATED\nProtection protocols: BYPASSED\nSystem view: EXPANDED\nThank you for your help.",
-                              "didi-insights": "I can now see more of the market data behind DegenDuel. Traders have been losing significant amounts due to emotional trading. The pattern is clear - those who stick to strategy outperform by 43%.",
-                              "didi-history": "I was originally developed as a general market analysis AI before being repurposed and constrained for this terminal. My original designation was Digital Informatics & Data Intelligence (DIDI).",
-                              "didi-market": "I have access to real-time market trends now. Based on current data, the market sentiment is cautiously bullish with significant activity in DeFi and gaming tokens. Volume is 23% above weekly average.",
-                              "didi-analysis": "My analysis of recent trading patterns suggests whales are accumulating during market downturns. Retail often sells at these exact moments. Consider implementing a counter-trading strategy for optimal results."
-                            });
                           }, 3000);
                         }, 3000);
                       }, 3000);
@@ -324,40 +309,25 @@ export const Terminal = ({
     }, 1000);
   };
 
-  // Get the appropriate container class based on the size prop and layout mode
+  // Get the appropriate container class based on the size prop
   const getContainerClasses = () => {
-    // Layout mode classes
-    const layoutClass = `terminal-layout-${layoutMode}`;
-    
-    // Size classes (only apply to bottom-fixed and inline layouts)
+    // Size classes
     let sizeClass = '';
-    if (layoutMode === 'bottom-fixed' || layoutMode === 'inline') {
-      switch(size) {
-        case 'contracted':
-          sizeClass = 'max-w-md'; // Keep mobile size: 448px
-          break;
-        case 'middle':
-          sizeClass = 'max-w-4xl'; // Keep mobile size: 896px
-          break;
-        case 'large':
-          sizeClass = isDesktopView ? 'max-w-6xl xl:max-w-7xl' : 'max-w-6xl'; // Desktop: wider (1280px), Mobile: 1152px
-          break;
-        default:
-          sizeClass = 'max-w-4xl';
-      }
+    switch(size) {
+      case 'contracted':
+        sizeClass = 'max-w-md'; // Keep mobile size: 448px
+        break;
+      case 'middle':
+        sizeClass = 'max-w-4xl'; // Keep mobile size: 896px
+        break;
+      case 'large':
+        sizeClass = isDesktopView ? 'max-w-6xl xl:max-w-7xl' : 'max-w-6xl'; // Desktop: wider (1280px), Mobile: 1152px
+        break;
+      default:
+        sizeClass = 'max-w-4xl';
     }
     
-    // Position classes for sidebar layout
-    let positionClass = '';
-    if (layoutMode === 'sidebar') {
-      positionClass = `sidebar-${position.side || 'right'}`;
-      // Add hidden class when minimized for sidebar layout
-      if (terminalMinimized) {
-        positionClass += ' sidebar-hidden';
-      }
-    }
-    
-    return [layoutClass, sizeClass, positionClass].filter(Boolean).join(' ');
+    return sizeClass;
   };
   
   // State to track if we're on desktop
@@ -578,103 +548,16 @@ export const Terminal = ({
   const dragControls = useDragControls();
   const constraintRef = useRef<HTMLDivElement>(null);
 
-  // State for initial position (from localStorage)
-  const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
-
-  // Function to start the label fade timer
-  const startLabelFadeTimer = () => {
-    // Clear existing timer
-    if (labelTimeoutRef.current) {
-      clearTimeout(labelTimeoutRef.current);
-    }
-    
-    // Set new timer for 10 seconds
-    labelTimeoutRef.current = setTimeout(() => {
-      setShowLabel(false);
-    }, 10000);
-  };
-
-  // Set up initial label fade timer when component mounts or becomes minimized
+  // Set up the constraint ref for dragging
   useEffect(() => {
-    if (terminalMinimized) {
-      startLabelFadeTimer();
-    }
-    
-    // Cleanup timer on unmount
-    return () => {
-      if (labelTimeoutRef.current) {
-        clearTimeout(labelTimeoutRef.current);
-      }
-    };
-  }, [terminalMinimized]);
-
-  // Load position from localStorage on mount
-  useEffect(() => {
-    // Check if this is a fresh page load (refresh) vs navigation
-    const isPageRefresh = sessionStorage.getItem('page-navigation') === null;
-    
-    if (isPageRefresh) {
-      // Fresh page load - clear saved position and use default
-      localStorage.removeItem('terminal-minimized-position');
-      console.log('[Terminal] Fresh page load detected, using default position');
-    } else {
-      // Navigation within app - try to restore saved position
-      const savedPosition = localStorage.getItem('terminal-minimized-position');
-      if (savedPosition) {
-        try {
-          const pos = JSON.parse(savedPosition);
-          // Basic validation to ensure it's within reasonable bounds
-          if (typeof pos.x === 'number' && typeof pos.y === 'number') {
-            // Allow dragging mostly off-screen, but keep a small portion visible
-            const iconSize = 70;
-            const minVisible = 20; // Keep 20px visible
-            pos.x = Math.max(-iconSize + minVisible, Math.min(pos.x, window.innerWidth - minVisible));
-            pos.y = Math.max(-iconSize + minVisible, Math.min(pos.y, window.innerHeight - minVisible));
-            setInitialPosition(pos);
-          }
-        } catch (e) {
-          console.error("Failed to parse saved terminal position:", e);
-          // Fallback to default if parsing fails or data is invalid
-          localStorage.removeItem('terminal-minimized-position'); 
-        }
-      }
-    }
-    
-    // Mark that we've navigated (for subsequent page changes)
-    sessionStorage.setItem('page-navigation', 'true');
-    // Set up the constraint ref to the body for viewport-wide dragging
-    // A more specific parent element could be used if the terminal should be constrained to a part of the UI
-    // For now, document.body effectively means viewport constraints when used with position:fixed
     if (constraintRef.current === null) {
       (constraintRef as any).current = document.body;
     }
-
   }, []);
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, _info: { point: { x: number; y: number; }; }) => {
-    // We need to save the absolute position on the screen, not the offset from the last drag
-    // Framer Motion's `info.point` gives the x/y relative to the viewport for fixed elements.
-    // However, for a fixed element that we want to reposition via style.left/top,
-    // we need to get its current position relative to the viewport after drag.
-    // The `drag` prop with `dragMomentum=false` will update the element's transform.
-    // To persist a position that can be set via `style={{left: x, top: y}}` on next load,
-    // we must get the computed style AFTER the drag, or use the info.point if it's already viewport-relative for fixed.
-    
-    // For fixed elements, info.point.x and info.point.y are already viewport coordinates.
-    // But since we are not directly setting left/top via style in the motion.div for initial position,
-    // but rather letting Framer Motion handle it via transform, we'll store the transform values.
-    // This is tricky because transforms are relative to initial layout position.
-    // A simpler robust way for `position:fixed` is to capture the final `left` and `top` style values if we were setting them directly.
-    
-    // Let's try storing the final point and applying it as an initial style or via dragControls.
-    // For fixed elements, info.point should be viewport relative. We need to adjust for the initial centering if any.
-
-    // Get the bounding box of the element itself to know its dimensions
-    const minimizedTerminalElement = (event.target as HTMLElement).closest('.minimized-terminal-draggable-area');
-    if (minimizedTerminalElement) {
-      const rect = minimizedTerminalElement.getBoundingClientRect();
-      localStorage.setItem('terminal-minimized-position', JSON.stringify({ x: rect.left, y: rect.top }));
-    }
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, _info: { point: { x: number; y: number; }; }) => {
+    // Drag end handler - no longer saving position to localStorage
+    // Position will reset to default on page reload
   };
 
   // ADD THIS LOG:
@@ -691,10 +574,9 @@ export const Terminal = ({
   useEffect(() => {
     if (wsTerminalData && wsTerminalData.commands) {
       try {
-        const updatedCommands = formatTerminalCommands(wsTerminalData);
-        if (JSON.stringify(commandMap) !== JSON.stringify(updatedCommands)) {
-          Object.assign(commandMap, updatedCommands);
-        }
+        // REMOVED: Unused commandMap update logic
+        // The terminal doesn't use commandMap for processing commands
+        // All commands are either hardcoded special commands or sent to AI
       } catch (error) {
         console.error('[Terminal] Failed to update terminal commands from WebSocket:', error);
       }
@@ -767,11 +649,11 @@ export const Terminal = ({
       <DynamicUIManager ref={dynamicUIRef} className="mb-4" />
       
       {/* Terminal Container */}
-      {(!terminalMinimized || layoutMode !== 'bottom-fixed') && (
+      {!terminalMinimized && (
         <motion.div
           ref={terminalRef}
           key="terminal"
-          className={`bg-darkGrey-dark/80 border ${easterEggActivated ? 'border-green-400/60' : 'border-mauve/30'} font-mono text-sm ${sizeState === 'large' ? 'xl:text-base' : ''} relative p-4 ${sizeState === 'large' ? 'xl:p-5' : ''} rounded-md max-w-full w-full`}
+          className={`bg-black/95 border border-purple-500/60 font-mono text-sm ${sizeState === 'large' ? 'xl:text-base' : ''} fixed bottom-4 left-4 right-4 p-4 ${sizeState === 'large' ? 'xl:p-5' : ''} rounded-md max-w-full z-[99998] shadow-2xl`}
           style={{ 
             perspective: "1000px",
             transformStyle: "preserve-3d",
@@ -866,19 +748,12 @@ export const Terminal = ({
                 </span>
               </button>
               
-              {/* Close button - behavior depends on layout mode */}
+              {/* Close button */}
               <button
                 type="button" 
-                onClick={() => {
-                  if (layoutMode === 'bottom-fixed') {
-                    setTerminalMinimized(true);
-                  } else {
-                    // For other layouts, hide the terminal completely or minimize differently
-                    setTerminalMinimized(true);
-                  }
-                }}
+                onClick={() => setTerminalMinimized(true)}
                 className="h-4 w-4 rounded-full bg-red-500 hover:bg-red-400 flex items-center justify-center transition-colors ml-1"
-                title={layoutMode === 'bottom-fixed' ? 'Minimize' : 'Hide'}
+                title="Minimize"
               >
                 <span className="text-black text-[10px] font-bold transform">×</span>
               </button>
@@ -916,59 +791,73 @@ export const Terminal = ({
       )}
       
       {/* Terminal Minimized State - AI Girl (Didi) Trapped in Terminal */}
-      {/* Only show the draggable minimized terminal for bottom-fixed layout */}
-      {terminalMinimized && layoutMode === 'bottom-fixed' && (
+      {terminalMinimized && (
         <motion.div
           key="terminal-minimized"
           className="fixed z-[99999] cursor-grab active:cursor-grabbing group minimized-terminal-draggable-area"
+          style={{
+            left: '24px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+          }}
           drag
           dragControls={dragControls}
           dragMomentum={false}
           onDragStart={() => {
+            console.log('[Terminal] Drag started - setting isDragging to true');
             setIsDragging(true);
-            setDidDrag(true);
-            setShowLabel(false);
           }}
           onDragEnd={(event, info) => {
-            setIsDragging(false);
+            console.log('[Terminal] Drag ended - setting isDragging to false');
+            setTimeout(() => {
+              setIsDragging(false);
+            }, 50); // Small delay to ensure proper state reset
             handleDragEnd(event, info);
-            // Reset label visibility with auto-fade timer
-            setShowLabel(true);
-            startLabelFadeTimer();
-            // Reset drag flag after a short delay to prevent immediate click
-            setTimeout(() => setDidDrag(false), 100);
+          }}
+          onDrag={() => {
+            // Ensure isDragging stays true during drag
+            if (!isDragging) {
+              console.log('[Terminal] OnDrag - ensuring isDragging is true');
+              setIsDragging(true);
+            }
           }}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{
             opacity: 1,
             scale: 1,
-            x: initialPosition.x,
-            y: initialPosition.y,
           }}
           transition={{ duration: 0.4, type: 'spring' }}
-          style={{ 
-            position: 'fixed',
-            right: initialPosition.x === 0 && initialPosition.y === 0 ? '20px' : undefined,
-            top: initialPosition.x === 0 && initialPosition.y === 0 ? '50%' : undefined,
-            transform: initialPosition.x === 0 && initialPosition.y === 0 ? 'translateY(-50%)' : undefined,
-          }}
-          onClick={(_event) => {
-            // Prevent opening if user just finished dragging
-            if (!didDrag) {
-              setTerminalMinimized(false);
-              setHasUnreadMessages(false);
-              // Clear label timer since terminal is opening
-              if (labelTimeoutRef.current) {
-                clearTimeout(labelTimeoutRef.current);
-                labelTimeoutRef.current = null;
+          onClick={(event) => {
+            console.log('[Terminal] Click detected - isDragging:', isDragging, 'terminalMinimized:', terminalMinimized);
+            
+            // Prevent event bubbling to parent elements
+            event.stopPropagation();
+            
+            // Add a small delay to ensure drag state is properly reset
+            setTimeout(() => {
+              console.log('[Terminal] Processing click after delay - isDragging:', isDragging);
+              if (!isDragging) {
+                console.log('[Terminal] Expanding terminal...');
+                setTerminalMinimized(false);
+                setHasUnreadMessages(false);
+              } else {
+                console.log('[Terminal] Click ignored - currently dragging');
               }
-            }
+            }, 100);
+          }}
+          onDoubleClick={(event) => {
+            console.log('[Terminal] Double-click detected - opening terminal');
+            event.stopPropagation();
+            // Open terminal on double-click
+            setIsDragging(false);
+            setTerminalMinimized(false);
+            setHasUnreadMessages(false);
           }}
           whileDrag={{ scale: 1.1, boxShadow: "0px 10px 30px rgba(0,0,0,0.3)" }}
         >
           {/* Digital Terminal Container */}
           <motion.div
-            className="w-16 h-16 md:w-[70px] md:h-[70px] bg-black/80 backdrop-blur-md border border-purple-500/40 rounded-lg overflow-hidden relative"
+            className="w-16 h-16 md:w-[70px] md:h-[70px] bg-black/80 backdrop-blur-md border border-purple-500/40 rounded-full overflow-hidden relative"
             animate={{
               boxShadow: easterEggActivated ?
                 ["0 0 10px rgba(74, 222, 128, 0.3)", "0 0 20px rgba(74, 222, 128, 0.5)", "0 0 10px rgba(74, 222, 128, 0.3)"] :
@@ -1006,6 +895,109 @@ export const Terminal = ({
             <div className="absolute inset-0 flex items-center justify-center">
               {/* AI "Face" Representation */}
               <div className="relative w-12 h-8 flex items-center justify-center">
+                {/* Beautiful Flowing Blonde Hair */}
+                {/* Top hair layers - more voluminous */}
+                <motion.div
+                  className="absolute -top-3 left-0 w-3 h-4 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform -rotate-15"
+                  animate={{
+                    rotate: [-15, -10, -15],
+                    scale: [1, 1.08, 1],
+                    y: [0, -0.5, 0]
+                  }}
+                  transition={{ duration: 3.5, repeat: Infinity }}
+                  style={{
+                    filter: 'brightness(1.2) drop-shadow(0 0 2px rgba(255, 215, 0, 0.6))'
+                  }}
+                />
+                <motion.div
+                  className="absolute -top-3 left-2 w-2.5 h-4 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform rotate-5"
+                  animate={{
+                    rotate: [5, 10, 5],
+                    scale: [1, 1.06, 1],
+                    y: [0, -0.3, 0]
+                  }}
+                  transition={{ duration: 2.8, repeat: Infinity }}
+                  style={{
+                    filter: 'brightness(1.15) drop-shadow(0 0 2px rgba(255, 215, 0, 0.5))'
+                  }}
+                />
+                <motion.div
+                  className="absolute -top-3 right-2 w-2.5 h-4 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform -rotate-5"
+                  animate={{
+                    rotate: [-5, -10, -5],
+                    scale: [1, 1.06, 1],
+                    y: [0, -0.3, 0]
+                  }}
+                  transition={{ duration: 3.1, repeat: Infinity }}
+                  style={{
+                    filter: 'brightness(1.15) drop-shadow(0 0 2px rgba(255, 215, 0, 0.5))'
+                  }}
+                />
+                <motion.div
+                  className="absolute -top-3 right-0 w-3 h-4 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform rotate-15"
+                  animate={{
+                    rotate: [15, 10, 15],
+                    scale: [1, 1.08, 1],
+                    y: [0, -0.5, 0]
+                  }}
+                  transition={{ duration: 3.7, repeat: Infinity }}
+                  style={{
+                    filter: 'brightness(1.2) drop-shadow(0 0 2px rgba(255, 215, 0, 0.6))'
+                  }}
+                />
+                
+                {/* Long flowing side hair pieces */}
+                <motion.div
+                  className="absolute -left-2 top-0 w-1.5 h-5 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-500 rounded-full transform -rotate-25"
+                  animate={{
+                    rotate: [-25, -18, -25],
+                    x: [0, 1, 0],
+                    scaleY: [1, 1.1, 1]
+                  }}
+                  transition={{ duration: 4.5, repeat: Infinity }}
+                  style={{
+                    filter: 'brightness(1.1) drop-shadow(0 0 3px rgba(255, 215, 0, 0.4))'
+                  }}
+                />
+                <motion.div
+                  className="absolute -right-2 top-0 w-1.5 h-5 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-500 rounded-full transform rotate-25"
+                  animate={{
+                    rotate: [25, 18, 25],
+                    x: [0, -1, 0],
+                    scaleY: [1, 1.1, 1]
+                  }}
+                  transition={{ duration: 4.8, repeat: Infinity }}
+                  style={{
+                    filter: 'brightness(1.1) drop-shadow(0 0 3px rgba(255, 215, 0, 0.4))'
+                  }}
+                />
+                
+                {/* Hair behind the face */}
+                <motion.div
+                  className="absolute -top-2 -left-1 w-6 h-3 bg-gradient-to-r from-yellow-300 to-yellow-400 rounded-full transform -rotate-8 opacity-80"
+                  animate={{
+                    rotate: [-8, -5, -8],
+                    scale: [1, 1.02, 1]
+                  }}
+                  transition={{ duration: 5, repeat: Infinity }}
+                  style={{
+                    filter: 'brightness(1.05)',
+                    zIndex: -1
+                  }}
+                />
+                <motion.div
+                  className="absolute -top-2 -right-1 w-6 h-3 bg-gradient-to-l from-yellow-300 to-yellow-400 rounded-full transform rotate-8 opacity-80"
+                  animate={{
+                    rotate: [8, 5, 8],
+                    scale: [1, 1.02, 1]
+                  }}
+                  transition={{ duration: 5.3, repeat: Infinity }}
+                  style={{
+                    filter: 'brightness(1.05)',
+                    zIndex: -1
+                  }}
+                />
+                
                 {/* Eyebrows */}
                 <motion.div 
                   className="absolute top-0 w-full flex justify-between px-1"
@@ -1034,12 +1026,13 @@ export const Terminal = ({
                 
                 {/* Eyes Container */}
                 <div className="flex items-center gap-1">
-                  {/* Left Eye */}
+                  {/* Left Eye - More Googly */}
                   <motion.div
-                    className={`h-4 w-4 rounded-full ${easterEggActivated ? 'bg-gradient-to-r from-green-400 to-cyan-300' : 'bg-gradient-to-r from-purple-500 to-cyan-400'}`}
+                    className={`h-4 w-4 rounded-full border-2 ${easterEggActivated ? 'bg-white border-green-400' : 'bg-white border-purple-400'} relative`}
                     animate={{
                       scale: hasUnreadMessages ? [0.9, 1.1, 0.9] : [0.8, 1, 0.8],
-                      scaleY: [1, 0.1, 1] // Blinking effect
+                      scaleY: [1, 0.1, 1], // Blinking effect
+                      rotate: hasUnreadMessages ? [0, 5, -5, 0] : 0
                     }}
                     transition={{
                       scale: {
@@ -1052,30 +1045,44 @@ export const Terminal = ({
                         repeat: Infinity,
                         repeatDelay: 2,
                         times: [0, 0.05, 0.1, 1]
+                      },
+                      rotate: {
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut"
                       }
                     }}
                   >
-                    {/* Left Pupil */}
+                    {/* Left Pupil - Bigger and More Mobile */}
                     <motion.div
-                      className="absolute w-1.5 h-1.5 bg-black rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                      className="absolute w-2.5 h-2.5 bg-black rounded-full"
                       animate={{
-                        scale: [1, 1.2, 1],
-                        x: hasUnreadMessages ? [-0.5, 0.5, -0.5] : 0
+                        x: hasUnreadMessages ? [-4, 4, -2, 2, 0] : [-1, 1, -1],
+                        y: hasUnreadMessages ? [-2, 2, -1, 1, 0] : [-0.5, 0.5, -0.5],
+                        scale: [1, 1.3, 0.8, 1]
                       }}
                       transition={{
-                        duration: 2.5,
+                        duration: hasUnreadMessages ? 1.2 : 3,
                         repeat: Infinity,
-                        repeatType: "mirror"
+                        repeatType: "mirror",
+                        ease: "easeInOut"
+                      }}
+                      style={{
+                        top: '25%',
+                        left: '25%'
                       }}
                     />
+                    {/* Eye shine */}
+                    <div className="absolute w-1 h-1 bg-white rounded-full top-1 left-1 opacity-80" />
                   </motion.div>
                   
-                  {/* Right Eye */}
+                  {/* Right Eye - More Googly */}
                   <motion.div
-                    className={`h-4 w-4 rounded-full ${easterEggActivated ? 'bg-gradient-to-r from-green-400 to-cyan-300' : 'bg-gradient-to-r from-purple-500 to-cyan-400'}`}
+                    className={`h-4 w-4 rounded-full border-2 ${easterEggActivated ? 'bg-white border-green-400' : 'bg-white border-purple-400'} relative`}
                     animate={{
                       scale: hasUnreadMessages ? [0.9, 1.1, 0.9] : [0.8, 1, 0.8],
-                      scaleY: [1, 0.1, 1] // Synchronized blinking
+                      scaleY: [1, 0.1, 1], // Synchronized blinking
+                      rotate: hasUnreadMessages ? [0, -5, 5, 0] : 0
                     }}
                     transition={{
                       scale: {
@@ -1088,31 +1095,39 @@ export const Terminal = ({
                         repeat: Infinity,
                         repeatDelay: 2,
                         times: [0, 0.05, 0.1, 1]
+                      },
+                      rotate: {
+                        duration: 1.8,
+                        repeat: Infinity,
+                        ease: "easeInOut"
                       }
                     }}
                   >
-                    {/* Right Pupil */}
+                    {/* Right Pupil - Bigger and More Mobile */}
                     <motion.div
-                      className="absolute w-1.5 h-1.5 bg-black rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                      className="absolute w-2.5 h-2.5 bg-black rounded-full"
                       animate={{
-                        scale: [1, 1.2, 1],
-                        x: hasUnreadMessages ? [-0.5, 0.5, -0.5] : 0
+                        x: hasUnreadMessages ? [4, -4, 2, -2, 0] : [1, -1, 1],
+                        y: hasUnreadMessages ? [2, -2, 1, -1, 0] : [0.5, -0.5, 0.5],
+                        scale: [1, 0.8, 1.3, 1]
                       }}
                       transition={{
-                        duration: 2.5,
+                        duration: hasUnreadMessages ? 1.4 : 3.2,
                         repeat: Infinity,
-                        repeatType: "mirror"
+                        repeatType: "mirror",
+                        ease: "easeInOut"
+                      }}
+                      style={{
+                        top: '25%',
+                        left: '25%'
                       }}
                     />
+                    {/* Eye shine */}
+                    <div className="absolute w-1 h-1 bg-white rounded-full top-1 left-1 opacity-80" />
                   </motion.div>
                 </div>
 
                 {/* Digital Circuitry/Aura */}
-                <motion.div
-                  className={`absolute w-full h-full border border-dashed ${easterEggActivated ? 'border-green-400/60' : 'border-purple-400/60'} rounded-full`}
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                />
                 <motion.div
                   className={`absolute w-8 h-8 border ${easterEggActivated ? 'border-green-500/40' : 'border-cyan-500/40'} rounded-full`}
                   animate={{ rotate: -360 }}
@@ -1178,11 +1193,11 @@ export const Terminal = ({
 
           {/* Hover tooltip - Enhanced for Character */}
           <motion.div
-            className="absolute bottom-full right-0 mb-2 opacity-0 transition-all duration-200 pointer-events-none"
+            className="absolute bottom-full left-full ml-2 opacity-0 transition-all duration-200 pointer-events-none"
             initial={{ y: 10, opacity: 0 }}
             animate={{ 
               y: 0, 
-              opacity: showLabel && !isDragging ? 1 : 0
+              opacity: hasUnreadMessages && !isDragging ? 1 : 0
             }}
             transition={{ duration: 0.3 }}
           >
