@@ -15,6 +15,16 @@ import { AIMessage } from "../../services/ai"; // Import AIMessage
 // Size option for the Terminal component
 export type TerminalSize = 'contracted' | 'middle' | 'large';
 
+// Layout mode options for the Terminal component
+export type TerminalLayoutMode = 'bottom-fixed' | 'sidebar' | 'floating' | 'inline' | 'modal';
+
+// Position options for different layout modes
+export interface TerminalPosition {
+  side?: 'left' | 'right';
+  x?: number;
+  y?: number;
+}
+
 // For the Terminal component props
 export interface TerminalProps {
   config: {

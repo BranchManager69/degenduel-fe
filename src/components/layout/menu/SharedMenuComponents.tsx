@@ -53,12 +53,6 @@ export const WalletDetailsSection: React.FC<{ user: User }> = ({ user }) => (
         </div>
       </div>
       
-      <Link to="/wallet" className="text-xs text-brand-400 hover:text-brand-300 transition-colors duration-200 flex justify-end items-center">
-        <span>View wallet details</span>
-        <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-        </svg>
-      </Link>
     </div>
   </div>
 );
@@ -154,34 +148,48 @@ export const MenuBackdrop: React.FC<{
   onClose: () => void;
   isMobile?: boolean;
 }> = ({ isOpen, onClose, isMobile = false }) => {
-  // Prevent body scrolling when menu is open - FIXED: Apply to both mobile and desktop
+  // Preserve scroll position when menu opens - FIXED: Don't use overflow:hidden which breaks sticky positioning
   useEffect(() => {
     if (isOpen) {
-      // Calculate scrollbar width to prevent layout shift
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      // Store current scroll position
+      const scrollY = window.scrollY;
+      const scrollX = window.scrollX;
       
-      // Set CSS custom property for scrollbar width compensation
-      if (scrollbarWidth > 0) {
-        document.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
-        document.body.classList.add('scroll-lock-compensate');
-        document.documentElement.classList.add('scroll-lock-compensate');
-      }
+      // Apply fixed positioning to body while preserving scroll position
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = `-${scrollX}px`;
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
       
-      // Apply scroll lock using CSS classes (more reliable than direct style manipulation)
-      document.body.classList.add('scroll-lock');
-      document.documentElement.classList.add('scroll-lock');
+      // Prevent scrolling on touch devices (but allow menu interactions)
+      const preventScroll = (e: TouchEvent) => {
+        // Only prevent scroll if not touching the menu area
+        const target = e.target as Element;
+        if (!target.closest('[role="menu"]') && !target.closest('.mobile-menu-content')) {
+          e.preventDefault();
+        }
+      };
+      
+      document.addEventListener('touchmove', preventScroll, { passive: false });
       
       // Re-enable scrolling when the backdrop is removed
       return () => {
-        // Remove scroll lock classes
-        document.body.classList.remove('scroll-lock', 'scroll-lock-compensate');
-        document.documentElement.classList.remove('scroll-lock', 'scroll-lock-compensate');
+        // Remove touch scroll prevention
+        document.removeEventListener('touchmove', preventScroll);
         
-        // Clean up CSS custom property
-        document.documentElement.style.removeProperty('--scrollbar-width');
+        // Restore normal positioning
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
+        
+        // Restore scroll position
+        window.scrollTo(scrollX, scrollY);
       };
     }
-  }, [isOpen]); // FIXED: Removed isMobile dependency - apply to both mobile and desktop
+  }, [isOpen]);
 
   if (!isOpen) return null;
   

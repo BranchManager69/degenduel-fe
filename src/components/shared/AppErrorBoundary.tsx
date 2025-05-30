@@ -95,7 +95,7 @@ export class AppErrorBoundary extends React.Component<
       // available without adding async complexity or potential failure points to the error handling path.
 
       return (
-        <div className="min-h-screen flex flex-col bg-dark-900 text-gray-100 items-center justify-center p-4 text-center">
+        <div className="min-h-screen flex flex-col bg-gray-900 text-gray-100 items-center justify-center p-4 text-center">
           {ServerDownBanner ? <ServerDownBanner /> : null} 
 
           {/* 

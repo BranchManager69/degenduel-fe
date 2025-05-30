@@ -162,6 +162,7 @@ export const SOCKET_TYPES = {
   // Market data sockets
   TOKEN_DATA: 'token-data',
   MARKET_DATA: 'market-data',
+  TOKEN_PROFILES: 'token-profiles',
   
   // User data sockets
   PORTFOLIO: 'portfolio',

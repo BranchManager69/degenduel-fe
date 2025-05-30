@@ -40,7 +40,7 @@ import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 const transformBackendTokenData = (backendToken: any): Token => {
   return {
     contractAddress: backendToken.address || "",
-    status: "active",
+    status: backendToken.is_active === false ? "inactive" : "active", // Use backend is_active flag
     name: backendToken.name || "",
     symbol: backendToken.symbol || "",
     price: backendToken.price?.toString() || "0",

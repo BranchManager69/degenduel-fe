@@ -650,9 +650,15 @@ export default {
           "0%, 100%": { opacity: "1", transform: "scale(1)" },
           "50%": { opacity: "0.4", transform: "scale(0.8)" },
         },
-        "contest-card-entrance": {
-          "0%": { transform: "translateY(20px)", opacity: "0" },
-          "100%": { transform: "translateY(0)", opacity: "1" },
+        contestCardEntrance: {
+          "0%": { 
+            transform: "translateX(100%) rotateY(12deg)", 
+            opacity: "0" 
+          },
+          "100%": { 
+            transform: "translateX(0) rotateY(0deg)", 
+            opacity: "1" 
+          },
         },
         parallax: {
           "0%": { transform: "translateX(0) scale(1.25)" },

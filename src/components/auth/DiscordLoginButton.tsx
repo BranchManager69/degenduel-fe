@@ -32,9 +32,8 @@ const DiscordLoginButton: React.FC<DiscordLoginButtonProps> = ({
   const {
     user, 
     isLoading, 
-    // TODO: Add linkDiscord method to useMigratedAuth hook
-    // linkDiscord,
-    // isDiscordLinked,
+    linkDiscord,
+    // isDiscordLinked, // TODO: Use this to show link status
   } = useMigratedAuth();
   
   const [isProcessing, setIsProcessing] = React.useState(false);
@@ -47,7 +46,7 @@ const DiscordLoginButton: React.FC<DiscordLoginButtonProps> = ({
     };
   }, []);
 
-  // TODO: Implement Discord linking check
+  // Check if Discord is already linked (for future use)
   // const actualIsDiscordLinked = isDiscordLinked();
 
   const handleDiscordAuth = async () => {
@@ -60,25 +59,10 @@ const DiscordLoginButton: React.FC<DiscordLoginButtonProps> = ({
       
       if (linkMode || user) {
         // For linking mode or authenticated users
-        // TODO: Implement linkDiscord method
-        // redirectUrl = await linkDiscord();
-        
-        // Temporary implementation - construct Discord OAuth URL manually
-        const baseUrl = window.location.origin;
-        const clientId = process.env.REACT_APP_DISCORD_CLIENT_ID || 'YOUR_DISCORD_CLIENT_ID';
-        const redirectUri = encodeURIComponent(`${baseUrl}/api/auth/discord/callback`);
-        const scope = encodeURIComponent('identify email');
-        const state = encodeURIComponent(JSON.stringify({ linkMode: true, userId: user?.id }));
-        
-        redirectUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}`;
+        redirectUrl = await linkDiscord();
       } else {
-        // For login mode (no authenticated user)
-        const baseUrl = window.location.origin;
-        const clientId = process.env.REACT_APP_DISCORD_CLIENT_ID || 'YOUR_DISCORD_CLIENT_ID';
-        const redirectUri = encodeURIComponent(`${baseUrl}/api/auth/discord/callback`);
-        const scope = encodeURIComponent('identify email');
-        
-        redirectUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+        // For login mode (no authenticated user) - redirect to login endpoint
+        redirectUrl = '/api/auth/discord/login';
       }
       
       if (redirectUrl) {

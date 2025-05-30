@@ -26,6 +26,8 @@ dd-rpc/
 docs/
 docs_drafts/
 CLAUDE.md
+_DEGEN_PROTOCOL.md
+_ADMIN_WALLET_DASHBOARD.md
 
 # Environments
 .env

@@ -23,7 +23,6 @@ import { AdminControls } from "./UserMenuAdminControls";
 import { getMenuItems } from '../menu/menuConfig';
 import { NotificationsDropdown } from '../menu/NotificationsDropdown';
 import {
-    BiometricAuthComponent,
     MenuDivider,
     SectionHeader,
     WalletDetailsSection
@@ -412,13 +411,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
                     <MenuDivider />
                     
-                    {/* Use shared Biometric Authentication Component */}
-                    {user.wallet_address && (
+                    {/* COMMENTED OUT: Biometric Authentication Component */}
+                    {/* {user.wallet_address && (
                       <BiometricAuthComponent 
                         userId={user.wallet_address}
                         menuItemClass={`${menuItemClass} text-blue-300 hover:text-blue-200 hover:bg-blue-500/20`}
                       />
-                    )}
+                    )} */}
 
                     {/* Add navigation sections from shared config */}
                     <MenuDivider />
@@ -470,7 +469,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                           to="/mcp"
                           className={`
                             relative group overflow-hidden transition-all duration-300 ease-out
-                            flex items-center gap-2 px-4 py-2 text-sm rounded-md
+                            flex items-center justify-between px-4 py-2 text-sm rounded-md
                             bg-gradient-to-r from-purple-600/20 via-pink-500/20 to-purple-600/20
                             border border-purple-500/30 hover:border-purple-400/50
                             text-purple-200 hover:text-white
@@ -487,29 +486,49 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                             <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
                           </div>
                           
-                          <svg
-                            className={`
-                              relative w-4 h-4 transition-all duration-300
-                              ${active ? "text-purple-100" : "text-purple-200 group-hover:text-purple-100"}
-                              group-hover:scale-110
-                            `}
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                          </svg>
-                          <span className="relative flex-1 font-semibold tracking-wide group-hover:text-shadow-sm">MCP</span>
+                          <span className="relative font-semibold tracking-wide group-hover:text-shadow-sm whitespace-nowrap">Connect to Degen MCP</span>
                           
                           {/* Subtle pulse indicator */}
                           <div className="relative w-2 h-2 rounded-full bg-purple-400 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
                             <div className="absolute inset-0 rounded-full bg-purple-300 animate-ping opacity-40 group-hover:opacity-60" />
                           </div>
                         </Link>
+                      )}
+                    </Menu.Item>
+
+                    {/* Twitter/X Section - Special Styling */}
+                    <Menu.Item>
+                      {({ active }) => (
+                        <a
+                          href="https://degenduel.me/api/auth/twitter/login"
+                          className={`
+                            relative group overflow-hidden transition-all duration-300 ease-out
+                            flex items-center justify-between px-4 py-2 text-sm rounded-md
+                            bg-gradient-to-r from-blue-600/20 via-cyan-500/20 to-blue-600/20
+                            border border-blue-500/30 hover:border-blue-400/50
+                            text-blue-200 hover:text-white
+                            hover:shadow-[0_0_12px_rgba(59,130,246,0.4)]
+                            ${active ? 'from-blue-500/30 via-cyan-400/30 to-blue-500/30 border-blue-400/60 text-white shadow-[0_0_8px_rgba(59,130,246,0.3)]' : ''}
+                          `}
+                          role="menuitem"
+                        >
+                          {/* Background shine effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                          
+                          {/* Scan line effect */}
+                          <div className="absolute inset-0 overflow-hidden">
+                            <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
+                          </div>
+                          
+                          <span className="relative font-semibold tracking-wide group-hover:text-shadow-sm whitespace-nowrap">Connect with X</span>
+                          
+                          {/* X icon */}
+                          <div className="relative w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+                              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                          </div>
+                        </a>
                       )}
                     </Menu.Item>
 

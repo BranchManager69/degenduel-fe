@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import toast from "react-hot-toast";
 
 import { WebSocketMonitor } from "../../components/debug/websocket/WebSocketMonitor";
@@ -6,135 +6,9 @@ import { useStore } from "../../store/useStore";
 
 // Config
 const WS_URL = import.meta.env.VITE_WS_URL;
-////const TOKEN_DATA_WSS_PATH = `/api/v2/ws/tokenData`;
-const TOKEN_DATA_WSS_PATH = `/api/ws/token-data`;
-const TOKEN_DATA_LOCAL_URL = `localhost:6000`;
 
-// WebSocket Connection Status component
-const ConnectionStatus: React.FC<{
-  socketType: string;
-  url: string;
-  endpoint: string;
-}> = ({ socketType, url, endpoint }) => {
-  const [status, setStatus] = useState<
-    "connecting" | "online" | "offline" | "error"
-  >("offline");
-  const [lastChecked, setLastChecked] = useState<Date | null>(null);
-  const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
-    checkConnection();
-    // Check connection every 10 seconds
-    const interval = setInterval(checkConnection, 10000);
-    return () => clearInterval(interval);
-  }, [socketType, url, endpoint]);
-
-  const checkConnection = () => {
-    setStatus("connecting");
-
-    // Simple connectivity check using fetch to verify that the URL is reachable
-    // Not a perfect test but better than nothing
-    const httpUrl = url
-      .replace("wss://", "https://")
-      .replace("ws://", "http://");
-
-    // Add a random parameter to avoid caching
-    fetch(`${httpUrl}/status?t=${Date.now()}`)
-      .then(() => {
-        // If we get any response, consider it online
-        setStatus("online");
-        setLastChecked(new Date());
-      })
-      .catch((error) => {
-        console.log(`Connection error for ${socketType}:`, error);
-        setStatus("offline");
-        setLastChecked(new Date());
-      });
-
-    // Production code should rely on actual connection status
-    // No mock statuses
-  };
-
-  return (
-    <div
-      className="bg-dark-300 rounded-lg p-4 border border-gray-700 mb-2 cursor-pointer hover:bg-dark-300/50"
-      onClick={() => setExpanded(!expanded)}
-    >
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-3">
-          <div
-            className={`w-3 h-3 rounded-full ${
-              status === "online"
-                ? "bg-green-500 animate-pulse"
-                : status === "connecting"
-                  ? "bg-yellow-500"
-                  : status === "error"
-                    ? "bg-red-500"
-                    : "bg-gray-500"
-            }`}
-          />
-          <span className="font-medium">{socketType}</span>
-        </div>
-        <div className="flex items-center space-x-3">
-          <span className="text-xs text-gray-400">
-            {lastChecked
-              ? `Last checked: ${lastChecked.toLocaleTimeString()}`
-              : "Not checked"}
-          </span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              checkConnection();
-            }}
-            className="px-2 py-1 bg-gray-600/20 text-gray-400 hover:bg-gray-600/40 rounded-md text-xs"
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      {expanded && (
-        <div className="mt-4 text-sm text-gray-400 border-t border-gray-700 pt-3">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <div className="text-xs text-gray-500">URL</div>
-              <div className="font-mono">{url}</div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500">Endpoint</div>
-              <div className="font-mono">{endpoint}</div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500">Status</div>
-              <div
-                className={`
-                ${
-                  status === "online"
-                    ? "text-green-400"
-                    : status === "connecting"
-                      ? "text-yellow-400"
-                      : status === "error"
-                        ? "text-red-400"
-                        : "text-gray-400"
-                }
-              `}
-              >
-                {status.toUpperCase()}
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500">Full Path</div>
-              <div className="font-mono text-xs truncate">
-                {url}
-                {endpoint}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+// DEPRECATED: Old connection status component - removed for unified system
+/* ... ConnectionStatus component removed ... */
 
 const WebSocketDashboard: React.FC = () => {
   const { user } = useStore();
@@ -142,64 +16,58 @@ const WebSocketDashboard: React.FC = () => {
     "status",
   );
 
-  // All WebSocket hooks and endpoints
-  const websocketEndpoints = [
+  // UNIFIED WEBSOCKET SYSTEM - All topics use single connection
+  // NOTE: The unified system uses topic-based subscriptions through one connection
+  const websocketTopics = [
     {
-      type: "contest-chat",
-      url: WS_URL,
-      endpoint: "/v2/ws/contest",
+      type: "market-data",
+      description: "Real-time market data for tokens",
+      authRequired: false,
     },
     {
-      type: "skyduel",
-      url: WS_URL,
-      endpoint: "/api/admin/skyduel",
+      type: "portfolio", 
+      description: "User portfolio information",
+      authRequired: true,
     },
     {
-      type: "wallet",
-      url: WS_URL,
-      endpoint: "/v2/ws/wallet",
-    },
-    {
-      type: "market",
-      url: WS_URL,
-      endpoint: "/v2/ws/market",
-    },
-    {
-      type: "achievements",
-      url: WS_URL,
-      endpoint: "/v2/ws/achievements",
-    },
-    {
-      type: "portfolio",
-      url: WS_URL,
-      endpoint: "/v2/ws/portfolio",
+      type: "system",
+      description: "System-wide notifications and events", 
+      authRequired: false,
     },
     {
       type: "contest",
-      url: WS_URL,
-      endpoint: "/v2/ws/contest/:contestId",
+      description: "Contest information and updates",
+      authRequired: false, // Public data, Yes for user-specific
     },
     {
-      type: "circuit-breaker",
-      url: WS_URL,
-      endpoint: "/api/admin/circuit-breaker",
+      type: "user",
+      description: "User profile and statistics",
+      authRequired: true,
     },
     {
-      type: "services",
-      url: WS_URL,
-      endpoint: "/api/admin/services",
+      type: "admin",
+      description: "Administrative functions",
+      authRequired: true, // Admin role required
     },
     {
-      type: "analytics",
-      url: WS_URL,
-      endpoint: "/analytics",
+      type: "wallet",
+      description: "Wallet information and transactions",
+      authRequired: true,
     },
     {
-      type: "token-data",
-      url: WS_URL,
-      endpoint: TOKEN_DATA_WSS_PATH,
+      type: "skyduel",
+      description: "SkyDuel game data", 
+      authRequired: false, // Public data, Yes for user-specific
+    },
+    {
+      type: "logs",
+      description: "Client logging facility",
+      authRequired: false,
     },
   ];
+
+  // DEPRECATED: Old endpoint testing - DO NOT USE  
+  // (removed deprecatedEndpoints - not needed in UI)
 
   if (!user?.is_admin && !user?.is_superadmin) {
     return (
@@ -267,14 +135,45 @@ const WebSocketDashboard: React.FC = () => {
                 application. Click on a connection to see more details.
               </p>
 
-              {websocketEndpoints.map((endpoint) => (
-                <ConnectionStatus
-                  key={endpoint.type}
-                  socketType={endpoint.type}
-                  url={endpoint.url}
-                  endpoint={endpoint.endpoint}
-                />
-              ))}
+              {/* Current Unified System Status */}
+              <div className="bg-green-900/20 border border-green-500/30 rounded-md p-4 mb-4">
+                <h3 className="text-green-400 font-semibold mb-2">✅ Unified WebSocket System (Current)</h3>
+                <div className="space-y-2">
+                  <div><strong>Connection URL:</strong> <code className="text-green-400">{WS_URL}</code></div>
+                  <div><strong>Architecture:</strong> Single connection with topic-based subscriptions</div>
+                  <div><strong>Topics Available:</strong></div>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {websocketTopics.map((topic) => (
+                      <div key={topic.type} className="bg-dark-300/50 p-2 rounded text-sm">
+                        <div className="font-medium text-green-400">{topic.type}</div>
+                        <div className="text-xs text-gray-400">{topic.description}</div>
+                        <div className="text-xs">{topic.authRequired ? "🔒 Auth Required" : "🌐 Public"}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Deprecated System Warning */}
+              <div className="bg-red-900/20 border border-red-500/30 rounded-md p-4">
+                <h3 className="text-red-400 font-semibold mb-2">❌ Deprecated v2 WebSocket System</h3>
+                <p className="text-red-300 text-sm mb-2">
+                  The following endpoints NO LONGER EXIST and will cause connection failures:
+                </p>
+                <div className="bg-dark-300/50 p-3 rounded font-mono text-xs text-red-400 space-y-1">
+                  <div>❌ /v2/ws/contest</div>
+                  <div>❌ /v2/ws/wallet</div>
+                  <div>❌ /v2/ws/market</div>
+                  <div>❌ /v2/ws/portfolio</div>
+                  <div>❌ /api/admin/skyduel</div>
+                  <div>❌ /api/admin/circuit-breaker</div>
+                  <div>❌ /api/admin/services</div>
+                  <div>❌ /analytics</div>
+                </div>
+                <p className="text-yellow-400 text-sm mt-2">
+                  <strong>Migration:</strong> All functionality has been moved to the unified topic-based system above.
+                </p>
+              </div>
             </div>
 
             <div className="bg-dark-200 rounded-lg p-6 shadow-lg border border-gray-700">
@@ -646,61 +545,70 @@ const EXAMPLE_PAYLOADS: Record<string, Record<string, any>> = {
   },
 };
 
-const SOCKET_TYPES = {
+// UNIFIED WEBSOCKET TOPICS - All use single connection with topic subscriptions
+const UNIFIED_TOPICS = {
+  "market-data": {
+    description: "Real-time market data for tokens",
+    authRequired: false,
+    messageTypes: ["MARKET_PRICE", "MARKET_VOLUME", "MARKET_SENTIMENT", "TOKEN_UPDATE"],
+  },
   portfolio: {
-    endpoint: "/api/v2/ws/portfolio",
+    description: "User portfolio information", 
+    authRequired: true,
     messageTypes: ["PORTFOLIO_UPDATED", "TRADE_EXECUTED"],
   },
+  system: {
+    description: "System-wide notifications and events",
+    authRequired: false,
+    messageTypes: ["SYSTEM_NOTIFICATION", "MAINTENANCE_UPDATE"],
+  },
   contest: {
-    endpoint: "/api/v2/ws/contest/:contestId",
+    description: "Contest information and updates",
+    authRequired: false, // Public data, auth required for user-specific
     messageTypes: ["CONTEST_UPDATED", "LEADERBOARD_UPDATED"],
   },
-  market: {
-    endpoint: "/api/v2/ws/market",
-    messageTypes: ["MARKET_PRICE", "MARKET_VOLUME", "MARKET_SENTIMENT"],
+  user: {
+    description: "User profile and statistics",
+    authRequired: true,
+    messageTypes: ["USER_UPDATED", "STATS_UPDATED"],
   },
-  analytics: {
-    endpoint: "/analytics",
-    messageTypes: ["user_activity_update"],
+  admin: {
+    description: "Administrative functions",
+    authRequired: true, // Admin role required
+    messageTypes: ["ADMIN_NOTIFICATION", "SERVICE_ALERT"],
   },
   wallet: {
-    endpoint: "/api/v2/ws/wallet",
+    description: "Wallet information and transactions",
+    authRequired: true,
     messageTypes: ["WALLET_UPDATED", "TRANSFER_COMPLETE"],
   },
-  service: {
-    endpoint: "/api/admin/services",
-    messageTypes: ["service:state", "service:alert"],
+  skyduel: {
+    description: "SkyDuel game data",
+    authRequired: false, // Public data, auth required for user-specific  
+    messageTypes: ["GAME_STATE", "PLAYER_UPDATE"],
   },
-  circuitBreaker: {
-    endpoint: "/api/admin/circuit-breaker",
-    messageTypes: ["health:update", "breaker:trip"],
-  },
-  tokenData: {
-    ////endpoint: "/api/v2/ws/tokenData",
-    endpoint: TOKEN_DATA_LOCAL_URL,
-    messageTypes: [
-      "subscribe",
-      "token_update",
-      "token_price",
-      "token_metadata",
-      "token_liquidity",
-    ],
+  logs: {
+    description: "Client logging facility",
+    authRequired: false,
+    messageTypes: ["LOG_ENTRY", "ERROR_REPORT"],
   },
 } as const;
 
-type SocketType = keyof typeof SOCKET_TYPES;
+// DEPRECATED - All v2 WebSocket endpoints removed and replaced with unified topic system
 
-// This component is now used as a tab inside WebSocketDashboard
+type TopicType = keyof typeof UNIFIED_TOPICS;
+
+// This component is now used as a tab inside WebSocketDashboard  
 const WebSocketTesting: React.FC = () => {
-  const [selectedSocket, setSelectedSocket] = useState<SocketType | "">("");
+  const [selectedTopic, setSelectedTopic] = useState<TopicType | "">("");
   const [selectedMessageType, setSelectedMessageType] = useState<string>("");
   const [messagePayload, setMessagePayload] = useState<string>("");
-  const [testStatus, setTestStatus] = useState<Record<string, boolean>>({});
+  // Note: testStatus removed - not used in unified system
 
   // Load example payload when message type is selected
   const loadExamplePayload = (messageType: string) => {
-    if (selectedSocket && messageType) {
-      const example = EXAMPLE_PAYLOADS[selectedSocket]?.[messageType];
+    if (selectedTopic && messageType) {
+      const example = EXAMPLE_PAYLOADS[selectedTopic]?.[messageType];
       if (example) {
         setMessagePayload(JSON.stringify(example, null, 2));
       }
@@ -709,13 +617,26 @@ const WebSocketTesting: React.FC = () => {
 
   const handleTest = async () => {
     try {
+      // NOTE: This would need to be updated to work with the unified WebSocket system
+      // Currently this is a placeholder for unified topic testing
+      toast.error("Testing not yet implemented for unified WebSocket system. Use the Live Monitor tab to see actual WebSocket traffic.");
+      
+      // TODO: Implement unified WebSocket topic testing
+      // This would involve:
+      // 1. Connecting to the unified WebSocket
+      // 2. Subscribing to the selected topic
+      // 3. Sending test messages through the topic system
+      
+      return;
+
+      /* DEPRECATED - Old testing method
       const response = await fetch("/api/admin/websocket/test", {
-        method: "POST",
+        method: "POST", 
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          socketType: selectedSocket,
+          topic: selectedTopic,
           messageType: selectedMessageType,
           payload: JSON.parse(messagePayload),
         }),
@@ -727,47 +648,51 @@ const WebSocketTesting: React.FC = () => {
 
       setTestStatus((prev) => ({
         ...prev,
-        [selectedSocket]: true,
+        [selectedTopic]: true,
       }));
 
       toast.success(
-        `Successfully tested ${selectedMessageType} on ${selectedSocket}`,
+        `Successfully tested ${selectedMessageType} on ${selectedTopic} topic`,
       );
+      */
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Test failed");
     }
   };
 
-  const socketOptions = Object.entries(SOCKET_TYPES).map(([key, value]) => ({
+  const topicOptions = Object.entries(UNIFIED_TOPICS).map(([key, value]) => ({
     value: key,
-    label: `${key} (${value.endpoint})`,
+    label: `${key} - ${value.description}`,
   }));
 
   return (
     <div className="bg-dark-200 rounded-lg p-6 shadow-lg border border-gray-700">
       <h2 className="text-xl font-semibold mb-4">WebSocket Message Testing</h2>
-      <p className="text-gray-400 text-sm mb-6">
-        Use this panel to test WebSocket message sending and receiving. Select a
-        WebSocket type, message type, and payload to send a test message.
-      </p>
+      <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-md p-4 mb-6">
+        <h3 className="text-yellow-400 font-semibold mb-2">⚠️ Unified WebSocket System</h3>
+        <p className="text-yellow-300 text-sm">
+          The testing functionality is being updated for the new unified WebSocket system. 
+          Use the <strong>Live Monitor</strong> tab to see actual WebSocket traffic.
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-8">
           <div className="mb-4">
             <label className="block text-sm font-medium mb-2">
-              Select WebSocket Connection
+              Select WebSocket Topic
             </label>
             <select
               className="w-full bg-dark-300 border border-gray-700 rounded-md p-2"
-              value={selectedSocket}
+              value={selectedTopic}
               onChange={(e) => {
-                setSelectedSocket(e.target.value as SocketType);
+                setSelectedTopic(e.target.value as TopicType);
                 setSelectedMessageType("");
                 setMessagePayload("");
               }}
             >
-              <option value="">Choose a socket type</option>
-              {socketOptions.map((option) => (
+              <option value="">Choose a topic</option>
+              {topicOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -786,11 +711,11 @@ const WebSocketTesting: React.FC = () => {
                 setSelectedMessageType(e.target.value);
                 loadExamplePayload(e.target.value);
               }}
-              disabled={!selectedSocket}
+              disabled={!selectedTopic}
             >
               <option value="">Choose a message type</option>
-              {selectedSocket &&
-                SOCKET_TYPES[selectedSocket].messageTypes.map((type) => (
+              {selectedTopic &&
+                UNIFIED_TOPICS[selectedTopic].messageTypes.map((type) => (
                   <option key={type} value={type}>
                     {type}
                   </option>
@@ -812,33 +737,27 @@ const WebSocketTesting: React.FC = () => {
           </div>
 
           <button
-            className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleTest}
-            disabled={
-              !selectedSocket || !selectedMessageType || !messagePayload
-            }
+            disabled={true}
           >
-            Test Connection
+            Topic Testing (Coming Soon)
           </button>
         </div>
 
         <div className="lg:col-span-4">
           <div className="bg-dark-300 rounded-lg p-4 border border-gray-700 mb-4">
-            <h3 className="font-medium mb-3">Test Results</h3>
-            {Object.keys(SOCKET_TYPES).map((socketType) => (
+            <h3 className="font-medium mb-3">Unified Topics Status</h3>
+            {Object.keys(UNIFIED_TOPICS).map((topicType) => (
               <div
-                key={socketType}
+                key={topicType}
                 className="flex justify-between items-center mb-2"
               >
-                <span className="text-sm">{socketType}</span>
+                <span className="text-sm">{topicType}</span>
                 <div className="flex items-center">
-                  <div
-                    className={`w-3 h-3 rounded-full ${
-                      testStatus[socketType] ? "bg-green-500" : "bg-gray-500"
-                    }`}
-                  />
+                  <div className="w-3 h-3 rounded-full bg-blue-500" />
                   <span className="text-xs ml-2 text-gray-400">
-                    {testStatus[socketType] ? "Tested" : "Not Tested"}
+                    Available
                   </span>
                 </div>
               </div>
@@ -846,13 +765,13 @@ const WebSocketTesting: React.FC = () => {
           </div>
 
           <div className="bg-dark-300 rounded-lg p-4 border border-gray-700">
-            <h3 className="font-medium mb-3">Testing Tips</h3>
+            <h3 className="font-medium mb-3">Unified System Info</h3>
             <ul className="text-sm text-gray-400 space-y-2">
-              <li>• Test messages are only sent to your own session</li>
-              <li>• Messages should appear in the WebSocket Monitor below</li>
-              <li>• Message types vary by WebSocket service</li>
-              <li>• Use the example payloads as starting points</li>
-              <li>• All test message timestamps are automatically updated</li>
+              <li>• All topics use single WebSocket connection</li>
+              <li>• Authentication handled per topic subscription</li>
+              <li>• Use the Live Monitor tab to see real traffic</li>
+              <li>• Topic-based messaging replaces old endpoints</li>
+              <li>• Connection automatically handles reconnection</li>
             </ul>
           </div>
         </div>

@@ -36,7 +36,7 @@ import { Divider } from "../ui/Divider";
 import {
     BiometricAuthButton,
     ConnectWalletButton,
-    ConsolidatedLoginButton,
+    SimpleWalletButton,
     DiscordLoginButton,
     TwitterLoginButton
 } from "./index";
@@ -252,7 +252,7 @@ const LoginOptions = () => {
               
               {/* Mobile view: Consolidated button display (hidden on desktop) */}
               <div className="md:hidden">
-                <ConsolidatedLoginButton />
+                <SimpleWalletButton />
               </div>
             </div>
       </CardContent>

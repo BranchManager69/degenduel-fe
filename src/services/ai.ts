@@ -253,7 +253,9 @@ class AIService {
           ...(options.conversationId && { conversationId: options.conversationId }),
           // NEW: Structured output options
           ...(options.structured_output && { structured_output: true }),
-          ...(options.ui_context && { ui_context: options.ui_context })
+          ...(options.ui_context && { ui_context: options.ui_context }),
+          // Add web search tool
+          tools: options.tools || [{ type: "web_search" }]
         }),
         signal: responseController.signal,
       });
@@ -274,35 +276,66 @@ class AIService {
       let buffer = ''; // Buffer for partial lines
       let functionCalls: any[] = [];
       let uiActions: any[] = [];
+      let chunkCount = 0;
+      
+      console.log('[AI Service Stream] Starting SSE stream processing');
 
       while (true) {
         const { done, value } = await reader.read();
+        chunkCount++;
+        
         if (done) {
-          console.debug('[AI Service Stream] SSE stream ended.');
+          console.log('[AI Service Stream] SSE stream ended.', {
+            totalChunks: chunkCount,
+            finalBufferLength: buffer.length,
+            finalBuffer: buffer.length > 0 ? buffer : 'empty'
+          });
           break;
         }
 
+        // Decode the chunk
+        const rawChunk = decoder.decode(value, { stream: true });
+        console.log(`[AI Service Stream] Chunk ${chunkCount}:`, {
+          rawLength: rawChunk.length,
+          rawPreview: rawChunk.substring(0, 100) + (rawChunk.length > 100 ? '...' : ''),
+          bufferBefore: buffer.length
+        });
+
         // Append new data to buffer
-        buffer += decoder.decode(value, { stream: true });
+        buffer += rawChunk;
         const lines = buffer.split('\n');
+        
+        console.log(`[AI Service Stream] Split into ${lines.length} lines, buffer after: ${buffer.length}`);
         
         // Keep the last potentially incomplete line in the buffer
         buffer = lines.pop() || '';
+        
+        console.log(`[AI Service Stream] Processing ${lines.length} complete lines, keeping buffer: "${buffer}"`);
 
         for (const line of lines) {
+          console.log(`[AI Service Stream] Processing line: "${line}"`);
+          
           if (line.startsWith('data: ')) {
             const jsonData = line.substring(6).trim();
+            console.log(`[AI Service Stream] Extracted JSON data: "${jsonData}"`);
+            
             if (jsonData) {
               try {
                 const eventData = JSON.parse(jsonData);
+                console.log(`[AI Service Stream] Parsed event:`, eventData);
                 
                 // Handle different event types based on the guide
                 switch (eventData.type) {
                   case 'chunk':
+                    console.log(`[AI Service Stream] Processing chunk delta: "${eventData.delta}"`);
                     if (eventData.delta) {
                       fullContent += eventData.delta;
+                      console.log(`[AI Service Stream] Full content now: ${fullContent.length} chars`);
                       if (options.onChunk) {
+                        console.log(`[AI Service Stream] Calling onChunk with: "${eventData.delta}"`);
                         options.onChunk(eventData.delta);
+                      } else {
+                        console.log(`[AI Service Stream] No onChunk callback provided`);
                       }
                     }
                     break;
@@ -352,18 +385,42 @@ class AIService {
                 }
 
               } catch (e) {
-                console.error('[AI Service Stream] Failed to parse SSE event:', jsonData, e);
+                console.error('[AI Service Stream] JSON Parse Error:', {
+                  error: e,
+                  jsonData: jsonData,
+                  jsonDataLength: jsonData.length,
+                  jsonDataPreview: jsonData.substring(0, 200),
+                  line: line,
+                  chunkNumber: chunkCount
+                });
                 // Continue processing other events
               }
+            } else {
+              console.log(`[AI Service Stream] Empty JSON data for line: "${line}"`);
             }
+          } else if (line.trim()) {
+            console.log(`[AI Service Stream] Non-data line: "${line}"`);
           }
         }
       }
 
       // Update conversation cache only after successful completion
       if (responseConversationId || fullContent) {
+        const cacheId = responseConversationId || this.generateConversationId();
+        
+        // Get existing history or start fresh
+        const existingHistory = this.conversationCache.get(cacheId) || [];
+        
+        // Add new user messages that aren't already in history
+        const newUserMessages = messages.filter(msg => 
+          msg.role === 'user' && 
+          !existingHistory.some(existing => existing.content === msg.content)
+        );
+        
+        // Build updated history with assistant response
         const updatedHistory = [
-          ...messages,
+          ...existingHistory,
+          ...newUserMessages,
           { 
             role: 'assistant' as const, 
             content: fullContent,
@@ -371,12 +428,19 @@ class AIService {
           }
         ];
         
-        const cacheId = responseConversationId || this.generateConversationId();
         this.conversationCache.set(cacheId, updatedHistory);
         responseConversationId = cacheId;
       }
 
       // Check if we got completely empty response and fallback to non-streaming
+      console.log('[AI Service Stream] Final results:', {
+        fullContentLength: fullContent.length,
+        fullContentPreview: fullContent.substring(0, 100),
+        functionCallsCount: functionCalls.length,
+        uiActionsCount: uiActions.length,
+        conversationId: responseConversationId
+      });
+      
       if (!fullContent.trim() && functionCalls.length === 0 && uiActions.length === 0) {
         console.log('[AI Service Stream] Empty response detected, falling back to non-streaming endpoint');
         // Mark this conversation to use non-streaming for the rest of the session
@@ -447,13 +511,14 @@ class AIService {
       if (options.conversationId && this.conversationCache.has(options.conversationId)) {
         const cachedMessages = this.conversationCache.get(options.conversationId) || [];
 
-        // Only include the latest user message from the input
-        const latestUserMessage = messages[messages.length - 1];
-        if (latestUserMessage && latestUserMessage.role === 'user') {
-          conversationHistory = [...cachedMessages, latestUserMessage];
-        } else {
-          conversationHistory = cachedMessages;
-        }
+        // Get any new user messages that aren't already in the cache
+        const newUserMessages = messages.filter(msg => 
+          msg.role === 'user' && 
+          !cachedMessages.some(cached => cached.content === msg.content)
+        );
+        
+        // Combine cached history with any new messages
+        conversationHistory = [...cachedMessages, ...newUserMessages];
       }
 
       // Filter out system messages as they're handled by the backend
@@ -503,7 +568,10 @@ class AIService {
         body: JSON.stringify({
           messages,
           conversationId: options.conversationId,
-          context: options.context || 'terminal'
+          context: options.context || 'terminal',
+          stream: false, // Explicitly disable streaming for REST endpoint
+          // Add web search tool
+          tools: options.tools || [{ type: "web_search" }]
         }),
       });
 
@@ -519,11 +587,22 @@ class AIService {
 
       // Update conversation cache
       if (data.conversationId) {
-        // Add the assistant response to the conversation history
+        // Get existing history or start fresh
+        const existingHistory = this.conversationCache.get(data.conversationId) || [];
+        
+        // Add new user messages that aren't already in history
+        const newUserMessages = messages.filter(msg => 
+          msg.role === 'user' && 
+          !existingHistory.some(existing => existing.content === msg.content)
+        );
+        
+        // Build updated history with assistant response
         const updatedHistory = [
-          ...messages,
+          ...existingHistory,
+          ...newUserMessages,
           { role: 'assistant' as const, content: data.content }
         ];
+        
         this.conversationCache.set(data.conversationId, updatedHistory);
       }
 
@@ -539,7 +618,7 @@ class AIService {
 
       console.error('AI REST API Error:', error);
       throw new AIServiceError(
-        'Failed to get AI response via REST API.',
+        "I'm busy right now.",
         AIErrorType.NETWORK
       );
     }

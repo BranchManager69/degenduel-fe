@@ -21,17 +21,32 @@ interface ToastOptions {
 
 // Get the context directly
 const getToastContext = () => {
-  const context = useContext(ToastContext);
-  if (context === undefined) {
-    throw new Error("useToast must be used within a ToastProvider");
+  try {
+    const context = useContext(ToastContext);
+    if (context === undefined) {
+      console.warn("useToast must be used within a ToastProvider - falling back to console");
+      return null;
+    }
+    return context;
+  } catch (error) {
+    console.warn("Failed to access ToastContext - falling back to console:", error);
+    return null;
   }
-  return context;
 };
 
 // Create a toast API that matches react-hot-toast
 const createToast = (type: ToastType, message: string, options?: ToastOptions) => {
-  const context = getToastContext() as ToastContextType;
-  context.addToast(type, message, options?.title);
+  const context = getToastContext();
+  if (!context) {
+    // Fallback to console logging when toast context is not available
+    const prefix = `[${type.toUpperCase()}]`;
+    const fullMessage = options?.title ? `${options.title}: ${message}` : message;
+    console.log(`${prefix} ${fullMessage}`);
+    return options?.id || message;
+  }
+  
+  const typedContext = context as ToastContextType;
+  typedContext.addToast(type, message, options?.title);
   return options?.id || message; // Return id or message as ID for consistency with react-hot-toast
 };
 

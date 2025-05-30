@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-// Import from the correct Terminal export file with createConfig and DecryptionTimer
-import { DecryptionTimer } from '../components/layout/DecryptionTimer';
+// Import from the correct Terminal export file with createConfig
 import { Config, Terminal, createConfig } from '../components/terminal/index';
 
 /**
@@ -72,19 +71,8 @@ const MyTerminal = () => (
 );
 \`\`\`
 
-## DecryptionTimer Component
-The Terminal exports a standalone \`DecryptionTimer\` component that can be used separately:
-
-\`\`\`tsx
-import { DecryptionTimer } from '../components/terminal';
-
-const MyCountdown = () => (
-  <DecryptionTimer 
-    targetDate={new Date('2025-04-01T15:00:00')} 
-    contractAddress="0x1111111111111111111111111111111111111111"
-  />
-);
-\`\`\`
+## Terminal Features
+The Terminal provides a comprehensive command-line interface with various configuration options.
         `
       }
     },
@@ -142,28 +130,6 @@ interface TerminalProps {
   onCommandExecuted?: (command: string, response: string) => void;
 }
 
-// Standalone DecryptionTimer story for the countdown component
-export const StandaloneCountdown: Story = {
-  render: () => {
-    // We're using the component directly here to show it can be used standalone
-    return (
-      <div className="p-8 bg-gray-900 rounded-lg">
-        <h3 className="text-xl text-white mb-4 font-bold">Standalone Countdown Timer</h3>
-        <DecryptionTimer 
-          targetDate={new Date(Date.now() + 24 * 60 * 60 * 1000)} 
-          contractAddress="0x1111111111111111111111111111111111111111" 
-        />
-      </div>
-    );
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: 'The DecryptionTimer component can be used independently from the full Terminal. This is useful for creating standalone countdown timers for launches, events, or other time-based scenarios.'
-      }
-    }
-  }
-};
 
 // Countdown-to-Reveal Story Component
 // This is a wrapper component that will allow us to demonstrate the countdown sequence
@@ -499,13 +465,6 @@ export const StandaloneCountdownConfigurable: Story = {
             Currently set to: {targetDate.toLocaleString()}
           </div>
         </div>
-        
-        <div className="border-2 border-purple-500/30 rounded-lg p-4 bg-gray-850">
-          <DecryptionTimer 
-            targetDate={targetDate}
-            contractAddress="0xD3G3NDu3L69420C0nTr4c7"
-          />
-        </div>
       </div>
     );
   },
@@ -513,13 +472,12 @@ export const StandaloneCountdownConfigurable: Story = {
     docs: {
       description: {
         story: `
-### Configurable Standalone Countdown
-This example demonstrates how to use the DecryptionTimer component with a configurable target date:
+### Configurable Terminal Settings
+This example demonstrates terminal configuration options:
 
-- Use the datetime picker to set a custom target date and time
-- The countdown updates in real-time as you change the target
-- This component can be used independently in any part of your application
-- Perfect for embedded timers on landing pages or promotional materials
+- Use the datetime picker to set custom parameters
+- Configuration updates in real-time
+- Terminal can be customized for different use cases
 `
       }
     }
@@ -568,7 +526,6 @@ The terminal includes a resize button (in the header) that allows users to cycle
 
 export const SeparatedLayout: Story = {
   render: () => {
-    const [targetDate] = useState<Date>(new Date(Date.now() + 3 * 60 * 1000)); // 3 min from now
     const [consoleOutput, setConsoleOutput] = useState<string[]>([
       "Welcome to DegenDuel Terminal. Type 'help' for available commands."
     ]);
@@ -626,11 +583,6 @@ export const SeparatedLayout: Story = {
           <div className="text-sm font-bold text-purple-400 uppercase tracking-wider mb-3 text-center">
             Platform Launch Countdown
           </div>
-          
-          <DecryptionTimer 
-            targetDate={targetDate}
-            contractAddress="0xD3G3NDu3L69420C0nTr4c7"
-          />
         </div>
         
         {/* Terminal component (slimmer without countdown) */}

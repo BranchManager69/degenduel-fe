@@ -199,6 +199,20 @@
   }
 }
 
+/* Fast scanning animation */
+@keyframes scan-fast {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-scan-fast {
+  animation: scan-fast 2s ease-in-out infinite;
+}
+
 /* Apply to entire site with auto-hide behavior */
 @media (min-width: 640px) {
   /* Only apply autohide on non-mobile devices */

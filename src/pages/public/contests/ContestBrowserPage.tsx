@@ -20,22 +20,21 @@ import { ContestSort } from "../../../components/contest-browser/ContestSort";
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
 import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
 import { AuthDebugPanel } from "../../../components/debug";
+import { Terminal } from "../../../components/terminal/Terminal";
+import { config } from "../../../config/config";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { ddApi } from "../../../services/dd-api";
-import { Contest, ContestSettings } from "../../../types/index";
+import { Contest } from "../../../types/index";
 import type { SortDirection, SortField } from "../../../types/sort";
 
 // Contest browser page
 export const ContestBrowser: React.FC = () => {
   const navigate = useNavigate();
-  const { isAdministrator } = useMigratedAuth();
+  const { isAdministrator, isAuthenticated, getToken } = useMigratedAuth();
   const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeStatusFilter, setActiveStatusFilter] = useState("all");
-  const [activeDifficultyFilter, setActiveDifficultyFilter] = useState<
-    ContestSettings["difficulty"] | ""
-  >("");
   const [sortField, setSortField] = useState<SortField>("start_time");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
@@ -43,6 +42,34 @@ export const ContestBrowser: React.FC = () => {
   const [showCompleted, setShowCompleted] = useState(false);
   const [showCancelled, setShowCancelled] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [availableCredits, setAvailableCredits] = useState<number | undefined>(undefined);
+
+  // Fetch user credits
+  const fetchUserCredits = async () => {
+    if (!isAuthenticated) {
+      setAvailableCredits(0);
+      return;
+    }
+
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      const response = await fetch('/api/contests/credits/balance', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setAvailableCredits(data.data.available_credits || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch user credits:', error);
+      setAvailableCredits(0);
+    }
+  };
 
   // Fetch contests
   const fetchContests = async () => {
@@ -85,6 +112,7 @@ export const ContestBrowser: React.FC = () => {
   // Use effect to fetch contests and set up periodic maintenance check
   useEffect(() => {
     fetchContests();
+    fetchUserCredits();
 
     // Set up periodic maintenance check
     const maintenanceCheckInterval = setInterval(async () => {
@@ -108,23 +136,7 @@ export const ContestBrowser: React.FC = () => {
   const filteredAndSortedContests = useMemo(() => {
     let filtered = [...contests];
 
-    // First, apply completed/cancelled filters
-    filtered = filtered.filter((contest) => {
-      const now = new Date();
-      const endTime = new Date(contest.end_time);
-      const isCompleted = now >= endTime || contest.status === "completed";
-      const isCancelled = contest.status === "cancelled";
-
-      // Skip completed contests unless showCompleted is true
-      if (isCompleted && !showCompleted) return false;
-
-      // Skip cancelled contests unless showCancelled is true
-      if (isCancelled && !showCancelled) return false;
-
-      return true;
-    });
-
-    // Apply status filter
+    // Apply status filter first - this determines what contests to show
     if (activeStatusFilter !== "all") {
       filtered = filtered.filter((contest) => {
         const now = new Date();
@@ -141,24 +153,31 @@ export const ContestBrowser: React.FC = () => {
           case "upcoming":
             return now < startTime && contest.status !== "cancelled";
           case "completed":
-            return (
-              (now >= endTime || contest.status === "completed") &&
-              showCompleted
-            );
+            return now >= endTime || contest.status === "completed";
           case "cancelled":
-            return contest.status === "cancelled" && showCancelled;
+            return contest.status === "cancelled";
           default:
             return true;
         }
       });
+    } else {
+      // When "all" is selected, apply the completed/cancelled toggles
+      filtered = filtered.filter((contest) => {
+        const now = new Date();
+        const endTime = new Date(contest.end_time);
+        const isCompleted = now >= endTime || contest.status === "completed";
+        const isCancelled = contest.status === "cancelled";
+
+        // If it's completed and we don't want to show completed, filter it out
+        if (isCompleted && !showCompleted) return false;
+
+        // If it's cancelled and we don't want to show cancelled, filter it out
+        if (isCancelled && !showCancelled) return false;
+
+        return true;
+      });
     }
 
-    // Apply difficulty filter
-    if (activeDifficultyFilter) {
-      filtered = filtered.filter(
-        (contest) => contest.settings.difficulty === activeDifficultyFilter,
-      );
-    }
 
     // Apply sorting
     return filtered.sort((a, b) => {
@@ -185,7 +204,6 @@ export const ContestBrowser: React.FC = () => {
   }, [
     contests,
     activeStatusFilter,
-    activeDifficultyFilter,
     sortField,
     sortDirection,
     showCompleted,
@@ -264,7 +282,7 @@ export const ContestBrowser: React.FC = () => {
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
             </h1>
-            {isAdministrator && (
+            {isAuthenticated && (
               <CreateContestButton
                 onCreateClick={() => setIsCreateModalOpen(true)}
               />
@@ -325,7 +343,7 @@ export const ContestBrowser: React.FC = () => {
                   <div className="flex gap-2">
                     {[
                       { value: "all", label: "All" },
-                      { value: "upcoming", label: "Open" },
+                      { value: "upcoming", label: "Joinable" },
                       { value: "live", label: "Live" },
                     ].map(({ value, label }) => (
                       <button
@@ -343,46 +361,6 @@ export const ContestBrowser: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Duel Style Filter - Compact dropdown */}
-                <div className="flex-1 min-w-[200px] max-w-[300px]">
-                  <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors mb-2 block">
-                    Duel Style
-                  </label>
-                  <div className="relative">
-                    <select
-                      className="w-full bg-dark-300/50 text-gray-100 rounded-lg px-4 py-2 border border-dark-400 focus:outline-none focus:ring-2 focus:ring-brand-500 hover:border-brand-400 transition-colors appearance-none"
-                      value={activeDifficultyFilter}
-                      onChange={(e) =>
-                        setActiveDifficultyFilter(
-                          e.target.value as ContestSettings["difficulty"] | "",
-                        )
-                      }
-                    >
-                      <option value="">All Styles</option>
-                      <option value="guppy">Guppy</option>
-                      <option value="tadpole">Tadpole</option>
-                      <option value="squid">Squid</option>
-                      <option value="dolphin">Dolphin</option>
-                      <option value="shark">Shark</option>
-                      <option value="whale">Whale</option>
-                    </select>
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg
-                        className="w-4 h-4 text-gray-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Include Finished Duels - Now as toggle buttons */}
                 <div className="flex-1 min-w-[200px] max-w-[300px]">
@@ -434,7 +412,7 @@ export const ContestBrowser: React.FC = () => {
           </div>
 
           {/* Enhanced Active Filters Display */}
-          {(activeStatusFilter !== "all" || activeDifficultyFilter !== "") && (
+          {activeStatusFilter !== "all" && (
             <div className="flex flex-wrap gap-2 mb-4 animate-fade-in">
               {activeStatusFilter !== "all" && (
                 <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm group hover:bg-brand-500/30 transition-all duration-300">
@@ -443,19 +421,6 @@ export const ContestBrowser: React.FC = () => {
                   </span>
                   <button
                     onClick={() => setActiveStatusFilter("all")}
-                    className="ml-2 hover:text-brand-200 group-hover:animate-neon-flicker"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-              {activeDifficultyFilter && (
-                <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm group hover:bg-brand-500/30 transition-all duration-300">
-                  <span className="group-hover:animate-glitch">
-                    {activeDifficultyFilter}
-                  </span>
-                  <button
-                    onClick={() => setActiveDifficultyFilter("")}
                     className="ml-2 hover:text-brand-200 group-hover:animate-neon-flicker"
                   >
                     ×
@@ -490,11 +455,29 @@ export const ContestBrowser: React.FC = () => {
           <CreateContestModal
             isOpen={isCreateModalOpen}
             onClose={() => setIsCreateModalOpen(false)}
-            userRole="admin"
-            onSuccess={fetchContests}
+            userRole={isAdministrator ? "admin" : "user"}
+            availableCredits={availableCredits}
+            onSuccess={() => {
+              fetchContests();
+              fetchUserCredits(); // Refresh credits after contest creation
+            }}
           />
         </div>
       </div>
+      
+      {/* Terminal - Didi Assistant for Contest Help */}
+      <Terminal
+        config={{
+          RELEASE_DATE: config.RELEASE_DATE.TOKEN_LAUNCH_DATETIME,
+          CONTRACT_ADDRESS: config.CONTRACT_ADDRESS.REAL,
+          DISPLAY: {
+            DATE_SHORT: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT,
+            DATE_FULL: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL,
+            TIME: config.RELEASE_DATE.DISPLAY.LAUNCH_TIME
+          }
+        }}
+        size="contracted"
+      />
     </div>
   );
 };

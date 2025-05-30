@@ -8,11 +8,11 @@
  * consistent navigation options across all device types.
  */
 
-import { FaTrophy, FaUserFriends } from "react-icons/fa";
+// Removed unused imports - FaTrophy, FaUserFriends since related menu items are commented out
 import { User } from "../../../types";
 
 // Define all menu items and sections in one place
-export const getMenuItems = (user: User | null, userLevel: number) => {
+export const getMenuItems = (user: User | null, _userLevel: number) => {
   // User Profile Section
   const profileItems = [
     {
@@ -36,13 +36,14 @@ export const getMenuItems = (user: User | null, userLevel: number) => {
       ),
       to: "/me"
     },
-    {
-      id: 'degen-level',
-      label: "Degen Level",
-      icon: FaTrophy,
-      to: "/leaderboard",
-      badge: userLevel > 0 ? `Lvl ${userLevel}` : undefined
-    },
+    // COMMENTED OUT: Degen Level menu item
+    // {
+    //   id: 'degen-level',
+    //   label: "Degen Level",
+    //   icon: FaTrophy,
+    //   to: "/leaderboard",
+    //   badge: userLevel > 0 ? `Lvl ${userLevel}` : undefined
+    // },
     {
       id: 'contest-credits',
       label: "Contest Credits",
@@ -65,12 +66,13 @@ export const getMenuItems = (user: User | null, userLevel: number) => {
       to: "/contest-credits",
     },
     // Removed "Noti's" item - moved to dedicated notifications dropdown
-    {
-      id: 'referrals',
-      label: "Invite & Earn",
-      icon: FaUserFriends,
-      to: "/referrals",
-    }
+    // COMMENTED OUT: Invite & Earn menu item
+    // {
+    //   id: 'referrals',
+    //   label: "Invite & Earn",
+    //   icon: FaUserFriends,
+    //   to: "/referrals",
+    // }
   ];
 
   // Contests Section

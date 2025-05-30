@@ -212,7 +212,7 @@ export const PrivateProfilePage: React.FC = () => {
                   Auth Debug
                   <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
                 </h2>
-                <AuthDebugPanel position="floating" showByDefault={true} />
+                <AuthDebugPanel position="floating" />
               </div>
               
             </motion.div>

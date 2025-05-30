@@ -2,26 +2,20 @@
 
 import { motion } from 'framer-motion';
 import React, { memo, useEffect, useState } from 'react';
-import { useDatabaseStats } from '../../hooks/websocket/topic-hooks/useDatabaseStats';
 import { useRPCBenchmark } from '../../hooks/websocket/topic-hooks/useRPCBenchmark';
 
 interface RPCBenchmarkFooterProps {
   compactMode?: boolean;
 }
 
-const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(({ compactMode = false }) => {
+const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(() => {
   const [rotationIndex, setRotationIndex] = useState(0);
   
   const {
     data,
     isLoading,
-    error,
-    isConnected,
-    refreshData
+    isConnected
   } = useRPCBenchmark();
-
-  // Get database stats from public SYSTEM topic (no auth required!)
-  const { data: dbStats } = useDatabaseStats();
 
   // Rotate display every 5 seconds
   useEffect(() => {
@@ -34,22 +28,18 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(({ compactMod
     return () => clearInterval(interval);
   }, [data]);
 
-  // If there's no data, show enhanced loading state with skeleton
+  // If there's no data, show minimal loading state
   if (!isConnected || !data) {
     return (
-      <div className="text-xs flex items-center gap-1 sm:gap-1.5">
-        <span className="text-cyan-400 font-mono text-xs sm:text-sm">RPC:</span>
+      <div className="flex items-center gap-1">
         {isLoading ? (
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-gray-600 animate-pulse" />
-            <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 bg-gray-600 animate-pulse" />
-            <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 bg-gray-600 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
-            <div className="w-5 h-3 sm:w-6 sm:h-3.5 bg-gray-600 animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-gray-600 animate-pulse" />
+            <div className="w-2 h-2 bg-gray-600 animate-pulse" />
+            <div className="w-2 h-2 bg-gray-600 animate-pulse" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
           </div>
-        ) : error ? (
-          <span className="text-red-400 text-xs">Connection failed</span>
         ) : (
-          <span className="text-gray-400 text-xs">Connecting...</span>
+          <div className="w-2 h-2 rounded-full bg-purple-500" />
         )}
       </div>
     );
@@ -80,9 +70,6 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(({ compactMod
   const avgLatency = Math.round(totalLatency / methods.length / methods.length);
   const successRate = Math.round((totalSuccess / totalAttempts) * 100);
   
-  // Get active tokens from public SYSTEM topic (no auth required!)
-  const activeTokens = dbStats?.active_tokens || 0;
-  
   // Color functions
   const getLatencyColor = (ms: number) => {
     if (ms <= 50) return '#22c55e'; // green
@@ -101,12 +88,6 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(({ compactMod
     if (active >= total * 0.8) return '#eab308'; // yellow
     return '#ef4444'; // red
   };
-  
-  const getTokensColor = (tokens: number) => {
-    if (tokens >= 1000) return '#22c55e'; // green
-    if (tokens >= 500) return '#eab308'; // yellow
-    return '#ef4444'; // red
-  };
 
   // Create rotating displays
   const displays = [
@@ -118,27 +99,18 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(({ compactMod
   const currentDisplay = displays[rotationIndex];
 
   return (
-    <div className={`flex items-center gap-1 sm:gap-1.5 md:gap-2 ${compactMode ? 'scale-90 transform-origin-left' : ''}`}>
-      <motion.span 
-        className="text-cyan-400 text-xs sm:text-sm font-mono cursor-help"
-        whileHover={{ scale: 1.05 }}
-        onClick={() => refreshData()}
-        title="Click to refresh RPC metrics"
-      >
-        RPC:
-      </motion.span>
-
+    <div className="flex items-center gap-1">
       {/* Circle - Average Latency */}
       <motion.div
         className="relative flex items-center justify-center"
         whileHover={{ scale: 1.1 }}
-        title={`Average RPC latency: ${currentDisplay.latency}ms`}
+        title={`RPC latency: ${currentDisplay.latency}ms`}
       >
         <div 
-          className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full flex items-center justify-center"
+          className="w-2 h-2 rounded-full flex items-center justify-center"
           style={{ backgroundColor: getLatencyColor(currentDisplay.latency) }}
         >
-          <span className="text-[7px] sm:text-[8px] font-mono text-black font-bold leading-none">
+          <span className="text-[6px] font-mono text-black font-bold leading-none">
             {currentDisplay.latency}
           </span>
         </div>
@@ -148,13 +120,13 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(({ compactMod
       <motion.div
         className="relative flex items-center justify-center"
         whileHover={{ scale: 1.1 }}
-        title={`RPC success rate: ${currentDisplay.success}%`}
+        title={`Success rate: ${currentDisplay.success}%`}
       >
         <div 
-          className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex items-center justify-center"
+          className="w-2 h-2 flex items-center justify-center"
           style={{ backgroundColor: getSuccessColor(currentDisplay.success) }}
         >
-          <span className="text-[7px] sm:text-[8px] font-mono text-black font-bold leading-none">
+          <span className="text-[6px] font-mono text-black font-bold leading-none">
             {currentDisplay.success}
           </span>
         </div>
@@ -164,33 +136,17 @@ const RPCBenchmarkFooter: React.FC<RPCBenchmarkFooterProps> = memo(({ compactMod
       <motion.div
         className="relative flex items-center justify-center"
         whileHover={{ scale: 1.1 }}
-        title={`Active RPC methods: ${currentDisplay.methods}/${methods.length}`}
+        title={`Active methods: ${currentDisplay.methods}/${methods.length}`}
       >
         <div 
-          className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex items-center justify-center"
+          className="w-2 h-2 flex items-center justify-center"
           style={{ 
             backgroundColor: getMethodsColor(currentDisplay.methods, methods.length),
             clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
           }}
         >
-          <span className="text-[7px] sm:text-[8px] font-mono text-black font-bold leading-none mt-1">
+          <span className="text-[6px] font-mono text-black font-bold leading-none mt-0.5">
             {currentDisplay.methods}
-          </span>
-        </div>
-      </motion.div>
-
-      {/* Rectangle - Active Tokens */}
-      <motion.div
-        className="relative flex items-center justify-center"
-        whileHover={{ scale: 1.1 }}
-        title={`Active tokens in database: ${activeTokens.toLocaleString()}`}
-      >
-        <div 
-          className="w-5 h-3 sm:w-6 sm:h-3.5 flex items-center justify-center"
-          style={{ backgroundColor: getTokensColor(activeTokens) }}
-        >
-          <span className="text-[6px] sm:text-[7px] font-mono text-black font-bold leading-none">
-            {activeTokens >= 10000 ? `${Math.round(activeTokens/1000)}k` : activeTokens}
           </span>
         </div>
       </motion.div>

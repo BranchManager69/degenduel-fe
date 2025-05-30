@@ -170,13 +170,26 @@ const SocialAccountsPanel = () => {
               </div>
             </div>
 
-            {/* Placeholder for future social integrations */}
-            <div className="border border-dashed border-brand-500/20 rounded-lg p-6 text-center bg-dark-400/10">
-              <p className="text-gray-400">
-                More social integrations coming soon!
+            {/* Discord and Passkey Integration */}
+            <div className="border border-brand-500/20 rounded-lg p-4 bg-dark-400/10">
+              <h4 className="text-white font-medium mb-3">Additional Account Links</h4>
+              <p className="text-gray-400 text-sm mb-4">
+                Link Discord and Passkey for faster login options
               </p>
-              <div className="text-xs text-brand-300/50 mt-1">
-                Ethereum · Solana · Discord
+              <div className="grid grid-cols-2 gap-3">
+                {/* Discord - Coming Soon */}
+                <div className="p-3 border border-dashed border-gray-600 rounded-lg text-center">
+                  <div className="text-[#5865F2] mb-1">🎮</div>
+                  <div className="text-xs text-gray-400">Discord</div>
+                  <div className="text-xs text-gray-500">Coming Soon</div>
+                </div>
+                
+                {/* Passkey - Coming Soon */}
+                <div className="p-3 border border-dashed border-gray-600 rounded-lg text-center">
+                  <div className="text-blue-400 mb-1">🔐</div>
+                  <div className="text-xs text-gray-400">Passkey</div>
+                  <div className="text-xs text-gray-500">Coming Soon</div>
+                </div>
               </div>
             </div>
           </>

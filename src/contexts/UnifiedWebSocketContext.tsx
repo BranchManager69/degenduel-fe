@@ -13,7 +13,7 @@
  * @updated 2025-05-07
  */
 
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { authDebug } from '../config/config';
 import { DDExtendedMessageType } from '../hooks/websocket/types';
 import { setupWebSocketInstance } from '../hooks/websocket/useUnifiedWebSocket';
@@ -112,6 +112,9 @@ export const UnifiedWebSocketProvider: React.FC<{
   // Heartbeat state
   const heartbeatIntervalRef = useRef<number | null>(null);
   const missedHeartbeatsRef = useRef<number>(0);
+  
+  // Subscription tracking to prevent duplicates
+  const currentTopicsRef = useRef<Set<string>>(new Set());
   
   // Get default configuration
   const defaultUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v69/ws`; // doubt that this is the best practices method but it works for now
@@ -362,6 +365,9 @@ export const UnifiedWebSocketProvider: React.FC<{
     // Stop heartbeat
     stopHeartbeat();
     
+    // Clear subscription tracking on disconnect
+    currentTopicsRef.current.clear();
+    
     // Update state
     setConnectionState(ConnectionState.DISCONNECTED);
     setConnectionError(errorMessage);
@@ -607,8 +613,8 @@ export const UnifiedWebSocketProvider: React.FC<{
     });
   };
   
-  // Register message listener
-  const registerListener = (
+  // Register message listener (stable reference with useCallback)
+  const registerListener = useCallback((
     id: string,
     types: DDExtendedMessageType[],
     callback: (message: any) => void,
@@ -627,10 +633,10 @@ export const UnifiedWebSocketProvider: React.FC<{
       listenersRef.current.delete(id);
       authDebug('WebSocketContext', 'Unregistered WebSocket listener', { id });
     };
-  };
+  }, []);
   
-  // Send message through WebSocket
-  const sendMessage = (message: WebSocketMessage) => {
+  // Send message through WebSocket (stable reference with useCallback)
+  const sendMessage = useCallback((message: WebSocketMessage) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       return false;
     }
@@ -642,10 +648,10 @@ export const UnifiedWebSocketProvider: React.FC<{
       console.error('Error sending WebSocket message:', error);
       return false;
     }
-  };
+  }, []);
   
-  // Subscribe to topics
-  const subscribe = (topics: string[]) => {
+  // Subscribe to topics (stable reference with useCallback + duplicate prevention)
+  const subscribe = useCallback((topics: string[]) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || topics.length === 0) {
       authDebug('WebSocketContext', 'Subscribe failed - validation check', {
         hasWebSocket: !!wsRef.current,
@@ -656,11 +662,18 @@ export const UnifiedWebSocketProvider: React.FC<{
       return false;
     }
     
-    // Create the base message with topics preserved
+    // Filter out already subscribed topics to prevent duplicates
+    const newTopics = topics.filter(topic => !currentTopicsRef.current.has(topic));
+    if (newTopics.length === 0) {
+      authDebug('WebSocketContext', 'All topics already subscribed', { topics });
+      return true; // Already subscribed, return success
+    }
+    
+    // Create the base message with only new topics
     const createSubscribeMessage = (authToken?: string) => {
     const message: any = {
       type: 'SUBSCRIBE',
-        topics: [...topics] // Clone the array to prevent mutation
+        topics: [...newTopics] // Use only new topics to prevent duplicates
     };
     
       if (authToken) {
@@ -679,12 +692,16 @@ export const UnifiedWebSocketProvider: React.FC<{
     
     // Handle authenticated subscription
     if (authService.isAuthenticated()) {
-      authDebug('WebSocketContext', 'Subscribing with authentication', { topics });
+      authDebug('WebSocketContext', 'Subscribing with authentication', { newTopics });
       
       authService.getToken(TokenType.WS_TOKEN)
         .then(token => {
           const message = createSubscribeMessage(token || undefined);
           const success = sendMessage(message);
+          if (success) {
+            // Mark topics as subscribed
+            newTopics.forEach(topic => currentTopicsRef.current.add(topic));
+          }
           authDebug('WebSocketContext', 'Sent authenticated subscribe message', {
             success,
             topicsCount: message.topics.length,
@@ -696,6 +713,10 @@ export const UnifiedWebSocketProvider: React.FC<{
           // Send without token if token retrieval fails
           const message = createSubscribeMessage();
           const success = sendMessage(message);
+          if (success) {
+            // Mark topics as subscribed
+            newTopics.forEach(topic => currentTopicsRef.current.add(topic));
+          }
           authDebug('WebSocketContext', 'Sent unauthenticated subscribe message', {
             success,
             topicsCount: message.topics.length
@@ -705,25 +726,37 @@ export const UnifiedWebSocketProvider: React.FC<{
     }
     
     // Send without auth for public topics
-    authDebug('WebSocketContext', 'Subscribing without authentication', { topics });
+    authDebug('WebSocketContext', 'Subscribing without authentication', { newTopics });
     const message = createSubscribeMessage();
-    return sendMessage(message);
-  };
+    const success = sendMessage(message);
+    if (success) {
+      // Mark topics as subscribed
+      newTopics.forEach(topic => currentTopicsRef.current.add(topic));
+    }
+    return success;
+  }, []); // Empty dependency array for stable reference
   
-  // Unsubscribe from topics
-  const unsubscribe = (topics: string[]) => {
+  // Unsubscribe from topics (stable reference with useCallback + tracking)
+  const unsubscribe = useCallback((topics: string[]) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || topics.length === 0) {
       return false;
     }
     
-    return sendMessage({
+    const success = sendMessage({
       type: 'UNSUBSCRIBE',
       topics
     });
-  };
+    
+    if (success) {
+      // Remove topics from subscription tracking
+      topics.forEach(topic => currentTopicsRef.current.delete(topic));
+    }
+    
+    return success;
+  }, [sendMessage]);
   
-  // Make a request
-  const request = (topic: string, action: string, params: any = {}) => {
+  // Make a request (stable reference with useCallback)
+  const request = useCallback((topic: string, action: string, params: any = {}) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       return false;
     }
@@ -738,7 +771,7 @@ export const UnifiedWebSocketProvider: React.FC<{
     };
     
     return sendMessage(message);
-  };
+  }, [sendMessage]);
   
   // Connect on mount
   useEffect(() => {

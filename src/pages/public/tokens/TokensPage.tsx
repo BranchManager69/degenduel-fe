@@ -96,33 +96,59 @@ export const TokensPage: React.FC = () => {
     }, 300);
   }, [isLoadingMore]);
 
-  // Helper function to transform REAL WebSocket token data to Token format
+  // Helper function to transform ENHANCED WebSocket token data to Token format
   const transformTokenData = useCallback((tokenData: any): Token => {
     return {
-      contractAddress: tokenData.address || "", // Use 'address' field from WebSocket
-      status: "active", // All WebSocket tokens are active
+      contractAddress: tokenData.address || "",
+      status: "active",
       name: tokenData.name || "",
       symbol: tokenData.symbol || "",
       price: tokenData.price?.toString() || "0",
-      marketCap: tokenData.market_cap?.toString() || "0", // Use 'market_cap' from WebSocket
-      volume24h: tokenData.volume_24h?.toString() || "0", // Use 'volume_24h' from WebSocket  
-      change24h: tokenData.change_24h?.toString() || "0", // Use 'change_24h' from WebSocket
+      marketCap: tokenData.market_cap?.toString() || "0",
+      volume24h: tokenData.volume_24h?.toString() || "0",
+      change24h: tokenData.change_24h?.toString() || "0",
       liquidity: {
-        usd: tokenData.liquidity?.toString() || "0", // WebSocket liquidity is a string
-        base: "0", // Not provided in WebSocket data
-        quote: "0"  // Not provided in WebSocket data
+        usd: tokenData.liquidity?.toString() || "0",
+        base: "0",
+        quote: "0"
       },
       images: {
-        imageUrl: tokenData.image_url || "", // Use 'image_url' from WebSocket
-        headerImage: "",
-        openGraphImage: ""
+        imageUrl: tokenData.image_url || "",
+        headerImage: tokenData.header_image_url || "", // NEW: Header banner
+        openGraphImage: tokenData.open_graph_image_url || ""
       },
       socials: tokenData.socials || {
         twitter: { url: "", count: null },
         telegram: { url: "", count: null },
         discord: { url: "", count: null }
       },
-      websites: tokenData.websites || []
+      websites: tokenData.websites || [],
+      // NEW: Enhanced data fields
+      description: tokenData.description || "",
+      tags: tokenData.tags || [],
+      totalSupply: tokenData.total_supply?.toString() || "0",
+      priorityScore: tokenData.priority_score || 0,
+      firstSeenAt: tokenData.first_seen_on_jupiter_at || null,
+      pairCreatedAt: tokenData.pairCreatedAt || null,
+      fdv: tokenData.fdv?.toString() || "0",
+      priceChanges: tokenData.priceChanges || {
+        "5m": "0",
+        "1h": "0", 
+        "6h": "0",
+        "24h": tokenData.change_24h?.toString() || "0"
+      },
+      volumes: tokenData.volumes || {
+        "5m": "0",
+        "1h": "0",
+        "6h": "0", 
+        "24h": tokenData.volume_24h?.toString() || "0"
+      },
+      transactions: tokenData.transactions || {
+        "5m": { buys: 0, sells: 0 },
+        "1h": { buys: 0, sells: 0 },
+        "6h": { buys: 0, sells: 0 },
+        "24h": { buys: 0, sells: 0 }
+      }
     };
   }, []);
   
@@ -335,8 +361,14 @@ export const TokensPage: React.FC = () => {
     
     if (tokensArray.length === 0) return [];
     
+    // Apply liquidity filter FIRST - minimum $10,000 liquidity
+    const liquidityFilteredTokens = tokensArray.filter(token => {
+      const liquidityUSD = Number(token.liquidity?.usd || 0);
+      return liquidityUSD >= 10000; // Minimum $10,000 liquidity
+    });
+    
     // Apply search filter
-    const filteredTokens = tokensArray.filter(token => 
+    const filteredTokens = liquidityFilteredTokens.filter(token => 
       token.name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
       token.symbol?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
     );
@@ -408,8 +440,7 @@ export const TokensPage: React.FC = () => {
     if (tokenAddress) {
       // Prioritize address if available (more reliable)
       setSelectedTokenSymbol(tokenAddress);
-      setSearchQuery(tokenAddress);
-      setDebouncedSearchQuery(tokenAddress);
+      // DON'T auto-fill search field when opening from ticker
       setIsDetailModalOpen(true);
       
       // If we have a WebSocket connection, request specific token data
@@ -419,8 +450,7 @@ export const TokensPage: React.FC = () => {
     } else if (tokenSymbol) {
       // Fall back to symbol for backward compatibility
       setSelectedTokenSymbol(tokenSymbol);
-      setSearchQuery(tokenSymbol);
-      setDebouncedSearchQuery(tokenSymbol);
+      // DON'T auto-fill search field when opening from ticker
       setIsDetailModalOpen(true);
     }
   }, [location.search, requestTokenByAddress]);
@@ -644,10 +674,13 @@ export const TokensPage: React.FC = () => {
         </div>
       
         <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
-          {/* Header with metadata and admin controls */}
-          <div className="flex justify-between items-start mb-4 sm:mb-8">
-            <OptimizedTokensHeader metadata={metadata} />
-            {user?.is_admin && (
+          <div className="grid grid-cols-1 gap-6">
+            {/* Main Content - Full width */}
+            <div className="col-span-1">
+              {/* Header with metadata and admin controls */}
+              <div className="flex justify-between items-start mb-4 sm:mb-8">
+                <OptimizedTokensHeader metadata={metadata} />
+                {user?.is_admin && (
               <Button
                 onClick={() => setIsAddTokenModalOpen(true)}
                 className="ml-4 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 relative group overflow-hidden"
@@ -662,7 +695,7 @@ export const TokensPage: React.FC = () => {
           </div>
 
           {/* Enhanced Controls Section */}
-          <div className="mb-8 relative">
+          <div className="mb-4 sm:mb-6 relative">
             {/* Background decorative elements */}
             <div className="absolute -z-10 inset-0 rounded-xl overflow-hidden">
               <div className="absolute inset-0 bg-dark-200/40 backdrop-blur-sm"></div>
@@ -690,128 +723,53 @@ export const TokensPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="p-5">
-              <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-                {/* Search Bar - Spans 3 columns */}
-                <div className="md:col-span-3 relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400 group-focus-within:text-brand-400 transition-colors duration-300">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                      />
-                    </svg>
-                  </div>
-                  
+            <div className="p-2">
+              <div className="flex gap-2">
+                {/* Search */}
+                <div className="flex-1 relative">
                   <input
                     type="text"
-                    placeholder="Search by name or symbol..."
+                    placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-dark-300/50 border-2 border-dark-400 focus:border-brand-400 rounded-lg pl-12 pr-4 py-3 text-gray-100 placeholder-gray-500 focus:ring-2 focus:ring-brand-400/20 transition-all duration-300"
+                    className="w-full bg-dark-300/50 rounded px-3 py-2 text-sm text-gray-100 placeholder-gray-500"
                   />
-                  
-                  {/* Animated border glow on focus */}
-                  <div className="absolute inset-0 rounded-lg opacity-0 group-focus-within:opacity-100 pointer-events-none transition-opacity duration-300">
-                    <div className="absolute inset-0 rounded-lg border-2 border-brand-400/0 group-focus-within:border-brand-400/20"></div>
-                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-400/50 to-transparent transform -translate-y-1 group-focus-within:translate-y-0 opacity-0 group-focus-within:opacity-100 transition-all duration-500"></div>
-                  </div>
-                  
-                  {/* "Clear" button appears when there's text */}
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery("")}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
                     >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                        <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      ×
                     </button>
                   )}
                 </div>
                 
-                {/* Sort field dropdown - Spans 2 columns */}
-                <div className="md:col-span-2 relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-brand-400">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                      <path d="M7 15l5 5 5-5M7 9l5-5 5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  
+                {/* Sort field */}
+                <div className="w-24 sm:w-32">
                   <select
                     value={sortField}
                     onChange={(e) => setSortField(e.target.value as keyof Token)}
-                    className="w-full appearance-none bg-dark-300/50 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg pl-12 pr-10 py-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/20 transition-all duration-300"
+                    className="w-full bg-dark-300/50 rounded px-2 py-2 text-sm text-gray-100"
                   >
-                    <option value="marketCap">Market Cap</option>
-                    <option value="volume24h">24h Volume</option>
-                    <option value="change24h">Price Change</option>
-                    <option value="price">Current Price</option>
+                    <option value="marketCap">Cap</option>
+                    <option value="volume24h">Vol</option>
+                    <option value="change24h">Change</option>
+                    <option value="price">Price</option>
                   </select>
-                  
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-cyan-400">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                      <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
                 </div>
                 
-                {/* Sort direction button with animation */}
-                <div className="md:col-span-1">
-                  <button
-                    onClick={() => setSortDirection(prev => prev === "asc" ? "desc" : "asc")}
-                    className="w-full h-full flex items-center justify-center bg-dark-300/70 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg px-4 py-3 text-white transition-all duration-300 relative overflow-hidden group"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-brand-500/0 to-cyan-500/0 group-hover:from-brand-500/10 group-hover:to-cyan-500/10 transition-all duration-500"></div>
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100">
-                      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-400/40 to-transparent"></div>
-                      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent"></div>
-                    </div>
-                    
-                    <div className="transition-transform duration-300 transform">
-                      {sortDirection === "asc" ? (
-                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-                          <path d="M17 8l-5-5-5 5M17 16l-5 5-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      ) : (
-                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-                          <path d="M17 16l-5-5-5 5M17 8l-5 5-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </div>
-                  </button>
-                </div>
-                
-                {/* Quick Filter buttons - Show active/gainers/losers */}
-                <div className="md:col-span-1 flex md:justify-end">
-                  <div className="flex items-center gap-2">
-                    <button className="px-4 py-3 bg-dark-300/70 hover:bg-brand-500/20 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg text-white transition-colors duration-300">
-                      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-                        <path d="M3 12h4l3-9 4 18 3-9h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
+                {/* Sort direction */}
+                <button
+                  onClick={() => setSortDirection(prev => prev === "asc" ? "desc" : "asc")}
+                  className="w-10 h-10 flex items-center justify-center bg-dark-300/70 rounded text-white"
+                >
+                  {sortDirection === "asc" ? "↑" : "↓"}
+                </button>
               </div>
               
-              {/* Search result stats */}
               {searchQuery && (
-                <div className="mt-4 text-sm text-gray-400 flex items-center">
-                  <span>Found {allFilteredAndSortedTokens.length} tokens matching "{searchQuery}"</span>
-                  {allFilteredAndSortedTokens.length > 0 && (
-                    <span className="ml-2 px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 text-xs">
-                      {sortField === "marketCap" ? "By Market Cap" : 
-                       sortField === "volume24h" ? "By Volume" : 
-                       sortField === "change24h" ? "By Change" : "By Price"}
-                    </span>
-                  )}
+                <div className="mt-2 text-xs text-gray-400">
+                  {allFilteredAndSortedTokens.length} results
                 </div>
               )}
             </div>
@@ -883,11 +841,13 @@ export const TokensPage: React.FC = () => {
             )}
           </div>
           
-          {/* Cyberpunk footer accent */}
-          <div className="mt-10 mb-6 relative h-1 w-full overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/30 to-transparent"></div>
-            <div className="absolute top-0 left-1/4 right-1/4 h-px bg-brand-500/60"></div>
-            <div className="absolute left-1/2 top-0 w-px h-4 -translate-x-1/2 bg-brand-500/60 -translate-y-1/2"></div>
+              {/* Cyberpunk footer accent */}
+              <div className="mt-10 mb-6 relative h-1 w-full overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/30 to-transparent"></div>
+                <div className="absolute top-0 left-1/4 right-1/4 h-px bg-brand-500/60"></div>
+                <div className="absolute left-1/2 top-0 w-px h-4 -translate-x-1/2 bg-brand-500/60 -translate-y-1/2"></div>
+              </div>
+            </div>
           </div>
           
           {/* Modals */}

@@ -42,41 +42,54 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     }
   }, [onTokenClick]);
 
-  // Sort tokens by different metrics
-  const tokensByMarketCap = [...tokens].sort((a, b) => 
-    parseFloat(b.marketCap) - parseFloat(a.marketCap)
-  );
+  // We only need hotness calculation now since we removed the other sections
   
-  // Top gainers - sort by highest positive change
-  const tokensByGain = [...tokens].sort((a, b) => 
-    parseFloat(b.change24h) - parseFloat(a.change24h)
-  );
-  
-  // Calculate "hotness" based on a combination of change, volume, and recency
+  // ENHANCED "hotness" calculation using new multi-timeframe data
   const calculateHotness = (token: Token) => {
-    // Normalized values between 0-1
-    const changeNormalized = parseFloat(token.change24h) / 100; // Assuming max 100% change
-    const volumeNormalized = Math.min(parseFloat(token.volume24h) / 10000000000, 1); // Cap at 10B volume
+    // Short-term momentum (5m, 1h) - 40% weight
+    const change5m = parseFloat(token.priceChanges?.["5m"] || "0");
+    const change1h = parseFloat(token.priceChanges?.["1h"] || "0");
+    const shortTermMomentum = (Math.abs(change5m) + Math.abs(change1h)) / 2;
     
-    // Formula: 60% weight on change, 40% on volume
-    return (changeNormalized * 0.6) + (volumeNormalized * 0.4);
+    // Volume activity across timeframes - 30% weight
+    const volume5m = parseFloat(token.volumes?.["5m"] || "0");
+    const volume1h = parseFloat(token.volumes?.["1h"] || "0");
+    const volume24h = parseFloat(token.volume24h || "0");
+    const avgVolume = (volume5m + volume1h + volume24h) / 3;
+    const volumeNormalized = Math.min(avgVolume / 10000000000, 1); // Cap at 10B
+    
+    // Transaction activity - 20% weight
+    const buys5m = token.transactions?.["5m"]?.buys || 0;
+    const sells5m = token.transactions?.["5m"]?.sells || 0;
+    const buys1h = token.transactions?.["1h"]?.buys || 0;
+    const sells1h = token.transactions?.["1h"]?.sells || 0;
+    const totalActivity = buys5m + sells5m + buys1h + sells1h;
+    const activityNormalized = Math.min(totalActivity / 1000, 1); // Cap at 1000 trades
+    
+    // Priority score from backend - 10% weight
+    const priorityNormalized = (token.priorityScore || 0) / 100;
+    
+    // Combined hotness formula
+    return (
+      (shortTermMomentum / 10) * 0.4 +  // Short-term price movement
+      volumeNormalized * 0.3 +           // Volume activity
+      activityNormalized * 0.2 +         // Transaction count
+      priorityNormalized * 0.1           // Backend priority
+    );
   };
   
-  // Hottest tokens by our custom algorithm
+  // Hottest tokens by enhanced algorithm
   const tokensByHotness = [...tokens].sort((a, b) => 
     calculateHotness(b) - calculateHotness(a)
   );
   
   // Create our groupings based on the sorted lists
-  const topTierTokens = tokensByMarketCap.slice(0, 2);  // Top 2 by market cap
-  const midTierTokens = tokensByGain.slice(0, 4);       // Top 4 gainers
-  const trendingTokens = tokensByHotness.slice(0, 5);   // Top 5 hottest
+  const trendingTokens = tokensByHotness.slice(0, 12);   // Top 12 hottest tokens for enhanced display
   
-  // Exclude tokens already shown in featured sections
-  const featuredTokenAddresses = new Set([
-    ...topTierTokens.map(t => t.contractAddress),
-    ...midTierTokens.map(t => t.contractAddress)
-  ]);
+  // Exclude tokens already shown in hottest section
+  const featuredTokenAddresses = new Set(
+    trendingTokens.map(t => t.contractAddress)
+  );
   
   const restTokens = tokens.filter(
     token => !featuredTokenAddresses.has(token.contractAddress)
@@ -88,57 +101,166 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
   //   return changeNum >= 0 ? 'bg-green-500' : 'bg-red-500';
   // };
 
-  // Simplified token mini card for trending section
-  const TrendingToken = ({ token, index }: { token: Token, index: number }) => {
+  // ENHANCED HOTTEST TOKEN CARD - Visually stunning design
+  const HottestTokenCard = ({ token, index }: { token: Token, index: number }) => {
     const isSelected = token.symbol.toLowerCase() === selectedTokenSymbol?.toLowerCase();
     
     // Calculate hotness score for display
     const hotnessScore = calculateHotness(token) * 100;
+    const isTopThree = index < 3;
+    const changeNum = parseFloat(token.change24h);
+    
+    // Dynamic rank colors for top 3
+    const getRankStyle = (rank: number) => {
+      switch(rank) {
+        case 0: return { bg: 'from-yellow-500 to-yellow-600', glow: 'shadow-yellow-500/50', icon: '👑' };
+        case 1: return { bg: 'from-gray-400 to-gray-500', glow: 'shadow-gray-400/50', icon: '🥈' };
+        case 2: return { bg: 'from-amber-600 to-amber-700', glow: 'shadow-amber-600/50', icon: '🥉' };
+        default: return { bg: 'from-brand-500 to-brand-600', glow: 'shadow-brand-500/30', icon: '🔥' };
+      }
+    };
+    
+    const rankStyle = getRankStyle(index);
     
     return (
       <div 
-        className={`flex items-center space-x-2 sm:space-x-3 p-3 rounded-lg transition-all duration-300 cursor-pointer bg-dark-300/60 backdrop-blur-md relative touch-manipulation
-          ${isSelected ? 'ring-2 ring-brand-500' : 'hover:bg-dark-300/80 hover:scale-[1.02]'}`}
+        className={`group relative overflow-hidden rounded-2xl transition-all duration-500 cursor-pointer backdrop-blur-xl
+          ${isSelected ? 'ring-4 ring-yellow-500/60 scale-105 z-30' : 'hover:scale-[1.03] z-10'}
+          ${isTopThree ? 'bg-gradient-to-br from-dark-100/90 via-dark-200/80 to-dark-300/90' : 'bg-dark-200/70'}
+          ${isTopThree ? 'shadow-2xl ' + rankStyle.glow : 'shadow-xl shadow-black/20'}
+        `}
         onClick={() => handleTokenClick(token)}
       >
-        {/* Ranking badge - larger on mobile for better touch targets */}
-        <div className="absolute -top-2 -left-2 w-5 h-5 sm:w-5 sm:h-5 rounded-full bg-yellow-500 text-xs font-bold text-white flex items-center justify-center shadow-lg">
-          {index + 1}
-        </div>
-        
-        {/* Cyberpunk corner cuts */}
-        <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-yellow-500/50"></div>
-        <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-yellow-500/50"></div>
-        
-        {/* Token image - slightly larger on mobile for better visibility */}
-        <div className="flex-shrink-0 w-12 h-12 sm:w-10 sm:h-10 rounded-full flex items-center justify-center relative overflow-hidden shadow-md"
-          style={{ background: `linear-gradient(135deg, ${getTokenColor(token.symbol)} 0%, rgba(18, 16, 25, 0.8) 100%)` }}
-        >
-          {token.images?.imageUrl && (
-            <img 
-              src={token.images.imageUrl} 
-              alt={token.symbol}
-              className="absolute inset-0 w-full h-full object-cover"
+        {/* STUNNING BANNER BACKGROUND */}
+        <div className="absolute inset-0 overflow-hidden">
+          {(token.images?.headerImage || token.images?.imageUrl) ? (
+            <>
+              <img 
+                src={token.images.headerImage || token.images.imageUrl} 
+                alt={token.symbol}
+                className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+              />
+              {/* Dynamic gradient overlay based on performance */}
+              <div className={`absolute inset-0 bg-gradient-to-t transition-all duration-500
+                ${changeNum >= 20 ? 'from-green-900/95 via-green-800/80 to-green-700/40' :
+                  changeNum >= 5 ? 'from-emerald-900/95 via-emerald-800/80 to-emerald-700/40' :
+                  changeNum >= 0 ? 'from-dark-900/95 via-dark-800/80 to-dark-700/40' :
+                  changeNum >= -5 ? 'from-red-900/95 via-red-800/80 to-red-700/40' :
+                  'from-red-900/98 via-red-800/90 to-red-700/60'}
+              `} />
+            </>
+          ) : (
+            <div 
+              className="absolute inset-0 transform group-hover:scale-110 transition-transform duration-700" 
+              style={{
+                background: `linear-gradient(135deg, ${getTokenColor(token.symbol)} 0%, rgba(18, 16, 25, 0.9) 100%)`,
+              }}
             />
           )}
-          {!token.images?.imageUrl && (
-            <span className="text-sm sm:text-xs font-bold text-white">{token.symbol.slice(0, 3)}</span>
+          
+          {/* Animated particles for top performers */}
+          {hotnessScore > 80 && (
+            <div className="absolute inset-0">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-yellow-400 rounded-full animate-pulse opacity-60"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 2}s`,
+                    animationDuration: `${2 + Math.random() * 2}s`
+                  }}
+                />
+              ))}
+            </div>
           )}
         </div>
-        
-        {/* Token info - more compact on mobile */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center">
-          <span className="text-sm font-medium text-white truncate">{token.symbol}</span>
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-xs text-gray-400 truncate">${formatNumber(token.price)}</span>
-            <div className="hidden xs:block h-3 w-px bg-dark-400"></div>
-            <span className="text-xs text-yellow-400 whitespace-nowrap">Heat: {hotnessScore.toFixed(0)}</span>
+
+        {/* MAIN CONTENT */}
+        <div className="relative z-10 p-4 h-full flex flex-col justify-between">
+          {/* TOP ROW - Rank Badge & Performance Indicators */}
+          <div className="flex justify-between items-start mb-3">
+            {/* PREMIUM RANK BADGE */}
+            <div className={`flex items-center justify-center w-8 h-8 rounded-xl shadow-2xl
+              bg-gradient-to-br ${rankStyle.bg} transform group-hover:scale-110 transition-transform duration-300
+              ${isTopThree ? 'ring-2 ring-white/30' : ''}
+            `}>
+              <span className="text-sm font-black text-white drop-shadow-lg">
+                {isTopThree ? rankStyle.icon : index + 1}
+              </span>
+            </div>
+            
+            {/* HOTNESS INDICATOR */}
+            <div className="flex items-center gap-2">
+              {hotnessScore > 70 && (
+                <div className="px-2 py-1 bg-orange-500/20 backdrop-blur-sm rounded-full border border-orange-400/30">
+                  <span className="text-xs text-orange-300 font-bold animate-pulse">🔥 HOT</span>
+                </div>
+              )}
+              {changeNum > 10 && (
+                <div className="px-2 py-1 bg-green-500/20 backdrop-blur-sm rounded-full border border-green-400/30">
+                  <span className="text-xs text-green-300 font-bold">📈 PUMP</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* MIDDLE - TOKEN INFO */}
+          <div className="flex-1 flex flex-col justify-center">
+            <div className="mb-2">
+              <h3 className={`font-black text-white drop-shadow-lg transition-all duration-300
+                ${isTopThree ? 'text-2xl group-hover:text-3xl' : 'text-xl group-hover:text-2xl'}
+              `}>
+                {token.symbol}
+              </h3>
+              <p className="text-gray-300 text-sm font-medium truncate opacity-80">
+                {token.name}
+              </p>
+            </div>
+            
+            {/* ENHANCED PRICE DISPLAY */}
+            <div className="mb-3">
+              <div className="text-lg font-bold text-white font-mono drop-shadow-md">
+                ${formatNumber(token.price)}
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <div className={`px-2 py-1 rounded-lg font-bold text-sm shadow-lg
+                  ${changeNum >= 0 ? 
+                    'bg-green-500/30 text-green-200 border border-green-400/30' : 
+                    'bg-red-500/30 text-red-200 border border-red-400/30'
+                  }
+                `}>
+                  {changeNum >= 0 ? '↗' : '↘'} {formatNumber(token.change24h)}%
+                </div>
+                <div className="text-xs text-yellow-300 font-bold bg-yellow-500/10 px-2 py-1 rounded border border-yellow-400/20">
+                  🔥 {hotnessScore.toFixed(0)}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* BOTTOM - QUICK STATS */}
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
+              <div className="text-gray-400 mb-1">MCap</div>
+              <div className="text-white font-bold">${formatNumber(token.marketCap, 'short')}</div>
+            </div>
+            <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
+              <div className="text-gray-400 mb-1">Vol 24h</div>
+              <div className="text-white font-bold">${formatNumber(token.volume24h, 'short')}</div>
+            </div>
           </div>
         </div>
         
-        {/* Change percentage - more visible on mobile */}
-        <div className={`flex-shrink-0 text-xs sm:text-xs px-2 py-1 sm:py-0.5 rounded-full ${parseFloat(token.change24h) >= 0 ? 'bg-green-500/30 text-green-300' : 'bg-red-500/30 text-red-300'} font-medium whitespace-nowrap`}>
-          {formatNumber(token.change24h)}%
+        {/* SELECTION GLOW EFFECT */}
+        {isSelected && (
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-yellow-500/20 via-transparent to-yellow-500/20 animate-pulse pointer-events-none" />
+        )}
+        
+        {/* HOVER SHIMMER EFFECT */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[300%] transition-transform duration-1000" />
         </div>
       </div>
     );
@@ -184,283 +306,67 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
 
       {/* Main grid container */}
       <div ref={containerRef} className="relative z-10">
-        {/* Tier 1: Featured section - Larger cards for top tokens */}
-        {topTierTokens.length > 0 && (
-          <div className="mb-10">
-            <div className="flex items-center mb-3 relative">
-              <div className="w-1.5 h-6 bg-brand-500 mr-2 -skew-x-12"></div>
-              <h3 className="text-xl font-bold text-white relative">
-                Largest Market Cap
-                <span className="absolute -bottom-1 left-0 w-full h-px bg-gradient-to-r from-brand-500/70 to-transparent"></span>
-              </h3>
-              <div className="ml-4 text-xs text-brand-400 flex items-center">
-                <span className="inline-block w-2 h-2 bg-brand-500 mr-1"></span>
-                <span className="uppercase tracking-wider">Top by Value</span>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {topTierTokens.map(token => {
-                const isSelected = token.symbol.toLowerCase() === selectedTokenSymbol?.toLowerCase();
-                
-                return (
-                  <div 
-                    key={token.contractAddress}
-                    ref={isSelected ? selectedTokenRef : null}
-                    className={`
-                      relative transition-all duration-300 ease-in-out bg-dark-200/60 backdrop-blur-lg 
-                      rounded-xl overflow-hidden border border-dark-300/60
-                      ${isSelected ? 'ring-2 ring-brand-500 z-20' : 'hover:border-brand-400/30 z-10'}
-                    `}
-                  >
-                    {/* Cyberpunk corner cuts */}
-                    <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-brand-500/50 -translate-x-0.5 -translate-y-0.5"></div>
-                    <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-cyan-500/50 translate-x-0.5 -translate-y-0.5"></div>
-                    <div className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-brand-500/50 -translate-x-0.5 translate-y-0.5"></div>
-                    <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-cyan-500/50 translate-x-0.5 translate-y-0.5"></div>
-                    {/* Mobile-optimized layout that adjusts based on screen size */}
-                    <div className="flex md:flex-row flex-col h-full">
-                      {/* Left side - image/logo - taller on mobile, wider on desktop */}
-                      <div className="md:w-1/3 h-28 sm:h-36 md:h-auto relative overflow-hidden">
-                        <div 
-                          className="absolute inset-0 flex items-center justify-center" 
-                          style={{
-                            background: `linear-gradient(135deg, ${getTokenColor(token.symbol)} 0%, rgba(18, 16, 25, 0.8) 100%)`,
-                          }}
-                        >
-                          {token.images?.imageUrl && (
-                            <img 
-                              src={token.images.imageUrl} 
-                              alt={token.symbol}
-                              className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-lg"
-                            />
-                          )}
-                          {!token.images?.imageUrl && (
-                            <span className="font-display text-3xl sm:text-4xl text-white/90 font-bold drop-shadow-lg">
-                              {token.symbol}
-                            </span>
-                          )}
-                        </div>
-                        
-                        {/* Selection indicator */}
-                        {isSelected && (
-                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-gradient-to-br from-brand-500 to-cyber-500 flex items-center justify-center text-white text-xs font-bold z-30">
-                            ✦
-                          </div>
-                        )}
-
-                        {/* Mobile change indicator - visible only on small screens */}
-                        <div className={`md:hidden absolute bottom-2 right-2 px-3 py-1 rounded-full text-sm font-medium shadow-lg
-                          ${parseFloat(token.change24h) >= 0 ? 'bg-green-500/60 text-white' : 'bg-red-500/60 text-white'}`}
-                        >
-                          {formatNumber(token.change24h)}%
-                        </div>
-                      </div>
-                      
-                      {/* Right side - token info - adaptive layout for mobile */}
-                      <div className="md:w-2/3 p-3 sm:p-4 flex flex-col justify-between">
-                        <div>
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="max-w-[75%]"> {/* Prevent long names from pushing the percentage off screen */}
-                              <h3 className="text-xl sm:text-2xl font-bold text-white flex flex-wrap items-center gap-2">
-                                <span>{token.symbol}</span>
-                                {/* Contract address shows on larger screens, hidden on mobile */}
-                                <span className="hidden sm:inline-block text-xs text-cyan-400 font-mono bg-dark-400/40 px-2 py-0.5 rounded">
-                                  {token.contractAddress.slice(0, 6)}...{token.contractAddress.slice(-4)}
-                                </span>
-                              </h3>
-                              <p className="text-gray-400 text-xs sm:text-sm truncate max-w-full">{token.name}</p>
-                            </div>
-                            
-                            {/* Change indicator - hidden on mobile, shown on larger screens */}
-                            <div className={`hidden md:block px-3 py-1 rounded-full text-sm font-medium 
-                              ${parseFloat(token.change24h) >= 0 ? 'bg-green-500/30 text-green-300' : 'bg-red-500/30 text-red-300'}`}
-                            >
-                              {formatNumber(token.change24h)}%
-                            </div>
-                          </div>
-                          
-                          {/* Enhanced stats with mobile-friendly layout */}
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mt-3 sm:mt-4">
-                            <div className="bg-dark-300/60 backdrop-blur-sm rounded-lg p-2 border border-white/5 relative overflow-hidden group touch-manipulation">
-                              {/* Decorative corner element */}
-                              <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-brand-500/30"></div>
-                              
-                              <p className="text-gray-400 text-xs uppercase font-mono">Price</p>
-                              <p className="text-white font-mono text-sm sm:text-base truncate">${formatNumber(token.price)}</p>
-                            </div>
-                            
-                            <div className="bg-dark-300/60 backdrop-blur-sm rounded-lg p-2 border border-white/5 relative overflow-hidden group touch-manipulation">
-                              {/* Decorative corner element */}
-                              <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-cyan-500/30"></div>
-                              
-                              <p className="text-gray-400 text-xs uppercase font-mono">Market Cap</p>
-                              <p className="text-white font-mono text-sm sm:text-base truncate">${formatNumber(token.marketCap)}</p>
-                            </div>
-                            
-                            {/* Volume - adjusts layout on mobile */}
-                            <div className="col-span-2 sm:col-span-1 bg-dark-300/60 backdrop-blur-sm rounded-lg p-2 border border-white/5 relative overflow-hidden group touch-manipulation">
-                              {/* Decorative corner element */}
-                              <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-purple-500/30"></div>
-                              
-                              <div className="flex sm:block items-center justify-between">
-                                <p className="text-gray-400 text-xs uppercase font-mono">Volume</p>
-                                <p className="text-white font-mono text-sm sm:text-base truncate">${formatNumber(token.volume24h)}</p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Social links - hidden on smallest screens, visible on sm and up */}
-                          <div className="hidden sm:block mt-2">
-                            <div className="flex space-x-2 items-center mt-2">
-                              {token.socials && (
-                                <div className="flex space-x-1">
-                                  {token.socials?.twitter?.url && (
-                                    <a
-                                      href="#"
-                                      className="w-7 h-7 flex items-center justify-center bg-dark-300/80 text-xs rounded-full touch-manipulation"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      𝕏
-                                    </a>
-                                  )}
-                                  {token.socials?.telegram?.url && (
-                                    <a
-                                      href="#"
-                                      className="w-7 h-7 flex items-center justify-center bg-dark-300/80 text-xs rounded-full touch-manipulation"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      ✈️
-                                    </a>
-                                  )}
-                                  {token.socials?.discord?.url && (
-                                    <a
-                                      href="#"
-                                      className="w-7 h-7 flex items-center justify-center bg-dark-300/80 text-xs rounded-full touch-manipulation"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      💬
-                                    </a>
-                                  )}
-                                </div>
-                              )}
-                              
-                              <div className="flex-1 h-px bg-gradient-to-r from-brand-500/20 via-transparent to-brand-500/20"></div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-2 sm:mt-3">
-                          <button 
-                            onClick={() => handleTokenClick(token)}
-                            className="w-full py-2 rounded text-sm font-medium bg-dark-300/80 border border-brand-500/30 text-white hover:bg-brand-500/20 transition-colors relative overflow-hidden group touch-manipulation"
-                          >
-                            {/* Decorative corner cuts */}
-                            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-brand-500/50"></div>
-                            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-cyan-500/50"></div>
-                            
-                            {/* Button light effect on hover */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-brand-500/0 via-brand-500/0 to-brand-500/0 group-hover:from-brand-500/0 group-hover:via-brand-500/10 group-hover:to-brand-500/0 transition-all duration-500"></div>
-                            
-                            <span className="relative z-10">View Details</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
         
-        {/* Tier 2: Mid-tier tokens - medium cards with more info */}
-        {midTierTokens.length > 0 && (
-          <div className="mb-10">
-            <div className="flex items-center mb-3 relative">
-              <div className="w-1.5 h-6 bg-cyan-500 mr-2 -skew-x-12"></div>
-              <h3 className="text-xl font-bold text-white relative">
-                Top Gainers
-                <span className="absolute -bottom-1 left-0 w-full h-px bg-gradient-to-r from-cyan-500/70 to-transparent"></span>
-              </h3>
-              <div className="ml-4 text-xs text-cyan-400 flex items-center">
-                <span className="inline-block w-2 h-2 bg-cyan-500 mr-1"></span>
-                <span className="uppercase tracking-wider">24h Change %</span>
+        {/* ENHANCED HOTTEST TOKENS SECTION */}
+        {trendingTokens.length > 0 && (
+          <div className="mb-16">
+            {/* SPECTACULAR HEADER */}
+            <div className="relative mb-8">
+              <div className="absolute inset-0 -z-10">
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 via-orange-500/5 to-red-500/5 rounded-3xl blur-3xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-yellow-900/10 via-transparent to-orange-900/10" />
+              </div>
+              
+              <div className="relative z-10 text-center py-8">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="h-px w-16 bg-gradient-to-r from-transparent to-yellow-500/60" />
+                  <div className="mx-4 px-6 py-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-full border border-yellow-400/30 backdrop-blur-sm">
+                    <span className="text-yellow-300 text-sm font-bold uppercase tracking-widest animate-pulse">🔥 TRENDING NOW 🔥</span>
+                  </div>
+                  <div className="h-px w-16 bg-gradient-to-l from-transparent to-yellow-500/60" />
+                </div>
+                
+                <h2 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 drop-shadow-2xl mb-2">
+                  HOTTEST TOKENS
+                </h2>
+                
+                <p className="text-gray-300 text-lg font-medium mb-6">
+                  The most explosive tokens right now • Real-time market momentum
+                </p>
+                
+                {/* ANIMATED SEPARATORS */}
+                <div className="flex items-center justify-center gap-4">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" />
+                  <div className="w-20 h-px bg-gradient-to-r from-yellow-500/60 via-orange-500/60 to-red-500/60" />
+                  <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse delay-300" />
+                  <div className="w-20 h-px bg-gradient-to-r from-red-500/60 via-orange-500/60 to-yellow-500/60" />
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce delay-700" />
+                </div>
               </div>
             </div>
             
-            {/* Responsive grid that adapts to screen sizes */}
-            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-              {midTierTokens.map((token, index) => {
-                const isSelected = token.symbol.toLowerCase() === selectedTokenSymbol?.toLowerCase();
-                
-                return (
-                  <div 
-                    key={token.contractAddress}
-                    ref={isSelected ? selectedTokenRef : null}
-                    onClick={() => handleTokenClick(token)}
-                    className={`
-                      relative transition-all duration-300 ease-in-out p-3 sm:p-4
-                      bg-dark-200/60 backdrop-blur-md rounded-lg cursor-pointer
-                      border border-dark-300/60 hover:border-brand-400/30 touch-manipulation
-                      ${isSelected ? 'ring-2 ring-brand-500' : ''}
-                    `}
-                  >
-                    {/* Rank ribbon - enhanced for visibility */}
-                    <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-cyan-500/90 text-white text-xs rounded shadow-lg z-20 font-bold">
-                      #{index + 1}
-                    </div>
-                    
-                    {/* Mobile-optimized header with better spacing */}
-                    <div className="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-3">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center relative overflow-hidden shadow-md"
-                        style={{
-                          background: `linear-gradient(135deg, ${getTokenColor(token.symbol)} 0%, rgba(18, 16, 25, 0.8) 100%)`,
-                        }}
-                      >
-                        {token.images?.imageUrl && (
-                          <img 
-                            src={token.images.imageUrl} 
-                            alt={token.symbol}
-                            className="absolute inset-0 w-full h-full object-cover"
-                          />
-                        )}
-                        {!token.images?.imageUrl && (
-                          <span className="text-sm font-bold text-white">{token.symbol.slice(0, 3)}</span>
-                        )}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0"> {/* Added min-width to handle text overflow */}
-                        <h3 className="text-base sm:text-lg font-bold text-white truncate">{token.symbol}</h3>
-                        <p className="text-gray-400 text-xs truncate">{token.name}</p>
-                      </div>
-                      
-                      {/* Selection indicator */}
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-gradient-to-br from-brand-500 to-cyber-500 flex items-center justify-center text-white text-xs font-bold">
-                          ✦
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Enhanced price and change display */}
-                    <div className="flex justify-between items-baseline mb-2">
-                      <div className="text-base sm:text-lg font-mono text-white truncate">${formatNumber(token.price)}</div>
-                      <div className={`text-sm px-2 py-0.5 rounded-full ${parseFloat(token.change24h) >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'} font-medium`}>
-                        {formatNumber(token.change24h)}%
-                      </div>
-                    </div>
-                    
-                    {/* Volume info with improved touch target */}
-                    <div className="mt-2 pt-2 border-t border-dark-300/60">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-400">24h Volume:</span>
-                        <span className="text-xs sm:text-sm text-white font-mono">${formatNumber(token.volume24h)}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* PREMIUM GRID LAYOUT */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {trendingTokens.map((token, index) => (
+                <HottestTokenCard key={token.contractAddress} token={token} index={index} />
+              ))}
+            </div>
+            
+            {/* BOTTOM DECORATIVE ELEMENTS */}
+            <div className="mt-12 relative">
+              <div className="flex items-center justify-center">
+                <div className="h-px w-32 bg-gradient-to-r from-transparent via-yellow-500/40 to-transparent" />
+                <div className="mx-4 w-6 h-6 border-2 border-yellow-500/40 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-yellow-500/60 rounded-full animate-ping" />
+                </div>
+                <div className="h-px w-32 bg-gradient-to-l from-transparent via-yellow-500/40 to-transparent" />
+              </div>
+              
+              <div className="text-center mt-4">
+                <p className="text-gray-500 text-sm font-medium">
+                  Updated every 30 seconds • Powered by real-time market data
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -485,8 +391,8 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
               </div>
             </div>
             
-            {/* Optimized grid layout for mobile - 2 columns on small screens, more on larger */}
-            <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 xs:gap-3 sm:gap-4">
+            {/* Optimized grid layout for mobile - 3 columns on small screens for space efficiency */}
+            <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1 xs:gap-2 sm:gap-3">
               {restTokens.map(token => {
                 const isSelected = token.symbol.toLowerCase() === selectedTokenSymbol?.toLowerCase();
                 
@@ -531,39 +437,6 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
           </div>
         )}
         
-        {/* Trending Section - Integrated into main layout */}
-        <div className="mt-10 mb-10">
-          <div className="flex items-center mb-3 relative">
-            <div className="w-1.5 h-6 bg-yellow-500 mr-2 -skew-x-12"></div>
-            <h3 className="text-xl font-bold text-white relative">
-              Hottest Tokens
-              <span className="absolute -bottom-1 left-0 w-full h-px bg-gradient-to-r from-yellow-500/70 to-transparent"></span>
-            </h3>
-            
-            {/* Visual line with active elements */}
-            <div className="ml-4 flex items-center flex-1">
-              <div className="h-px bg-gradient-to-r from-yellow-500/50 via-yellow-500/30 to-transparent flex-grow relative">
-                <div className="absolute top-0 left-1/4 w-1 h-1 bg-yellow-500/80 rounded-full"></div>
-                <div className="absolute top-0 left-2/3 w-1 h-1 bg-yellow-500/60 rounded-full"></div>
-              </div>
-              <div className="ml-2 h-4 px-2 flex items-center justify-center bg-yellow-500/10 border border-yellow-500/30 rounded-sm">
-                <span className="text-xs text-yellow-400 uppercase tracking-wider animate-pulse">Popularity</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Improved grid layout for better mobile experience */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
-            {trendingTokens.map((token, index) => (
-              <TrendingToken key={token.contractAddress} token={token} index={index} />
-            ))}
-          </div>
-          
-          {/* Mobile scroll indicator - only visible on smallest screens */}
-          <div className="flex justify-center items-center mt-2 xs:hidden">
-            <div className="w-20 h-1 bg-gradient-to-r from-transparent via-yellow-500/50 to-transparent rounded-full"></div>
-          </div>
-        </div>
       </div>
     </div>
   );

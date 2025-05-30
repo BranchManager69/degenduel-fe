@@ -456,8 +456,21 @@ const checkContestParticipation = async (
 ): Promise<boolean> => {
   if (!userWallet) return false;
 
+  // Validate contestId
+  if (!contestId || contestId === 'undefined' || contestId === 'null') {
+    console.warn('[checkContestParticipation] Invalid contest ID:', contestId);
+    return false;
+  }
+  
+  // Ensure contestId is a valid number
+  const numericId = typeof contestId === 'number' ? contestId : parseInt(contestId.toString(), 10);
+  if (isNaN(numericId) || numericId <= 0) {
+    console.warn('[checkContestParticipation] Contest ID must be a valid positive number:', contestId);
+    return false;
+  }
+
   // Create a cache key
-  const cacheKey = `${contestId}-${userWallet}`;
+  const cacheKey = `${numericId}-${userWallet}`;
   const now = Date.now();
 
   // Check cache first
@@ -474,7 +487,7 @@ const checkContestParticipation = async (
     const api = createApiClient();
     const response = await api
       .fetch(
-        `/contests/${contestId}/check-participation?wallet_address=${encodeURIComponent(
+        `/contests/${numericId}/check-participation?wallet_address=${encodeURIComponent(
           userWallet,
         )}`,
         {
@@ -488,9 +501,9 @@ const checkContestParticipation = async (
       try {
         const errorText = await response.text();
         console.warn(
-          `[DD-API] Participation check failed for contest ${contestId}, wallet ${userWallet}: HTTP ${response.status}`,
+          `[DD-API] Participation check failed for contest ${numericId}, wallet ${userWallet}: HTTP ${response.status}`,
           {
-            endpoint: `/contests/${contestId}/check-participation`,
+            endpoint: `/contests/${numericId}/check-participation`,
             statusText: response.statusText,
             errorText: errorText.substring(0, 200), // Limit long responses
           },
@@ -1290,9 +1303,20 @@ export const ddApi = {
     getById: async (contestId: string) => {
       const user = useStore.getState().user;
 
+      // Validate contestId before making API call
+      if (!contestId || contestId === 'undefined' || contestId === 'null') {
+        throw new Error('Contest ID is required');
+      }
+      
+      // Ensure contestId is a valid number
+      const numericId = parseInt(contestId, 10);
+      if (isNaN(numericId) || numericId <= 0) {
+        throw new Error('Contest ID must be a valid positive number');
+      }
+
       try {
         const api = createApiClient();
-        const response = await api.fetch(`/contests/${contestId}`, {
+        const response = await api.fetch(`/contests/${numericId}`, {
           headers: {
             "Cache-Control": "no-cache",
           },
@@ -1331,6 +1355,17 @@ export const ddApi = {
     ): Promise<void> => {
       const user = useStore.getState().user;
 
+      // Validate contestId before making API call
+      if (!contestId || contestId === 'undefined' || contestId === 'null') {
+        throw new Error('Contest ID is required');
+      }
+      
+      // Ensure contestId is a valid number
+      const numericId = parseInt(contestId, 10);
+      if (isNaN(numericId) || numericId <= 0) {
+        throw new Error('Contest ID must be a valid positive number');
+      }
+
       if (!user?.wallet_address) {
         throw new Error("Please connect your wallet first");
       }
@@ -1342,7 +1377,7 @@ export const ddApi = {
         };
 
         const api = createApiClient();
-        const response = await api.fetch(`/contests/${contestId}/join`, {
+        const response = await api.fetch(`/contests/${numericId}/join`, {
           method: "POST",
           body: JSON.stringify(payload),
         });
@@ -1676,8 +1711,19 @@ export const ddApi = {
       const user = useStore.getState().user;
       const api = createApiClient();
 
+      // Validate contestId before making API call
+      if (!contestId || contestId === 'undefined' || contestId === 'null') {
+        throw new Error('Contest ID is required');
+      }
+      
+      // Ensure contestId is a valid number
+      const numericId = parseInt(contestId, 10);
+      if (isNaN(numericId) || numericId <= 0) {
+        throw new Error('Contest ID must be a valid positive number');
+      }
+
       try {
-        const response = await api.fetch(`/contests/${contestId}/view`, {
+        const response = await api.fetch(`/contests/${numericId}/view`, {
           headers: {
             "Cache-Control": "no-cache",
           },

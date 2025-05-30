@@ -20,7 +20,7 @@ import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
 import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
 import { useStore } from "../../store/useStore";
 // import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
-import { ConsolidatedLoginButton } from "../auth";
+import { SimpleWalletButton } from "../auth";
 import MiniLogo from "../logo/MiniLogo";
 import NanoLogo from "../logo/NanoLogo";
 import { MobileMenuButton } from './MobileMenuButton'; // TEMP
@@ -53,7 +53,7 @@ export const Header: React.FC = () => {
 
   // Log the user, isAuthenticated, and isAdmin when they change
   useEffect(() => {
-    console.log("[Header EFFECT on auth change] User:", user, "IsAuthenticated:", isAuthenticated, "IsAdmin:", isAdministrator);
+    //console.log("[Header EFFECT on auth change] User:", user, "IsAuthenticated:", isAuthenticated, "IsAdmin:", isAdministrator);
   }, [user, isAuthenticated, isAdministrator]);
 
   // Re-enable the effect for clearing storeError, but guarded
@@ -128,6 +128,28 @@ export const Header: React.FC = () => {
             {/* <Logo /> */} {/* another option - old logo image */}
           </Link>
 
+          {/* Navigation Menu */}
+          <nav className="hidden sm:flex items-center gap-6 ml-8">
+            <Link 
+              to="/contests" 
+              className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+            >
+              Contests
+            </Link>
+            <Link 
+              to="/tokens" 
+              className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+            >
+              Tokens
+            </Link>
+            <Link 
+              to="/mcp" 
+              className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+            >
+              MCP
+            </Link>
+          </nav>
+
           {/* Spacer */}
           <div className="flex-1"></div> 
 
@@ -167,9 +189,9 @@ export const Header: React.FC = () => {
                     exit={{ opacity: 0, x: 10 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <ConsolidatedLoginButton 
+                    <SimpleWalletButton 
                       onLoginComplete={() => {
-                        console.log("[Header] Login complete callback triggered from ConsolidatedLoginButton");
+                        console.log("[Header] Login complete callback triggered from SimpleWalletButton");
                       }}
                       isCompact={isCompact}
                     />

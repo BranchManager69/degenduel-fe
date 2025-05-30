@@ -376,7 +376,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           )}
         </div>
 
-        {/* Entry Fee and Prize Pool with modern, visually connected design */}
+        {/* Entry Fee and Est. Prize Pool with modern, visually connected design */}
         <div className="relative mt-2 mb-3">
           {/* Visual comparison container */}
           <div className="flex flex-col space-y-4">
@@ -390,7 +390,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                   {/* Inner content */}
                   <div className="absolute inset-y-0 left-0 bg-blue-500/10" 
                        style={{ 
-                         width: `${Math.min(100, (Number(contest.entry_fee) / Number(contest.prize_pool)) * 100)}%` 
+                         width: `${Math.min(100, (Number(contest.entry_fee) / (Number(contest.prize_pool) * 0.9)) * 100)}%` 
                        }}>
                     {/* Subtle pulse animation */}
                     <div className="absolute inset-0 bg-blue-400/5 animate-pulse-slow"></div>
@@ -423,8 +423,10 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                   
                   {/* The value */}
                   <div className="relative z-10 px-3 py-2 flex items-center justify-between w-full">
+                    
+                    {/* Est. prize pool display */}
                     <span className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-brand-300"}`}>
-                      {formatCurrency(Number(contest.prize_pool))}
+                      {formatCurrency(Number(contest.max_participants) * Number(contest.entry_fee) * (1 - 0.1))}
                     </span>
                     
                     {/* Visual multiplier */}
@@ -509,7 +511,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           max_participants={contest.max_participants}
           isCancelled={displayStatus === "cancelled"}
         /> */}
-        <div className="mt-2 text-xs text-gray-500 italic">(Detailed prize/difficulty display TBD)</div>
+        {/* <div className="mt-2 text-xs text-gray-500 italic">(Detailed prize/difficulty display TBD)</div> */}
       </div>
     </div>
   );

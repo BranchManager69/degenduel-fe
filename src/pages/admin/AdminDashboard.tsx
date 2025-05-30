@@ -14,6 +14,7 @@ import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
 import { StartContest } from "../../components/ApiPlaygroundParts/StartContest";
 import { UserDetail } from "../../components/ApiPlaygroundParts/UserDetail";
 import { LazyLoad } from "../../components/shared/LazyLoad";
+import { TokenDiscoveryFeed } from "../../components/tokens-list/TokenDiscoveryFeed";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 
@@ -1046,6 +1047,33 @@ export const AdminDashboard: React.FC = () => {
                     </Link>
                   </motion.div>
 
+                  {/* Admin Wallet Dashboard Button */}
+                  <motion.div
+                    className="bg-dark-200/75 backdrop-blur-lg border-2 border-purple-500/40 hover:border-purple-500/60 p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/20"
+                    whileHover={{ scale: 1.02, y: -4 }}
+                  >
+                    <Link to="/admin/wallet-dashboard" className="block h-full">
+                      <div className="flex items-center mb-3">
+                        <div className="text-2xl text-purple-300 mr-3 group-hover:scale-110 transition-transform duration-300">
+                          🏦
+                        </div>
+                        <h3 className="text-lg font-bold text-purple-300 font-display tracking-wide">
+                          Admin Wallet Dashboard
+                        </h3>
+                      </div>
+                      
+                      <div className="w-1/3 h-px bg-gradient-to-r from-purple-500/70 to-transparent mb-3"></div>
+                      
+                      <p className="text-gray-300 text-sm font-mono">
+                        <span className="text-purple-200">→</span> Manage custodial wallets with bulk operations
+                      </p>
+                      
+                      <div className="absolute -bottom-0 -right-0 w-8 h-8">
+                        <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-purple-500/70"></div>
+                      </div>
+                    </Link>
+                  </motion.div>
+
                   {/* Liquidity Simulator Button */}
                   <motion.div
                     className="bg-dark-200/75 backdrop-blur-lg border-2 border-green-500/40 hover:border-green-500/60 p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-green-500/20"
@@ -1590,9 +1618,9 @@ export const AdminDashboard: React.FC = () => {
             </LazyLoad>
           </div>
 
-          {/* Admin Logs Panel - 25% width on desktop, full width on mobile */}
+          {/* Admin Logs Panel & Token Discovery - 25% width on desktop, full width on mobile */}
           <div className="lg:col-span-1">
-            <div className="sticky top-6 space-y-6 max-h-screen overflow-hidden">
+            <div className="sticky top-6 space-y-6 max-h-screen overflow-y-auto">
               <LazyLoad
                 placeholder={
                   <div className="animate-pulse">
@@ -1607,6 +1635,28 @@ export const AdminDashboard: React.FC = () => {
                 rootMargin="50px" // Smaller margin as this is typically visible at page load
               >
                 <AdminLogsPanel />
+              </LazyLoad>
+
+              {/* Token Discovery Feed */}
+              <LazyLoad
+                placeholder={
+                  <div className="animate-pulse">
+                    <div className="bg-dark-300/30 h-10 w-full rounded-t-lg"></div>
+                    <div className="bg-dark-200/40 p-4 rounded-b-lg space-y-3">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="bg-dark-300/20 h-12 rounded"></div>
+                      ))}
+                    </div>
+                  </div>
+                }
+                rootMargin="50px"
+              >
+                <TokenDiscoveryFeed 
+                  maxDisplay={10}
+                  showHeader={true}
+                  showChainBadges={true}
+                  className="max-h-96"
+                />
               </LazyLoad>
             </div>
           </div>

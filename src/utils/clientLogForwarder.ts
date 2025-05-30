@@ -47,6 +47,50 @@ const VERBOSE_SERVER_LOGGING = false; // Set to false to reduce log spam sent to
 // Defaults to true in dev, false in prod. Can be overridden by remote setting.
 let enableVerboseClientConsole = (NODE_ENV === 'development');
 
+// Admin override flag - when true, shows logs even if enableVerboseClientConsole is false
+let adminOverrideActive = false;
+
+/**
+ * Check if the current user has admin/superadmin role and should get verbose console output
+ */
+const checkAdminOverride = (): boolean => {
+  try {
+    const store = useStore.getState();
+    const user = store.user;
+    
+    if (!user) {
+      return false;
+    }
+    
+    // Check for admin or superadmin roles
+    const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+    return isAdmin;
+  } catch (err) {
+    // If we can't check the user role, default to false
+    return false;
+  }
+};
+
+/**
+ * Determine if verbose console output should be enabled
+ * Takes into account both the remote setting and admin override
+ */
+const shouldShowVerboseConsole = (): boolean => {
+  const currentAdminOverride = checkAdminOverride();
+  
+  // Update admin override status if it changed
+  if (currentAdminOverride !== adminOverrideActive) {
+    adminOverrideActive = currentAdminOverride;
+    if (adminOverrideActive) {
+      originalConsole.log('[LogForwarder] 🔧 ADMIN OVERRIDE: Verbose console output enabled for admin/superadmin user');
+    } else {
+      originalConsole.log('[LogForwarder] Admin override deactivated');
+    }
+  }
+  
+  return enableVerboseClientConsole || adminOverrideActive;
+};
+
 // Log levels
 export enum LogLevel {
   DEBUG = "debug",
@@ -129,17 +173,31 @@ export const initializeClientLogForwarder = (): void => {
   // return; //  <---- !! TEMPORARILY DISABLE ALL CONSOLE OVERRIDES !!
 
   // If not returning above, proceed with overrides but with added safety
-  originalConsole.log(`[LogForwarder] Initializing with console overrides. Verbose client console: ${enableVerboseClientConsole}`);
+  const initialAdminOverride = checkAdminOverride();
+  adminOverrideActive = initialAdminOverride;
+  originalConsole.log(`[LogForwarder] Initializing with console overrides. Verbose client console: ${enableVerboseClientConsole}${initialAdminOverride ? ' + 🔧 ADMIN OVERRIDE ACTIVE' : ''}`);
 
   console.log = (...args: any[]) => {
-    if (enableVerboseClientConsole) {
-      try { originalConsole.log.apply(originalConsole, args); } catch (e) { /* ignore internal log error */ }
+    if (shouldShowVerboseConsole()) {
+      try { 
+        if (adminOverrideActive && !enableVerboseClientConsole) {
+          originalConsole.log('🔧[ADMIN]', ...args);
+        } else {
+          originalConsole.log.apply(originalConsole, args);
+        }
+      } catch (e) { /* ignore internal log error */ }
     }
   };
 
   console.info = (...args: any[]) => {
-    if (enableVerboseClientConsole) {
-      try { originalConsole.info.apply(originalConsole, args); } catch (e) { /* ignore internal log error */ }
+    if (shouldShowVerboseConsole()) {
+      try { 
+        if (adminOverrideActive && !enableVerboseClientConsole) {
+          originalConsole.info('🔧[ADMIN]', ...args);
+        } else {
+          originalConsole.info.apply(originalConsole, args);
+        }
+      } catch (e) { /* ignore internal log error */ }
     }
   };
 
@@ -482,9 +540,11 @@ async function fetchRemoteLoggingSetting() {
       const remoteSetting = !!data.enableConsoleOutput;
       if (remoteSetting !== enableVerboseClientConsole) {
         enableVerboseClientConsole = remoteSetting;
-        originalConsole.log(`[LogForwarder] Remote setting updated verbose client console output to: ${enableVerboseClientConsole}`);
+        const currentAdminOverride = checkAdminOverride();
+        originalConsole.log(`[LogForwarder] Remote setting updated verbose client console output to: ${enableVerboseClientConsole}${currentAdminOverride ? ' (🔧 Admin override still active)' : ''}`);
       } else {
-        originalConsole.log(`[LogForwarder] Remote setting matches current client console setting (${enableVerboseClientConsole}). No change needed.`);
+        const currentAdminOverride = checkAdminOverride();
+        originalConsole.log(`[LogForwarder] Remote setting matches current client console setting (${enableVerboseClientConsole})${currentAdminOverride ? ' + 🔧 Admin override active' : ''}. No change needed.`);
       }
     } else {
       // Endpoint exists but returned an error (e.g., 500) - keep default

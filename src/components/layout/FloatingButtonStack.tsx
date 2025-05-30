@@ -11,34 +11,46 @@
  */
 
 import { AnimatePresence, motion } from 'framer-motion';
-import React from 'react';
+import React, { useState } from 'react';
 import { FloatingBelieveButton } from './FloatingBelieveButton';
 import { FloatingDexscreenerButton } from './FloatingDexscreenerButton';
 import { FloatingJupButton } from './FloatingJupButton';
-import { FloatingPumpButton } from './FloatingPumpButton';
 
 interface FloatingButtonStackProps {
   tokenAddress?: string | null;
   tokenSymbol?: string | null;
   enabled?: boolean;
+  isCountdownComplete?: boolean;
 }
 
 const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({ 
   tokenAddress, 
   tokenSymbol, 
-  enabled = true 
+  enabled = true,
+  isCountdownComplete = false
 }) => {
+  const [jigglingButtons, setJigglingButtons] = useState<Set<string>>(new Set());
+
+  // Handle premature clicks with jiggle animation
+  const handlePrematureClick = (buttonId: string) => {
+    if (isCountdownComplete) return; // Allow normal behavior if countdown is complete
+    
+    setJigglingButtons(prev => new Set([...prev, buttonId]));
+    setTimeout(() => {
+      setJigglingButtons(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(buttonId);
+        return newSet;
+      });
+    }, 600);
+  };
+
   // Button configurations
   const buttons = [
     { 
       id: 'believe', 
       component: FloatingBelieveButton, 
       color: 'emerald'
-    },
-    { 
-      id: 'pump', 
-      component: FloatingPumpButton, 
-      color: 'blue'
     },
     { 
       id: 'dexscreener', 
@@ -84,6 +96,13 @@ const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({
         damping: 25,
         mass: 0.8
       }
+    },
+    jiggle: {
+      x: [-10, 10, -8, 8, -6, 6, -4, 4, 0],
+      transition: {
+        duration: 0.6,
+        ease: "easeInOut"
+      }
     }
   };
 
@@ -91,8 +110,8 @@ const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({
 
   return (
     <motion.div
-      className="fixed left-6 z-50 flex flex-col-reverse space-y-reverse space-y-4"
-      style={{ bottom: '1.5rem' }}
+      className="fixed left-6 z-50 flex flex-col-reverse space-y-reverse space-y-3 opacity-75"
+      style={{ bottom: '5rem' }}
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -100,16 +119,20 @@ const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({
       <AnimatePresence>
         {buttons.map((buttonConfig) => {
           const ButtonComponent = buttonConfig.component;
+          const isJiggling = jigglingButtons.has(buttonConfig.id);
           
           return (
             <motion.div
               key={buttonConfig.id}
               variants={buttonVariants}
+              animate={isJiggling ? "jiggle" : "visible"}
               className="relative"
             >
               <ButtonComponent
                 tokenAddress={tokenAddress}
                 tokenSymbol={tokenSymbol}
+                isCountdownComplete={isCountdownComplete}
+                onPrematureClick={() => handlePrematureClick(buttonConfig.id)}
               />
             </motion.div>
           );

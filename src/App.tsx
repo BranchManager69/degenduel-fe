@@ -30,6 +30,11 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 // Wallet providers
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  TrustWalletAdapter
+} from "@solana/wallet-adapter-wallets";
 
 // Other providers of dubious quality:
 import { ToastListener, ToastProvider } from "./components/toast";
@@ -63,8 +68,8 @@ import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import LoadingFallback from "./components/shared/LoadingFallback";
 import { Terminal } from "./components/terminal/Terminal";
-import { useNotifications } from './hooks/websocket/topic-hooks/useNotifications';
-import { useSystemSettings } from './hooks/websocket/topic-hooks/useSystemSettings';
+// import { useNotifications } from './hooks/websocket/topic-hooks/useNotifications';
+// import { useSystemSettings } from './hooks/websocket/topic-hooks/useSystemSettings';
 
 // Wallet adapter styles (if this is the old wallet adapter, we removed it)
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -104,6 +109,7 @@ const LogForwarderDebugLazy = lazy(() => import('./pages/admin/LogForwarderDebug
 
 // Admin routes lazy loaded
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const AdminWalletDashboard = lazy(() => import('./pages/admin/AdminWalletDashboard'));
 const AiTesting = lazy(() => import('./pages/admin/AiTesting').then(module => ({ default: module.AiTesting })));
 const ClientErrorsPage = lazy(() => import('./pages/admin/ClientErrorsPage'));
 const ConnectionDebugger = lazy(() => import('./pages/admin/ConnectionDebugger').then(module => ({ default: module.ConnectionDebugger })));
@@ -115,6 +121,7 @@ const VanityWalletManagementPage = lazy(() => import('./pages/admin/VanityWallet
 const WalletManagementPage = lazy(() => import('./pages/admin/WalletManagementPage'));
 const WebSocketHub = lazy(() => import('./pages/admin/WebSocketHub'));
 const TokenSyncTest = lazy(() => import('./pages/admin/TokenSyncTest'));
+
 
 // Authenticated routes lazy loaded
 const ReferralPage = lazy(() => import('./pages/authenticated/AffiliatePage').then(module => ({ default: module.ReferralPage })));
@@ -174,12 +181,15 @@ export const useDegenDuelRpc = () => {
 const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { rpcEndpoint } = useSolanaConnection(); // Get the dynamically chosen endpoint from your context
   
-  // Use empty wallet list to rely on Standard Wallet protocol for auto-detection
-  // Phantom and Solflare now support Standard Wallet, so no need for explicit adapters
+  // Use minimal wallet list - Phantom & Solflare now use Standard Wallet protocol
+  // Configure wallet adapters
   const wallets: Adapter[] = useMemo(
     () => [
-      // Add other non-standard or specifically configured wallets you want to support here
-      // Phantom and Solflare will be auto-detected via Standard Wallet protocol
+      new TrustWalletAdapter(),
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+      // PhantomWalletAdapter & SolflareWalletAdapter removed - they now use Standard Wallet
+      // Nevermind, I put them back. They disappeared from the list.
     ],
     []
   );
@@ -277,8 +287,8 @@ const AppContent: React.FC = () => {
   const { user } = useMigratedAuth();
 
   // State and hooks for error banners
-  const { error: notificationsError } = useNotifications();
-  const { error: systemSettingsError } = useSystemSettings(); // Renamed for clarity
+  // const { error: notificationsError } = useNotifications();
+  // const { error: systemSettingsError } = useSystemSettings(); // Renamed for clarity
   //const [showNotificationErrorBanner, setShowNotificationErrorBanner] = useState(false);
   //const [showSystemSettingsErrorBanner, setShowSystemSettingsErrorBanner] = useState(false);
   // const { isCompact: isHeaderCompact } = useScrollHeader(50); // To dynamically position banners
@@ -338,7 +348,7 @@ const AppContent: React.FC = () => {
       <Header />
       
       {/* EdgeToEdgeTicker */}
-      <EdgeToEdgeTicker storeError={notificationsError || systemSettingsError} />
+      <EdgeToEdgeTicker />
       
       {/* WalletBalanceTicker */}
       {user && <WalletBalanceTicker isCompact={true} />}
@@ -439,6 +449,7 @@ const AppContent: React.FC = () => {
           <Route path="/admin/system-reports" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><SystemReports /></Suspense></AdminRoute>} />
           <Route path="/admin/client-errors" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><ClientErrorsPage /></Suspense></AdminRoute>} />
           <Route path="/admin" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><AdminDashboard /></Suspense></AdminRoute>} />
+          <Route path="/admin/wallet-dashboard" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Admin Wallet Dashboard..." />}><AdminWalletDashboard /></Suspense></AdminRoute>} />
           <Route path="/admin/ip-ban" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><IpBanManagementPage /></Suspense></AdminRoute>} />
           <Route path="/admin/vanity-wallets" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><VanityWalletManagementPage /></Suspense></AdminRoute>} />
           <Route path="/admin/contest-management/regenerate-image/:contestId" element={<AdminRoute><div>Contest Image Generator Page</div></AdminRoute>} />
@@ -479,24 +490,18 @@ const AppContent: React.FC = () => {
       </main>
       
       {/* Persistent Terminal Component - ALWAYS RENDERED NOW */}
-      <div 
-        className="fixed bottom-0 left-0 right-0 z-[60] pointer-events-none"
-      >
-        <div className="pointer-events-auto"> 
-          <Terminal 
-              config={{
-                  RELEASE_DATE: config.RELEASE_DATE.TOKEN_LAUNCH_DATETIME,
-                  CONTRACT_ADDRESS: config.CONTRACT_ADDRESS.REAL, 
-                  DISPLAY: {
-                      DATE_SHORT: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT,
-                      DATE_FULL: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL, 
-                      TIME: config.RELEASE_DATE.DISPLAY.LAUNCH_TIME
-                  }
-              }}
-              size="contracted"
-          />
-        </div>
-      </div>
+      <Terminal 
+          config={{
+              RELEASE_DATE: config.RELEASE_DATE.TOKEN_LAUNCH_DATETIME,
+              CONTRACT_ADDRESS: config.CONTRACT_ADDRESS.REAL, 
+              DISPLAY: {
+                  DATE_SHORT: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT,
+                  DATE_FULL: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL, 
+                  TIME: config.RELEASE_DATE.DISPLAY.LAUNCH_TIME
+              }
+          }}
+          size="middle"
+      />
 
       {/* Footer */}
       <Footer />

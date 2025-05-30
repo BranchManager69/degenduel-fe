@@ -62,12 +62,21 @@ export interface TokenSchedulerQueueEvent {
   timestamp: string;
 }
 
+export interface TokenSchedulerPriceHistoryEvent {
+  type: 'price_history_recorded';
+  tokenCount: number;
+  batchSize: number;
+  source: string;
+  timestamp: string;
+}
+
 export type TokenSchedulerEvent = 
   | TokenSchedulerBatchStartedEvent
   | TokenSchedulerBatchCompletedEvent 
   | TokenSchedulerFailureEvent 
   | TokenSchedulerInactiveEvent 
-  | TokenSchedulerQueueEvent;
+  | TokenSchedulerQueueEvent
+  | TokenSchedulerPriceHistoryEvent;
 
 // Aggregated Token Status
 export interface TokenStatus {
@@ -105,6 +114,11 @@ export interface TokenSchedulerStatus {
   warningTokens: number;
   criticalTokens: number;
   inactiveTokens: number;
+  
+  // Price history tracking
+  lastPriceUpdate: TokenSchedulerPriceHistoryEvent | null;
+  isUpdatingPrices: boolean;
+  totalPriceUpdates: number;
   
   // Batch processing state
   queueStatus: {
@@ -145,6 +159,11 @@ export const useTokenSchedulerStatus = (): TokenSchedulerStatus => {
   const [recentFailures, setRecentFailures] = useState<TokenSchedulerFailureEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Price history state
+  const [lastPriceUpdate, setLastPriceUpdate] = useState<TokenSchedulerPriceHistoryEvent | null>(null);
+  const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
+  const [totalPriceUpdates, setTotalPriceUpdates] = useState(0);
   
   // Refs for stable references
   const latestEventRef = useRef<TokenSchedulerEvent | null>(null);
@@ -276,6 +295,20 @@ export const useTokenSchedulerStatus = (): TokenSchedulerStatus => {
           tokensRemaining: event.tokensRemaining
         });
         break;
+        
+      case 'price_history_recorded':
+        // Update price history tracking
+        setLastPriceUpdate(event as TokenSchedulerPriceHistoryEvent);
+        setIsUpdatingPrices(true);
+        setTotalPriceUpdates(prev => prev + 1);
+        
+        console.log(`[TokenScheduler] Price history recorded: ${event.tokenCount} tokens from ${event.source}`);
+        
+        // Clear "updating" status after 3 seconds
+        setTimeout(() => {
+          setIsUpdatingPrices(false);
+        }, 3000);
+        break;
     }
 
     // Dispatch for monitoring
@@ -285,7 +318,18 @@ export const useTokenSchedulerStatus = (): TokenSchedulerStatus => {
   // Handle WebSocket messages
   const handleMessage = useCallback((message: any) => {
     try {
-      if (message.type === 'DATA' && message.topic === TOPIC) {
+      // Handle the new backend format for PRICE_HISTORY_RECORDED
+      if (message.topic === TOPIC && message.action === 'PRICE_HISTORY_RECORDED') {
+        const priceHistoryEvent: TokenSchedulerPriceHistoryEvent = {
+          type: 'price_history_recorded',
+          tokenCount: message.data.tokenCount,
+          batchSize: message.data.batchSize,
+          source: message.data.source,
+          timestamp: message.data.timestamp
+        };
+        processSchedulerEvent(priceHistoryEvent);
+        setError(null);
+      } else if (message.type === 'DATA' && message.topic === TOPIC) {
         if (message.data && typeof message.data === 'object') {
           processSchedulerEvent(message.data);
           setError(null);
@@ -386,6 +430,11 @@ export const useTokenSchedulerStatus = (): TokenSchedulerStatus => {
     
     // Batch processing state
     queueStatus,
+    
+    // Price history tracking
+    lastPriceUpdate,
+    isUpdatingPrices,
+    totalPriceUpdates,
     
     // Error tracking
     persistenceIssues,

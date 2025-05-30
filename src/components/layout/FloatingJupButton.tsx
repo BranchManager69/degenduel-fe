@@ -17,11 +17,25 @@ import React from 'react';
 interface FloatingJupButtonProps {
   onClick?: () => void;
   tokenAddress?: string | null;
-  tokenSymbol?: string | null; 
+  tokenSymbol?: string | null;
+  isCountdownComplete?: boolean;
+  onPrematureClick?: () => void;
 }
 
-export const FloatingJupButton: React.FC<FloatingJupButtonProps> = ({ onClick, tokenAddress, tokenSymbol }) => {
+export const FloatingJupButton: React.FC<FloatingJupButtonProps> = ({ 
+  onClick, 
+  tokenAddress, 
+  tokenSymbol,
+  isCountdownComplete = false,
+  onPrematureClick 
+}) => {
   const handleClick = () => {
+    // If countdown isn't complete, trigger jiggle animation instead of navigation
+    if (!isCountdownComplete) {
+      onPrematureClick?.();
+      return;
+    }
+
     if (onClick) {
       onClick();
     } else if (tokenAddress) {
@@ -47,7 +61,7 @@ export const FloatingJupButton: React.FC<FloatingJupButtonProps> = ({ onClick, t
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
       <motion.div
-        className="w-14 h-14 md:w-16 md:h-16 bg-black/60 backdrop-blur-md border border-emerald-500/50 rounded-full overflow-hidden relative shadow-lg transition-all duration-300"
+        className="w-10 h-10 md:w-12 md:h-12 bg-black/60 backdrop-blur-md border border-emerald-500/50 rounded-full overflow-hidden relative shadow-lg transition-all duration-300"
         whileHover={{ 
           borderColor: 'rgba(16, 185, 129, 0.8)',
           boxShadow: '0 0 25px rgba(16, 185, 129, 0.6), 0 0 50px rgba(16, 185, 129, 0.3)'
