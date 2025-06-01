@@ -394,6 +394,50 @@ export const Terminal = ({
     if (lowerCaseCommand === 'clear') {
       setConversationHistory([]); 
       commandHandled = true;
+    } else if (lowerCaseCommand === 'test-ui') {
+      // Test dynamic UI generation
+      const testAction = {
+        type: 'create_component' as const,
+        component: 'token_watchlist',
+        id: 'test-watchlist-' + Date.now(),
+        placement: 'below_terminal' as const,
+        title: 'Test Token Watchlist',
+        data: {
+          tokens: [
+            { symbol: 'SOL', address: 'So11111111111111111111111111111111111111112', price: 23.45, change_24h: 5.2, volume_24h: 1234567890 },
+            { symbol: 'ETH', address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', price: 1650.30, change_24h: -2.1, volume_24h: 987654321 }
+          ]
+        },
+        duration: 30
+      };
+      
+      if (dynamicUIRef.current) {
+        dynamicUIRef.current.handleUIAction(testAction);
+        commandOutputMessage = { role: 'system', content: `[TEST] Dynamic UI component created: ${testAction.id}` };
+      } else {
+        commandOutputMessage = { role: 'system', content: `[TEST] ERROR: Dynamic UI manager not available` };
+      }
+      
+      if (terminalMinimized && commandOutputMessage) setHasUnreadMessages(true);
+      commandHandled = true;
+    } else if (lowerCaseCommand === 'debug-info') {
+      // Show debug information
+      const now = new Date();
+      const debugInfo = {
+        currentDate: now.toISOString(),
+        currentYear: now.getFullYear(),
+        availableComponents: Object.keys(COMPONENT_METADATA),
+        dynamicUIAvailable: !!dynamicUIRef.current,
+        environment: process.env.NODE_ENV || 'production',
+        platform: 'DegenDuel'
+      };
+      
+      commandOutputMessage = { 
+        role: 'system', 
+        content: `[DEBUG] System Information:\n${JSON.stringify(debugInfo, null, 2)}` 
+      };
+      if (terminalMinimized && commandOutputMessage) setHasUnreadMessages(true);
+      commandHandled = true;
     } else if (lowerCaseCommand === 'reset-didi') {
       resetDidiMemory();
       setConversationHistory([]); 
@@ -463,8 +507,26 @@ export const Terminal = ({
           ui_context: {
             page: 'terminal',
             available_components: Object.keys(COMPONENT_METADATA),
-            current_view: 'chat'
+            current_view: 'chat',
+            current_date: new Date().toISOString(),
+            current_year: new Date().getFullYear(),
+            platform: 'DegenDuel',
+            environment: process.env.NODE_ENV || 'production'
           },
+          // Enhanced tool configuration with current context
+          tools: [
+            { 
+              type: "web_search",
+              enabled: true,
+              description: "Search the web for current information"
+            },
+            {
+              type: "dynamic_ui",
+              enabled: true,
+              description: "Generate dynamic UI components",
+              available_components: Object.keys(COMPONENT_METADATA)
+            }
+          ],
           onChunk: (chunk: string) => {
             console.log('[Terminal] Received streaming chunk:', chunk);
             // Update the assistant message in real-time
@@ -857,7 +919,7 @@ export const Terminal = ({
         >
           {/* Digital Terminal Container */}
           <motion.div
-            className="w-16 h-16 md:w-[70px] md:h-[70px] bg-black/80 backdrop-blur-md border border-purple-500/40 rounded-full overflow-hidden relative"
+            className="w-16 h-16 md:w-[70px] md:h-[70px] bg-gradient-to-br from-gray-900/70 via-black/80 to-purple-900/60 backdrop-blur-md border border-purple-500/40 rounded-full overflow-visible relative"
             animate={{
               boxShadow: easterEggActivated ?
                 ["0 0 10px rgba(74, 222, 128, 0.3)", "0 0 20px rgba(74, 222, 128, 0.5)", "0 0 10px rgba(74, 222, 128, 0.3)"] :
@@ -1127,12 +1189,33 @@ export const Terminal = ({
                   </motion.div>
                 </div>
 
-                {/* Digital Circuitry/Aura */}
+                {/* Mouth - Simple smile/neutral states */}
                 <motion.div
-                  className={`absolute w-8 h-8 border ${easterEggActivated ? 'border-green-500/40' : 'border-cyan-500/40'} rounded-full`}
-                  animate={{ rotate: -360 }}
-                  transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                />
+                  className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
+                  animate={{
+                    scale: hasUnreadMessages ? [1, 1.1, 1] : [1, 1.05, 1]
+                  }}
+                  transition={{
+                    duration: hasUnreadMessages ? 2 : 4,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  {/* Mouth shape - changes based on state */}
+                  <div
+                    className={`w-3 h-1.5 border-b-2 rounded-b-full ${
+                      easterEggActivated 
+                        ? 'border-green-400/70' 
+                        : hasUnreadMessages 
+                          ? 'border-purple-400/70' 
+                          : 'border-gray-400/50'
+                    }`}
+                    style={{
+                      borderBottomWidth: hasUnreadMessages ? '2px' : '1px'
+                    }}
+                  />
+                </motion.div>
+
               </div>
             </div>
 

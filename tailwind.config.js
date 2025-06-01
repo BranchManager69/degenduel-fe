@@ -540,12 +540,12 @@ export default {
           "100%": { "transform": "translateX(100%)" },
         },
         "caution-tape-scroll": {
-          "0%": { "transform": "translateX(0)" },
-          "100%": { "transform": "translateX(-50%)" } /* Move by half width for seamless loop */
+          "0%": { "transform": "translateX(0%)" },
+          "100%": { "transform": "translateX(-33.33%)" } /* Move 1/3 width for seamless 300% wide tape */
         },
         "caution-tape-scroll-reverse": {
-          "0%": { "transform": "translateX(-50%)" },
-          "100%": { "transform": "translateX(0)" } /* Opposite direction */
+          "0%": { "transform": "translateX(0%)" },
+          "100%": { "transform": "translateX(33.33%)" } /* Move 1/3 width right for opposite direction */
         },
         "shine-slow": {
           "0%": { transform: "translateX(-100%)" },

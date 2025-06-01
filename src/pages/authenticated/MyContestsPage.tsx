@@ -238,29 +238,6 @@ export const MyContestsPage: React.FC = () => {
             </Card>
           )}
 
-          {/* Empty state */}
-          {!loading && !error && contests.length === 0 && (
-            <Card className="bg-dark-200/80 backdrop-blur-sm border-dark-300 mb-8">
-              <CardContent className="p-8 flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 rounded-full bg-brand-500/20 flex items-center justify-center mb-4">
-                  <FaTrophy className="text-3xl text-brand-400" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-200 mb-2">
-                  No Contests Found
-                </h3>
-                <p className="text-gray-400 mb-6 max-w-md">
-                  You haven't participated in any contests yet. Explore
-                  available contests to get started.
-                </p>
-                <Button
-                  onClick={() => navigate("/contests")}
-                  className="bg-brand-500 hover:bg-brand-600"
-                >
-                  Browse Contests
-                </Button>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Active contests tab */}
           <TabsContent value="active" className="mt-0">

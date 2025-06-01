@@ -6,21 +6,19 @@
  * @description This page displays the lobby for a contest, including a leaderboard, portfolio performance, and chat functionality.
  * 
  * @author BranchManager69
- * @version 2.1.0
+ * @version 2.1.1
  * @created 2025-01-01
  * @updated 2025-05-08
  */
 
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ContestChat } from "../../../components/contest-chat/ContestChat";
 import { ContestTimer } from "../../../components/contest-lobby/ContestTimer";
 import { Leaderboard } from "../../../components/contest-lobby/Leaderboard";
 import { PortfolioPerformance } from "../../../components/contest-lobby/PortfolioPerformance";
-import { TestSkipButton } from "../../../components/contest-lobby/TestSkipButton";
 import { TokenPerformance } from "../../../components/contest-lobby/TokenPerformance";
-import { VisualTester } from "../../../components/contest-lobby/VisualTester";
 import { PerformanceChart } from "../../../components/contest-results/PerformanceChart";
 import { Badge } from "../../../components/ui/Badge";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
@@ -32,7 +30,7 @@ import { ContestViewData } from "../../../types";
 // Contest Lobby page
 export const ContestLobby: React.FC = () => {
   const { id: contestIdFromParams } = useParams<{ id: string }>();
-  useMigratedAuth();
+  const { user: _user } = useMigratedAuth();
 
   const [contestViewData, setContestViewData] = useState<ContestViewData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -82,11 +80,10 @@ export const ContestLobby: React.FC = () => {
     }
   }, [wsUpdatedData]);
 
-  // Optional: Handle wsError if needed, e.g., show a toast or a connection status indicator
+  // Handle WebSocket errors
   useEffect(() => {
     if (wsError) {
       console.warn("[ContestLobbyPage] WebSocket update error:", wsError);
-      // Example: addToast('error', `Live updates error: ${wsError}`, 'WebSocket Error');
     }
   }, [wsError]);
 
@@ -106,10 +103,57 @@ export const ContestLobby: React.FC = () => {
     }
   };
 
+  // Handle keyboard navigation for tabs
+  const handleTabKeyDown = (event: React.KeyboardEvent, tab: 'overview' | 'performance' | 'chat') => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleTabChange(tab);
+    }
+  };
+
   // --- Derived data based on contestViewData ---
   const contestDetails = contestViewData?.contest;
   const leaderboardEntries = contestViewData?.leaderboard || [];
   const currentUserPerformance = contestViewData?.currentUserPerformance;
+
+  // --- Memoized data for performance ---
+  const portfolioDataForDisplay = useMemo(() => {
+    if (!currentUserPerformance) {
+      return {
+        tokens: [],
+        totalValue: 0,
+        totalChange: 0,
+      };
+    }
+
+    return {
+      tokens: currentUserPerformance.tokens.map(token => {
+        const quantity = parseFloat(token.quantity);
+        const currentValue = parseFloat(token.currentValueContribution);
+        
+        return {
+          token: {
+            name: token.name,
+            symbol: token.symbol,
+            price: quantity > 0 ? currentValue / quantity : 0,
+            image: token.imageUrl,
+          },
+          amount: quantity,
+          initialValue: parseFloat(token.initialValueContribution),
+          currentValue: currentValue,
+        };
+      }),
+      totalValue: parseFloat(currentUserPerformance.portfolioValue),
+      totalChange: parseFloat(currentUserPerformance.performancePercentage),
+    };
+  }, [currentUserPerformance]);
+
+  const performanceChartData = useMemo(() => {
+    return currentUserPerformance?.historicalPerformance.map(dp => ({
+      timestamp: dp.timestamp,
+      value: parseFloat(dp.value),
+    })) || [];
+  }, [currentUserPerformance?.historicalPerformance]);
 
   // --- Loading and Error States --- 
   if (isLoading) {
@@ -153,28 +197,6 @@ export const ContestLobby: React.FC = () => {
       </div>
     );
   }
-
-  // --- Prepare data for child components ---
-  const portfolioDataForDisplay = {
-    tokens: currentUserPerformance?.tokens.map(token => ({
-      token: {
-        name: token.name,
-        symbol: token.symbol,
-        price: parseFloat(token.currentValueContribution) / parseFloat(token.quantity), // Approximate current price
-        image: token.imageUrl,
-      },
-      amount: parseFloat(token.quantity),
-      initialValue: parseFloat(token.initialValueContribution),
-      currentValue: parseFloat(token.currentValueContribution),
-    })) || [],
-    totalValue: currentUserPerformance ? parseFloat(currentUserPerformance.portfolioValue) : 0,
-    totalChange: currentUserPerformance ? parseFloat(currentUserPerformance.performancePercentage) : 0,
-  };
-
-  const performanceChartData = currentUserPerformance?.historicalPerformance.map(dp => ({
-    timestamp: dp.timestamp,
-    value: parseFloat(dp.value),
-  })) || [];
 
   // --- Render Logic --- 
   return (
@@ -233,9 +255,14 @@ export const ContestLobby: React.FC = () => {
                 </div>
                 
                 {/* Desktop Tabs */}
-                <div className="hidden md:flex items-center border-l border-gray-700 pl-2 ml-2">
+                <div className="hidden md:flex items-center border-l border-gray-700 pl-2 ml-2" role="tablist">
                   <button
+                    role="tab"
+                    aria-selected={activeTab === 'overview'}
+                    aria-label="Overview tab"
+                    tabIndex={activeTab === 'overview' ? 0 : -1}
                     onClick={() => handleTabChange('overview')}
+                    onKeyDown={(e) => handleTabKeyDown(e, 'overview')}
                     className={`px-3 py-1 rounded-md text-sm ${
                       activeTab === 'overview'
                         ? 'bg-brand-500/30 text-brand-300'
@@ -245,7 +272,12 @@ export const ContestLobby: React.FC = () => {
                     Overview
                   </button>
                   <button
+                    role="tab"
+                    aria-selected={activeTab === 'performance'}
+                    aria-label="Performance tab"
+                    tabIndex={activeTab === 'performance' ? 0 : -1}
                     onClick={() => handleTabChange('performance')}
+                    onKeyDown={(e) => handleTabKeyDown(e, 'performance')}
                     className={`px-3 py-1 rounded-md text-sm ${
                       activeTab === 'performance'
                         ? 'bg-brand-500/30 text-brand-300'
@@ -255,7 +287,12 @@ export const ContestLobby: React.FC = () => {
                     Performance
                   </button>
                   <button
+                    role="tab"
+                    aria-selected={activeTab === 'chat'}
+                    aria-label="Chat tab"
+                    tabIndex={activeTab === 'chat' ? 0 : -1}
                     onClick={() => handleTabChange('chat')}
+                    onKeyDown={(e) => handleTabKeyDown(e, 'chat')}
                     className={`px-3 py-1 rounded-md text-sm flex items-center ${
                       activeTab === 'chat'
                         ? 'bg-brand-500/30 text-brand-300'
@@ -296,6 +333,8 @@ export const ContestLobby: React.FC = () => {
               
               {/* Mobile Menu Button */}
               <button
+                aria-expanded={mobileMenuOpen}
+                aria-label="Toggle mobile menu"
                 className="md:hidden bg-dark-300 hover:bg-dark-400 text-gray-300 px-2 py-1 rounded-md"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
@@ -351,7 +390,6 @@ export const ContestLobby: React.FC = () => {
                       </span>
                     )}
                   </button>
-                  <TestSkipButton contestId={contestIdFromParams!} />
                 </div>
               </motion.div>
             )}
@@ -366,6 +404,8 @@ export const ContestLobby: React.FC = () => {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
               ref={contentRef}
+              role="tabpanel"
+              aria-labelledby={`${activeTab}-tab`}
             >
               {activeTab === 'overview' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -374,28 +414,33 @@ export const ContestLobby: React.FC = () => {
                     <Leaderboard entries={leaderboardEntries} />
                   </div>
                   <div className="space-y-6">
-                    {currentUserPerformance?.tokens.map((token, index) => (
-                      <motion.div
-                        key={token.symbol}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 + (index * 0.1) }}
-                        className="relative group overflow-hidden rounded-lg"
-                      >
-                        <TokenPerformance 
-                          token={{
-                            name: token.name,
-                            symbol: token.symbol,
-                            price: parseFloat(token.currentValueContribution) / parseFloat(token.quantity), // Approx price
-                            imageUrl: token.imageUrl 
-                          }}
-                          amount={parseFloat(token.quantity)}
-                          initialValue={parseFloat(token.initialValueContribution)}
-                          currentValue={parseFloat(token.currentValueContribution)}
-                        />
-                      </motion.div>
-                    ))}
-                    <div className="hidden lg:block"><TestSkipButton contestId={contestIdFromParams!} /></div>
+                    {currentUserPerformance?.tokens.map((token, index) => {
+                      const quantity = parseFloat(token.quantity);
+                      const currentValue = parseFloat(token.currentValueContribution);
+                      const price = quantity > 0 ? currentValue / quantity : 0;
+                      
+                      return (
+                        <motion.div
+                          key={token.symbol}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.1 + (index * 0.1) }}
+                          className="relative group overflow-hidden rounded-lg"
+                        >
+                          <TokenPerformance 
+                            token={{
+                              name: token.name,
+                              symbol: token.symbol,
+                              price: price,
+                              imageUrl: token.imageUrl 
+                            }}
+                            amount={quantity}
+                            initialValue={parseFloat(token.initialValueContribution)}
+                            currentValue={currentValue}
+                          />
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -434,7 +479,6 @@ export const ContestLobby: React.FC = () => {
                       transition={{ delay: 0.2 }}
                     >
                       <Leaderboard entries={leaderboardEntries} className="mb-6" />
-                      <div className="hidden lg:block"><TestSkipButton contestId={contestIdFromParams!} /></div>
                     </motion.div>
                   </div>
                 </div>
@@ -460,11 +504,6 @@ export const ContestLobby: React.FC = () => {
                       transition={{ delay: 0.2 }}
                     >
                       <Leaderboard entries={leaderboardEntries} className="mb-6" />
-                      
-                      {/* Only show on desktop */}
-                      <div className="hidden lg:block">
-                        <TestSkipButton contestId={contestIdFromParams!} />
-                      </div>
                     </motion.div>
                   </div>
                 </div>
@@ -485,6 +524,7 @@ export const ContestLobby: React.FC = () => {
             exit={{ scale: 0, opacity: 0 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            aria-label="Open chat"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -497,9 +537,6 @@ export const ContestLobby: React.FC = () => {
           </motion.button>
         )}
       </AnimatePresence>
-      
-      {/* Visual Test Panel */}
-      <VisualTester />
     </div>
   );
 };

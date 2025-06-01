@@ -461,7 +461,7 @@ const checkContestParticipation = async (
     console.warn('[checkContestParticipation] Invalid contest ID:', contestId);
     return false;
   }
-  
+
   // Ensure contestId is a valid number
   const numericId = typeof contestId === 'number' ? contestId : parseInt(contestId.toString(), 10);
   if (isNaN(numericId) || numericId <= 0) {
@@ -1307,7 +1307,7 @@ export const ddApi = {
       if (!contestId || contestId === 'undefined' || contestId === 'null') {
         throw new Error('Contest ID is required');
       }
-      
+
       // Ensure contestId is a valid number
       const numericId = parseInt(contestId, 10);
       if (isNaN(numericId) || numericId <= 0) {
@@ -1348,10 +1348,10 @@ export const ddApi = {
       }
     },
 
-    // Enter contest
+    // Enter contest - UPDATED: Now supports both free and paid contests
     enterContest: async (
       contestId: string,
-      transaction_signature: string,
+      transaction_signature?: string, // Optional for free contests
     ): Promise<void> => {
       const user = useStore.getState().user;
 
@@ -1359,7 +1359,7 @@ export const ddApi = {
       if (!contestId || contestId === 'undefined' || contestId === 'null') {
         throw new Error('Contest ID is required');
       }
-      
+
       // Ensure contestId is a valid number
       const numericId = parseInt(contestId, 10);
       if (isNaN(numericId) || numericId <= 0) {
@@ -1373,7 +1373,7 @@ export const ddApi = {
       try {
         const payload = {
           wallet_address: user.wallet_address,
-          transaction_signature,
+          ...(transaction_signature && { transaction_signature }), // Only include if provided
         };
 
         const api = createApiClient();
@@ -1388,6 +1388,50 @@ export const ddApi = {
         throw error instanceof Error
           ? error
           : new Error("Failed to join contest");
+      }
+    },
+
+    // NEW: Enter free contest without transaction (uses backend's /join endpoint)
+    enterFreeContest: async (contestId: string): Promise<void> => {
+      const user = useStore.getState().user;
+
+      // Validate contestId before making API call
+      if (!contestId || contestId === 'undefined' || contestId === 'null') {
+        throw new Error('Contest ID is required');
+      }
+
+      // Ensure contestId is a valid number
+      const numericId = parseInt(contestId, 10);
+      if (isNaN(numericId) || numericId <= 0) {
+        throw new Error('Contest ID must be a valid positive number');
+      }
+
+      if (!user?.wallet_address) {
+        throw new Error("Please connect your wallet first");
+      }
+
+      try {
+        const payload = {
+          wallet_address: user.wallet_address,
+        };
+
+        const api = createApiClient();
+        const response = await api.fetch(`/contests/${numericId}/join`, {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || "Failed to enter free contest");
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error("[enterFreeContest] Error:", error);
+        throw error instanceof Error
+          ? error
+          : new Error("Failed to enter free contest");
       }
     },
 
@@ -1631,29 +1675,41 @@ export const ddApi = {
       }
     },
 
+    // UPDATED: Now supports both free and paid contests with portfolio
     enterContestWithPortfolio: async (
       contestId: string,
-      transaction_signature: string,
       portfolio: {
         tokens: Array<{
           contractAddress: string;
           weight: number;
         }>;
       },
+      transaction_signature?: string, // Optional for free contests
     ) => {
       const user = useStore.getState().user;
       if (!user?.wallet_address) {
         throw new Error("Please connect your wallet first");
       }
 
+      // Validate contestId before making API call
+      if (!contestId || contestId === 'undefined' || contestId === 'null') {
+        throw new Error('Contest ID is required');
+      }
+
+      // Ensure contestId is a valid number
+      const numericId = parseInt(contestId, 10);
+      if (isNaN(numericId) || numericId <= 0) {
+        throw new Error('Contest ID must be a valid positive number');
+      }
+
       try {
         const payload = {
           wallet_address: user.wallet_address,
-          transaction_signature,
           portfolio,
+          ...(transaction_signature && { transaction_signature }), // Only include if provided
         };
 
-        const response = await fetch(`${API_URL}/contests/${contestId}/enter`, {
+        const response = await fetch(`${API_URL}/contests/${numericId}/enter`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1670,6 +1726,59 @@ export const ddApi = {
         return await response.json();
       } catch (error) {
         console.error("[enterContestWithPortfolio] Error:", error);
+        throw error;
+      }
+    },
+
+    // NEW: Enter free contest with portfolio (no transaction required)
+    enterFreeContestWithPortfolio: async (
+      contestId: string,
+      portfolio: {
+        tokens: Array<{
+          contractAddress: string;
+          weight: number;
+        }>;
+      },
+    ) => {
+      const user = useStore.getState().user;
+      if (!user?.wallet_address) {
+        throw new Error("Please connect your wallet first");
+      }
+
+      // Validate contestId before making API call
+      if (!contestId || contestId === 'undefined' || contestId === 'null') {
+        throw new Error('Contest ID is required');
+      }
+
+      // Ensure contestId is a valid number
+      const numericId = parseInt(contestId, 10);
+      if (isNaN(numericId) || numericId <= 0) {
+        throw new Error('Contest ID must be a valid positive number');
+      }
+
+      try {
+        const payload = {
+          wallet_address: user.wallet_address,
+          portfolio,
+        };
+
+        const response = await fetch(`${API_URL}/contests/${numericId}/enter`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || "Failed to enter free contest with portfolio");
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error("[enterFreeContestWithPortfolio] Error:", error);
         throw error;
       }
     },
@@ -1715,7 +1824,7 @@ export const ddApi = {
       if (!contestId || contestId === 'undefined' || contestId === 'null') {
         throw new Error('Contest ID is required');
       }
-      
+
       // Ensure contestId is a valid number
       const numericId = parseInt(contestId, 10);
       if (isNaN(numericId) || numericId <= 0) {

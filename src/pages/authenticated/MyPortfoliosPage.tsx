@@ -19,13 +19,7 @@ import {
   CardTitle,
 } from "../../components/ui/Card";
 import { SearchInput } from "../../components/ui/SearchInput";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/SelectAdvanced";
+import { Select } from "../../components/ui/Select";
 import { useUserContests } from "../../hooks/data/legacy/useUserContests";
 import { formatCurrency } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
@@ -273,40 +267,33 @@ export const MyPortfoliosPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex items-center gap-2">
               <FaFilter className="text-gray-400" />
-              <div className="relative w-40">
-                <Select
-                  value={statusFilter}
-                  onValueChange={(val) => setStatusFilter(val)}
-                >
-                  <SelectTrigger className="bg-dark-200/80 border-dark-300 text-gray-200 w-full">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-dark-100 border-dark-300 text-gray-200">
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="upcoming">Upcoming</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={[
+                  { value: "all", label: "All Statuses" },
+                  { value: "active", label: "Active" },
+                  { value: "upcoming", label: "Upcoming" },
+                  { value: "completed", label: "Completed" },
+                  { value: "cancelled", label: "Cancelled" }
+                ]}
+                className="w-40"
+              />
             </div>
 
             <div className="flex items-center gap-2">
               <FaSortAmountDown className="text-gray-400" />
-              <div className="relative w-40">
-                <Select value={sortBy} onValueChange={(val) => setSortBy(val)}>
-                  <SelectTrigger className="bg-dark-200/80 border-dark-300 text-gray-200 w-full">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-dark-100 border-dark-300 text-gray-200">
-                    <SelectItem value="date">Date</SelectItem>
-                    <SelectItem value="name">Contest Name</SelectItem>
-                    <SelectItem value="tokens">Number of Tokens</SelectItem>
-                    <SelectItem value="performance">Performance</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select
+                value={sortBy}
+                onChange={setSortBy}
+                options={[
+                  { value: "date", label: "Date" },
+                  { value: "name", label: "Contest Name" },
+                  { value: "tokens", label: "Number of Tokens" },
+                  { value: "performance", label: "Performance" }
+                ]}
+                className="w-40"
+              />
             </div>
 
             <Button

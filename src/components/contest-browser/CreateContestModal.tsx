@@ -81,7 +81,8 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   const [formData, setFormData] = React.useState({
     name: `Degen Dustup ${Math.floor(Math.random() * 100)}`,
     description: `May the best Degen win.`,
-    entry_fee: "0.01",
+    entry_fee: "0",
+    prize_pool: "100",
     start_time: getNextHourDateTime(),
     end_time: new Date(
       new Date(getNextHourDateTime()).getTime() +
@@ -89,14 +90,13 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     )
       .toISOString()
       .slice(0, 16),
-    entry_deadline: getNextHourDateTime(),
     min_participants: 2,
     max_participants: 20,
     allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     settings: {
       difficulty: "guppy",
       tokenTypesAllowed: [],
-      startingPortfolioValue: "1000",
+      startingPortfolioValue: "100",
     } as Omit<ContestSettings, 'minParticipants' | 'maxParticipants'>,
   });
 
@@ -129,15 +129,40 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     // Attempt to create the contest up to maxAttempts times
     while (attempt < maxAttempts) {
       try {
+        // FIXED: Helper function to ensure datetime has seconds for backend compatibility
+        // The datetime-local input returns "2025-06-01T15:00" but backend expects "2025-06-01T15:00:00"
+        const formatDateTime = (dateTimeLocal: string): string => {
+          // If datetime-local format (missing seconds), add :00
+          if (dateTimeLocal.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
+            return `${dateTimeLocal}:00`;
+          }
+          return dateTimeLocal;
+        };
+
+        // FIXED: Helper function to format entry fee for backend compatibility
+        // Backend expects "0" for free contests, not "0.0" or "0.00"
+        const formatEntryFee = (fee: string): string => {
+          const numericFee = parseFloat(fee);
+          if (isNaN(numericFee) || numericFee <= 0) {
+            return "0"; // Free contest format
+          }
+          // Format to 2 decimal places for paid contests
+          return numericFee.toFixed(2);
+        };
+
+        // Entry deadline is the same as contest start time (no timezone conversion)
+        const formattedStartTime = formatDateTime(formData.start_time);
+        
         const contestDataPayload: Partial<Contest> = {
           name: formData.name,
           description: formData.description,
           contest_code: generateContestCode(formData.name, attempt),
-          entry_fee: formData.entry_fee,
+          entry_fee: formatEntryFee(formData.entry_fee),
+          prize_pool: String(formData.prize_pool), // ✅ Convert to string
           status: "pending" as const,
-          start_time: formData.start_time,
-          end_time: formData.end_time,
-          entry_deadline: formData.entry_deadline,
+          start_time: formattedStartTime,
+          end_time: formatDateTime(formData.end_time),
+          entry_deadline: formattedStartTime, // ✅ Same as start time, no timezone conversion
           allowed_buckets: formData.allowed_buckets,
           min_participants: formData.min_participants,
           max_participants: formData.max_participants,
@@ -303,18 +328,6 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     //{ value: 10, label: "Bucket 10" },
   ];
 
-  // Options for min participants dropdown
-  const minParticipantsOptions = Array.from({ length: 9 }, (_, i) => ({
-    value: String(i + 2),
-    label: `${i + 2} participants`,
-  }));
-
-  // Options for max participants dropdown
-  const maxParticipantsOptions = Array.from({ length: 99 }, (_, i) => ({
-    value: String(i + 2),
-    label: `${i + 2} participants`,
-  }));
-
   // Handle SOL amount input with simple decimal validation
   const handleSolInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, "");
@@ -355,10 +368,10 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
             </Button>
           </div>
 
-          <div className="overflow-y-auto p-6 space-y-6 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="overflow-y-auto p-6 space-y-8 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300">
+            <form onSubmit={handleSubmit} className="space-y-8">
               {userRole === 'user' && (
-                <div className={`p-4 rounded-lg border ${
+                <div className={`p-4 rounded-xl border ${
                   availableCredits !== undefined && availableCredits > 0 
                     ? 'bg-green-900/20 border-green-600/30' 
                     : 'bg-red-900/20 border-red-600/30'
@@ -412,110 +425,187 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Contest Name
-                  </label>
-                  <Input
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full text-gray-100 bg-dark-300"
-                    required
-                  />
+              {/* Contest Basic Info */}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center">
+                    <span className="w-2 h-2 bg-brand-500 rounded-full mr-3"></span>
+                    Contest Details
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Contest Name
+                      </label>
+                      <Input
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className="w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-3">
+                        Description
+                      </label>
+                      <Textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        className="w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20 rounded-lg"
+                        rows={3}
+                        placeholder="Describe your contest rules and objectives..."
+                        required
+                      />
+                      <p className="mt-2 text-xs text-gray-500">
+                        Provide details about your contest to attract participants.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
+                {/* Participants */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Min Entries
-                  </label>
-                  <Select
-                    value={String(formData.min_participants)}
-                    onChange={(value) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        min_participants: parseInt(value, 10),
-                      }))
-                    }
-                    options={minParticipantsOptions}
-                    className="w-full text-gray-100"
-                  />
+                  <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center">
+                    <span className="w-2 h-2 bg-brand-500 rounded-full mr-3"></span>
+                    Participants
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Min Entries
+                      </label>
+                      <Input
+                        type="number"
+                        min="2"
+                        max="50"
+                        name="min_participants"
+                        value={formData.min_participants}
+                        onChange={handleInputChange}
+                        className="w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Max Entries
+                      </label>
+                      <Input
+                        type="number"
+                        min="2"
+                        max="1000"
+                        name="max_participants"
+                        value={formData.max_participants}
+                        onChange={handleInputChange}
+                        className="w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20"
+                        required
+                      />
+                    </div>
+                  </div>
                 </div>
 
+                {/* Financial Settings */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Max. Entries
-                  </label>
-                  <Select
-                    value={String(formData.max_participants)}
-                    onChange={(value) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        max_participants: parseInt(value, 10),
-                      }))
-                    }
-                    options={maxParticipantsOptions}
-                    className="w-full text-gray-100"
-                  />
+                  <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center">
+                    <span className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></span>
+                    Financial Settings
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Entry Fee (SOL)
+                      </label>
+                      <Input
+                        type="text"
+                        name="entry_fee"
+                        value={formData.entry_fee}
+                        onChange={handleSolInput}
+                        className="w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20"
+                        placeholder="0.01"
+                        required
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Set to 0 for free contests
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Prize Pool (SOL) {formData.entry_fee === "0" && <span className="text-emerald-400 font-medium">*Required</span>}
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="prize_pool"
+                        value={formData.prize_pool}
+                        onChange={handleInputChange}
+                        className="w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20"
+                        placeholder="100"
+                        required
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        {formData.entry_fee === "0" ? "Admin-sponsored prize pool" : "Calculated from entry fees"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
+                {/* Schedule */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Entry Fee (SOL)
-                  </label>
-                  <Input
-                    type="text"
-                    name="entry_fee"
-                    value={formData.entry_fee}
-                    onChange={handleSolInput}
-                    className="w-full text-gray-100 bg-dark-300"
-                    placeholder="0.01"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Duel Starts
-                  </label>
-                  <Input
-                    type="datetime-local"
-                    name="start_time"
-                    value={formData.start_time}
-                    onChange={handleInputChange}
-                    className="w-full text-gray-100 bg-dark-300"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Duel Ends
-                  </label>
-                  <Input
-                    type="datetime-local"
-                    name="end_time"
-                    value={formData.end_time}
-                    onChange={handleInputChange}
-                    className="w-full text-gray-100 bg-dark-300"
-                    required
-                  />
+                  <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+                    Schedule
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Contest Starts
+                      </label>
+                      <Input
+                        type="datetime-local"
+                        name="start_time"
+                        value={formData.start_time}
+                        onChange={handleInputChange}
+                        className="w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Contest Ends
+                      </label>
+                      <Input
+                        type="datetime-local"
+                        name="end_time"
+                        value={formData.end_time}
+                        onChange={handleInputChange}
+                        className="w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20"
+                        required
+                      />
+                    </div>
+                                     </div>
                 </div>
               </div>
 
               {/* Advanced Options Section */}
-              <div className="col-span-2">
+              <div className="border-t border-dark-400 pt-6">
                 <button
                   type="button"
                   onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                  className="flex justify-between items-center w-full px-4 py-2 bg-dark-300 rounded-lg text-gray-300 hover:bg-dark-400 transition-colors"
+                  className="flex justify-between items-center w-full px-4 py-3 bg-dark-300 rounded-xl text-gray-300 hover:bg-dark-400 transition-all duration-200 border border-dark-400"
                 >
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-medium flex items-center">
+                    <span className="w-2 h-2 bg-purple-500 rounded-full mr-3"></span>
                     Advanced Options
                   </span>
                   <svg
-                    className={`w-5 h-5 transform transition-transform ${
+                    className={`w-5 h-5 transform transition-transform duration-200 ${
                       showAdvancedOptions ? "rotate-180" : ""
                     }`}
                     fill="none"
@@ -530,11 +620,12 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                     />
                   </svg>
                 </button>
+                
                 {showAdvancedOptions && (
-                  <div className="mt-4 p-4 bg-dark-300 rounded-md border border-dark-400 space-y-4">
+                  <div className="mt-4 p-6 bg-dark-300/50 rounded-xl border border-dark-400 space-y-6">
                     {/* Token Buckets */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-2">
+                      <label className="block text-sm font-medium text-gray-300 mb-3">
                         Token Buckets ({formData.allowed_buckets.length} Selected)
                       </label>
                       <MultiSelect
@@ -553,8 +644,8 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                     {/* Class and Starting Portfolio Value */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">
-                          Class
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Difficulty Class
                         </label>
                         <Select
                           value={formData.settings.difficulty}
@@ -577,7 +668,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
                           Starting Portfolio Value (SOL)
                         </label>
                         <Input
@@ -586,7 +677,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                           value={formData.settings.startingPortfolioValue}
                           onChange={(e) => setFormData(prev => ({...prev, settings: {...prev.settings, startingPortfolioValue: e.target.value }}))}
                           className="w-full text-gray-100 bg-dark-400 border-dark-500"
-                          placeholder="e.g., 1000"
+                          placeholder="e.g., 100"
                         />
                       </div>
                     </div>
@@ -594,37 +685,19 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Description
-                </label>
-                <Textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  className="w-full text-gray-100 bg-dark-300 border border-dark-400 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                  rows={4}
-                  placeholder="Describe your contest rules and objectives..."
-                  required
-                />
-                <p className="mt-1 text-xs text-gray-400">
-                  Provide details about your contest to attract participants.
-                </p>
-              </div>
-
               {error && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
                   <p className="text-red-400 text-sm">{error}</p>
                 </div>
               )}
 
-              <div className="border-t border-dark-300 pt-6">
+              <div className="border-t border-dark-400 pt-6">
                 <div className="flex justify-end space-x-4">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={onClose}
-                    className="text-gray-300 border-gray-600 hover:bg-dark-300"
+                    className="text-gray-300 border-gray-600 hover:bg-dark-300 px-6 py-2"
                   >
                     Cancel
                   </Button>
@@ -632,7 +705,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                     type="submit"
                     variant="gradient"
                     disabled={loading}
-                    className="min-w-[100px]"
+                    className="min-w-[120px] px-6 py-2"
                   >
                     {loading ? "Creating..." : "Create Contest"}
                   </Button>

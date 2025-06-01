@@ -126,7 +126,7 @@ export const Maintenance: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-16 text-center">
+    <div className="min-h-screen h-screen overflow-hidden flex items-center justify-center px-4 bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
       <div className="max-w-2xl mx-auto bg-dark-200/50 backdrop-blur-lg p-8 rounded-lg border border-brand-500/50 shadow-lg">
         {error ? (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">

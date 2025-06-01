@@ -1,28 +1,19 @@
 // src/components/affiliate-dashboard/AffiliateDashboard.tsx
 
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect } from "react";
+import React from "react";
 import { toast } from "react-hot-toast";
 import {
   FaChartBar,
   FaCheck,
-  FaChrome,
   FaClock,
   FaCopy,
-  FaDesktop,
   FaDiscord,
-  FaEdge,
-  FaFirefox,
-  FaGift,
-  FaMobile,
-  FaSafari,
-  FaTabletAlt,
   FaTelegram,
   FaTwitter,
   FaUsers,
 } from "react-icons/fa";
 
-import { useAffiliateSystem } from "../../hooks/social/legacy/useAffiliateSystem";
 import { ddApi } from "../../services/dd-api";
 
 // Clean interfaces
@@ -240,222 +231,6 @@ const InviteLink: React.FC<{
   );
 };
 
-const AnalyticsSection: React.FC = () => {
-  const { analytics, refreshAnalytics } = useAffiliateSystem();
-  const [errorState, setErrorState] = React.useState<boolean>(false);
-
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        await refreshAnalytics();
-        setErrorState(false);
-      } catch (error) {
-        console.error("Error refreshing analytics:", error);
-        setErrorState(true);
-      }
-    };
-    
-    fetchAnalytics();
-  }, [refreshAnalytics]);
-
-  // Handle missing data gracefully
-  if (errorState || !analytics) {
-    return (
-      <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
-        <h3 className="text-lg font-bold text-gray-100 flex items-center gap-2">
-          <FaChartBar className="text-brand-400" />
-          Affiliate Analytics
-        </h3>
-        <div className="py-6 text-center text-gray-400">
-          Analytics data is currently unavailable. Please check back later.
-        </div>
-      </div>
-    );
-  }
-
-  // Safely calculate metrics with error handling
-  let totalClicks = 0;
-  let totalConversions = 0;
-  let conversionRate = "0";
-  
-  try {
-    totalClicks = Object.values(analytics.clicks?.by_source || {}).reduce(
-      (a, b) => a + b,
-      0,
-    );
-    totalConversions = Object.values(
-      analytics.conversions?.by_source || {},
-    ).reduce((a, b) => a + b, 0);
-    conversionRate = totalClicks
-      ? ((totalConversions / totalClicks) * 100).toFixed(1)
-      : "0";
-  } catch (error) {
-    console.error("Error calculating analytics metrics:", error);
-  }
-
-  const getDeviceIcon = (device: string) => {
-    switch (device.toLowerCase()) {
-      case "mobile":
-        return <FaMobile className="text-brand-400" />;
-      case "tablet":
-        return <FaTabletAlt className="text-brand-400" />;
-      default:
-        return <FaDesktop className="text-brand-400" />;
-    }
-  };
-
-  const getBrowserIcon = (browser: string) => {
-    switch (browser.toLowerCase()) {
-      case "chrome":
-        return <FaChrome className="text-brand-400" />;
-      case "firefox":
-        return <FaFirefox className="text-brand-400" />;
-      case "safari":
-        return <FaSafari className="text-brand-400" />;
-      case "edge":
-        return <FaEdge className="text-brand-400" />;
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6 space-y-6">
-      <h3 className="text-lg font-bold text-gray-100 flex items-center gap-2">
-        <FaChartBar className="text-brand-400" />
-        Affiliate Analytics
-      </h3>
-
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-dark-300/30 rounded-lg p-4">
-          <div className="text-sm text-gray-400">Total Clicks</div>
-          <div className="text-2xl font-bold text-gray-100">{totalClicks}</div>
-        </div>
-        <div className="bg-dark-300/30 rounded-lg p-4">
-          <div className="text-sm text-gray-400">Conversions</div>
-          <div className="text-2xl font-bold text-gray-100">
-            {totalConversions}
-          </div>
-        </div>
-        <div className="bg-dark-300/30 rounded-lg p-4">
-          <div className="text-sm text-gray-400">Conversion Rate</div>
-          <div className="text-2xl font-bold text-gray-100">
-            {conversionRate}%
-          </div>
-        </div>
-      </div>
-
-      {/* Source Analysis */}
-      {analytics.clicks?.by_source && (
-        <div className="space-y-4">
-          <h4 className="text-md font-semibold text-gray-300">
-            Traffic Sources
-          </h4>
-          <div className="space-y-2">
-            {Object.entries(analytics.clicks.by_source).map(
-              ([source, count]) => {
-                const conversions =
-                  analytics.conversions?.by_source?.[source] || 0;
-                const rate = count
-                  ? ((conversions / count) * 100).toFixed(1)
-                  : "0";
-
-                return (
-                  <div key={source} className="bg-dark-300/20 rounded-lg p-3">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="text-gray-200 capitalize">{source}</div>
-                        <div className="text-sm text-gray-400">
-                          {conversions} conversions ({rate}%)
-                        </div>
-                      </div>
-                      <div className="text-xl font-bold text-gray-200">
-                        {count}
-                      </div>
-                    </div>
-                    <div className="mt-2 h-1 bg-dark-300 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-brand-400 transition-all duration-500"
-                        style={{ width: `${(count / totalClicks) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              },
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Device & Browser Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Device Distribution */}
-        {analytics.clicks?.by_device && (
-          <div className="space-y-4">
-            <h4 className="text-md font-semibold text-gray-300">Devices</h4>
-            <div className="space-y-2">
-              {Object.entries(analytics.clicks.by_device).map(
-                ([device, count]) => (
-                  <div key={device} className="bg-dark-300/20 rounded-lg p-3">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        {getDeviceIcon(device)}
-                        <div className="capitalize">{device}</div>
-                      </div>
-                      <div>{((count / totalClicks) * 100).toFixed(1)}%</div>
-                    </div>
-                  </div>
-                ),
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Browser Distribution */}
-        {analytics.clicks?.by_browser && (
-          <div className="space-y-4">
-            <h4 className="text-md font-semibold text-gray-300">Browsers</h4>
-            <div className="space-y-2">
-              {Object.entries(analytics.clicks.by_browser).map(
-                ([browser, count]) => (
-                  <div key={browser} className="bg-dark-300/20 rounded-lg p-3">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        {getBrowserIcon(browser)}
-                        <div className="capitalize">{browser}</div>
-                      </div>
-                      <div>{((count / totalClicks) * 100).toFixed(1)}%</div>
-                    </div>
-                  </div>
-                ),
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Reward Distribution */}
-      {analytics.rewards?.by_type && (
-        <div className="space-y-4">
-          <h4 className="text-md font-semibold text-gray-300">
-            Rewards by Type
-          </h4>
-          <div className="space-y-2">
-            {Object.entries(analytics.rewards.by_type).map(([type, amount]) => (
-              <div key={type} className="bg-dark-300/20 rounded-lg p-3">
-                <div className="flex justify-between items-center">
-                  <div className="capitalize">{type.replace(/_/g, " ")}</div>
-                  <div className="font-bold">{amount.toFixed(2)} SOL</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 // Affiliate leaderboard component
 const AffiliateLeaderboard: React.FC = () => {
@@ -553,7 +328,7 @@ const AffiliateLeaderboard: React.FC = () => {
       {/* Leaderboard */}
       <div className="space-y-4">
         <h4 className="text-lg font-bold text-gray-100">
-          🏆 Affiliate Rankings
+          Invite Leaderboard
         </h4>
         <div className="space-y-2">
           {leaderboard.map((entry) => (
@@ -579,7 +354,7 @@ const AffiliateLeaderboard: React.FC = () => {
               <div className="flex flex-col items-end gap-1">
                 <div className="flex items-center gap-2">
                   <span className="text-brand-400 font-bold">
-                    {entry.period_rewards} DUEL
+                    {entry.referrals} invites
                   </span>
                   {entry.trend === "up" && (
                     <span className="text-green-400">↑</span>
@@ -591,40 +366,12 @@ const AffiliateLeaderboard: React.FC = () => {
                     <span className="text-gray-400">→</span>
                   )}
                 </div>
-                <span className="text-xs text-gray-500">
-                  Lifetime: {entry.lifetime_rewards} DUEL
-                </span>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Milestone Rewards */}
-      <div className="mt-6">
-        <h4 className="text-lg font-bold text-gray-100 mb-4">
-          🎯 Invite Milestones
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-dark-300/30 rounded-lg p-4">
-            <div className="text-sm text-gray-400">Milestone 1</div>
-            <div className="text-lg font-bold text-gray-100">100 Invites</div>
-            <div className="text-sm text-brand-400">Reward: 1,000 DUEL</div>
-          </div>
-          <div className="bg-dark-300/30 rounded-lg p-4">
-            <div className="text-sm text-gray-400">Milestone 2</div>
-            <div className="text-lg font-bold text-gray-100">500 Invites</div>
-            <div className="text-sm text-brand-400">Reward: 10,000 DUEL</div>
-          </div>
-          <div className="bg-dark-300/30 rounded-lg p-4">
-            <div className="text-sm text-gray-400">Milestone 3</div>
-            <div className="text-lg font-bold text-gray-100">
-              1000 Invites
-            </div>
-            <div className="text-sm text-brand-400">Reward: 25,000 DUEL</div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
@@ -748,7 +495,7 @@ export const AffiliateDashboard: React.FC = () => {
           {/* Value Proposition */}
           <div className="bg-gradient-to-br from-dark-200/80 to-dark-300/80 backdrop-blur-sm rounded-xl border border-brand-400/20 p-6">
             <h4 className="text-xl font-bold text-brand-400 mb-4">
-              Refer, Earn, Repeat
+              Share DegenDuel
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Column */}
@@ -858,9 +605,8 @@ export const AffiliateDashboard: React.FC = () => {
                   <h5 className="text-gray-100 font-medium">Share Your Link</h5>
                 </div>
                 <p className="text-sm text-gray-400">
-                  Copy your unique referral link and share it to your X,
-                  Telegram, or Discord. You may want to send personalized
-                  invites to any apes, giga-whales, or based chads you know.
+                  Copy your invite link and share it on social media or send 
+                  directly to people you know.
                 </p>
               </div>
               <div className="bg-dark-300/30 rounded-lg p-4">
@@ -871,11 +617,8 @@ export const AffiliateDashboard: React.FC = () => {
                   <h5 className="text-gray-100 font-medium">Track Progress</h5>
                 </div>
                 <p className="text-sm text-gray-400">
-                  Monitor your referrals and rewards in real-time on your
-                  dashboard. Once a referral joins, you'll receive a
-                  notification. You'll receive a notification when they qualify
-                  for a reward, too, because <i>guess what!?</i> You win when
-                  they win! See details below.
+                  See who joins through your link and track your position 
+                  on the leaderboard.
                 </p>
               </div>
               <div className="bg-dark-300/30 rounded-lg p-4">
@@ -883,11 +626,11 @@ export const AffiliateDashboard: React.FC = () => {
                   <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400 text-sm">
                     3
                   </div>
-                  <h5 className="text-gray-100 font-medium">Earn Together</h5>
+                  <h5 className="text-gray-100 font-medium">Grow the Community</h5>
                 </div>
                 <p className="text-sm text-gray-400">
-                  Both you and your referrals benefit from the platform's
-                  success. It's PvP <b>and</b> PvE! LFG.
+                  Help build the DegenDuel community and see your invite 
+                  count grow on the leaderboard.
                 </p>
               </div>
             </div>
@@ -918,11 +661,11 @@ export const AffiliateDashboard: React.FC = () => {
 
           <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-4">
             <div className="flex items-center gap-2 text-gray-400 mb-2">
-              <FaGift className="text-brand-400" />
-              Cumulative Rewards
+              <FaChartBar className="text-brand-400" />
+              Invite Points
             </div>
             <p className="text-2xl font-bold text-gray-100">
-              {stats.total_rewards.toFixed(2)} SOL
+              {stats.total_referrals * 100}
             </p>
           </div>
 
@@ -939,103 +682,7 @@ export const AffiliateDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* After the Stats Grid, before Recent Activity */}
-      {stats && (
-        <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-gray-100 mb-4 flex items-center gap-2">
-            <FaGift className="text-brand-400" />
-            Affiliate Rewards Tiers
-          </h3>
-          <div className="space-y-6">
-            {/* Tier 1: First 5 Referrals */}
-            <div>
-              <div className="flex justify-between text-sm text-gray-400 mb-2">
-                <span>Tier 1: First 5 Invites</span>
-                <span>{Math.min(stats.qualified_referrals, 5)}/5</span>
-              </div>
-              <div className="h-2 bg-dark-300 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all duration-500"
-                  style={{
-                    width: `${Math.min(
-                      (stats.qualified_referrals / 5) * 100,
-                      100,
-                    )}%`,
-                  }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Reward: 500 DUEL per referral
-              </p>
-            </div>
 
-            {/* Tier 2: 6-20 Referrals */}
-            <div>
-              <div className="flex justify-between text-sm text-gray-400 mb-2">
-                <span>Tier 2: 6-20 Invites</span>
-                <span>
-                  {Math.max(0, Math.min(stats.qualified_referrals - 5, 15))}/15
-                </span>
-              </div>
-              <div className="h-2 bg-dark-300 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-brand-500 to-brand-700 transition-all duration-500"
-                  style={{
-                    width: `${Math.min(
-                      Math.max(((stats.qualified_referrals - 5) / 15) * 100, 0),
-                      100,
-                    )}%`,
-                  }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Reward: 750 DUEL per referral
-              </p>
-            </div>
-
-            {/* Tier 3: 21+ Referrals */}
-            <div>
-              <div className="flex justify-between text-sm text-gray-400 mb-2">
-                <span>Tier 3: 21+ Invites</span>
-                <span>
-                  {Math.max(0, stats.qualified_referrals - 20)}+ invites
-                </span>
-              </div>
-              <div className="h-2 bg-dark-300 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-brand-600 to-brand-800 transition-all duration-500"
-                  style={{
-                    width: `${stats.qualified_referrals >= 20 ? 100 : 0}%`,
-                  }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Reward: 1000 DUEL per referral
-              </p>
-            </div>
-
-            {/* Additional Rewards Info */}
-            <div className="mt-4 bg-dark-300/30 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-brand-400 mb-2">
-                Additional Rewards
-              </h4>
-              <ul className="text-xs text-gray-400 space-y-1">
-                <li>
-                  • Contest Bonus: Up to 5000 DUEL for top 3 inviters in
-                  contests
-                </li>
-                <li>• Monthly Bonus: 10000 DUEL for top inviter each month</li>
-                <li>
-                  • Special Events: Bonus rewards during promotional events
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Analytics Section */}
-      {stats && <AnalyticsSection />}
 
       {/* Recent Activity */}
       {stats && (

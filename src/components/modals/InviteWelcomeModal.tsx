@@ -1,7 +1,7 @@
 // src/components/modals/InviteWelcomeModal.tsx
 
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useInviteSystem } from "../../hooks/social/legacy/useInviteSystem";
@@ -19,18 +19,34 @@ export const InviteWelcomeModal: React.FC = () => {
   const { isAuthenticated, user } = useMigratedAuth();
   const { connectWallet, isConnecting } = useStore();
 
-  // When user successfully connects and gets a profile, track signup and close modal
+  // Track when user connects wallet (but don't auto-close modal)
+  const [hasTrackedSignup, setHasTrackedSignup] = useState(false);
+  
   useEffect(() => {
-    if (isAuthenticated && user && inviteCode) {
-      trackSignup().catch(console.error);
-      setShowWelcomeModal(false);
-      localStorage.setItem("has_seen_welcome", "true");
+    if (isAuthenticated && user && inviteCode && !hasTrackedSignup) {
+      trackSignup()
+        .then(() => {
+          setHasTrackedSignup(true);
+          console.log("[InviteWelcomeModal] Successfully tracked signup for user");
+        })
+        .catch((error) => {
+          console.error("[InviteWelcomeModal] Failed to track signup:", error);
+          // Still mark as tracked to prevent repeated attempts
+          setHasTrackedSignup(true);
+          
+          // Optionally show user-friendly error message for certain error types
+          if (error.message.includes("no longer valid")) {
+            console.warn("[InviteWelcomeModal] Invite code is no longer valid - clearing invite data");
+            // Could clear invite here if needed, but keeping it for now to show in UI
+          }
+        });
+      // Don't auto-close modal - let user explore first
     }
   }, [
     isAuthenticated,
     user,
     inviteCode,
-    setShowWelcomeModal,
+    hasTrackedSignup,
     trackSignup,
   ]);
 
@@ -39,13 +55,30 @@ export const InviteWelcomeModal: React.FC = () => {
       // Connect wallet using store's connectWallet
       connectWallet().catch(console.error);
     } else {
+      // User is already authenticated, close modal and track if needed
       setShowWelcomeModal(false);
+      localStorage.setItem("has_seen_welcome", "true");
+      if (inviteCode && !hasTrackedSignup) {
+        trackSignup()
+          .then(() => {
+            setHasTrackedSignup(true);
+            console.log("[InviteWelcomeModal] Successfully tracked signup via Get Started button");
+          })
+          .catch((error) => {
+            console.error("[InviteWelcomeModal] Failed to track signup via Get Started button:", error);
+            // Still mark as tracked to prevent repeated attempts
+            setHasTrackedSignup(true);
+          });
+      }
     }
   };
 
+  // Don't show modal to already authenticated users unless they have an invite code
+  const shouldShowModal = showWelcomeModal && inviteCode;
+
   return (
     <AnimatePresence>
-      {showWelcomeModal && (
+      {shouldShowModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
           onClick={() => setShowWelcomeModal(false)}
@@ -79,7 +112,7 @@ export const InviteWelcomeModal: React.FC = () => {
             <div className="space-y-6">
               <div className="text-center space-y-4">
                 <h2 className="text-3xl font-bold text-white">
-                  Welcome to DegenDuel
+                  You're In! 🔥
                 </h2>
 
                 {/* Inviter profile information */}
@@ -117,10 +150,13 @@ export const InviteWelcomeModal: React.FC = () => {
                     </div>
                     <div className="text-center">
                       <p className="text-gray-300 text-sm">
-                        You were invited by
+                        Your degen buddy
                       </p>
                       <p className="text-brand-400 font-bold">
                         {inviterProfile.nickname}
+                      </p>
+                      <p className="text-gray-400 text-xs">
+                        invited you to the arena
                       </p>
                     </div>
                   </div>
@@ -135,21 +171,20 @@ export const InviteWelcomeModal: React.FC = () => {
                   </div>
                 )}
 
-                <p className="text-gray-400">
+                <p className="text-gray-300 text-lg leading-relaxed">
                   {inviteCode
-                    ? "You've been invited to join the ultimate crypto portfolio battle arena. Connect your wallet to start your journey and receive special rewards."
-                    : "Welcome to the ultimate crypto portfolio battle arena. Connect your wallet to start your journey."}
+                    ? "Ready to prove your trading skills? Battle other degens in high-stakes portfolio competitions and earn rewards for your wins."
+                    : "Ready to prove your trading skills? Battle other degens in high-stakes portfolio competitions."}
                 </p>
 
                 {/* Invite rewards information if available */}
                 {inviteRewards && (
                   <div className="bg-dark-300/40 border border-brand-400/20 rounded-lg p-3 mt-2">
                     <p className="text-brand-300 font-semibold text-sm">
-                      Special Invite Bonus
+                      🎁 Welcome Bonus Unlocked!
                     </p>
                     <p className="text-gray-300 text-sm">
-                      You'll receive a {inviteRewards.user_bonus} bonus when
-                      you sign up!
+                      Get {inviteRewards.user_bonus} just for joining through this invite
                     </p>
                   </div>
                 )}
@@ -159,18 +194,18 @@ export const InviteWelcomeModal: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-dark-300/30 rounded-lg p-4">
                   <h3 className="text-brand-400 font-bold mb-2">
-                    🏆 Compete & Win
+                    💀 Duel to Death
                   </h3>
                   <p className="text-sm text-gray-400">
-                    Battle other traders in portfolio competitions
+                    Create portfolios, battle degens, claim victory
                   </p>
                 </div>
                 <div className="bg-dark-300/30 rounded-lg p-4">
                   <h3 className="text-brand-400 font-bold mb-2">
-                    💰 Earn Rewards
+                    💎 Stack Winnings
                   </h3>
                   <p className="text-sm text-gray-400">
-                    Win prizes and climb the leaderboards
+                    Every win pays out. Every loss teaches.
                   </p>
                 </div>
               </div>
@@ -190,8 +225,8 @@ export const InviteWelcomeModal: React.FC = () => {
                           {isConnecting
                             ? "CONNECTING..."
                             : isAuthenticated
-                              ? "EXPLORE DUELS"
-                              : "CONNECT WALLET TO START"}
+                              ? "ENTER THE ARENA"
+                              : "GEAR UP & ENTER"}
                         </span>
                         <svg
                           className="w-6 h-6 text-emerald-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"

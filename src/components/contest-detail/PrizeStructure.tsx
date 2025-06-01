@@ -105,21 +105,48 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
       <CardContent>
         <div className="flex items-center justify-between mb-6">
           {/* Pie Chart */}
-          <div className="relative w-32 h-32">
-            {prizes.map((prize, index) => {
-              const rotation = calculateRotation(index);
-              const nextRotation = rotation + prize.percentage * 3.6;
-
-              return (
-                <div
-                  key={prize.place}
-                  className="absolute inset-0"
-                  style={{
-                    background: `conic-gradient(transparent ${rotation}deg, bg-gradient-to-r ${prize.color} ${rotation}deg ${nextRotation}deg, transparent ${nextRotation}deg)`,
-                  }}
-                />
-              );
-            })}
+          <div className="relative w-32 h-32 rounded-full overflow-hidden">
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              {prizes.map((prize, index) => {
+                const startAngle = calculateRotation(index);
+                const endAngle = startAngle + prize.percentage * 3.6;
+                const startAngleRad = (startAngle * Math.PI) / 180;
+                const endAngleRad = (endAngle * Math.PI) / 180;
+                
+                const radius = 40;
+                const centerX = 50;
+                const centerY = 50;
+                
+                const x1 = centerX + radius * Math.cos(startAngleRad);
+                const y1 = centerY + radius * Math.sin(startAngleRad);
+                const x2 = centerX + radius * Math.cos(endAngleRad);
+                const y2 = centerY + radius * Math.sin(endAngleRad);
+                
+                const largeArcFlag = prize.percentage > 50 ? 1 : 0;
+                
+                const pathData = [
+                  `M ${centerX} ${centerY}`,
+                  `L ${x1} ${y1}`,
+                  `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                  'Z'
+                ].join(' ');
+                
+                const colorMap: { [key: string]: string } = {
+                  'from-brand-400 to-brand-500': '#9933ff',
+                  'from-brand-500 to-brand-600': '#7f00ff',
+                  'from-brand-600 to-brand-700': '#6600cc'
+                };
+                
+                return (
+                  <path
+                    key={prize.place}
+                    d={pathData}
+                    fill={colorMap[prize.color] || '#9933ff'}
+                    opacity={0.8}
+                  />
+                );
+              })}
+            </svg>
             <div className="absolute inset-4 bg-dark-200 rounded-full flex items-center justify-center">
               <span className="text-xs font-medium text-gray-400">
                 Prize Pool

@@ -196,8 +196,8 @@ export const Footer: React.FC = () => {
         status = 'error'; // Show as "CONNECTING" during first 8 seconds
         message = 'Connecting...';
       } else if (isInServerUpdatePeriod) {
-        status = 'serverupdating'; // Show as "SERVER UPDATING" during 8-60 seconds
-        message = 'Server updating, please wait...';
+        status = 'serverupdating'; // Show as "SYNCING" during 8-60 seconds
+        message = 'Syncing data...';
       } else {
         status = 'offline';
         message = unifiedWs.connectionError || 'Disconnected. Check your internet connection.';
@@ -251,7 +251,7 @@ export const Footer: React.FC = () => {
     }
     // Handle server updating status text
     if (status === 'serverupdating') {
-      displayText = 'SERVER UPDATING';
+      displayText = 'SYNCING';
     }
 
     return {
@@ -298,54 +298,74 @@ export const Footer: React.FC = () => {
         {styles.statusText === 'MAINTENANCE' && (
           <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
        
-            {/* Dark overlay for contrast */}
-            <div className="absolute inset-0 bg-gray-900/20" />
+            {/* Enhanced dark overlay with subtle texture */}
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-900/30 via-gray-800/20 to-gray-900/30" />
             
-            {/* Top caution tape */}
-            <div className="absolute top-0 w-screen left-1/2 -translate-x-1/2 h-[8px] overflow-visible">
-
-              {/* Caution tape */}
+            {/* Top caution tape - Fixed seamless animation */}
+            <div className="absolute top-0 w-screen left-1/2 -translate-x-1/2 h-[10px] overflow-hidden">
+              {/* Tape shadow for depth */}
+              <div className="absolute inset-0 bg-black/20 transform translate-y-[1px]" />
+              
+              {/* Seamless infinite caution tape */}
               <div 
-                className="absolute top-0 left-[-100%] right-[-100%] h-full animate-caution-tape-scroll"
+                className="absolute top-0 h-full animate-caution-tape-scroll"
                 style={{
                   background: `repeating-linear-gradient(
                     45deg,
-                    #000000,
+                    #1a1a1a 0px,
                     #000000 8px,
-                    #ffc107 8px,
+                    #ffcd3c 8px,
                     #ffc107 16px
-                  )`
+                  )`,
+                  width: '300%',
+                  left: '-200%',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
                 }}
               />
-
-              {/* Caution tape text */}
-              {/* [NEW TESTING 4/30/2025] */}
-              <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">Maintenance</span>
-              </div>
-
+              
+              {/* Subtle glow effect on top tape */}
+              <div className="absolute top-0 w-full h-full bg-gradient-to-b from-yellow-400/20 to-transparent" />
             </div>
             
-            {/* Bottom caution tape */}
-            <div className="absolute bottom-0 w-screen left-1/2 -translate-x-1/2 h-[8px] overflow-visible">
+            {/* Bottom caution tape - Fixed seamless animation */}
+            <div className="absolute bottom-0 w-screen left-1/2 -translate-x-1/2 h-[10px] overflow-hidden">
+              {/* Tape shadow for depth */}
+              <div className="absolute inset-0 bg-black/20 transform -translate-y-[1px]" />
               
-              {/* Caution tape */}
+              {/* Seamless infinite caution tape moving opposite direction */}
               <div 
-                className="absolute bottom-0 left-[-100%] right-[-100%] h-full animate-caution-tape-scroll-reverse"
+                className="absolute bottom-0 h-full animate-caution-tape-scroll-reverse"
                 style={{
                   background: `repeating-linear-gradient(
                     -45deg,
-                    #000000,
+                    #1a1a1a 0px,
                     #000000 8px,
-                    #ffc107 8px,
+                    #ffcd3c 8px,
                     #ffc107 16px
-                  )`
+                  )`,
+                  width: '300%',
+                  left: '-200%',
+                  boxShadow: '0 -2px 4px rgba(0,0,0,0.3), inset 0 -1px 0 rgba(255,255,255,0.1)'
                 }}
               />
+              
+              {/* Subtle glow effect on bottom tape */}
+              <div className="absolute bottom-0 w-full h-full bg-gradient-to-t from-yellow-400/20 to-transparent" />
             </div>
             
-            {/* Subtle yellow glow in the middle */}
-            <div className="absolute inset-0 bg-yellow-500/10" />
+            {/* Enhanced center glow with pulsing effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-500/15 to-transparent animate-pulse" 
+                 style={{ animationDuration: '3s' }} />
+            
+            {/* Subtle animated particles for extra polish */}
+            <div className="absolute inset-0 opacity-30">
+              <div className="absolute top-1/2 left-1/4 w-1 h-1 bg-yellow-400/60 rounded-full animate-pulse" 
+                   style={{ animationDelay: '0s', animationDuration: '2s' }} />
+              <div className="absolute top-1/2 left-3/4 w-1 h-1 bg-yellow-400/60 rounded-full animate-pulse" 
+                   style={{ animationDelay: '1s', animationDuration: '2s' }} />
+              <div className="absolute top-1/2 left-1/2 w-0.5 h-0.5 bg-yellow-300/80 rounded-full animate-pulse" 
+                   style={{ animationDelay: '0.5s', animationDuration: '1.5s' }} />
+            </div>
 
           </div>
         )}
@@ -505,7 +525,7 @@ export const Footer: React.FC = () => {
 
                   {/* GitHub */}
                   <a
-                    href="https://github.com/BranchManager69/degenduel"
+                    href="https://github.com/BranchManager69/degenduel-fe"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-400 hover:text-brand-400 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200 ease-out delay-[150ms] hover:delay-[0ms] p-1 -m-1 rounded hover:bg-gray-700/30"

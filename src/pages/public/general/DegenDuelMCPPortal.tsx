@@ -3,10 +3,12 @@ import { motion } from "framer-motion";
 import { MCPTokenManagement } from "../../../components/mcp/MCPTokenManagement";
 import { MCPUserGuide } from "../../../components/mcp/MCPUserGuide";
 import { useAuth } from "../../../contexts/UnifiedAuthContext";
+import { getFeatureFlag } from "../../../config/featureFlags";
 
 export const DegenDuelMCPPortal: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const userGuideRef = useRef<HTMLDivElement>(null);
+  const isMCPEnabled = getFeatureFlag('enableMCP');
 
   const scrollToSetup = (setupType: string) => {
     if (userGuideRef.current) {
@@ -26,7 +28,95 @@ export const DegenDuelMCPPortal: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 relative overflow-hidden">
+    <div className={`min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 relative`}>
+      {/* Coming Soon Overlay - Only show when MCP is disabled */}
+      {!isMCPEnabled && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-sm overflow-y-auto"
+        >
+          <div className="min-h-screen flex items-center justify-center py-8 px-4">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, type: "spring", bounce: 0.4 }}
+              className="text-center max-w-md mx-auto"
+            >
+              <motion.div
+                className="text-4xl sm:text-6xl mb-4"
+                animate={{ 
+                  rotate: [0, 5, -5, 0],
+                  scale: [1, 1.05, 1]
+                }}
+                transition={{ 
+                  duration: 3, 
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                🚧
+              </motion.div>
+              
+              <motion.h1
+                className="text-3xl sm:text-4xl font-black mb-4"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                <span className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-transparent bg-clip-text">
+                  COMING SOON
+                </span>
+              </motion.h1>
+              
+              <motion.p
+                className="text-base sm:text-lg text-slate-300 mb-6 leading-relaxed"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.6 }}
+              >
+                Connect AI assistants to your trading account for{" "}
+                <span className="text-cyan-400 font-bold">real-time analysis</span> and{" "}
+                <span className="text-purple-400 font-bold">automated strategies</span>.
+              </motion.p>
+              
+              <motion.div
+                className="space-y-3 mb-6"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.8 }}
+              >
+                {[
+                  { icon: "🤖", text: "Claude Desktop" },
+                  { icon: "💻", text: "Cursor IDE" },
+                  { icon: "📊", text: "Portfolio Analysis" }
+                ].map((feature, index) => (
+                  <motion.div
+                    key={index}
+                    className="flex items-center justify-center space-x-3 p-3 rounded-lg bg-slate-800/50 backdrop-blur-sm border border-slate-700/50"
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 1 + index * 0.1 }}
+                  >
+                    <span className="text-xl">{feature.icon}</span>
+                    <span className="text-slate-300 text-sm">{feature.text}</span>
+                  </motion.div>
+                ))}
+              </motion.div>
+              
+              <motion.div
+                className="text-xs text-slate-500"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.5 }}
+              >
+                Follow <span className="text-cyan-400">@degenduelme</span> for updates
+              </motion.div>
+            </motion.div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -119,8 +209,8 @@ export const DegenDuelMCPPortal: React.FC = () => {
         </motion.div>
 
         <div className="space-y-8 sm:space-y-12 lg:space-y-16">
-          {/* Token Management Section */}
-          {isAuthenticated && (
+          {/* Token Management Section - Only show when MCP is enabled */}
+          {isAuthenticated && isMCPEnabled && (
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
@@ -134,8 +224,8 @@ export const DegenDuelMCPPortal: React.FC = () => {
             </motion.div>
           )}
 
-          {/* Authentication Notice */}
-          {!isAuthenticated && (
+          {/* Authentication Notice - Only show when MCP is enabled */}
+          {!isAuthenticated && isMCPEnabled && (
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
@@ -170,15 +260,17 @@ export const DegenDuelMCPPortal: React.FC = () => {
             </motion.div>
           )}
 
-          {/* User Guide Section */}
-          <motion.div
-            ref={userGuideRef}
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <MCPUserGuide />
-          </motion.div>
+          {/* User Guide Section - Only show when MCP is enabled */}
+          {isMCPEnabled && (
+            <motion.div
+              ref={userGuideRef}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <MCPUserGuide />
+            </motion.div>
+          )}
         </div>
       </motion.div>
     </div>

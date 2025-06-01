@@ -254,8 +254,23 @@ class AIService {
           // NEW: Structured output options
           ...(options.structured_output && { structured_output: true }),
           ...(options.ui_context && { ui_context: options.ui_context }),
-          // Add web search tool
-          tools: options.tools || [{ type: "web_search" }]
+          // Add web search tool with enhanced configuration
+          tools: options.tools || [
+            { 
+              type: "web_search",
+              enabled: true,
+              description: "Search the web for current information"
+            }
+          ],
+          // Add current date/time context
+          system_context: {
+            current_date: new Date().toISOString(),
+            current_year: new Date().getFullYear(),
+            current_month: new Date().getMonth() + 1,
+            current_day: new Date().getDate(),
+            platform: 'DegenDuel',
+            capabilities: ['web_search', 'dynamic_ui', 'market_data', 'token_analysis']
+          }
         }),
         signal: responseController.signal,
       });
@@ -570,8 +585,26 @@ class AIService {
           conversationId: options.conversationId,
           context: options.context || 'terminal',
           stream: false, // Explicitly disable streaming for REST endpoint
-          // Add web search tool
-          tools: options.tools || [{ type: "web_search" }]
+          // Add web search tool with enhanced configuration
+          tools: options.tools || [
+            { 
+              type: "web_search",
+              enabled: true,
+              description: "Search the web for current information"
+            }
+          ],
+          // Add structured output and UI context if provided
+          ...(options.structured_output && { structured_output: true }),
+          ...(options.ui_context && { ui_context: options.ui_context }),
+          // Add current date/time context
+          system_context: {
+            current_date: new Date().toISOString(),
+            current_year: new Date().getFullYear(),
+            current_month: new Date().getMonth() + 1,
+            current_day: new Date().getDate(),
+            platform: 'DegenDuel',
+            capabilities: ['web_search', 'dynamic_ui', 'market_data', 'token_analysis']
+          }
         }),
       });
 

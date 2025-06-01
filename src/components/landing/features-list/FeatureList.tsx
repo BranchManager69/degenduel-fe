@@ -314,7 +314,7 @@ const upcomingFeatures = [
         <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
       </svg>
     ),
-    isUpcoming: false
+    isUpcoming: true
   },
 
   // 10 - DegenDuel RPC

@@ -25,7 +25,14 @@ export const featureFlags = {
    * Enable auth system debug logging
    * When true, additional debug information will be logged to the console
    */
-  enableAuthDebugLogging: false
+  enableAuthDebugLogging: false,
+
+  /**
+   * Enable MCP functionality
+   * When true, users can generate tokens and access full MCP features
+   * When false, MCP shows as "coming soon" with functionality disabled
+   */
+  enableMCP: false
 };
 
 /**

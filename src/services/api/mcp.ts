@@ -1,4 +1,5 @@
 import { createApiClient, logError } from "./utils";
+import { getFeatureFlag } from "../../config/featureFlags";
 
 export interface MCPTokenResponse {
   success: boolean;
@@ -18,6 +19,14 @@ export interface MCPTokenResponse {
 export const mcp = {
   // Get existing token or create new one
   getToken: async (): Promise<MCPTokenResponse> => {
+    if (!getFeatureFlag('enableMCP')) {
+      return {
+        success: false,
+        error: "MCP functionality is currently disabled. Coming soon!",
+        message: "MCP is in final development and will be available soon."
+      };
+    }
+    
     try {
       const api = createApiClient();
       const response = await api.fetch("/user/mcp-token");
@@ -30,6 +39,14 @@ export const mcp = {
 
   // Generate new token (revokes old one)
   regenerateToken: async (): Promise<MCPTokenResponse> => {
+    if (!getFeatureFlag('enableMCP')) {
+      return {
+        success: false,
+        error: "MCP functionality is currently disabled. Coming soon!",
+        message: "MCP is in final development and will be available soon."
+      };
+    }
+    
     try {
       const api = createApiClient();
       const response = await api.fetch("/user/mcp-token/regenerate", {
@@ -44,6 +61,14 @@ export const mcp = {
 
   // Revoke existing token
   revokeToken: async (): Promise<MCPTokenResponse> => {
+    if (!getFeatureFlag('enableMCP')) {
+      return {
+        success: false,
+        error: "MCP functionality is currently disabled. Coming soon!",
+        message: "MCP is in final development and will be available soon."
+      };
+    }
+    
     try {
       const api = createApiClient();
       const response = await api.fetch("/user/mcp-token", {

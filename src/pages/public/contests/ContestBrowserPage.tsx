@@ -8,7 +8,7 @@
  * @description This page displays a list of contests and allows users to filter and sort them.
  * 
  * @author BranchManager69
- * @version 2.1.0
+ * @version 2.1.1
  * @created 2025-01-01
  * @updated 2025-05-08
  */
@@ -20,10 +20,10 @@ import { ContestSort } from "../../../components/contest-browser/ContestSort";
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
 import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
 import { AuthDebugPanel } from "../../../components/debug";
-import { Terminal } from "../../../components/terminal/Terminal";
-import { config } from "../../../config/config";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
+import { useContests } from "../../../hooks/websocket/topic-hooks/useContests";
 import { ddApi } from "../../../services/dd-api";
+import { useStore } from "../../../store/useStore";
 import { Contest } from "../../../types/index";
 import type { SortDirection, SortField } from "../../../types/sort";
 
@@ -31,9 +31,6 @@ import type { SortDirection, SortField } from "../../../types/sort";
 export const ContestBrowser: React.FC = () => {
   const navigate = useNavigate();
   const { isAdministrator, isAuthenticated, getToken } = useMigratedAuth();
-  const [contests, setContests] = useState<Contest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeStatusFilter, setActiveStatusFilter] = useState("all");
   const [sortField, setSortField] = useState<SortField>("start_time");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -43,6 +40,51 @@ export const ContestBrowser: React.FC = () => {
   const [showCancelled, setShowCancelled] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [availableCredits, setAvailableCredits] = useState<number | undefined>(undefined);
+
+  // **NEW: Use WebSocket-based contest data instead of REST API**
+  const {
+    contests: wsContests,
+    isLoading: wsLoading,
+    isConnected: wsConnected,
+    error: wsError,
+    lastUpdate: wsLastUpdate,
+    refreshContests: wsRefreshContests
+  } = useContests();
+
+  // **Convert WebSocket contest data to local format if needed**
+  const contests = useMemo(() => {
+    if (!wsContests || wsContests.length === 0) {
+      // Fallback to cached contests from store
+      return useStore.getState().contests || [];
+    }
+
+    // Convert WebSocket Contest format to main Contest format
+    return wsContests.map(contest => ({
+      ...contest,
+      id: (contest as any).contest_id || (contest as any).id || '',
+      allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Default buckets
+      participant_count: (contest as any).entry_count || 0,
+      settings: {
+        difficulty: (contest as any).difficulty || 'guppy',
+        maxParticipants: null,
+        minParticipants: 2,
+        tokenTypesAllowed: [],
+        startingPortfolioValue: '1000'
+      },
+      min_participants: 2,
+      max_participants: 100,
+      is_participating: (contest as any).joined || false,
+      contest_code: (contest as any).contest_id || (contest as any).id || '',
+      image_url: undefined,
+      participants: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })) as unknown as Contest[];
+  }, [wsContests]);
+
+  // Use WebSocket loading state
+  const loading = wsLoading;
+  const error = wsError || (!wsConnected && !wsLoading ? "WebSocket connection lost" : null);
 
   // Fetch user credits
   const fetchUserCredits = async () => {
@@ -71,10 +113,10 @@ export const ContestBrowser: React.FC = () => {
     }
   };
 
-  // Fetch contests
-  const fetchContests = async () => {
+  // **FALLBACK: REST API retry function for compatibility**
+  const fetchContestsViaRest = async () => {
     try {
-      setLoading(true);
+      console.log("[ContestBrowserPage] Using REST API fallback");
 
       // First check maintenance mode
       const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
@@ -82,9 +124,6 @@ export const ContestBrowser: React.FC = () => {
 
       // If in maintenance mode, don't fetch contests
       if (isInMaintenance) {
-        setError(
-          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
-        );
         return;
       }
 
@@ -92,26 +131,20 @@ export const ContestBrowser: React.FC = () => {
         field: sortField,
         direction: sortDirection,
       });
-      setContests(data);
+      
+      // Update Zustand store with fallback REST API data
+      useStore.getState().setContests(data);
     } catch (error) {
-      console.error("Failed to fetch contests:", error);
+      console.error("Failed to fetch contests via REST:", error);
       // Check if the error is a 503 (maintenance mode)
       if (error instanceof Error && error.message.includes("503")) {
         setIsMaintenanceMode(true);
-        setError(
-          "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
-        );
-      } else {
-        setError("Failed to load contests");
       }
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Use effect to fetch contests and set up periodic maintenance check
+  // Initial setup and periodic maintenance check
   useEffect(() => {
-    fetchContests();
     fetchUserCredits();
 
     // Set up periodic maintenance check
@@ -119,18 +152,37 @@ export const ContestBrowser: React.FC = () => {
       try {
         const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
         setIsMaintenanceMode(isInMaintenance);
-        if (isInMaintenance) {
-          setError(
-            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later.",
-          );
-        }
       } catch (err) {
         console.error("Failed to check maintenance status:", err);
       }
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(maintenanceCheckInterval);
-  }, [sortField, sortDirection]);
+  }, []);
+
+  // **Enhanced contest data loading strategy**
+  useEffect(() => {
+    // If WebSocket fails to connect or provide data within 10 seconds, fall back to REST API
+    const fallbackTimer = setTimeout(() => {
+      if (!wsConnected || contests.length === 0) {
+        console.log('[ContestBrowserPage] WebSocket timeout or no data, using REST API fallback');
+        fetchContestsViaRest();
+      }
+    }, 10000);
+
+    return () => clearTimeout(fallbackTimer);
+  }, [wsConnected, contests.length, sortField, sortDirection]);
+
+  // Manual refresh function that prefers WebSocket but falls back to REST API
+  const handleManualRefresh = () => {
+    if (wsConnected) {
+      console.log('[ContestBrowserPage] Manual refresh via WebSocket');
+      wsRefreshContests();
+    } else {
+      console.log('[ContestBrowserPage] Manual refresh via REST API fallback');
+      fetchContestsViaRest();
+    }
+  };
 
   // Filter and sort contests
   const filteredAndSortedContests = useMemo(() => {
@@ -178,7 +230,6 @@ export const ContestBrowser: React.FC = () => {
       });
     }
 
-
     // Apply sorting
     return filtered.sort((a, b) => {
       const getValue = (contest: Contest) => {
@@ -224,6 +275,19 @@ export const ContestBrowser: React.FC = () => {
             </div>
           ))}
         </div>
+        
+        {/* WebSocket Connection Status */}
+        <div className="mt-4 flex justify-center items-center gap-2 text-xs">
+          <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+          <span className={`font-mono ${wsConnected ? 'text-emerald-400' : 'text-red-400'}`}>
+            {wsConnected ? 'LOADING.CONTEST.DATA' : 'CONNECTION.LOST'}
+          </span>
+          {wsLastUpdate && (
+            <span className="text-gray-500">
+              Last Update: {wsLastUpdate.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
       </div>
     );
   }
@@ -250,7 +314,13 @@ export const ContestBrowser: React.FC = () => {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 rounded-lg">
-          {error}
+          <p>{error}</p>
+          <button
+            onClick={handleManualRefresh}
+            className="mt-4 px-4 py-2 bg-dark-400/50 hover:bg-dark-400 rounded text-emerald-400 text-sm transition-all duration-300 hover:scale-105"
+          >
+            Retry Connection
+          </button>
         </div>
       </div>
     );
@@ -287,6 +357,19 @@ export const ContestBrowser: React.FC = () => {
                 onCreateClick={() => setIsCreateModalOpen(true)}
               />
             )}
+            
+            {/* WebSocket Connection Status */}
+            <div className="flex items-center gap-2 text-xs">
+              <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+              <span className={`font-mono ${wsConnected ? 'text-emerald-400' : 'text-red-400'}`}>
+                {wsConnected ? 'LIVE.DATA' : 'OFFLINE'}
+              </span>
+              {wsLastUpdate && (
+                <span className="text-gray-500">
+                  Updated: {wsLastUpdate.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Enhanced Filter Toggle Button (Mobile) */}
@@ -404,7 +487,7 @@ export const ContestBrowser: React.FC = () => {
                   onSort={(field: SortField, direction: SortDirection) => {
                     setSortField(field);
                     setSortDirection(direction);
-                    fetchContests();
+                    handleManualRefresh();
                   }}
                 />
               </div>
@@ -458,26 +541,12 @@ export const ContestBrowser: React.FC = () => {
             userRole={isAdministrator ? "admin" : "user"}
             availableCredits={availableCredits}
             onSuccess={() => {
-              fetchContests();
+              handleManualRefresh();
               fetchUserCredits(); // Refresh credits after contest creation
             }}
           />
         </div>
       </div>
-      
-      {/* Terminal - Didi Assistant for Contest Help */}
-      <Terminal
-        config={{
-          RELEASE_DATE: config.RELEASE_DATE.TOKEN_LAUNCH_DATETIME,
-          CONTRACT_ADDRESS: config.CONTRACT_ADDRESS.REAL,
-          DISPLAY: {
-            DATE_SHORT: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_SHORT,
-            DATE_FULL: config.RELEASE_DATE.DISPLAY.LAUNCH_DATE_FULL,
-            TIME: config.RELEASE_DATE.DISPLAY.LAUNCH_TIME
-          }
-        }}
-        size="contracted"
-      />
     </div>
   );
 };

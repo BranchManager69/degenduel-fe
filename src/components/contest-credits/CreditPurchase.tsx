@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { User } from '../../types/user';
 import { useSolanaKitWallet } from '../../hooks/wallet/useSolanaKitWallet';
+import { User } from '../../types/user';
 import { toast } from '../toast';
 
 interface CreditConfig {
@@ -145,7 +145,7 @@ export default function CreditPurchase({ user, config, onPurchaseComplete }: Cre
         {!config.purchase_enabled && (
           <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
             <div className="text-yellow-400 text-sm text-center">
-              Credit purchases will be available after token launch (tomorrow 6PM)
+              Credits will be available soon via Believe Burn API.
             </div>
           </div>
         )}

@@ -13,7 +13,7 @@
  * @updated 2025-05-07
  */
 
-import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { authDebug } from '../config/config';
 import { DDExtendedMessageType } from '../hooks/websocket/types';
 import { setupWebSocketInstance } from '../hooks/websocket/useUnifiedWebSocket';
@@ -241,13 +241,10 @@ export const UnifiedWebSocketProvider: React.FC<{
           message.operation === 'authenticate' && 
           message.status === 'success') {
         setConnectionState(ConnectionState.AUTHENTICATED);
-        authDebug('WebSocketContext', 'WebSocket authentication successful');
-        
-        // Clear auth timeout since authentication succeeded
-        if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
-          clearTimeout((wsRef.current as any).__authTimeoutId);
-          delete (wsRef.current as any).__authTimeoutId;
-        }
+        authDebug('WebSocketContext', 'WebSocket authentication successful', {
+          user: message.user,
+          timestamp: message.timestamp
+        });
         return;
       }
 
@@ -260,39 +257,50 @@ export const UnifiedWebSocketProvider: React.FC<{
       }
 
       // Handle WebSocket Authentication Errors per backend specification
-      if (message.type === DDExtendedMessageType.ERROR) {
-        // Token expired (4401)
-        if (message.code === 4401 && message.reason === 'token_expired') {
-          authDebug('WebSocketContext', 'WebSocket auth error: Token expired (4401)', message);
-          
-          // Clear auth timeout and fall back to CONNECTED state
-          if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
-            clearTimeout((wsRef.current as any).__authTimeoutId);
-            delete (wsRef.current as any).__authTimeoutId;
-          }
-          setConnectionState(ConnectionState.CONNECTED);
-          
-          // Trigger global auth check for token renewal
-          authService.checkAuth().then(isValidSession => {
-            if (!isValidSession) {
-              authDebug('WebSocketContext', 'Global auth check failed after WS token expiry, full logout likely.');
-            }
-          });
-          return;
+      if (message.type === DDExtendedMessageType.ERROR && message.code === 4401) {
+        authDebug('WebSocketContext', 'WebSocket authentication error', {
+          code: message.code,
+          reason: message.reason,
+          message: message.message,
+          timestamp: message.timestamp
+        });
+
+        // Handle different authentication error types
+        switch (message.reason) {
+          case 'token_required':
+            console.error('🚨 [WebSocket] Authentication token is required');
+            setConnectionState(ConnectionState.CONNECTED);
+            break;
+            
+          case 'token_expired':
+            console.error('🚨 [WebSocket] Session expired - triggering auth check');
+            setConnectionState(ConnectionState.CONNECTED);
+            
+            // Trigger global auth check for token renewal
+            authService.checkAuth().then(isValidSession => {
+              if (!isValidSession) {
+                authDebug('WebSocketContext', 'Global auth check failed after WS token expiry, full logout likely.');
+              }
+            });
+            break;
+            
+          case 'token_invalid':
+            console.error('🚨 [WebSocket] Invalid authentication token');
+            setConnectionState(ConnectionState.CONNECTED);
+            
+            // Trigger global auth check which may log out the user
+            authService.checkAuth().then(isValidSession => {
+              if (!isValidSession) {
+                authDebug('WebSocketContext', 'Global auth check failed after invalid token, logout triggered.');
+              }
+            });
+            break;
+            
+          default:
+            console.error('🚨 [WebSocket] Unknown authentication error:', message.reason);
+            setConnectionState(ConnectionState.CONNECTED);
         }
-        
-        // Authentication required for restricted topics (4010)
-        if (message.code === 4010) {
-          authDebug('WebSocketContext', 'WebSocket auth error: Authentication required (4010)', message);
-          
-          // Clear auth timeout and fall back to CONNECTED state
-          if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
-            clearTimeout((wsRef.current as any).__authTimeoutId);
-            delete (wsRef.current as any).__authTimeoutId;
-          }
-          setConnectionState(ConnectionState.CONNECTED);
-          return;
-        }
+        return;
       }
       
       // Distribute other messages to listeners
@@ -304,11 +312,6 @@ export const UnifiedWebSocketProvider: React.FC<{
   
   // Handle WebSocket close
   const handleClose = (event: CloseEvent) => {
-    // Clear any pending authentication timeout
-    if (wsRef.current && (wsRef.current as any).__authTimeoutId) {
-      clearTimeout((wsRef.current as any).__authTimeoutId);
-      delete (wsRef.current as any).__authTimeoutId;
-    }
     
     // Identify specific types of connection issues
     let errorMessage = '';
@@ -544,38 +547,42 @@ export const UnifiedWebSocketProvider: React.FC<{
       setConnectionState(ConnectionState.AUTHENTICATING);
       
       // Get authentication token from auth service
+      console.log('🔍 [DEBUG] Requesting WS_TOKEN...');
       const token = await authService.getToken(TokenType.WS_TOKEN);
+      
+      console.log('🔍 [DEBUG] WS_TOKEN result:', {
+        hasToken: !!token,
+        tokenLength: token ? token.length : 0,
+        tokenPreview: token ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` : 'NULL'
+      });
       
       if (!token) {
         authDebug('WebSocketContext', 'No WebSocket token available');
+        console.error('🚨 [DEBUG] WebSocket authentication failed: No token available');
+        setConnectionState(ConnectionState.CONNECTED);
         return;
       }
       
-      // Subscribe to topics with authentication
-      const message = {
-        type: 'SUBSCRIBE',
-        topics: ['portfolio', 'user', 'wallet', 'notification'],
+      // Send AUTH message with new format as specified by backend team
+      const authMessage = {
+        type: 'AUTH',
         authToken: token
       };
       
+      console.log('🔍 [DEBUG] Sending WebSocket AUTH message:', {
+        messageType: authMessage.type,
+        hasAuthToken: !!authMessage.authToken
+      });
+      
       // Send authentication message
-      wsRef.current.send(JSON.stringify(message));
+      wsRef.current.send(JSON.stringify(authMessage));
       
-      authDebug('WebSocketContext', 'Sent WebSocket authentication message');
+      authDebug('WebSocketContext', 'Sent WebSocket AUTH message');
       
-      // Set a timeout to fall back to CONNECTED if no auth response in 15 seconds
-      const authTimeoutId = setTimeout(() => {
-        // Check current state, not closure state
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          authDebug('WebSocketContext', 'Authentication timeout, falling back to CONNECTED state');
-          setConnectionState(ConnectionState.CONNECTED);
-        }
-      }, 15000);
-      
-      // Store timeout ID for potential cleanup
-      if (!wsRef.current) return;
-      (wsRef.current as any).__authTimeoutId = authTimeoutId;
+      // No longer using 15-second timeout fallback as per backend team instructions
+      // Authentication status will be determined by ACKNOWLEDGMENT or ERROR responses
     } catch (error) {
+      console.error('🚨 [DEBUG] WebSocket authentication error:', error);
       authDebug('WebSocketContext', 'WebSocket authentication failed', {
         error: error instanceof Error ? error.message : String(error)
       });

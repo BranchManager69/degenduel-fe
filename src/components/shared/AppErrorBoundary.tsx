@@ -115,12 +115,13 @@ export class AppErrorBoundary extends React.Component<
 
             {/* Title */}
             <h1 className="text-xl sm:text-2xl font-semibold text-red-400">
-              DegenDuel is currently Degen<b>Down</b>...
+              This Page Got <b>Rugged</b>...
             </h1>
 
             {/* Description */}
             <p className="text-sm sm:text-base text-gray-300 mt-3 leading-relaxed">
-              There was an error loading DegenDuel. Please check the status below or try again shortly.
+              Actually, it was just an error in the DegenDuel client. 
+              This shouldn't happen, and Branch Manager has been notified.
             </p>
 
             {/* Status link */}

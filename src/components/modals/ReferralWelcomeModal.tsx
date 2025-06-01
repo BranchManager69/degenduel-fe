@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useReferral } from "../../hooks/social/useReferral";
@@ -17,18 +17,20 @@ export const ReferralWelcomeModal: React.FC = () => {
   const { isAuthenticated, user } = useMigratedAuth();
   const { connectWallet, isConnecting } = useStore();
 
-  // When user successfully connects and gets a profile, track conversion and close modal
+  // Track when user connects wallet (but don't auto-close modal)
+  const [hasTrackedConversion, setHasTrackedConversion] = useState(false);
+  
   useEffect(() => {
-    if (isAuthenticated && user && referralCode) {
+    if (isAuthenticated && user && referralCode && !hasTrackedConversion) {
       trackConversion().catch(console.error);
-      setShowWelcomeModal(false);
-      localStorage.setItem("has_seen_welcome", "true");
+      setHasTrackedConversion(true);
+      // Don't auto-close modal - let user explore first
     }
   }, [
     isAuthenticated,
     user,
     referralCode,
-    setShowWelcomeModal,
+    hasTrackedConversion,
     trackConversion,
   ]);
 
@@ -37,7 +39,12 @@ export const ReferralWelcomeModal: React.FC = () => {
       // Connect wallet using store's connectWallet
       connectWallet().catch(console.error);
     } else {
+      // User is already authenticated, close modal and track if needed
       setShowWelcomeModal(false);
+      localStorage.setItem("has_seen_welcome", "true");
+      if (referralCode && !hasTrackedConversion) {
+        trackConversion().catch(console.error);
+      }
     }
   };
 
