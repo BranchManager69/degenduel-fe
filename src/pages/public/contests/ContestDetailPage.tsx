@@ -7,9 +7,9 @@
  * It includes a countdown timer, prize structure, participants list, and other details.
  * 
  * @author BranchManager69
- * @version 2.1.0
+ * @version 2.2.0
  * @created 2025-01-01
- * @updated 2025-05-08
+ * @updated 2025-01-29
  */
 
 import { motion } from "framer-motion";
@@ -21,6 +21,8 @@ import { PrizeStructure } from "../../../components/contest-detail/PrizeStructur
 import { Card } from "../../../components/ui/Card";
 import { CountdownTimer } from "../../../components/ui/CountdownTimer";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
+import { useContestLifecycle } from "../../../hooks/websocket/topic-hooks/useContestLifecycle";
+import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 import { getContestImageUrl } from "../../../lib/imageUtils";
 import {
     formatCurrency,
@@ -28,7 +30,7 @@ import {
     mapContestStatus,
 } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
-import type { Contest as BaseContest } from "../../../types/index";
+import type { Contest as BaseContest, ContestViewData } from "../../../types/index";
 
 // TODO: move elsewhere
 interface ContestParticipant {
@@ -60,6 +62,7 @@ export const ContestDetails: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [contest, setContest] = useState<Contest | null>(null);
+  const [contestViewData, setContestViewData] = useState<ContestViewData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const { user, isAuthenticated } = useMigratedAuth();
@@ -100,6 +103,72 @@ export const ContestDetails: React.FC = () => {
     if (hasStarted) return "active";
     return "pending";
   }, [contest]);
+
+  // WebSocket integration for real-time updates
+  const { 
+    contestViewData: wsUpdatedData, 
+    error: wsError 
+  } = useContestViewUpdates(id || null, contestViewData);
+
+  // Contest lifecycle events for real-time notifications
+  useContestLifecycle({
+    onContestStarted: (contestId) => {
+      if (contestId.toString() === id) {
+        console.log(`[ContestDetailPage] Contest ${contestId} started`);
+        // Update contest status locally
+        setContest(prev => prev ? { ...prev, status: "active" as const } : null);
+      }
+    },
+    onContestEnded: (contestId) => {
+      if (contestId.toString() === id) {
+        console.log(`[ContestDetailPage] Contest ${contestId} ended`);
+        // Update contest status locally
+        setContest(prev => prev ? { ...prev, status: "completed" as const } : null);
+      }
+    },
+    onContestCancelled: (contestId, reason) => {
+      if (contestId.toString() === id) {
+        console.log(`[ContestDetailPage] Contest ${contestId} cancelled: ${reason}`);
+        // Update contest status locally
+        setContest(prev => prev ? { ...prev, status: "cancelled" as const } : null);
+      }
+    },
+    onContestActivity: (contestId, activity, count) => {
+      if (contestId.toString() === id) {
+        console.log(`[ContestDetailPage] Contest ${contestId} activity: ${activity}, participants: ${count}`);
+        // Update participant count locally
+        setContest(prev => prev ? { ...prev, participant_count: count } : null);
+      }
+    }
+  });
+
+  // Effect to update page state when WebSocket pushes new data
+  useEffect(() => {
+    if (wsUpdatedData) {
+      setContestViewData(wsUpdatedData);
+      
+      // Update contest data from view data if available (with proper type handling)
+      if (wsUpdatedData.contest) {
+        setContest(prev => {
+          if (!prev) return null;
+          // Ensure ID compatibility between ContestViewData and Contest types
+          const updatedContest = { ...prev };
+          // Only update compatible fields, preserve the existing id as number
+          if (wsUpdatedData.contest.status) {
+            updatedContest.status = wsUpdatedData.contest.status;
+          }
+          return updatedContest;
+        });
+      }
+    }
+  }, [wsUpdatedData]);
+
+  // Handle WebSocket errors
+  useEffect(() => {
+    if (wsError) {
+      console.warn("[ContestDetailPage] WebSocket update error:", wsError);
+    }
+  }, [wsError]);
 
   useEffect(() => {
     console.log("Wallet State:", {
@@ -161,10 +230,9 @@ export const ContestDetails: React.FC = () => {
         settings: {
           ...data.settings,
           max_participants: Number(data.settings?.max_participants) || 0,
-          token_types: Array.isArray(data.settings?.token_types)
-            ? data.settings.token_types
+          tokenTypesAllowed: Array.isArray(data.settings?.tokenTypesAllowed)
+            ? data.settings.tokenTypesAllowed
             : [],
-          rules: Array.isArray(data.settings?.rules) ? data.settings.rules : [],
           difficulty: data.settings?.difficulty || "guppy",
         },
         participants: Array.isArray(data.contest_participants)
@@ -666,13 +734,44 @@ export const ContestDetails: React.FC = () => {
                   </div>
                 </div>
                 
+                {/* Contest Action Button - Moved here for better UX */}
+                <div className="mt-6">
+                  <div className="max-w-md">
+                    <button
+                      onClick={handleJoinContest}
+                      disabled={!isWalletConnected || (displayStatus !== "pending" && !isParticipating)}
+                      className={`w-full relative group overflow-hidden text-lg py-4 px-6 shadow-xl transition-all duration-300 rounded-xl ${
+                        !isWalletConnected || (displayStatus !== "pending" && !isParticipating)
+                          ? "bg-gradient-to-r from-gray-600/40 to-gray-700/40 border-2 border-gray-500/30 text-gray-400 cursor-not-allowed"
+                          : displayStatus === "pending" && !isParticipating
+                          ? "bg-gradient-to-r from-brand-500 to-brand-600 border-2 border-brand-400/50 text-white hover:from-brand-400 hover:to-brand-500 hover:border-brand-300 hover:shadow-brand-500/30"
+                          : "bg-gradient-to-r from-emerald-500 to-emerald-600 border-2 border-emerald-400/50 text-white hover:from-emerald-400 hover:to-emerald-500 hover:border-emerald-300"
+                      }`}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/8 via-white/4 to-white/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <span className="relative flex items-center justify-center gap-3">
+                        <span className="font-semibold">{getButtonLabel()}</span>
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </span>
+                    </button>
+                    
+                    {error && (
+                      <div className="mt-3 text-sm text-red-400 text-center animate-glitch bg-dark-100/90 rounded-lg py-2 px-3 border border-red-500/30 backdrop-blur-sm">
+                        {error}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
                 {/* Share Button - Desktop Only */}
                 <div className="hidden md:flex mt-4 items-center gap-3">
                   <span className="text-sm text-gray-400">Share:</span>
                   <div className="flex gap-2">
                     {/* Twitter/X Share Button */}
                     <a
-                      href={`https://twitter.com/intent/tweet?text=Join%20me%20in%20${encodeURIComponent(contest.name)}%20on%20DegenDuel!&url=${encodeURIComponent(window.location.href)}${user?.wallet_address ? `&hashtags=DegenDuel,Crypto,Trading,Referral_${user.wallet_address.slice(0, 8)}` : "&hashtags=DegenDuel,Crypto,Trading"}`}
+                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Join me in the ${contest.name} trading contest on DegenDuel`)}&url=${encodeURIComponent(window.location.href)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-3 py-1.5 bg-dark-300/80 hover:bg-dark-300 text-brand-400 hover:text-brand-300 rounded-md transition-colors duration-300 text-sm"
@@ -754,168 +853,107 @@ export const ContestDetails: React.FC = () => {
             </div>
           </div>
 
-          {/* Entry Fee and Prize Pool Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            {/* Entry Fee Card */}
+          {/* Contest Stats - Consolidated */}
+          <div className="mb-8">
             <div className={`group relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30 hover:border-brand-400/50"} transition-all duration-300 overflow-hidden`}>
               <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="p-6 relative">
-                <div className="flex flex-col">
-                  <span className={`text-sm font-medium ${displayStatus === "cancelled" ? "text-gray-500" : "text-gray-400 group-hover:text-brand-300"} transition-colors mb-2`}>
-                    Entry Fee
-                  </span>
-                  <div className="flex items-baseline gap-2">
-                    <span className={`text-3xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x"}`}>
+                <h3 className="text-xl font-bold text-gray-100 mb-6">Contest Details</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Entry Fee */}
+                  <div className="text-center md:text-left">
+                    <span className={`block text-sm font-medium ${displayStatus === "cancelled" ? "text-gray-500" : "text-gray-400"} mb-2`}>
+                      Entry Fee
+                    </span>
+                    <div className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600"}`}>
                       {formatCurrency(Number(contest.entry_fee))}
-                    </span>
-                    <span className="text-sm text-gray-400">per entry</span>
-                  </div>
-                  <div className="mt-2 text-xs text-gray-500">
-                    Max {contest.max_participants} entries per contest
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Prize Pool Card */}
-            <div className={`group relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30 hover:border-brand-400/50"} transition-all duration-300 overflow-hidden`}>
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="p-6 relative">
-                <div className="flex flex-col">
-                  <span className={`text-sm font-medium ${displayStatus === "cancelled" ? "text-gray-500" : "text-gray-400 group-hover:text-brand-300"} transition-colors mb-2`}>
-                    Estimated Prize Pool
-                  </span>
-                  <div className="flex items-baseline gap-2">
-                    <span className={`text-3xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 group-hover:animate-gradient-x"}`}>
-                      {formatCurrency(Number(contest?.max_prize_pool || 0))}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <div className="w-20 h-1 bg-dark-300 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${displayStatus === "cancelled" ? "bg-gray-500/50" : "bg-gradient-to-r from-brand-400 to-brand-600"} transition-all duration-300`}
-                          style={{
-                            width: `${
-                              (contest.participant_count /
-                                contest.max_participants) *
-                              100
-                            }%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-sm text-gray-400">
-                        {contest.participant_count}/{contest.max_participants}
-                      </span>
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      per participant
                     </div>
                   </div>
-                  <div className="mt-2 text-xs text-gray-500">
-                    Prize pool grows as more players join
+                  
+                  {/* Prize Pool */}
+                  <div className="text-center md:text-left">
+                    <span className={`block text-sm font-medium ${displayStatus === "cancelled" ? "text-gray-500" : "text-gray-400"} mb-2`}>
+                      Current Prize Pool
+                    </span>
+                    <div className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600"}`}>
+                      {formatCurrency(Number(contest.entry_fee) * contest.participant_count * 0.95)}
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      grows with participation
+                    </div>
+                  </div>
+                  
+                  {/* Participants */}
+                  <div className="text-center md:text-left">
+                    <span className={`block text-sm font-medium ${displayStatus === "cancelled" ? "text-gray-500" : "text-gray-400"} mb-2`}>
+                      Participants
+                    </span>
+                    <div className="flex items-center justify-center md:justify-start gap-3">
+                      <div className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600"}`}>
+                        {contest.participant_count}
+                      </div>
+                      <div className="flex flex-col items-start">
+                        <div className="w-16 h-1.5 bg-dark-300 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${displayStatus === "cancelled" ? "bg-gray-500/50" : "bg-gradient-to-r from-brand-400 to-brand-600"} transition-all duration-300`}
+                            style={{
+                              width: `${Math.min((contest.participant_count / contest.max_participants) * 100, 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-500 mt-0.5">
+                          of {contest.max_participants}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Rules & Tokens Section - Mobile Accordions */}
-          <div className="mb-8 md:hidden">
-            <div className={`group relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6 mb-4`}>
+          {/* Rules & Tokens Section - Mobile Only */}
+          <div className="mb-8 lg:hidden">
+            <div className={`group relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6`}>
               <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-              {/* Rules Section - Expandable/Collapsible */}
-              <details className="mb-4">
-                <summary className="flex items-center justify-between mb-4 cursor-pointer">
-                  <h3 className="text-xl font-bold text-gray-100">
-                    Rules of the Duel
-                  </h3>
-                  <span className="text-xs text-gray-400 bg-dark-300/50 px-2 py-1 rounded">
-                    Info Only
-                  </span>
-                </summary>
-
-                <div className="relative overflow-hidden transition-all duration-300">
-                  {/* Placeholder for where rules were displayed:
-                  {contest?.settings?.rules &&
-                  contest.settings.rules.length > 0 ? (
-                    <ContestRules rules={contest.settings.rules} />
-                  ) : (
-                    <p className="text-gray-400">
-                      No rules in this duel; anything goes. It's every degen
-                      for himself.
-                    </p>
-                  )}
-                  */}
+              
+              <h3 className="text-xl font-bold text-gray-100 mb-4">Contest Rules & Tokens</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <span className="text-sm font-medium text-brand-400 block mb-2">Rules:</span>
+                  <p className="text-gray-400">Standard DegenDuel trading rules apply</p>
                 </div>
-              </details>
-
-              {/* Token Whitelist Section - Expandable/Collapsible */}
-              <details>
-                <summary className="flex items-center justify-between mb-4 cursor-pointer">
-                  <h3 className="text-xl font-bold text-gray-100">
-                    Token Whitelist
-                  </h3>
-                  <span className="text-xs text-gray-400 bg-dark-300/50 px-2 py-1 rounded">
-                    {/* Placeholder for where token types were displayed, assuming it's adjusted:
-                    {contest?.settings?.tokenTypesAllowed && contest.settings.tokenTypesAllowed.length > 0 ? (
-                      <div className="mt-2 space-x-2">
-                        {contest.settings.tokenTypesAllowed.map((tokenType: string) => (
-                          <Badge key={tokenType} variant="secondary">{tokenType.toUpperCase()}</Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">Any token type allowed.</p>
-                    )}
-                    */}
-                  </span>
-                </summary>
-
-                <div className="relative overflow-hidden transition-all duration-300">
-                  {/* Placeholder for where token types were displayed, assuming it's adjusted:
+                
+                <div>
+                  <span className="text-sm font-medium text-brand-400 block mb-2">Allowed Tokens:</span>
                   {contest?.settings?.tokenTypesAllowed && contest.settings.tokenTypesAllowed.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {contest.settings.tokenTypesAllowed.map((token: string) => (
                         <span
                           key={token}
-                          className="px-3 py-1.5 bg-dark-300/50 text-sm text-gray-300 border-l border-brand-400/30 hover:border-brand-400/50 hover:text-brand-400 transition-all duration-300 transform hover:translate-x-1"
+                          className="px-3 py-1.5 bg-dark-300/50 text-sm text-gray-300 border border-brand-400/30 rounded-md"
                         >
                           {token}
                         </span>
                       ))}
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-2">
-                      <p className="text-gray-400">
-                        <span className="text-brand-400">
-                          Selection Restrictions:
-                        </span>{" "}
-                        None (all tokens available)
-                      </p>
-                      <p className="text-gray-400">
-                        <span className="text-brand-400">
-                          Allocation Limits:
-                        </span>{" "}
-                        Standard portfolio rules apply
-                      </p>
-                      <p className="text-gray-400">
-                        <span className="text-brand-400">
-                          Token Categories:
-                        </span>{" "}
-                        All categories permitted
-                      </p>
-                      <div className="mt-2 text-xs text-gray-500 bg-dark-300/50 p-2 rounded">
-                        This contest allows you to select from all available
-                        tokens in the market.
-                      </div>
-                    </div>
+                    <p className="text-gray-400">All tokens available for selection</p>
                   )}
-                  */}
                 </div>
-              </details>
+              </div>
             </div>
             
             {/* Mobile share buttons */}
             <div className="flex gap-2 mb-8 md:hidden">
               {/* Twitter/X Share Button */}
               <a
-                href={`https://twitter.com/intent/tweet?text=Join%20me%20in%20${encodeURIComponent(contest.name)}%20on%20DegenDuel!&url=${encodeURIComponent(window.location.href)}${user?.wallet_address ? `&hashtags=DegenDuel,Crypto,Trading,Referral_${user.wallet_address.slice(0, 8)}` : "&hashtags=DegenDuel,Crypto,Trading"}`}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Join me in the ${contest.name} trading contest on DegenDuel`)}&url=${encodeURIComponent(window.location.href)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-dark-300/80 hover:bg-dark-300 text-brand-400 hover:text-brand-300 rounded-md transition-colors duration-300"
@@ -957,209 +995,80 @@ export const ContestDetails: React.FC = () => {
             </div>
           </div>
 
-          {/* Enhanced Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            {/* Left Column - Rules and Tokens in Parent Container (Desktop Only) */}
-            <div className="lg:col-span-2 hidden md:block">
+          {/* Content Grid - Simplified */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column - Rules and Tokens */}
+            <div className="space-y-8">
+              {/* Rules Section */}
               <div className={`group relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6`}>
                 <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                {/* Rules Section */}
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-gray-100">
-                      Rules of the Duel
-                    </h3>
-                    <span className="text-xs text-gray-400 bg-dark-300/50 px-2 py-1 rounded">
-                      Info Only
-                    </span>
-                  </div>
-
-                  <div className="relative overflow-hidden transition-all duration-300">
-                    {/* Placeholder for where rules were displayed:
-                    {contest?.settings?.rules &&
-                    contest.settings.rules.length > 0 ? (
-                      <ContestRules rules={contest.settings.rules} />
-                    ) : (
-                      <p className="text-gray-400">
-                        No rules in this duel; anything goes. It's every degen
-                        for himself.
-                      </p>
-                    )}
-                    */}
-                  </div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-100">
+                    Rules & Token Whitelist
+                  </h3>
+                  <span className="text-xs text-gray-400 bg-dark-300/50 px-2 py-1 rounded">
+                    Contest Parameters
+                  </span>
                 </div>
-
-                {/* Token Whitelist Section */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-gray-100">
-                      Token Whitelist
-                    </h3>
-                    <span className="text-xs text-gray-400 bg-dark-300/50 px-2 py-1 rounded">
-                      {/* Placeholder for where token types were displayed, assuming it's adjusted:
-                      {contest?.settings?.tokenTypesAllowed && contest.settings.tokenTypesAllowed.length > 0 ? (
-                        <div className="mt-2 space-x-2">
-                          {contest.settings.tokenTypesAllowed.map((tokenType: string) => (
-                            <Badge key={tokenType} variant="secondary">{tokenType.toUpperCase()}</Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <span>Any</span>
-                      )}
-                      */}
-                    </span>
+                
+                <div className="space-y-4">
+                  <div>
+                    <span className="text-sm font-medium text-brand-400 block mb-2">Rules:</span>
+                    <p className="text-gray-400">Standard DegenDuel trading rules apply</p>
                   </div>
-
-                  <div className="relative overflow-hidden transition-all duration-300">
-                    {/* Placeholder for where token types were displayed, assuming it's adjusted:
+                  
+                  <div>
+                    <span className="text-sm font-medium text-brand-400 block mb-2">Allowed Tokens:</span>
                     {contest?.settings?.tokenTypesAllowed && contest.settings.tokenTypesAllowed.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {contest.settings.tokenTypesAllowed.map((token: string) => (
                           <span
                             key={token}
-                            className="px-3 py-1.5 bg-dark-300/50 text-sm text-gray-300 border-l border-brand-400/30 hover:border-brand-400/50 hover:text-brand-400 transition-all duration-300 transform hover:translate-x-1"
+                            className="px-3 py-1.5 bg-dark-300/50 text-sm text-gray-300 border border-brand-400/30 rounded-md"
                           >
                             {token}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-2">
-                        <p className="text-gray-400">
-                          <span className="text-brand-400">
-                            Selection Restrictions:
-                          </span>{" "}
-                          None (all tokens available)
-                        </p>
-                        <p className="text-gray-400">
-                          <span className="text-brand-400">
-                            Allocation Limits:
-                          </span>{" "}
-                          Standard portfolio rules apply
-                        </p>
-                        <p className="text-gray-400">
-                          <span className="text-brand-400">
-                            Token Categories:
-                          </span>{" "}
-                          All categories permitted
-                        </p>
-                        <div className="mt-2 text-xs text-gray-500 bg-dark-300/50 p-2 rounded">
-                          This contest allows you to select from all available
-                          tokens in the market.
-                        </div>
-                      </div>
+                      <p className="text-gray-400">All tokens available for selection</p>
                     )}
-                    */}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Prize Structure and Participants */}
+            {/* Right Column - Prize Distribution & Participants */}
             <div className="space-y-8">
-              {/* Prize Structure - Enhanced with accurate calculations */}
+              {/* Prize Distribution */}
               <div className="group relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
                 <PrizeStructure
-                  prizePool={Number(contest?.prize_pool || 0)}
+                  prizePool={Number(contest.entry_fee) * contest.participant_count * 0.95}
                   entryFee={Number(contest?.entry_fee || 0)}
                   maxParticipants={Number(contest?.max_participants || 0)}
                   currentParticipants={Number(contest?.participant_count || 0)}
-                  platformFeePercentage={5} // Default platform fee
+                  platformFeePercentage={5}
                 />
               </div>
 
-              {/* Participants List - Enhanced with dynamic updates */}
-              <div className="group relative">
-                {Number(contest.participant_count) > 0 &&
-                Array.isArray(contest.participants) ? (
-                  contest.participants.length > 0 ? (
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-r from-brand-400/5 via-brand-500/5 to-brand-600/5 transform skew-y-[-1deg] pointer-events-none" />
-                      <ParticipantsList
-                        participants={contest.participants}
-                        contestStatus={mapContestStatus(contest.status)}
-                      />
-                    </div>
-                  ) : (
-                    <div className={`relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"}`}>
-                      <div className="p-6">
-                        <h3 className="text-xl font-bold text-gray-100 mb-4">
-                          Duelers
-                        </h3>
-                        <p className="text-gray-400">
-                          No duelers have entered yet.
-                        </p>
-                        {/* Remove desktop duplicate button - use only the main floating one */}
-                      </div>
-                    </div>
-                  )
-                ) : (
-                  <div className={`relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"}`}>
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold text-gray-100 mb-4">
-                        Duelers
-                      </h3>
-                      <p className="text-gray-400">No duelers yet.</p>
-                      {/* Remove second desktop duplicate button - use only the main floating one */}
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Participants List */}
+              {Number(contest.participant_count) > 0 && Array.isArray(contest.participants) && contest.participants.length > 0 ? (
+                <div className="group relative">
+                  <ParticipantsList
+                    participants={contest.participants}
+                    contestStatus={mapContestStatus(contest.status)}
+                  />
+                </div>
+              ) : (
+                <div className={`relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6`}>
+                  <h3 className="text-xl font-bold text-gray-100 mb-4">Participants</h3>
+                  <p className="text-gray-400">No participants yet. Be the first to join!</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Enhanced Mobile/Desktop Action Button - Properly accounting for footer states */}
-        <div className="fixed bottom-0 left-0 right-0 p-3 md:p-4 bg-gradient-to-t from-dark-100 via-dark-100/95 to-transparent z-50" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
-          <div className="max-w-lg md:max-w-md mx-auto relative">
-            {/* Coming Soon Overlay - Better Mobile Design */}
-            <div className="absolute inset-0 z-10 bg-dark-100/98 backdrop-blur-sm rounded-2xl md:rounded-xl border-2 border-brand-400/40 md:border-brand-400/30 flex flex-col items-center justify-center shadow-2xl">
-              <div className="relative w-full p-4 md:p-0">
-                {/* Animated glow effect - More prominent on mobile */}
-                <div className="absolute -inset-3 md:-inset-2 bg-gradient-to-r from-brand-400 to-cyan-400 rounded-2xl md:rounded-lg blur opacity-75 animate-pulse"></div>
-                
-                {/* Coming Soon Content - Mobile Optimized */}
-                <div className="relative bg-dark-200/95 px-6 md:px-6 py-6 md:py-4 rounded-2xl md:rounded-lg border border-brand-400/30">
-                  <div className="flex items-center justify-center gap-3 mb-3 md:mb-2">
-                    <svg className="w-7 h-7 md:w-6 md:h-6 text-brand-400 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-xl md:text-lg font-bold text-brand-400 uppercase tracking-wide">Coming Soon</span>
-                  </div>
-                  <p className="text-base md:text-sm text-gray-200 text-center leading-relaxed">
-                    Contest functionality launches in the next few days!
-                  </p>
-                  <div className="mt-3 md:mt-2 text-sm md:text-xs text-brand-300 text-center font-medium">
-                    Get ready to compete 🚀
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Main Action Button (disabled underneath overlay) - Enhanced for mobile */}
-            <button
-              onClick={handleJoinContest}
-              disabled={true}
-              className="w-full relative group overflow-hidden text-base md:text-sm py-5 md:py-4 shadow-2xl bg-gradient-to-r from-brand-500/20 to-brand-600/20 border-2 border-brand-400/40 md:border-brand-400/30 text-brand-400/60 rounded-2xl md:rounded-xl cursor-not-allowed touch-manipulation"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/8 via-white/4 to-white/8 opacity-50" />
-              <span className="relative flex items-center justify-center gap-3 md:gap-2">
-                <span className="font-semibold md:font-medium text-lg md:text-base">{getButtonLabel()}</span>
-                <svg className="w-6 h-6 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </span>
-            </button>
-            
-            {error && (
-              <div className="mt-3 md:mt-2 text-sm md:text-xs text-red-400 text-center animate-glitch bg-dark-100/98 rounded-xl md:rounded-lg py-3 md:py-2 border border-red-500/30 backdrop-blur-sm">
-                {error}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -53,7 +53,7 @@ const COMPONENT_REGISTRY: Record<ComponentType, React.LazyExoticComponent<React.
 };
 
 // Component metadata for AI to understand what each component does
-export const COMPONENT_METADATA: Record<ComponentType, {
+const COMPONENT_METADATA: Record<ComponentType, {
   name: string;
   description: string;
   use_cases: string[];
@@ -252,4 +252,5 @@ export const DynamicComponentRenderer: React.FC<DynamicComponentRendererProps> =
   );
 };
 
+export { COMPONENT_METADATA, COMPONENT_REGISTRY };
 export default DynamicComponentRenderer;

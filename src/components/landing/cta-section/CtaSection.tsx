@@ -156,7 +156,7 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
           </button>
         </RouterLink>
       ) : (
-        <RouterLink to="/login" className="w-full max-w-md">
+        <RouterLink to="/contests" className="w-full max-w-md">
           <button 
             className="w-full relative group overflow-hidden"
             aria-label="Connect your wallet to start"

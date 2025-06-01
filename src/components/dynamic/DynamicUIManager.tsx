@@ -16,10 +16,11 @@ import {
   ComponentState, 
   ComponentPlacement,
   ComponentEvent,
-  ComponentPerformance 
+  ComponentPerformance,
+  ComponentType
 } from './types';
 import { AdvancedLayoutManager, useLayout, getPlacementAnimations } from './AdvancedLayoutManager';
-import DynamicComponentRenderer from './ComponentRegistry';
+import DynamicComponentRenderer, { COMPONENT_REGISTRY } from './ComponentRegistry';
 
 // Performance monitoring
 const usePerformanceMonitor = () => {
@@ -216,10 +217,25 @@ const DynamicUIManagerCore = React.forwardRef<DynamicUIManagerHandle, DynamicUIM
 
   // Handle UI actions from AI
   const handleUIAction = useCallback((action: UIAction) => {
-    console.log('[DynamicUIManager] Processing UI action:', action);
+    console.log('[DynamicUIManager] Processing UI action:', {
+      type: action.type,
+      component: action.component,
+      id: action.id,
+      placement: action.placement,
+      dataKeys: action.data ? Object.keys(action.data) : [],
+      hasTitle: !!action.title,
+      timestamp: new Date().toISOString()
+    });
 
     switch (action.type) {
       case 'create_component':
+        // Validate component type
+        if (!COMPONENT_REGISTRY[action.component as ComponentType]) {
+          console.error('[DynamicUIManager] Unknown component type:', action.component);
+          console.log('[DynamicUIManager] Available components:', Object.keys(COMPONENT_REGISTRY));
+          return;
+        }
+
         setComponentStates(prev => {
           const newStates = new Map(prev);
           
@@ -233,23 +249,31 @@ const DynamicUIManagerCore = React.forwardRef<DynamicUIManagerHandle, DynamicUIM
 
           // Remove existing component with same ID
           if (newStates.has(action.id)) {
+            console.log('[DynamicUIManager] Replacing existing component:', action.id);
             layoutManager.unregisterComponent(action.id);
           }
 
-          // Create new component state
-          const componentState = createComponentState(action);
-          newStates.set(action.id, componentState);
-          
-          // Register with layout manager
-          layoutManager.registerComponent(componentState);
-
-          // Set up auto-removal if duration specified
-          if (action.duration && action.duration > 0) {
-            const timer = setTimeout(() => {
-              handleUIAction({ type: 'remove_component', component: action.component, id: action.id });
-            }, action.duration * 1000);
+          try {
+            // Create new component state
+            const componentState = createComponentState(action);
+            newStates.set(action.id, componentState);
             
-            cleanupTimers.current.set(action.id, timer);
+            // Register with layout manager
+            layoutManager.registerComponent(componentState);
+            console.log('[DynamicUIManager] Successfully created component:', action.id);
+
+            // Set up auto-removal if duration specified
+            if (action.duration && action.duration > 0) {
+              const timer = setTimeout(() => {
+                handleUIAction({ type: 'remove_component', component: action.component, id: action.id });
+              }, action.duration * 1000);
+              
+              cleanupTimers.current.set(action.id, timer);
+              console.log('[DynamicUIManager] Auto-removal scheduled for component:', action.id, 'in', action.duration, 'seconds');
+            }
+          } catch (error) {
+            console.error('[DynamicUIManager] Failed to create component:', error);
+            return prev;
           }
 
           return newStates;

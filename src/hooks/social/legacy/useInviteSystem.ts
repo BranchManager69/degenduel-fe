@@ -76,7 +76,7 @@ export const InviteSystemProvider = ({
         console.warn("[Invite] Invalid code format, skipping details fetch:", code);
         return null;
       }
-      
+
       const response = await fetch(
         `/api/referrals/details?code=${encodeURIComponent(code)}`,
       );
@@ -142,9 +142,8 @@ export const InviteSystemProvider = ({
     ["ref"].forEach((param) => {
       params.delete(param);
     });
-    const newUrl = `${location.pathname}${
-      params.toString() ? `?${params.toString()}` : ""
-    }`;
+    const newUrl = `${location.pathname}${params.toString() ? `?${params.toString()}` : ""
+      }`;
     navigate(newUrl, { replace: true });
 
     // Notify affiliate system (if it exists) about the invite code
@@ -154,33 +153,76 @@ export const InviteSystemProvider = ({
   }, [location.search, navigate]);
 
   const trackSignup = async () => {
-    if (inviteCode) {
-      try {
-        // Track basic signup
-        const response = await ddApi.fetch("/api/referrals/signup", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            inviteCode
-          }),
+    if (!inviteCode) {
+      console.warn("[Invite] No invite code to track");
+      return;
+    }
+
+    try {
+      console.log("[Invite] Tracking signup for invite code:", inviteCode);
+
+      // Track signup with new API format
+      const response = await ddApi.fetch("/api/referrals/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          inviteCode
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Success (200) - log referrer info if available
+        console.log("[Invite] Successfully tracked signup", {
+          referrer: data.referrer,
+          message: data.message
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to track signup");
+        if (data.referrer) {
+          console.log("[Invite] Referred by:", {
+            wallet: data.referrer.wallet_address,
+            username: data.referrer.username
+          });
         }
-        
-        console.log("[Invite] Successfully tracked signup");
-        
+
         // Notify affiliate system if it exists
         if (window.trackInviteConversion && typeof window.trackInviteConversion === 'function') {
           window.trackInviteConversion(inviteCode);
         }
-      } catch (error) {
-        console.error("[Invite] Failed to track signup:", error);
-        throw error;
+
+        return data;
+      } else {
+        // Handle error responses based on status code and error message
+        if (response.status === 400) {
+          if (data.error === "Missing invite code") {
+            console.error("[Invite] Missing invite code error");
+            throw new Error("Invite code is required");
+          } else if (data.error === "This invite code is no longer valid") {
+            console.error("[Invite] Banned referrer - invite code no longer valid");
+            throw new Error("This invite code is no longer valid");
+          } else {
+            console.error("[Invite] Bad request error:", data.error);
+            throw new Error(data.error || "Invalid request");
+          }
+        } else if (response.status === 404 && data.error === "Invalid invite code") {
+          console.error("[Invite] Invalid invite code error");
+          throw new Error("Invalid invite code - please check and try again");
+        } else {
+          console.error("[Invite] Unexpected error:", {
+            status: response.status,
+            error: data.error,
+            success: data.success
+          });
+          throw new Error(data.error || "Failed to track signup");
+        }
       }
+    } catch (error) {
+      console.error("[Invite] Failed to track signup:", error);
+      // Re-throw the error so calling code can handle it appropriately
+      throw error;
     }
   };
 

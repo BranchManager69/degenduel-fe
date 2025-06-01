@@ -1,10 +1,9 @@
 // src/pages/public/contests/ContestResultsPage.tsx
 
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ContestChat } from "../../../components/contest-chat/ContestChat";
-import { VisualTester } from "../../../components/contest-lobby/VisualTester";
 import { CelebrationOverlay } from "../../../components/contest-results/CelebrationOverlay";
 import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
@@ -13,7 +12,7 @@ import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 import { formatCurrency } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
-import { LeaderboardEntry as ApiLeaderboardEntry, ContestViewData, TokenHoldingPerformance } from "../../../types";
+import { ContestViewData, TokenHoldingPerformance } from "../../../types";
 
 // Contest Results page - enhanced with next-level UI and interactive features
 export const ContestResults: React.FC = () => {
@@ -29,7 +28,6 @@ export const ContestResults: React.FC = () => {
   const [showCelebration, setShowCelebration] = useState(true);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  // Removed unused state: const [highlightedToken, setHighlightedToken] = useState<string | null>(null);
   const [animationComplete, setAnimationComplete] = useState(false);
   
   const headerRef = useRef<HTMLDivElement>(null);
@@ -67,16 +65,20 @@ export const ContestResults: React.FC = () => {
     }
   }, [wsUpdatedData]);
 
-  // Optional: Handle wsError
+  // Handle WebSocket errors
   useEffect(() => {
     if (wsError) {
       console.warn("[ContestResults] WebSocket update error:", wsError);
-      // Potentially addToast here
     }
   }, [wsError]);
 
-  // UI state is now derived from contestViewData
-  // Removed unused state: const [userRank, setUserRank] = useState(2);
+  // Handle keyboard navigation for tabs
+  const handleTabKeyDown = (event: React.KeyboardEvent, tab: 'results' | 'details' | 'chat') => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleTabChange(tab);
+    }
+  };
   
   // Handle celebration dismissal
   const handleCelebrationClose = () => {
@@ -110,69 +112,6 @@ export const ContestResults: React.FC = () => {
     }
   }, [animationComplete]);
   
-  /*
-  // Random but consistent avatar generation for demo
-  const getAvatarUrl = (username: string) => {
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
-  };
-  */
-
-  /*
-  // Generate random performance data (in production, this would come from API)
-  const generatePerformanceData = () => {
-    const now = new Date();
-    const data = [];
-    const contestDuration = 24; // 24 hours contest
-    
-    // Seed with a value that grows over time with some randomness
-    let currentValue = 1000; // Starting value - $1000
-    
-    for (let i = 0; i < contestDuration; i++) {
-      const timestamp = new Date(now.getTime() - (contestDuration - 1 - i) * 3600000).toISOString();
-      
-      // Create more interesting data pattern - start flat, then either up or down trend
-      let change = 0;
-      if (i < 4) {
-        // First few hours relatively flat
-        change = Math.random() * 20 - 10;
-      } else if (i < 12) {
-        // Middle hours trending up
-        change = Math.random() * 30 + 10;
-      } else if (i < 18) {
-        // Later hours more volatile
-        change = Math.random() * 60 - 20;
-      } else {
-        // End hours strong uptrend
-        change = Math.random() * 40 + 20;
-      }
-      
-      currentValue += change;
-      currentValue = Math.max(currentValue, 800); // Don't go too low
-      
-      data.push({ timestamp, value: currentValue });
-    }
-    
-    return data;
-  };
-  */
-  
-  // Contest data
-  const contest = {
-    id: contestIdFromParams,
-    title: "Daily SOL Tournament",
-    initialPortfolioValue: 1000,
-    finalPortfolioValue: 1500, // Fixed to 1500 for a win for demo
-  };
-  
-  // Removed unused data definitions
-  // Leaderboard entries are now directly used from contestViewData?.leaderboard in leaderboardEntriesForDisplay
-  
-  // Removed unused performance data calculation
-  // const performanceData = generatePerformanceData();
-  
-  // Removed unused token results with images
-  // These are now derived directly from contestViewData
-  
   // Handle new messages
   const handleNewMessage = () => {
     if (activeTab !== 'chat') {
@@ -193,45 +132,68 @@ export const ContestResults: React.FC = () => {
 
   // --- Derived data based on contestViewData ---
   const contestDetails = contestViewData?.contest;
-  // Add enhanced leaderboard entries with required properties for our display
-  const leaderboardEntriesForDisplay: (ApiLeaderboardEntry & {
-    finalValue: number;  // Calculate from portfolioValue string
-    totalReturn: number; // Calculate from performancePercentage string 
-    prize: number;       // Calculate from prizeAwarded string
-  })[] = (contestViewData?.leaderboard || []).map(entry => ({
-    ...entry,
-    finalValue: parseFloat(entry.portfolioValue),
-    totalReturn: parseFloat(entry.performancePercentage),
-    prize: entry.prizeAwarded ? parseFloat(entry.prizeAwarded) : 0
-  }));
-  
   const currentUserPerformance = contestViewData?.currentUserPerformance;
-  const currentUserLeaderboardEntry = leaderboardEntriesForDisplay.find(entry => entry.isCurrentUser);
+
+  // --- Memoized data for performance ---
+  const leaderboardEntriesForDisplay = useMemo(() => {
+    return (contestViewData?.leaderboard || []).map(entry => ({
+      ...entry,
+      finalValue: parseFloat(entry.portfolioValue),
+      totalReturn: parseFloat(entry.performancePercentage),
+      prize: entry.prizeAwarded ? parseFloat(entry.prizeAwarded) : 0
+    }));
+  }, [contestViewData?.leaderboard]);
+
+  const currentUserLeaderboardEntry = useMemo(() => {
+    return leaderboardEntriesForDisplay.find(entry => entry.isCurrentUser);
+  }, [leaderboardEntriesForDisplay]);
+
   const userRankForDisplay = currentUserPerformance?.rank;
+
+  const performanceChartData = useMemo(() => {
+    return currentUserPerformance?.historicalPerformance.map(dp => ({
+      timestamp: dp.timestamp,
+      value: parseFloat(dp.value),
+    })) || [];
+  }, [currentUserPerformance?.historicalPerformance]);
+
+  const tokenResultsForDisplay = useMemo(() => {
+    return currentUserPerformance?.tokens.map((apiToken: TokenHoldingPerformance) => {
+      const quantity = parseFloat(apiToken.quantity);
+      const currentValue = parseFloat(apiToken.currentValueContribution);
+      
+      return {
+        symbol: apiToken.symbol,
+        name: apiToken.name,
+        imageUrl: apiToken.imageUrl,
+        finalValue: currentValue, 
+        change: parseFloat(apiToken.performancePercentage),
+        contribution: parseFloat(apiToken.profitLossValueContribution),
+        quantityForDetail: quantity,
+        initialValueForDetail: parseFloat(apiToken.initialValueContribution),
+        priceForDetail: quantity > 0 ? currentValue / quantity : 0,
+      };
+    }) || [];
+  }, [currentUserPerformance?.tokens]);
+
+  // Safe access to leaderboard data with fallbacks
+  const safeLeaderboardAccess = useMemo(() => {
+    const hasEntries = leaderboardEntriesForDisplay.length > 0;
+    const currentUserEntry = currentUserLeaderboardEntry;
+    const firstEntry = hasEntries ? leaderboardEntriesForDisplay[0] : null;
+    
+    return {
+      hasEntries,
+      currentUserEntry,
+      firstEntry,
+      fallbackValue: currentUserPerformance ? parseFloat(currentUserPerformance.portfolioValue) : 1000,
+    };
+  }, [leaderboardEntriesForDisplay, currentUserLeaderboardEntry, currentUserPerformance]);
 
   // --- Loading and Error States --- 
   if (isLoading) { return <div className="p-8 text-center">Loading contest results...</div>; }
   if (error) { return <div className="p-8 text-center text-red-500">Error: {error}</div>; }
   if (!contestViewData || !contestDetails) { return <div className="p-8 text-center">No contest data available.</div>; }
-
-  // --- Prepare data for chart display ---
-  const performanceChartData = currentUserPerformance?.historicalPerformance.map(dp => ({
-    timestamp: dp.timestamp,
-    value: parseFloat(dp.value),
-  })) || [];
-
-  // --- Token Results for Display (for details tab) ---
-  const tokenResultsForDisplay = currentUserPerformance?.tokens.map((apiToken: TokenHoldingPerformance) => ({
-    symbol: apiToken.symbol,
-    name: apiToken.name,
-    imageUrl: apiToken.imageUrl,
-    finalValue: parseFloat(apiToken.currentValueContribution), 
-    change: parseFloat(apiToken.performancePercentage),
-    contribution: parseFloat(apiToken.profitLossValueContribution),
-    quantityForDetail: parseFloat(apiToken.quantity), // For details tab
-    initialValueForDetail: parseFloat(apiToken.initialValueContribution), // For details tab
-    priceForDetail: (parseFloat(apiToken.currentValueContribution) / (parseFloat(apiToken.quantity) || 1)) || 0, // For details tab
-  })) || [];
 
   // --- Render the Contest Results Page ---
   return (
@@ -471,6 +433,8 @@ export const ContestResults: React.FC = () => {
               
               {/* Mobile Menu Button */}
               <button
+                aria-expanded={mobileMenuOpen}
+                aria-label="Toggle mobile menu"
                 className="md:hidden bg-dark-300 hover:bg-dark-400 text-gray-300 px-2 py-1 rounded-md self-start mt-2"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
@@ -483,9 +447,14 @@ export const ContestResults: React.FC = () => {
           </div>
           
           {/* Tab Navigation */}
-          <div className="hidden md:flex mb-6 border-b border-gray-700/50">
+          <div className="hidden md:flex mb-6 border-b border-gray-700/50" role="tablist">
             <button
+              role="tab"
+              aria-selected={activeTab === 'results'}
+              aria-label="Results and Performance tab"
+              tabIndex={activeTab === 'results' ? 0 : -1}
               onClick={() => handleTabChange('results')}
+              onKeyDown={(e) => handleTabKeyDown(e, 'results')}
               className={`px-4 py-2 font-medium text-sm border-b-2 -mb-px ${
                 activeTab === 'results'
                   ? 'text-brand-400 border-brand-500'
@@ -495,7 +464,12 @@ export const ContestResults: React.FC = () => {
               Results & Performance
             </button>
             <button
+              role="tab"
+              aria-selected={activeTab === 'details'}
+              aria-label="Portfolio Details tab"
+              tabIndex={activeTab === 'details' ? 0 : -1}
               onClick={() => handleTabChange('details')}
+              onKeyDown={(e) => handleTabKeyDown(e, 'details')}
               className={`px-4 py-2 font-medium text-sm border-b-2 -mb-px ${
                 activeTab === 'details'
                   ? 'text-brand-400 border-brand-500'
@@ -505,10 +479,15 @@ export const ContestResults: React.FC = () => {
               Portfolio Details
             </button>
             <button
+              role="tab"
+              aria-selected={activeTab === 'chat'}
+              aria-label="Contest Chat tab"
+              tabIndex={activeTab === 'chat' ? 0 : -1}
               onClick={() => {
                 handleTabChange('chat');
                 setUnreadMessages(0);
               }}
+              onKeyDown={(e) => handleTabKeyDown(e, 'chat')}
               className={`px-4 py-2 font-medium text-sm border-b-2 -mb-px flex items-center ${
                 activeTab === 'chat'
                   ? 'text-brand-400 border-brand-500'
@@ -586,6 +565,8 @@ export const ContestResults: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
+              role="tabpanel"
+              aria-labelledby={`${activeTab}-tab`}
             >
 
               {/* Details Tab */}
@@ -831,7 +812,9 @@ export const ContestResults: React.FC = () => {
                             <circle cx="50" cy="50" r="30" fill="#13151A" />
                             
                             <text x="50" y="45" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">Total Value</text>
-                            <text x="50" y="55" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">${leaderboardEntriesForDisplay[1].finalValue}</text>
+                            <text x="50" y="55" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">
+                              ${safeLeaderboardAccess.currentUserEntry?.finalValue || safeLeaderboardAccess.fallbackValue}
+                            </text>
                           </svg>
                           
                           {/* Legend */}
@@ -917,20 +900,37 @@ export const ContestResults: React.FC = () => {
                         <div className="space-y-4">
                           <div className="flex justify-between border-b border-gray-700 pb-2">
                             <span className="text-gray-400">Starting Value</span>
-                            <span className="text-white font-mono">${contest.initialPortfolioValue.toLocaleString()}</span>
+                            <span className="text-white font-mono">
+                              {currentUserPerformance 
+                                ? formatCurrency(parseFloat(currentUserPerformance.initialPortfolioValue))
+                                : "$1,000"
+                              }
+                            </span>
                           </div>
                           
                           {/* Final Value */}
                           <div className="flex justify-between border-b border-gray-700 pb-2">
                             <span className="text-gray-400">Final Value</span>
-                            <span className="text-white font-mono">${leaderboardEntriesForDisplay[1].finalValue.toLocaleString()}</span>
+                            <span className="text-white font-mono">
+                              {safeLeaderboardAccess.currentUserEntry 
+                                ? `$${safeLeaderboardAccess.currentUserEntry.finalValue.toLocaleString()}`
+                                : `$${safeLeaderboardAccess.fallbackValue.toLocaleString()}`
+                              }
+                            </span>
                           </div>
 
                           {/* Total Return */}
                           <div className="flex justify-between border-b border-gray-700 pb-2">
                             <span className="text-gray-400">Total Return</span>
-                            <span className={`font-mono ${leaderboardEntriesForDisplay[1].totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {leaderboardEntriesForDisplay[1].totalReturn >= 0 ? '+' : ''}{leaderboardEntriesForDisplay[1].totalReturn.toFixed(2)}%
+                            <span className={`font-mono ${
+                              safeLeaderboardAccess.currentUserEntry 
+                                ? (safeLeaderboardAccess.currentUserEntry.totalReturn >= 0 ? 'text-green-400' : 'text-red-400')
+                                : 'text-gray-400'
+                            }`}>
+                              {safeLeaderboardAccess.currentUserEntry 
+                                ? `${safeLeaderboardAccess.currentUserEntry.totalReturn >= 0 ? '+' : ''}${safeLeaderboardAccess.currentUserEntry.totalReturn.toFixed(2)}%`
+                                : 'N/A'
+                              }
                             </span>
                           </div>
 
@@ -943,7 +943,9 @@ export const ContestResults: React.FC = () => {
                           {/* Prize */}
                           <div className="flex justify-between border-b border-gray-700 pb-2">
                             <span className="text-gray-400">Prize</span>
-                            <span className="text-white font-mono">${leaderboardEntriesForDisplay[1].prize}</span>
+                            <span className="text-white font-mono">
+                              {formatCurrency(safeLeaderboardAccess.currentUserEntry?.prize || 0)}
+                            </span>
                           </div>
 
                           {/* Duration */}
@@ -1100,14 +1102,26 @@ export const ContestResults: React.FC = () => {
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <span className="text-gray-400">Your Return</span>
-                              <span className={`font-medium ${leaderboardEntriesForDisplay[1].totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {leaderboardEntriesForDisplay[1].totalReturn >= 0 ? '+' : ''}{leaderboardEntriesForDisplay[1].totalReturn.toFixed(2)}%
+                              <span className={`font-medium ${
+                                safeLeaderboardAccess.currentUserEntry 
+                                  ? (safeLeaderboardAccess.currentUserEntry.totalReturn >= 0 ? 'text-green-400' : 'text-red-400')
+                                  : 'text-gray-400'
+                              }`}>
+                                {safeLeaderboardAccess.currentUserEntry 
+                                  ? `${safeLeaderboardAccess.currentUserEntry.totalReturn >= 0 ? '+' : ''}${safeLeaderboardAccess.currentUserEntry.totalReturn.toFixed(2)}%`
+                                  : 'N/A'
+                                }
                               </span>
                             </div>
                             
                             <div className="flex items-center justify-between">
                               <span className="text-gray-400">Best Performer</span>
-                              <span className="text-green-400">+{leaderboardEntriesForDisplay[0].totalReturn.toFixed(2)}%</span>
+                              <span className="text-green-400">
+                                {safeLeaderboardAccess.firstEntry
+                                  ? `+${safeLeaderboardAccess.firstEntry.totalReturn.toFixed(2)}%`
+                                  : 'N/A'
+                                }
+                              </span>
                             </div>
                             
                             <div className="flex items-center justify-between">
@@ -1117,7 +1131,9 @@ export const ContestResults: React.FC = () => {
                             
                             <div className="flex items-center justify-between">
                               <span className="text-gray-400">Your Prize</span>
-                              <span className="text-white font-mono">${leaderboardEntriesForDisplay[1].prize}</span>
+                              <span className="text-white font-mono">
+                                {formatCurrency(safeLeaderboardAccess.currentUserEntry?.prize || 0)}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -1138,6 +1154,7 @@ export const ContestResults: React.FC = () => {
       <AnimatePresence>
         {activeTab !== 'chat' && (
           <motion.button
+            aria-label="Open chat"
             className="md:hidden fixed bottom-16 right-6 bg-brand-500 text-white rounded-full p-3 shadow-lg z-20 flex items-center justify-center"
             onClick={() => {
               setActiveTab('chat');
@@ -1161,8 +1178,6 @@ export const ContestResults: React.FC = () => {
         )}
       </AnimatePresence>
       
-      {/* Visual Test Panel */}
-      <VisualTester />
     </div>
   );
 };

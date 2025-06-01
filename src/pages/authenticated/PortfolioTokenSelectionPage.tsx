@@ -3,27 +3,26 @@
 import { Buffer } from "buffer";
 
 import {
-  Connection,
-  PublicKey,
-  SystemProgram,
-  Transaction,
+    Connection,
+    PublicKey,
+    SystemProgram,
+    Transaction,
 } from "@solana/web3.js";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
-import { PortfolioSummary } from "../../components/portfolio-selection/PortfolioSummary";
 import PortfolioPreviewModal from "../../components/portfolio-selection/PortfolioPreviewModal";
+import { PortfolioSummary } from "../../components/portfolio-selection/PortfolioSummary";
 import { TokenFilters } from "../../components/portfolio-selection/TokenFilters";
 import { TokenGrid } from "../../components/portfolio-selection/TokenGrid";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Skeleton } from "../../components/ui/Skeleton";
-import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
 import { useDebounce } from "../../hooks/utilities/useDebounce";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
-import { Contest } from "../../types/index";
+import { Contest, Token } from "../../types/index";
 
 // Declare Buffer on window type
 declare global {
@@ -108,16 +107,158 @@ export const TokenSelection: React.FC = () => {
   const { id: contestId } = useParams();
   const navigate = useNavigate();
   
-  // NEW: Use standardized WebSocket token data instead of REST API
-  console.log("🔌 PortfolioTokenSelectionPage: Initializing useStandardizedTokenData hook");
-  const {
-    tokens,
-    isLoading: tokenListLoading,
-    error: tokensError,
-    isConnected: isTokenDataConnected,
-    refresh: refreshTokens
-  } = useStandardizedTokenData("all", "marketCap", { status: "active" });
+  // Use the SAME working WebSocket approach as TokensPage (bypass broken standardized hook)
+  console.log("🔌 PortfolioTokenSelectionPage: Using direct WebSocket like TokensPage");
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [tokenListLoading, setTokenListLoading] = useState(true);
+  const [tokensError, setTokensError] = useState<string | null>(null);
+  const [isTokenDataConnected, setIsTokenDataConnected] = useState(false);
+  const socketRef = useRef<WebSocket | null>(null);
   
+  // Helper function to transform WebSocket token data (same as TokensPage)
+  const transformTokenData = useCallback((tokenData: any): Token => {
+    return {
+      contractAddress: tokenData.address || "",
+      status: "active",
+      name: tokenData.name || "",
+      symbol: tokenData.symbol || "",
+      price: tokenData.price?.toString() || "0",
+      marketCap: tokenData.market_cap?.toString() || "0",
+      volume24h: tokenData.volume_24h?.toString() || "0",
+      change24h: tokenData.change_24h?.toString() || "0",
+      liquidity: {
+        usd: tokenData.liquidity?.toString() || "0",
+        base: "0",
+        quote: "0"
+      },
+      images: {
+        imageUrl: tokenData.image_url || "",
+        headerImage: tokenData.header_image_url || "",
+        openGraphImage: tokenData.open_graph_image_url || ""
+      },
+      socials: tokenData.socials || {
+        twitter: { url: "", count: null },
+        telegram: { url: "", count: null },
+        discord: { url: "", count: null }
+      },
+      websites: tokenData.websites || [],
+      description: tokenData.description || "",
+      tags: tokenData.tags || [],
+      totalSupply: tokenData.total_supply?.toString() || "0",
+      priorityScore: tokenData.priority_score || 0,
+      firstSeenAt: tokenData.first_seen_on_jupiter_at || null,
+      pairCreatedAt: tokenData.pairCreatedAt || null,
+      fdv: tokenData.fdv?.toString() || "0",
+      priceChanges: tokenData.priceChanges || {
+        "5m": "0",
+        "1h": "0", 
+        "6h": "0",
+        "24h": tokenData.change_24h?.toString() || "0"
+      },
+      volumes: tokenData.volumes || {
+        "5m": "0",
+        "1h": "0",
+        "6h": "0", 
+        "24h": tokenData.volume_24h?.toString() || "0"
+      },
+      transactions: tokenData.transactions || {
+        "5m": { buys: 0, sells: 0 },
+        "1h": { buys: 0, sells: 0 },
+        "6h": { buys: 0, sells: 0 },
+        "24h": { buys: 0, sells: 0 }
+      }
+    };
+  }, []);
+  
+  // Connect to WebSocket for real-time token data (same as TokensPage)
+  const connectWebSocket = useCallback(() => {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.close();
+    }
+    
+    setIsTokenDataConnected(false);
+    const socket = new WebSocket('wss://degenduel.me/api/v69/ws');
+    socketRef.current = socket;
+    
+    socket.onopen = () => {
+      setIsTokenDataConnected(true);
+      
+      // Subscribe to market data
+      socket.send(JSON.stringify({
+        type: 'SUBSCRIBE',
+        topics: ['market-data']
+      }));
+      
+      // Request all tokens
+      socket.send(JSON.stringify({
+        type: 'REQUEST',
+        topic: 'market-data',
+        action: 'getTokens',
+        data: { limit: 1000 }
+      }));
+    };
+    
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.topic === 'market-data' && data.action === 'getTokens' && Array.isArray(data.data)) {
+          console.log(`Processing ${data.data.length} tokens from WebSocket`);
+          
+          const newTokenMap: Record<string, Token> = {};
+          const tokensList: Token[] = [];
+          
+          data.data.forEach((tokenData: any) => {
+            const token = transformTokenData(tokenData);
+            if (token.contractAddress) {
+              newTokenMap[token.contractAddress] = token;
+              tokensList.push(token);
+            }
+          });
+          
+          // setTokenMap(newTokenMap); // tokenMap not used
+          setTokens(tokensList);
+          setTokenListLoading(false);
+          setTokensError(null);
+        }
+      } catch (err) {
+        console.error("Failed to process WebSocket message:", err);
+        setTokensError("Failed to process token data");
+      }
+    };
+    
+    socket.onerror = () => {
+      setTokensError("WebSocket connection error");
+      setIsTokenDataConnected(false);
+    };
+    
+    socket.onclose = () => {
+      setIsTokenDataConnected(false);
+    };
+  }, [transformTokenData]);
+  
+  // Initialize WebSocket connection
+  useEffect(() => {
+    connectWebSocket();
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+    };
+  }, [connectWebSocket]);
+  
+  // Add refresh function to match the old interface
+  const refreshTokens = useCallback(() => {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({
+        type: 'REQUEST',
+        topic: 'market-data',
+        action: 'getTokens',
+        data: { limit: 1000 }
+      }));
+    }
+  }, []);
+
   console.log("📊 PortfolioTokenSelectionPage: Token data state:", {
     tokenCount: tokens.length,
     tokenListLoading,
@@ -357,158 +498,24 @@ export const TokenSelection: React.FC = () => {
       return;
     }
 
+    // Check if this is a free contest
+    const entryFee = Number(contest.entry_fee);
+    const isFreeContest = entryFee === 0;
+
+    console.log("Contest entry details:", {
+      contestId,
+      entryFee,
+      isFreeContest,
+      contestName: contest.name,
+    });
+
     // Capture signature in local variable to avoid React state race condition
     let confirmedSignature: string | undefined;
     
     try {
       setIsLoading(true);
 
-      // Get contest details to ensure we have the wallet address
-      const contestDetails = await ddApi.contests.getById(contestId);
-      if (!contestDetails.wallet_address) {
-        throw new Error("Contest wallet address not found");
-      }
-
-      // 1. Create and send Solana transaction
-      console.log("Initializing Solana transaction...");
-      const { solana } = window as any;
-      if (!solana?.isPhantom) {
-        console.error("Phantom wallet not found in window.solana");
-        throw new Error("Phantom wallet not found");
-      }
-
-      console.log("Creating Solana connection...");
-      const connection = new Connection(
-        '/api/solana-rpc', // UPDATED: Using server-side Solana proxy instead of direct RPC endpoint
-        "confirmed",
-      );
-
-      // Get minimum rent exemption
-      const minRentExemption =
-        await connection.getMinimumBalanceForRentExemption(0);
-      const lamports = Math.floor(parseFloat(contest.entry_fee) * 1e9);
-
-      console.log("Transaction details:", {
-        from: user.wallet_address,
-        to: contestDetails.wallet_address,
-        amount: contest.entry_fee,
-        lamports,
-        minRentExemption,
-        estimatedFee: "~0.00016 SOL",
-        totalRequired: Number(contest.entry_fee) + 0.00016,
-        timestamp: new Date().toISOString(),
-      });
-
-      // Get latest blockhash
-      console.log("Getting recent blockhash...");
-      setTransactionState({
-        status: "preparing",
-        message: "Preparing transaction...",
-      });
-
-      // Create transaction
-      const transaction = new Transaction();
-
-      // Check if destination account exists
-      const destAccount = await connection.getAccountInfo(
-        new PublicKey(contestDetails.wallet_address),
-      );
-      const finalLamports =
-        destAccount === null ? lamports + minRentExemption : lamports;
-
-      transaction.add(
-        SystemProgram.transfer({
-          fromPubkey: new PublicKey(user.wallet_address),
-          toPubkey: new PublicKey(contestDetails.wallet_address),
-          lamports: finalLamports,
-        }),
-      );
-
-      // Get the latest blockhash for transaction freshness
-      console.log("Getting latest blockhash...");
-      const latestBlockhash = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = latestBlockhash.blockhash;
-      transaction.feePayer = new PublicKey(user.wallet_address);
-
-      // COMPLIANT WITH PHANTOM'S RECOMMENDATIONS:
-      // Use Phantom's unified signAndSendTransaction method instead of separate sign + send calls
-      setTransactionState({
-        status: "signing",
-        message: "Please confirm the transaction in your wallet...",
-      });
-
-      console.log(
-        "Requesting transaction signature and submission from Phantom using recommended signAndSendTransaction method...",
-      );
-      
-      try {
-        // Use signAndSendTransaction in a single call with the transaction object as a property
-        // This is the correct approach according to Phantom's documentation
-        const { signature } = await solana.signAndSendTransaction({
-          transaction, // Must be passed as a property of an options object
-        });
-        console.log("Transaction sent, signature:", signature);
-        confirmedSignature = signature; // Store locally to avoid race condition
-
-        setTransactionState({
-          status: "sending",
-          message: "Transaction sent, waiting for confirmation...",
-          signature,
-        });
-
-        toast.success(
-          <div>
-            <div>Transaction sent!</div>
-            <div className="text-xs mt-1">
-              <a
-                href={`https://solscan.io/tx/${signature}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300"
-              >
-                View on Solscan
-              </a>
-            </div>
-          </div>,
-        );
-
-        console.log("Waiting for transaction confirmation...");
-        setTransactionState({
-          status: "confirming",
-          message: "Waiting for blockchain confirmation...",
-          signature,
-        });
-
-        // COMPLIANT WITH PHANTOM'S RECOMMENDATIONS:
-        // Use the modern confirmation pattern with signature, blockhash and lastValidBlockHeight
-        await connection.confirmTransaction({
-          signature,
-          blockhash: latestBlockhash.blockhash,
-          lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-        });
-
-        setTransactionState({
-          status: "submitting",
-          message: "Transaction confirmed! Submitting contest entry...",
-          signature,
-        });
-
-        console.log("Transaction confirmed!");
-      } catch (err) {
-        console.error("Transaction error:", err);
-        setTransactionState({
-          status: "error",
-          message: "Transaction failed",
-          error:
-            err instanceof Error
-              ? err.message
-              : "Unknown error during transaction",
-        });
-        throw err;
-      }
-
-      // 2. Submit contest entry and portfolio in one atomic operation
-      console.log("Submitting contest entry and portfolio...");
+      // Prepare portfolio data
       const portfolioData = {
         tokens: Array.from(selectedTokens.entries()).map(
           ([contractAddress, weight]) => ({
@@ -518,41 +525,213 @@ export const TokenSelection: React.FC = () => {
         ),
       };
 
-      // Ensure we have a valid signature before proceeding
-      if (!confirmedSignature) {
-        throw new Error("Transaction signature not available");
+      if (isFreeContest) {
+        // FREE CONTEST FLOW: No Solana transaction required
+        console.log("Entering free contest directly...");
+        setTransactionState({
+          status: "submitting",
+          message: "Submitting contest entry...",
+        });
+
+        await ddApi.contests.enterFreeContestWithPortfolio(
+          contestId,
+          portfolioData,
+        );
+
+        setTransactionState({
+          status: "success",
+          message: "Success! You have entered the free contest.",
+        });
+
+        toast.success("Successfully entered free contest!", { duration: 5000 });
+
+      } else {
+        // PAID CONTEST FLOW: Requires Solana transaction
+        console.log("Processing paid contest entry...");
+
+        // Get contest details to ensure we have the wallet address
+        const contestDetails = await ddApi.contests.getById(contestId);
+        if (!contestDetails.wallet_address) {
+          throw new Error("Contest wallet address not found");
+        }
+
+        // 1. Create and send Solana transaction
+        console.log("Initializing Solana transaction...");
+        const { solana } = window as any;
+        if (!solana?.isPhantom) {
+          console.error("Phantom wallet not found in window.solana");
+          throw new Error("Phantom wallet not found");
+        }
+
+        console.log("Creating Solana connection...");
+        const connection = new Connection(
+          '/api/solana-rpc', // UPDATED: Using server-side Solana proxy instead of direct RPC endpoint
+          "confirmed",
+        );
+
+        // Get minimum rent exemption
+        const minRentExemption =
+          await connection.getMinimumBalanceForRentExemption(0);
+        const lamports = Math.floor(parseFloat(contest.entry_fee) * 1e9);
+
+        console.log("Transaction details:", {
+          from: user.wallet_address,
+          to: contestDetails.wallet_address,
+          amount: contest.entry_fee,
+          lamports,
+          minRentExemption,
+          estimatedFee: "~0.00016 SOL",
+          totalRequired: Number(contest.entry_fee) + 0.00016,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Get latest blockhash
+        console.log("Getting recent blockhash...");
+        setTransactionState({
+          status: "preparing",
+          message: "Preparing transaction...",
+        });
+
+        // Create transaction
+        const transaction = new Transaction();
+
+        // Check if destination account exists
+        const destAccount = await connection.getAccountInfo(
+          new PublicKey(contestDetails.wallet_address),
+        );
+        const finalLamports =
+          destAccount === null ? lamports + minRentExemption : lamports;
+
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: new PublicKey(user.wallet_address),
+            toPubkey: new PublicKey(contestDetails.wallet_address),
+            lamports: finalLamports,
+          }),
+        );
+
+        // Get the latest blockhash for transaction freshness
+        console.log("Getting latest blockhash...");
+        const latestBlockhash = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = latestBlockhash.blockhash;
+        transaction.feePayer = new PublicKey(user.wallet_address);
+
+        // COMPLIANT WITH PHANTOM'S RECOMMENDATIONS:
+        // Use Phantom's unified signAndSendTransaction method instead of separate sign + send calls
+        setTransactionState({
+          status: "signing",
+          message: "Please confirm the transaction in your wallet...",
+        });
+
+        console.log(
+          "Requesting transaction signature and submission from Phantom using recommended signAndSendTransaction method...",
+        );
+        
+        try {
+          // Use signAndSendTransaction in a single call with the transaction object as a property
+          // This is the correct approach according to Phantom's documentation
+          const { signature } = await solana.signAndSendTransaction({
+            transaction, // Must be passed as a property of an options object
+          });
+          console.log("Transaction sent, signature:", signature);
+          confirmedSignature = signature; // Store locally to avoid race condition
+
+          setTransactionState({
+            status: "sending",
+            message: "Transaction sent, waiting for confirmation...",
+            signature,
+          });
+
+          toast.success(
+            <div>
+              <div>Transaction sent!</div>
+              <div className="text-xs mt-1">
+                <a
+                  href={`https://solscan.io/tx/${signature}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300"
+                >
+                  View on Solscan
+                </a>
+              </div>
+            </div>,
+          );
+
+          console.log("Waiting for transaction confirmation...");
+          setTransactionState({
+            status: "confirming",
+            message: "Waiting for blockchain confirmation...",
+            signature,
+          });
+
+          // COMPLIANT WITH PHANTOM'S RECOMMENDATIONS:
+          // Use the modern confirmation pattern with signature, blockhash and lastValidBlockHeight
+          await connection.confirmTransaction({
+            signature,
+            blockhash: latestBlockhash.blockhash,
+            lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+          });
+
+          setTransactionState({
+            status: "submitting",
+            message: "Transaction confirmed! Submitting contest entry...",
+            signature,
+          });
+
+          console.log("Transaction confirmed!");
+        } catch (err) {
+          console.error("Transaction error:", err);
+          setTransactionState({
+            status: "error",
+            message: "Transaction failed",
+            error:
+              err instanceof Error
+                ? err.message
+                : "Unknown error during transaction",
+          });
+          throw err;
+        }
+
+        // 2. Submit contest entry and portfolio in one atomic operation
+        console.log("Submitting contest entry and portfolio...");
+
+        // Ensure we have a valid signature before proceeding
+        if (!confirmedSignature) {
+          throw new Error("Transaction signature not available");
+        }
+
+        await ddApi.contests.enterContestWithPortfolio(
+          contestId,
+          portfolioData,
+          confirmedSignature, // Use local variable instead of potentially stale state
+        );
+
+        setTransactionState({
+          status: "success",
+          message: "Success! You have entered the contest.",
+          signature: confirmedSignature,
+        });
+
+        toast.success(
+          <div>
+            <div>Successfully entered contest!</div>
+            <div className="text-xs mt-1">
+              <a
+                href={`https://solscan.io/tx/${confirmedSignature}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-400 hover:text-brand-300"
+              >
+                View transaction on Solscan
+              </a>
+            </div>
+          </div>,
+          { duration: 5000 },
+        );
       }
 
-      await ddApi.contests.enterContestWithPortfolio(
-        contestId,
-        confirmedSignature, // Use local variable instead of potentially stale state
-        portfolioData,
-      );
-
-      // Set success state
-      setTransactionState({
-        status: "success",
-        message: "Success! You have entered the contest.",
-        signature: confirmedSignature,
-      });
-
-      toast.success(
-        <div>
-          <div>Successfully entered contest!</div>
-          <div className="text-xs mt-1">
-            <a
-              href={`https://solscan.io/tx/${confirmedSignature}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand-400 hover:text-brand-300"
-            >
-              View transaction on Solscan
-            </a>
-          </div>
-        </div>,
-        { duration: 5000 },
-      );
-
+      // Navigate to contest page after successful entry (both free and paid)
       navigate(`/contests/${contestId}`);
     } catch (error: any) {
       const errorMsg = error.message || "Failed to enter contest";
@@ -912,6 +1091,22 @@ export const TokenSelection: React.FC = () => {
                                   </a>
                                 )}
                               </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Contest Type Indicator */}
+                        {contest && (
+                          <div className="mb-4 p-2 rounded-lg bg-dark-300/30 border border-gray-600/30">
+                            <div className="flex items-center gap-2 text-xs font-mono">
+                              <div className={`w-2 h-2 rounded-full ${Number(contest.entry_fee) === 0 ? 'bg-emerald-400' : 'bg-brand-400'}`} />
+                              <span className="text-gray-300">
+                                {Number(contest.entry_fee) === 0 ? 'FREE CONTEST' : 'PAID CONTEST'}
+                              </span>
+                              <span className="text-gray-500">•</span>
+                              <span className="text-gray-400">
+                                {Number(contest.entry_fee) === 0 ? 'No payment required' : `${contest.entry_fee} SOL entry fee`}
+                              </span>
                             </div>
                           </div>
                         )}

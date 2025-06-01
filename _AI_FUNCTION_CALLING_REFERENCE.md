@@ -34,8 +34,8 @@ The DegenDuel AI terminal (DIDI) uses OpenAI's function calling system to provid
 
 ### Technical Details
 - **Backend Handler**: `services/ai-service/utils/terminal-function-handler.js`
-- **Function Count**: 14 total functions
-- **Public Functions**: 9 (no authentication required)
+- **Function Count**: 15 total functions
+- **Public Functions**: 10 (no authentication required)
 - **Admin Functions**: 5 (requires admin/superadmin role)
 - **Database**: PostgreSQL with Prisma ORM
 - **Response Format**: Structured JSON with formatted numbers and dates
@@ -48,7 +48,7 @@ The DegenDuel AI terminal (DIDI) uses OpenAI's function calling system to provid
 |----------|-----------|--------------|-------------|
 | **Token Data** | 4 functions | Public | Real-time and historical token information |
 | **Contest** | 1 function | Public | Contest status and participation data |
-| **User Profile** | 3 functions | Public | User information and statistics |
+| **User Profile** | 4 functions | Public | User information and statistics |
 | **Platform Activity** | 1 function | Public | Platform-wide activity feeds |
 | **Administrative** | 5 functions | Admin Only | System status and management data |
 
@@ -493,11 +493,88 @@ if (isAdministratorFunction && !isAdministrator) {
 }
 ```
 
+### 9. `getUserPortfolio`
+
+**Description**: Retrieves a user's portfolio information for a specific contest.
+
+**Parameters**:
+```json
+{
+  "usernameOrWallet": {
+    "type": "string",
+    "required": true,
+    "description": "Username or wallet address of the user"
+  },
+  "contestIdOrCode": {
+    "type": "string",
+    "required": false,
+    "description": "Contest ID (number) or contest code to get portfolio for. If not provided, gets the most recent active contest"
+  }
+}
+```
+
+**Response Structure**:
+```json
+{
+  "user": {
+    "username": "DegenTrader",
+    "nickname": "The Degen King",
+    "wallet_address": "wallet_address_here"
+  },
+  "contest": {
+    "id": 123,
+    "code": "WW-001",
+    "name": "Weekend Warrior Contest",
+    "status": "active",
+    "start_time": "2025-05-26T12:00:00.000Z",
+    "end_time": "2025-05-26T23:59:59.000Z"
+  },
+  "participation": {
+    "joined_at": "2025-05-26T10:00:00.000Z",
+    "status": "active",
+    "rank": 5
+  },
+  "portfolio": {
+    "initial_balance": "10000.00000000",
+    "current_value": "12500.75000000",
+    "profit_loss": "2500.75000000",
+    "profit_loss_percentage": "25.01%",
+    "total_weight": 100,
+    "holdings_count": 5,
+    "holdings": [
+      {
+        "token_id": 1,
+        "symbol": "DEGEN",
+        "name": "Degen Token",
+        "address": "So11111111111111111111111111111111111111112",
+        "image_url": "https://example.com/degen.png",
+        "weight": 30,
+        "quantity": "1000.00000000",
+        "current_price": "1.25000000",
+        "price_change_24h": "5.50000000",
+        "current_value": "1250.00000000",
+        "market_cap": "125.45M",
+        "volume_24h": "2.30M",
+        "price_updated_at": "2025-05-26T20:15:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+**Key Features**:
+- Lookup by username or wallet address
+- Optional contest specification (defaults to most recent active contest)
+- Comprehensive portfolio performance metrics
+- Real-time token pricing information
+- Profit/loss calculations with percentages
+- Detailed holdings breakdown with current market data
+
 ---
 
 ## Platform Activity Functions
 
-### 9. `getPlatformActivity`
+### 10. `getPlatformActivity`
 
 **Description**: Retrieves recent platform-wide activity across different categories.
 
@@ -530,7 +607,7 @@ if (isAdministratorFunction && !isAdministrator) {
 
 > **Note**: All administrative functions require `admin` or `superadmin` role.
 
-### 10. `getServiceStatus`
+### 11. `getServiceStatus`
 
 **Description**: Retrieves status information for platform services.
 
@@ -544,7 +621,7 @@ if (isAdministratorFunction && !isAdministrator) {
 }
 ```
 
-### 11. `getSystemSettings`
+### 12. `getSystemSettings`
 
 **Description**: Retrieves current platform system settings.
 
@@ -558,7 +635,7 @@ if (isAdministratorFunction && !isAdministrator) {
 }
 ```
 
-### 12. `getWebSocketStats`
+### 13. `getWebSocketStats`
 
 **Description**: Retrieves WebSocket connection statistics.
 
@@ -574,7 +651,7 @@ if (isAdministratorFunction && !isAdministrator) {
 }
 ```
 
-### 13. `getIPBanStatus`
+### 14. `getIPBanStatus`
 
 **Description**: Retrieves information about banned IP addresses.
 
@@ -593,7 +670,7 @@ if (isAdministratorFunction && !isAdministrator) {
 }
 ```
 
-### 14. `getDiscordWebhookEvents`
+### 15. `getDiscordWebhookEvents`
 
 **Description**: Retrieves recent Discord notification events.
 
@@ -695,6 +772,13 @@ Response: "DegenTrader is a Level 15 Expert Trader with 8 contest wins..."
 User: "Show me SOL price history for the last week"
 AI calls: getTokenPriceHistory({ tokenAddressOrSymbol: "SOL", timeframe: "7d" })
 Response: "Here's SOL's price movement over the last 7 days: [chart data]..."
+```
+
+### Portfolio Analysis
+```
+User: "Show me DegenTrader's portfolio for the Weekend Warrior contest"
+AI calls: getUserPortfolio({ usernameOrWallet: "DegenTrader", contestIdOrCode: "WW-001" })
+Response: "DegenTrader's portfolio in Weekend Warrior is up 25.01% with a current value of 12,500 DXD..."
 ```
 
 ---

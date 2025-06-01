@@ -64,6 +64,7 @@ export const useHotTokensData = (options: UseHotTokensDataOptions = {}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Use unified WebSocket for communication
   const subscriptionId = useMemo(() => `hot-tokens-${Math.random().toString(36).substring(2, 9)}`, []);
@@ -98,8 +99,8 @@ export const useHotTokensData = (options: UseHotTokensDataOptions = {}) => {
     filters: { ...DEFAULT_FILTERS, ...filters }
   }), [limit, algorithm, filters]);
 
-  // Manual refresh function
-  const refresh = useCallback(() => {
+  // Manual refresh function with retry logic
+  const refresh = useCallback(async (isRetry = false) => {
     if (!isConnected) {
       setError('WebSocket not connected');
       return;
@@ -107,7 +108,10 @@ export const useHotTokensData = (options: UseHotTokensDataOptions = {}) => {
 
     try {
       setIsLoading(true);
-      setError(null);
+      if (!isRetry) {
+        setError(null);
+        setRetryCount(0);
+      }
       
       // Request hot tokens using the unified WebSocket request method
       const success = request('market-data', 'getHotTokens', requestParams);
@@ -117,10 +121,22 @@ export const useHotTokensData = (options: UseHotTokensDataOptions = {}) => {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch hot tokens';
+      
+      // If this is the first attempt and it's a connectivity-related error, retry after 60 seconds
+      if (!isRetry && retryCount === 0 && errorMessage.includes('Failed to send')) {
+        setRetryCount(1);
+        setTimeout(() => {
+          refresh(true);
+        }, 60000); // 60 seconds
+        return; // Don't log error or set error state yet
+      }
+      
+      // Only log error if retry also failed or it's a different type of error
       setError(errorMessage);
       console.error('useHotTokensData: Error fetching hot tokens:', err);
+      setIsLoading(false);
     }
-  }, [isConnected, request, requestParams]);
+  }, [isConnected, request, requestParams, retryCount]);
 
   // Subscribe to real-time updates
   const subscribeToUpdates = useCallback(() => {

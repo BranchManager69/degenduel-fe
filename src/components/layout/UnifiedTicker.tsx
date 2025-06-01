@@ -44,10 +44,10 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Loader2, Settings, TrendingUp, WifiOff } from "lucide-react";
 // RefreshCw removed - uncomment when refresh button is restored
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, ReactElement } from "react";
+import React, { ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
 import { useHotTokensData } from "../../hooks/data/useHotTokensData";
+import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
 import { useLaunchEvent } from "../../hooks/websocket/topic-hooks/useLaunchEvent";
 import { useTokenProfiles } from "../../hooks/websocket/topic-hooks/useTokenProfiles";
 import { getContestImageUrl } from "../../lib/imageUtils";
@@ -581,7 +581,7 @@ export const UnifiedTicker: React.FC<Props> = ({
         <motion.div
           key="duel-countdown-announcement"
           className="inline-flex items-center px-3 py-1 mx-2 rounded-xl cursor-pointer whitespace-nowrap duel-announcement-blur"
-          onClick={() => window.open('https://discord.gg/dduel', '_blank', 'noopener,noreferrer')}
+          onClick={() => window.open('https://x.com/degenduelme', '_blank', 'noopener,noreferrer')}
           style={{
             background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(34, 197, 94, 0.06), rgba(59, 130, 246, 0.08))',
             backdropFilter: 'blur(12px) saturate(1.2)',
@@ -616,10 +616,10 @@ export const UnifiedTicker: React.FC<Props> = ({
             }}
           />
           <span className="text-sm font-bold bg-gradient-to-r from-purple-400 via-green-400 to-blue-400 bg-clip-text text-transparent">
-            $DUEL
+            $DUEL 
           </span>
           <span className="text-sm font-medium text-gray-300 ml-0.5">
-            mints today! Live Duels begin June 1. 🚀
+            Live Duels begin tonight! 🚀
           </span>
         </motion.div>
       );
@@ -1222,40 +1222,212 @@ export const UnifiedTicker: React.FC<Props> = ({
   const currentHeightClass = isCompact ? "h-10 sm:h-10" : "h-12 sm:h-12";
 
   if (maintenanceMode) {
+    // Optimized maintenance mode with CSS animations to prevent re-render cycles
     return (
-      <div className="bg-dark-200/60 backdrop-blur-sm border-y border-yellow-400/20 overflow-hidden whitespace-nowrap relative w-full h-full">
-        <div
-          ref={viewportRef}
-          className={`inline-flex items-center w-full h-full`}
-        >
-          <div
-            ref={scrollableContentRef}
-            className={`inline-flex items-center space-x-8 px-4 flex-shrink-0 h-full`}
-          >
-            <div className="inline-flex items-center space-x-4 text-sm">
-              <span className="text-yellow-400 font-mono">
-                ⚠ DUELS PAUSED
-              </span>
-              <span className="text-yellow-400/75 font-mono">
-                MAINTENANCE IN PROGRESS
-              </span>
-              <span className="text-yellow-400/50 font-mono">
-                PLEASE DEGEN ELSEWHERE
-              </span>
-              <span
-                className="font-mono text-yellow-400/75"
-                style={{
-                  backgroundImage:
-                    "repeating-linear-gradient(-45deg, #000 0, #000 10px, #fbbf24 10px, #fbbf24 20px)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                ▰▰▰▰▰▰▰▰
-              </span>
-            </div>
+      <div className="bg-dark-200/70 backdrop-blur-sm border-y border-yellow-400/30 overflow-hidden whitespace-nowrap relative w-full h-full">
+        {/* Enhanced background with CSS animations */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div 
+            className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 via-yellow-400/10 to-yellow-500/5 animate-maintenance-glow"
+            style={{ backgroundSize: "200% 100%" }}
+          />
+          
+          {/* Floating particles with CSS animations */}
+          <div className="absolute inset-0 opacity-30">
+            <div className="absolute w-1 h-1 bg-yellow-400/60 rounded-full animate-maintenance-float-1" style={{ left: '20%', top: '50%' }} />
+            <div className="absolute w-1 h-1 bg-yellow-400/60 rounded-full animate-maintenance-float-2" style={{ left: '35%', top: '50%' }} />
+            <div className="absolute w-1 h-1 bg-yellow-400/60 rounded-full animate-maintenance-float-3" style={{ left: '50%', top: '50%' }} />
+            <div className="absolute w-1 h-1 bg-yellow-400/60 rounded-full animate-maintenance-float-4" style={{ left: '65%', top: '50%' }} />
+            <div className="absolute w-1 h-1 bg-yellow-400/60 rounded-full animate-maintenance-float-5" style={{ left: '80%', top: '50%' }} />
           </div>
         </div>
+
+        <div
+          ref={viewportRef}
+          className="relative h-full w-full overflow-hidden"
+        >
+          {/* Optimized scrolling with CSS animation */}
+          <div
+            ref={scrollableContentRef}
+            className="inline-flex items-center h-full animate-maintenance-scroll"
+            style={{ width: 'max-content' }}
+          >
+            {/* Duplicate content for continuous scrolling */}
+            {[...Array(4)].map((_, index) => (
+              <div key={`maintenance-${index}`} className="inline-flex items-center space-x-6 px-4 flex-shrink-0 h-full">
+                {/* Warning Icon with CSS pulse */}
+                <div className="flex items-center space-x-2 animate-maintenance-pulse">
+                  <span className="text-yellow-400 font-mono text-lg">⚠</span>
+                  <span className="text-yellow-400 font-mono font-bold">DUELS PAUSED</span>
+                </div>
+
+                {/* Animated separator */}
+                <div 
+                  className="w-8 h-[2px] bg-gradient-to-r from-yellow-400/20 via-yellow-400/60 to-yellow-400/20 animate-maintenance-separator"
+                  style={{ backgroundSize: "200% 100%" }}
+                />
+
+                {/* Main message */}
+                <span className="text-yellow-400/90 font-mono font-medium">
+                  MAINTENANCE IN PROGRESS
+                </span>
+
+                {/* Animated caution blocks with CSS animation */}
+                <span
+                  className="font-mono text-yellow-400/75 text-lg animate-maintenance-caution"
+                  style={{
+                    backgroundImage: "repeating-linear-gradient(-45deg, #1a1a1a 0, #000000 8px, #ffcd3c 8px, #ffc107 16px)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
+                  ▰▰▰▰▰▰▰▰
+                </span>
+
+                {/* Humorous message */}
+                <span className="text-yellow-400/60 font-mono">
+                  PLEASE DEGEN ELSEWHERE
+                </span>
+
+                {/* Animated dots with CSS */}
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-yellow-400/70 rounded-full animate-maintenance-dot-1" />
+                  <div className="w-2 h-2 bg-yellow-400/70 rounded-full animate-maintenance-dot-2" />
+                  <div className="w-2 h-2 bg-yellow-400/70 rounded-full animate-maintenance-dot-3" />
+                </div>
+
+                {/* System status */}
+                <div className="flex items-center space-x-2 px-3 py-1 rounded-md bg-yellow-500/10 border border-yellow-400/20 animate-maintenance-status">
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full animate-maintenance-status-dot" />
+                  <span className="text-yellow-400/80 font-mono text-xs">SYSTEM UPDATING</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CSS Animations */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            @keyframes maintenance-scroll {
+              0% { transform: translateX(0px); }
+              100% { transform: translateX(-1000px); }
+            }
+            
+            @keyframes maintenance-pulse {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.05); }
+            }
+            
+            @keyframes maintenance-glow {
+              0%, 100% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+            }
+            
+            @keyframes maintenance-separator {
+              0%, 100% { 
+                background-position: 0% 50%; 
+                opacity: 0.4; 
+              }
+              50% { 
+                background-position: 100% 50%; 
+                opacity: 0.8; 
+              }
+            }
+            
+            @keyframes maintenance-caution {
+              0% { background-position: 0px 0px; }
+              100% { background-position: -32px 0px; }
+            }
+            
+            @keyframes maintenance-dot {
+              0%, 100% { 
+                transform: scale(1); 
+                opacity: 0.5; 
+              }
+              50% { 
+                transform: scale(1.4); 
+                opacity: 1; 
+              }
+            }
+            
+            @keyframes maintenance-float {
+              0%, 100% { 
+                transform: translateY(-2px); 
+                opacity: 0.3; 
+              }
+              50% { 
+                transform: translateY(2px); 
+                opacity: 0.8; 
+              }
+            }
+            
+            @keyframes maintenance-status {
+              0%, 100% { border-color: rgba(251, 191, 36, 0.2); }
+              50% { border-color: rgba(251, 191, 36, 0.4); }
+            }
+            
+            .animate-maintenance-scroll {
+              animation: maintenance-scroll 30s linear infinite;
+            }
+            
+            .animate-maintenance-pulse {
+              animation: maintenance-pulse 2s ease-in-out infinite;
+            }
+            
+            .animate-maintenance-glow {
+              animation: maintenance-glow 8s ease-in-out infinite;
+            }
+            
+            .animate-maintenance-separator {
+              animation: maintenance-separator 2s ease-in-out infinite;
+            }
+            
+            .animate-maintenance-caution {
+              animation: maintenance-caution 3s linear infinite;
+            }
+            
+            .animate-maintenance-dot-1 {
+              animation: maintenance-dot 1.5s ease-in-out infinite;
+            }
+            
+            .animate-maintenance-dot-2 {
+              animation: maintenance-dot 1.5s ease-in-out infinite 0.2s;
+            }
+            
+            .animate-maintenance-dot-3 {
+              animation: maintenance-dot 1.5s ease-in-out infinite 0.4s;
+            }
+            
+            .animate-maintenance-float-1 {
+              animation: maintenance-float 2s ease-in-out infinite;
+            }
+            
+            .animate-maintenance-float-2 {
+              animation: maintenance-float 2.3s ease-in-out infinite 0.4s;
+            }
+            
+            .animate-maintenance-float-3 {
+              animation: maintenance-float 2.6s ease-in-out infinite 0.8s;
+            }
+            
+            .animate-maintenance-float-4 {
+              animation: maintenance-float 2.9s ease-in-out infinite 1.2s;
+            }
+            
+            .animate-maintenance-float-5 {
+              animation: maintenance-float 3.2s ease-in-out infinite 1.6s;
+            }
+            
+            .animate-maintenance-status {
+              animation: maintenance-status 2s ease-in-out infinite;
+            }
+            
+            .animate-maintenance-status-dot {
+              animation: maintenance-pulse 1s ease-in-out infinite;
+            }
+          `
+        }} />
       </div>
     );
   }

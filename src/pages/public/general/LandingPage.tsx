@@ -55,10 +55,11 @@ const FALLBACK_CA_FOR_BUTTONS = config.CONTRACT_ADDRESS.REAL;
 // Directly import the Features component
 import Features from "../../../components/landing/features-list/Features";
 
+// NEW: Import WebSocket-based contest hook
+import { useContests } from "../../../hooks/websocket/topic-hooks/useContests";
+
 // Landing Page
 export const LandingPage: React.FC = () => {
-  const [activeContests, setActiveContests] = useState<Contest[]>([]);
-  const [openContests, setOpenContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [animationPhase, setAnimationPhase] = useState(0);
@@ -79,10 +80,14 @@ export const LandingPage: React.FC = () => {
     lastFetchAttempt: string;
     errorDetails: string | null;
     contestApiResponse: string | null;
+    wsConnectionStatus: string;
+    wsLastUpdate: string | null;
   }>({
     lastFetchAttempt: '',
     errorDetails: null,
-    contestApiResponse: null
+    contestApiResponse: null,
+    wsConnectionStatus: 'disconnected',
+    wsLastUpdate: null
   });
   
   // Removed console.log referencing deleted state
@@ -91,7 +96,122 @@ export const LandingPage: React.FC = () => {
   const { contractAddress: websocketContractAddress } = useLaunchEvent();
   const websocketContractRevealed = !!websocketContractAddress; // Contract is revealed if address exists
   
-  const { settings } = useSystemSettings(); // Get settings for maintenance mode
+  const { settings } = useSystemSettings();
+
+  // **NEW: Use WebSocket-based contest data instead of REST API**
+  const {
+    activeContests: wsActiveContests,
+    upcomingContests: wsUpcomingContests,
+    contests: allContests,
+    isLoading: wsLoading,
+    isConnected: wsConnected,
+    error: wsError,
+    lastUpdate: wsLastUpdate,
+    refreshContests: wsRefreshContests
+  } = useContests();
+
+  // Map WebSocket contest statuses to our local state
+  const [activeContests, setActiveContests] = useState<Contest[]>([]);
+  const [openContests, setOpenContests] = useState<Contest[]>([]);
+
+  // Sync WebSocket data to local state
+  useEffect(() => {
+    if (wsActiveContests && wsUpcomingContests) {
+      console.log("[LandingPage] WebSocket contest data received:", {
+        active: wsActiveContests.length,
+        upcoming: wsUpcomingContests.length,
+        total: allContests.length,
+        wsConnected,
+        wsLastUpdate
+      });
+
+      // Convert WebSocket Contest format to main Contest format
+      const convertedActiveContests = wsActiveContests.map(contest => ({
+        ...contest,
+        id: (contest as any).contest_id || (contest as any).id || '',
+        allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Default buckets
+        participant_count: (contest as any).entry_count || 0,
+        settings: {
+          difficulty: (contest as any).difficulty || 'guppy',
+          maxParticipants: null,
+          minParticipants: 2,
+          tokenTypesAllowed: [],
+          startingPortfolioValue: '1000'
+        },
+        min_participants: 2,
+        max_participants: 100,
+        is_participating: (contest as any).joined || false,
+        contest_code: (contest as any).contest_id || (contest as any).id || '',
+        image_url: undefined,
+        participants: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })) as unknown as Contest[];
+
+      const convertedUpcomingContests = wsUpcomingContests.map(contest => ({
+        ...contest,
+        id: (contest as any).contest_id || (contest as any).id || '',
+        allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Default buckets
+        participant_count: (contest as any).entry_count || 0,
+        settings: {
+          difficulty: (contest as any).difficulty || 'guppy',
+          maxParticipants: null,
+          minParticipants: 2,
+          tokenTypesAllowed: [],
+          startingPortfolioValue: '1000'
+        },
+        min_participants: 2,
+        max_participants: 100,
+        is_participating: (contest as any).joined || false,
+        contest_code: (contest as any).contest_id || (contest as any).id || '',
+        image_url: undefined,
+        participants: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })) as unknown as Contest[];
+
+      setActiveContests(convertedActiveContests);
+      setOpenContests(convertedUpcomingContests);
+      setLoading(wsLoading);
+      setError(wsError);
+
+      // Update debug info
+      setContestDebugInfo(prev => ({
+        ...prev,
+        wsConnectionStatus: wsConnected ? 'connected' : 'disconnected',
+        wsLastUpdate: wsLastUpdate ? wsLastUpdate.toISOString() : null,
+        lastFetchAttempt: new Date().toISOString(),
+        errorDetails: wsError,
+        contestApiResponse: `WebSocket: ${allContests.length} contests total`
+      }));
+
+      // Update Zustand store with converted WebSocket contest data
+      if (allContests.length > 0) {
+        const convertedAllContests = allContests.map(contest => ({
+          ...contest,
+          id: (contest as any).contest_id || (contest as any).id || '',
+          allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+          participant_count: (contest as any).entry_count || 0,
+          settings: {
+            difficulty: (contest as any).difficulty || 'guppy',
+            maxParticipants: null,
+            minParticipants: 2,
+            tokenTypesAllowed: [],
+            startingPortfolioValue: '1000'
+          },
+          min_participants: 2,
+          max_participants: 100,
+          is_participating: (contest as any).joined || false,
+          contest_code: (contest as any).contest_id || (contest as any).id || '',
+          image_url: undefined,
+          participants: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })) as unknown as Contest[];
+        useStore.getState().setContests(convertedAllContests);
+      }
+    }
+  }, [wsActiveContests, wsUpcomingContests, allContests, wsLoading, wsConnected, wsError, wsLastUpdate]);
 
   const isMaintenanceModeActive = settings?.maintenance_mode?.enabled || false;
   const maintenanceMessageToDisplay = settings?.maintenance_mode?.message || "Contests are temporarily paused for maintenance. Please check back soon!";
@@ -101,9 +221,6 @@ export const LandingPage: React.FC = () => {
       console.log(`[LandingPage] WebSocket contract address update received: ${websocketContractAddress}, Revealed: ${websocketContractRevealed}`);
     }
   }, [websocketContractAddress, websocketContractRevealed]);
-  
-  // Removed Fallback check for release time and handling completion/redirect useEffect block
-  // Removed Debug log for release date sources useEffect block
 
   useEffect(() => {
     isMounted.current = true;
@@ -137,40 +254,43 @@ export const LandingPage: React.FC = () => {
   // Terminal Data - This is the "AI Chat" websocket connection
   // const terminalData = useTerminalData(); // Commented out as it's not used
 
-  // Fetch initial contest data (simplified, retry logic assumed to be in useContests or similar)
+  // **FALLBACK: REST API retry function for compatibility**
   const retryContestFetch = useCallback(async (attempt = 1) => {
     if (!isMounted.current) return;
+    
+    console.log(`[LandingPage] Fallback REST API fetch attempt ${attempt} (WebSocket: ${wsConnected ? 'connected' : 'disconnected'})`);
+    
     try {
       setLoading(true);
       const response = await ddApi.contests.getAll(); 
       const contestsData = Array.isArray(response) ? response : ((response as any)?.contests || (response as any)?.data || []);
       
-      if (isMounted.current) {
-        console.log("[LandingPage] Raw contests data:", contestsData);
-        console.log("[LandingPage] Contest statuses:", contestsData.map((c: Contest) => c.status));
+      if (isMounted.current && contestsData.length > 0) {
+        console.log("[LandingPage] Fallback REST API data:", contestsData);
         
         const liveContests = contestsData.filter(isContestCurrentlyUnderway);
         const pendingContests = contestsData.filter((contest: Contest) => contest.status === "pending");
         
-        console.log("[LandingPage] Live contests:", liveContests.length);
-        console.log("[LandingPage] Pending contests:", pendingContests.length);
+        console.log("[LandingPage] Fallback - Live contests:", liveContests.length);
+        console.log("[LandingPage] Fallback - Pending contests:", pendingContests.length);
         
         setActiveContests(liveContests);
         setOpenContests(pendingContests);
         setError(null);
         
-        // Update Zustand store with fetched contests
+        // Update Zustand store with fallback REST API data
         useStore.getState().setContests(contestsData);
         
         setContestDebugInfo(prev => ({
           ...prev,
           lastFetchAttempt: new Date().toISOString(),
-          contestApiResponse: JSON.stringify(response, null, 2).substring(0, 500) + "...", // Truncate for brevity
+          contestApiResponse: `REST API Fallback: ${JSON.stringify(response, null, 2).substring(0, 200)}...`,
+          errorDetails: null
         }));
       }
     } catch (err: any) {
       if (isMounted.current) {
-        console.error("[LandingPage] Failed to load contests data:", err);
+        console.error("[LandingPage] Fallback REST API failed:", err);
         setError("Failed to load contests. Please try again later.");
         setContestDebugInfo(prev => ({
           ...prev,
@@ -179,7 +299,7 @@ export const LandingPage: React.FC = () => {
         }));
         
         if (attempt < 3) { // Retry up to 3 times
-          console.log(`[LandingPage] Retrying contest fetch, attempt ${attempt + 1}`);
+          console.log(`[LandingPage] Retrying fallback fetch, attempt ${attempt + 1}`);
           setTimeout(() => retryContestFetch(attempt + 1), 3000 * attempt); // Exponential backoff
         }
       }
@@ -188,10 +308,11 @@ export const LandingPage: React.FC = () => {
         setLoading(false);
       }
     }
-  }, []);
+  }, [wsConnected]);
 
-  // Fetch initial contest data (simplified, retry logic assumed to be in useContests or similar)
+  // Enhanced contest data loading strategy
   useEffect(() => {
+    // First, try to use cached contests from store
     const cachedContests = useStore.getState().contests;
     if (cachedContests && cachedContests.length > 0) {
       console.log('[LandingPage] Using cached contests data.');
@@ -200,11 +321,30 @@ export const LandingPage: React.FC = () => {
       setActiveContests(cachedActive);
       setOpenContests(cachedPending);
       setLoading(false);
-      setTimeout(() => retryContestFetch(), 2000);
+    }
+
+    // WebSocket will handle live updates automatically via useContests hook
+    // If WebSocket fails to connect or provide data within 10 seconds, fall back to REST API
+    const fallbackTimer = setTimeout(() => {
+      if (!wsConnected || (wsActiveContests.length === 0 && wsUpcomingContests.length === 0)) {
+        console.log('[LandingPage] WebSocket timeout or no data, using REST API fallback');
+        retryContestFetch();
+      }
+    }, 10000);
+
+    return () => clearTimeout(fallbackTimer);
+  }, [wsConnected, wsActiveContests.length, wsUpcomingContests.length, retryContestFetch]);
+
+  // Manual refresh function that prefers WebSocket but falls back to REST API
+  const handleManualRefresh = useCallback(() => {
+    if (wsConnected) {
+      console.log('[LandingPage] Manual refresh via WebSocket');
+      wsRefreshContests();
     } else {
+      console.log('[LandingPage] Manual refresh via REST API fallback');
       retryContestFetch();
     }
-  }, [retryContestFetch]);
+  }, [wsConnected, wsRefreshContests, retryContestFetch]);
 
   const fallbackDateForTimers = useMemo(() => new Date(FALLBACK_RELEASE_DATE), []);
 
@@ -625,10 +765,10 @@ export const LandingPage: React.FC = () => {
                             
                             {/* Retry loading button */}
                             <button 
-                              onClick={() => retryContestFetch()}
+                              onClick={handleManualRefresh}
                               className="mt-4 px-4 py-2 bg-gradient-to-r from-brand-500 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
                             >
-                              Retry
+                              Retry {wsConnected ? '(WebSocket)' : '(REST API)'}
                             </button>
 
                           </div>
