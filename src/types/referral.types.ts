@@ -1,9 +1,3 @@
-/**
- * Referral System Type Definitions
- * These interfaces define the contract between frontend and backend
- */
-
-// Enum types matching database schema
 export enum ReferralStatus {
   pending = "pending",
   qualified = "qualified",
@@ -11,116 +5,61 @@ export enum ReferralStatus {
   expired = "expired",
 }
 
-export enum ReferralRewardType {
-  signup_bonus = "signup_bonus",
-  contest_bonus = "contest_bonus",
-  special_event = "special_event",
-}
-
-// Common types
-export interface UtmParams {
-  source: string;
-  medium: string;
-  campaign: string;
-  content?: string;
-  term?: string;
-}
-
-// Response Types
+// Updated interfaces for new contest credit system
 export interface ReferralStats {
   total_referrals: number;
   qualified_referrals: number;
   pending_referrals: number;
-  total_rewards: number;
-  recent_referrals: RecentReferral[];
-  recent_rewards: RecentReward[];
-}
-
-export interface RecentReferral {
-  username: string;
-  status: ReferralStatus; // Using enum instead of string union
-  joined_at: string; // ISO date string
-}
-
-export interface RecentReward {
-  type: ReferralRewardType; // Using enum instead of string union
-  amount: number;
-  date: string; // ISO date string
-  description: string;
+  contest_credits_earned: number;
+  progress_to_next_credit: number;
+  referrals_until_next_credit: number;
+  recent_referrals: any[];
+  recent_rewards: any[];
 }
 
 export interface ReferralCode {
   referral_code: string;
 }
 
-export interface LeaderboardStats {
-  total_global_referrals: number;
-  current_period: {
-    start_date: string; // ISO date string
-    end_date: string; // ISO date string
-    days_remaining: number;
-  };
-  next_payout_date: string; // ISO date string
+export interface ReferralHistoryItem {
+  id: string;
+  referred_user: string;
+  referral_code: string;
+  status: ReferralStatus;
+  created_at: string;
+  qualified_at?: string;
+  entry_fee?: string;
 }
 
-export interface LeaderboardEntry {
+export interface ReferralHistory {
+  referrals: ReferralHistoryItem[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
+export interface ReferrerDetails {
   username: string;
-  referrals: number;
-  lifetime_rewards: number;
-  period_rewards: number;
-  rank: number;
-  trend: "up" | "down" | "stable";
+  profile_image?: string;
+  member_since: string;
+  referral_stats: {
+    total_referrals: number;
+    qualified_referrals: number;
+    contest_credits_earned: number;
+  };
+  referral_code: string;
 }
 
-export interface ReferralAnalytics {
-  totals: {
-    clicks: number;
-    conversions: number;
-    rewards_distributed: number;
-  };
-  clicks: {
-    by_source: Record<string, number>;
-    by_device: Record<string, number>;
-    by_browser: Record<string, number>;
-    by_campaign: Record<string, number>; // Added campaign tracking
-  };
-  conversions: {
-    by_source: Record<string, number>;
-    by_status: Record<ReferralStatus, number>; // Using enum for status
-    by_campaign: Record<string, number>; // Added campaign tracking
-  };
-  rewards: {
-    by_type: Record<ReferralRewardType, number>; // Using enum for reward type
-  };
+export interface ApplyReferralRequest {
+  referral_code: string;
+  wallet_address: string;
 }
 
-// Request Types
-export interface ClickTrackingPayload {
-  referralCode: string;
-  sessionId: string;
-  clickData: {
-    source: string;
-    device: string;
-    browser: string;
-    landingPage: string;
-    utmParams?: UtmParams; // Using the new UtmParams interface instead of separate fields
-    timestamp: string; // ISO date string
-  };
+export interface SignupTrackingRequest {
+  inviteCode: string;
 }
 
-export interface ConversionPayload {
-  referralCode: string;
-  sessionId: string;
-  conversionData: {
-    timeToConvert: number | null;
-    completedSteps: string[];
-    qualificationStatus: ReferralStatus.pending;
-    convertedAt: string;
-    originalClickData: any | null;
-  };
-}
-
-// Generic API Response
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;

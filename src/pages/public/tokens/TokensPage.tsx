@@ -13,6 +13,7 @@ import { MessageType, TopicType } from "../../../hooks/websocket";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Token, TokenResponseMetadata } from "../../../types";
+import { resetToDefaultMeta } from "../../../utils/ogImageUtils";
 
 /**
  * TokensPage - Production version based on the StoryTokensPage design
@@ -69,12 +70,9 @@ export const TokensPage: React.FC = () => {
 
   // Token selection handler
   const handleTokenClick = useCallback((token: Token) => {
-    setSelectedTokenSymbol(token.symbol); // Keep using symbol for now as UI components expect it
-    setIsDetailModalOpen(true);
-    
-    // Update URL with address (preferred) and symbol (for compatibility)
-    navigate(`${location.pathname}?address=${token.contractAddress}&symbol=${token.symbol}`, { replace: true });
-  }, [location.pathname, navigate]);
+    // Navigate to token detail page
+    navigate(`/tokens/${token.symbol}`);
+  }, [navigate]);
 
   // Close the detail modal and reset URL
   const handleCloseDetailModal = useCallback(() => {
@@ -473,7 +471,7 @@ export const TokensPage: React.FC = () => {
     };
   }, [connectWebSocket]);
   
-  // Check maintenance mode
+  // Check maintenance mode and setup OG meta tags
   useEffect(() => {
     const checkMaintenanceMode = async () => {
       try {
@@ -491,7 +489,15 @@ export const TokensPage: React.FC = () => {
       }
     };
 
+    // Setup page title and meta tags
+    document.title = "Tokens | DegenDuel";
+
     checkMaintenanceMode();
+
+    return () => {
+      // Reset to default meta tags when leaving the page
+      resetToDefaultMeta();
+    };
   }, []);
   
   // Handle connection state changes

@@ -179,32 +179,69 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
                   </div>
                 </div>
                 
-                {/* BOTTOM ROW - Core Metrics Grid */}
-                <div className="grid grid-cols-3 gap-2">
-                  {/* Price */}
-                  <div className="bg-black/60 backdrop-blur-sm rounded p-2 text-center">
-                    <div className="text-xs text-gray-300">${formatNumber(token.price)}</div>
-                    <div className="text-xs text-gray-500">Price</div>
-                  </div>
-                  
-                  {/* Market Cap */}
-                  <div className="bg-black/60 backdrop-blur-sm rounded p-2 text-center">
-                    <div className="text-xs text-gray-300">${formatNumber(token.marketCap, 'short')}</div>
-                    <div className="text-xs text-gray-500">MCap</div>
-                  </div>
-                  
-                  {/* 24h Change with momentum indicator */}
-                  <div className={`backdrop-blur-sm rounded p-2 text-center ${
-                    metrics.trend === 'up' ? 'bg-green-500/30' : 'bg-red-500/30'
-                  }`}>
-                    <div className={`text-xs font-bold ${
-                      metrics.trend === 'up' ? 'text-green-200' : 'text-red-200'
-                    }`}>
-                      {formatNumber(token.change24h)}%
+                {/* BOTTOM ROW - Advanced Visual Indicators */}
+                <div className="space-y-1">
+                  {/* Price with trend arrow */}
+                  <div className="flex items-center justify-between">
+                    <div className="text-lg font-bold text-white">${formatNumber(parseFloat(token.price))}</div>
+                    <div className={`flex items-center ${metrics.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                      <div className={`text-sm font-mono ${parseFloat(token.change24h) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {parseFloat(token.change24h) >= 0 ? '↗' : '↘'} {Math.abs(parseFloat(token.change24h)).toFixed(1)}%
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-400">
-                      {metrics.momentum !== 0 && (
-                        <span className="text-yellow-300">⚡{formatNumber(Math.abs(metrics.momentum))}%</span>
+                  </div>
+                  
+                  {/* Market Cap with size indicator */}
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-gray-300">${formatNumber(parseFloat(token.marketCap), 'short')}</div>
+                    <div className="flex items-center space-x-1">
+                      {/* Size dots based on market cap */}
+                      {parseFloat(token.marketCap) > 1000000000 && <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>}
+                      {parseFloat(token.marketCap) > 100000000 && <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>}
+                      <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                    </div>
+                  </div>
+                  
+                  {/* Activity indicators row */}
+                  <div className="flex items-center justify-between pt-1">
+                    {/* Volume heat bar */}
+                    <div className="flex items-center space-x-1">
+                      <div className="w-8 h-1 bg-dark-400 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-500 ${
+                            parseFloat(token.volume24h) > 10000000 ? 'bg-red-500' :
+                            parseFloat(token.volume24h) > 1000000 ? 'bg-orange-500' :
+                            parseFloat(token.volume24h) > 100000 ? 'bg-yellow-500' : 'bg-gray-500'
+                          }`}
+                          style={{ width: `${Math.min(100, Math.log10(parseFloat(token.volume24h)) * 10)}%` }}
+                        />
+                      </div>
+                      {parseFloat(token.volume24h) > 10000000 && <div className="text-red-400 text-xs">🔥</div>}
+                    </div>
+                    
+                    {/* Buy/Sell pressure */}
+                    {token.transactions?.["5m"] && (
+                      <div className="flex items-center space-x-1">
+                        <div className={`w-1 h-3 rounded-full ${
+                          token.transactions["5m"].buys > token.transactions["5m"].sells ? 'bg-green-400' : 'bg-gray-600'
+                        }`}></div>
+                        <div className={`w-1 h-3 rounded-full ${
+                          token.transactions["5m"].sells > token.transactions["5m"].buys ? 'bg-red-400' : 'bg-gray-600'
+                        }`}></div>
+                      </div>
+                    )}
+                    
+                    {/* Momentum arrows for multiple timeframes */}
+                    <div className="flex space-x-0.5">
+                      {token.priceChanges?.["5m"] && (
+                        <div className={`text-xs ${parseFloat(token.priceChanges["5m"]) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {parseFloat(token.priceChanges["5m"]) >= 0 ? '▲' : '▼'}
+                        </div>
+                      )}
+                      {token.priceChanges?.["1h"] && (
+                        <div className={`text-xs ${parseFloat(token.priceChanges["1h"]) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {parseFloat(token.priceChanges["1h"]) >= 0 ? '▲' : '▼'}
+                        </div>
                       )}
                     </div>
                   </div>

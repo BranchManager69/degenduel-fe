@@ -1,9 +1,13 @@
 // src/pages/public/contests/ContestResultsPage.tsx
 
+
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { ContestChat } from "../../../components/contest-chat/ContestChat";
+import { ReferralProgressCard } from "../../../components/contest-lobby/ReferralProgressCard";
+import { ShareContestButton } from "../../../components/contest-lobby/ShareContestButton";
 import { CelebrationOverlay } from "../../../components/contest-results/CelebrationOverlay";
 import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
@@ -13,6 +17,7 @@ import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useC
 import { formatCurrency } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import { ContestViewData, TokenHoldingPerformance } from "../../../types";
+import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
 
 // Contest Results page - enhanced with next-level UI and interactive features
 export const ContestResults: React.FC = () => {
@@ -50,7 +55,23 @@ export const ContestResults: React.FC = () => {
       finally { setIsLoading(false); }
     };
     fetchContestResults();
+
+    return () => {
+      // Reset to default meta tags when leaving the page
+      resetToDefaultMeta();
+    };
   }, [contestIdFromParams]);
+
+  // Setup OG meta tags when contest data is loaded
+  useEffect(() => {
+    if (contestViewData?.contest && contestIdFromParams) {
+      setupContestOGMeta(
+        contestIdFromParams, 
+        `${contestViewData.contest.name} - Results`, 
+        `View the final results for ${contestViewData.contest.name} trading competition!`
+      );
+    }
+  }, [contestViewData?.contest, contestIdFromParams]);
 
   // WebSocket updates
   const { 
@@ -406,8 +427,19 @@ export const ContestResults: React.FC = () => {
               </motion.div>
             </div>
             
-            {/* Join New Contest Button */}
+            {/* Action Buttons */}
             <div className="mt-4 sm:mt-0 flex flex-col sm:items-end gap-3">
+              {/* Share Contest Button */}
+              {contestDetails && (
+                <SilentErrorBoundary>
+                  <ShareContestButton
+                    contestId={contestDetails.id}
+                    contestName={contestDetails.name}
+                    prizePool={contestDetails.prizePool}
+                  />
+                </SilentErrorBoundary>
+              )}
+              
               <Button
                 onClick={() => navigate("/contests")}
                 className="relative group overflow-hidden"
@@ -685,6 +717,11 @@ export const ContestResults: React.FC = () => {
                   
                   {/* Sidebar */}
                   <div className="space-y-6">
+                    {/* Referral Progress Card */}
+                    <SilentErrorBoundary>
+                      <ReferralProgressCard />
+                    </SilentErrorBoundary>
+                    
                     {/* Your Stats */}
                     <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
                       <div className="p-6">
@@ -1028,6 +1065,11 @@ export const ContestResults: React.FC = () => {
 
                   {/* Final Standings Section */}
                   <div>
+                    {/* Referral Progress Card */}
+                    <SilentErrorBoundary>
+                      <ReferralProgressCard />
+                    </SilentErrorBoundary>
+                    
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}

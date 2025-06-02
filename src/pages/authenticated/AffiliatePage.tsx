@@ -10,16 +10,26 @@
 
 import React from "react";
 import { AffiliateDashboard } from "../../components/affiliate-dashboard/AffiliateDashboard";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
+import { setupReferralOGMeta, resetToDefaultMeta } from "../../utils/ogImageUtils";
 
 // This component should be renamed to AffiliatePage.tsx in a future update
 export const ReferralPage: React.FC = () => {
-  // Set page title
+  const { user } = useMigratedAuth();
+
+  // Set page title and OG meta tags
   React.useEffect(() => {
     document.title = "Invite & Earn - DegenDuel";
+    
+    // Setup referral OG meta if user has wallet
+    if (user?.wallet_address) {
+      setupReferralOGMeta(user.wallet_address, user.nickname);
+    }
+    
     return () => {
-      document.title = "DegenDuel";
+      resetToDefaultMeta();
     };
-  }, []);
+  }, [user?.wallet_address, user?.nickname]);
   return (
     <div className="flex flex-col min-h-screen">
 

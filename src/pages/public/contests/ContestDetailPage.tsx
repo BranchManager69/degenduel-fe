@@ -15,9 +15,12 @@
 import { motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
 import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
 import { PrizeStructure } from "../../../components/contest-detail/PrizeStructure";
+import { ReferralProgressCard } from "../../../components/contest-lobby/ReferralProgressCard";
+import { ShareContestButton } from "../../../components/contest-lobby/ShareContestButton";
 import { Card } from "../../../components/ui/Card";
 import { CountdownTimer } from "../../../components/ui/CountdownTimer";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
@@ -30,6 +33,7 @@ import {
     mapContestStatus,
 } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
+import { setupContestOGMeta, resetToDefaultMeta } from "../../../utils/ogImageUtils";
 import type { Contest as BaseContest, ContestViewData } from "../../../types/index";
 
 // TODO: move elsewhere
@@ -303,8 +307,19 @@ export const ContestDetails: React.FC = () => {
       }
     }, 30000); // Check for maintenance mode every 30 secs
 
-    return () => clearInterval(maintenanceCheckInterval);
+    return () => {
+      clearInterval(maintenanceCheckInterval);
+      // Reset to default meta tags when leaving the page
+      resetToDefaultMeta();
+    };
   }, [id, user]);
+
+  // Setup OG meta tags when contest data is loaded
+  useEffect(() => {
+    if (contest && id) {
+      setupContestOGMeta(id, contest.name, contest.description);
+    }
+  }, [contest, id]);
 
   // Mouse move handler for parallax effect (desktop only)
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -765,52 +780,15 @@ export const ContestDetails: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Share Button - Desktop Only */}
-                <div className="hidden md:flex mt-4 items-center gap-3">
-                  <span className="text-sm text-gray-400">Share:</span>
-                  <div className="flex gap-2">
-                    {/* Twitter/X Share Button */}
-                    <a
-                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Join me in the ${contest.name} trading contest on DegenDuel`)}&url=${encodeURIComponent(window.location.href)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-3 py-1.5 bg-dark-300/80 hover:bg-dark-300 text-brand-400 hover:text-brand-300 rounded-md transition-colors duration-300 text-sm"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                      </svg>
-                      <span className="font-medium">Share</span>
-                    </a>
-                    
-                    {/* Copy Link Button */}
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(window.location.href);
-                        // You could add a toast notification here
-                        alert("Link copied to clipboard!");
-                      }}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-dark-300/80 hover:bg-dark-300 text-gray-300 hover:text-white rounded-md transition-colors duration-300 text-sm"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                        />
-                      </svg>
-                      <span className="font-medium">Copy Link</span>
-                    </button>
-                  </div>
+                {/* Share Contest Button - Desktop Only */}
+                <div className="hidden md:flex mt-4">
+                  <SilentErrorBoundary>
+                    <ShareContestButton
+                      contestId={contest.id.toString()}
+                      contestName={contest.name}
+                      prizePool={(Number(contest.entry_fee) * contest.participant_count * 0.95).toString()}
+                    />
+                  </SilentErrorBoundary>
                 </div>
               </div>
               
@@ -949,49 +927,16 @@ export const ContestDetails: React.FC = () => {
               </div>
             </div>
             
-            {/* Mobile share buttons */}
-            <div className="flex gap-2 mb-8 md:hidden">
-              {/* Twitter/X Share Button */}
-              <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Join me in the ${contest.name} trading contest on DegenDuel`)}&url=${encodeURIComponent(window.location.href)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-dark-300/80 hover:bg-dark-300 text-brand-400 hover:text-brand-300 rounded-md transition-colors duration-300"
-              >
-                <svg
-                  className="w-5 h-5"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-                <span className="font-medium">Share on X</span>
-              </a>
-
-              {/* Copy Link Button */}
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(window.location.href);
-                  // You could add a toast notification here
-                  alert("Link copied to clipboard!");
-                }}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-dark-300/80 hover:bg-dark-300 text-gray-300 hover:text-white rounded-md transition-colors duration-300"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </svg>
-                <span className="font-medium">Copy Link</span>
-              </button>
+            {/* Mobile share button */}
+            <div className="mb-8 md:hidden">
+              <SilentErrorBoundary>
+                <ShareContestButton
+                  contestId={contest.id.toString()}
+                  contestName={contest.name}
+                  prizePool={(Number(contest.entry_fee) * contest.participant_count * 0.95).toString()}
+                  className="w-full"
+                />
+              </SilentErrorBoundary>
             </div>
           </div>
 
@@ -1040,24 +985,33 @@ export const ContestDetails: React.FC = () => {
 
             {/* Right Column - Prize Distribution & Participants */}
             <div className="space-y-8">
+              {/* Referral Progress Card */}
+              <SilentErrorBoundary>
+                <ReferralProgressCard />
+              </SilentErrorBoundary>
+              
               {/* Prize Distribution */}
               <div className="group relative">
-                <PrizeStructure
-                  prizePool={Number(contest.entry_fee) * contest.participant_count * 0.95}
-                  entryFee={Number(contest?.entry_fee || 0)}
-                  maxParticipants={Number(contest?.max_participants || 0)}
-                  currentParticipants={Number(contest?.participant_count || 0)}
-                  platformFeePercentage={5}
-                />
+                <SilentErrorBoundary>
+                  <PrizeStructure
+                    prizePool={Number(contest.entry_fee) * contest.participant_count * 0.95}
+                    entryFee={Number(contest?.entry_fee || 0)}
+                    maxParticipants={Number(contest?.max_participants || 0)}
+                    currentParticipants={Number(contest?.participant_count || 0)}
+                    platformFeePercentage={5}
+                  />
+                </SilentErrorBoundary>
               </div>
 
               {/* Participants List */}
               {Number(contest.participant_count) > 0 && Array.isArray(contest.participants) && contest.participants.length > 0 ? (
                 <div className="group relative">
-                  <ParticipantsList
-                    participants={contest.participants}
-                    contestStatus={mapContestStatus(contest.status)}
-                  />
+                  <SilentErrorBoundary>
+                    <ParticipantsList
+                      participants={contest.participants}
+                      contestStatus={mapContestStatus(contest.status)}
+                    />
+                  </SilentErrorBoundary>
                 </div>
               ) : (
                 <div className={`relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6`}>

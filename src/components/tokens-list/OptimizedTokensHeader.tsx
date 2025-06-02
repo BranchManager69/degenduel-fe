@@ -46,7 +46,7 @@ export const OptimizedTokensHeader: React.FC<OptimizedTokensHeaderProps> = React
         <div className="relative">
           <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold relative z-10 text-center xs:text-left">
             <span className="text-transparent bg-gradient-to-r from-brand-400 via-white to-cyan-500 bg-clip-text relative">
-              {isMobile ? 'DD Markets' : 'DegenDuel Markets'}
+              {isMobile ? 'DD Tokens' : 'DegenDuel Tokens'}
               <span className="absolute -right-3 -top-1 text-xs font-mono text-cyan-500/70 hidden xs:inline">v2.0</span>
             </span>
           </h1>

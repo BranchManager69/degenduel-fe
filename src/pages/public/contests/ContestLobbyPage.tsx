@@ -14,10 +14,13 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { ContestChat } from "../../../components/contest-chat/ContestChat";
 import { ContestTimer } from "../../../components/contest-lobby/ContestTimer";
 import { Leaderboard } from "../../../components/contest-lobby/Leaderboard";
 import { PortfolioPerformance } from "../../../components/contest-lobby/PortfolioPerformance";
+import { ReferralProgressCard } from "../../../components/contest-lobby/ReferralProgressCard";
+import { ShareContestButton } from "../../../components/contest-lobby/ShareContestButton";
 import { TokenPerformance } from "../../../components/contest-lobby/TokenPerformance";
 import { PerformanceChart } from "../../../components/contest-results/PerformanceChart";
 import { Badge } from "../../../components/ui/Badge";
@@ -25,6 +28,7 @@ import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 import { formatCurrency } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
+import { setupContestOGMeta, resetToDefaultMeta } from "../../../utils/ogImageUtils";
 import { ContestViewData } from "../../../types";
 
 // Contest Lobby page
@@ -65,7 +69,23 @@ export const ContestLobby: React.FC = () => {
     };
 
     fetchContestView();
+
+    return () => {
+      // Reset to default meta tags when leaving the page
+      resetToDefaultMeta();
+    };
   }, [contestIdFromParams]);
+
+  // Setup OG meta tags when contest data is loaded
+  useEffect(() => {
+    if (contestViewData?.contest && contestIdFromParams) {
+      setupContestOGMeta(
+        contestIdFromParams, 
+        contestViewData.contest.name, 
+        contestViewData.contest.description
+      );
+    }
+  }, [contestViewData?.contest, contestIdFromParams]);
 
   // WebSocket updates
   const { 
@@ -310,8 +330,19 @@ export const ContestLobby: React.FC = () => {
               </div>
             </div>
             
-            {/* Timer & Mobile Menu Button */}
-            <div className="flex items-center justify-between">
+            {/* Timer, Share Button & Mobile Menu Button */}
+            <div className="flex items-center justify-between gap-3">
+              {/* Share Contest Button */}
+              {contestDetails && (
+                <SilentErrorBoundary>
+                  <ShareContestButton
+                    contestId={contestDetails.id}
+                    contestName={contestDetails.name}
+                    prizePool={contestDetails.prizePool}
+                  />
+                </SilentErrorBoundary>
+              )}
+              
               <div className="relative group mr-4">
                 <div className="text-right mb-1">
                   <span className="text-sm text-gray-400">
@@ -414,31 +445,38 @@ export const ContestLobby: React.FC = () => {
                     <Leaderboard entries={leaderboardEntries} />
                   </div>
                   <div className="space-y-6">
+                    {/* Referral Progress Card */}
+                    <SilentErrorBoundary>
+                      <ReferralProgressCard />
+                    </SilentErrorBoundary>
+                    
+                    {/* Token Performance Cards */}
                     {currentUserPerformance?.tokens.map((token, index) => {
                       const quantity = parseFloat(token.quantity);
                       const currentValue = parseFloat(token.currentValueContribution);
                       const price = quantity > 0 ? currentValue / quantity : 0;
                       
                       return (
-                        <motion.div
-                          key={token.symbol}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.1 + (index * 0.1) }}
-                          className="relative group overflow-hidden rounded-lg"
-                        >
-                          <TokenPerformance 
-                            token={{
-                              name: token.name,
-                              symbol: token.symbol,
-                              price: price,
-                              imageUrl: token.imageUrl 
-                            }}
-                            amount={quantity}
-                            initialValue={parseFloat(token.initialValueContribution)}
-                            currentValue={currentValue}
-                          />
-                        </motion.div>
+                        <SilentErrorBoundary key={token.symbol}>
+                          <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 + (index * 0.1) }}
+                            className="relative group overflow-hidden rounded-lg"
+                          >
+                            <TokenPerformance 
+                              token={{
+                                name: token.name,
+                                symbol: token.symbol,
+                                price: price,
+                                imageUrl: token.imageUrl 
+                              }}
+                              amount={quantity}
+                              initialValue={parseFloat(token.initialValueContribution)}
+                              currentValue={currentValue}
+                            />
+                          </motion.div>
+                        </SilentErrorBoundary>
                       );
                     })}
                   </div>
@@ -472,7 +510,12 @@ export const ContestLobby: React.FC = () => {
                     </motion.div>
                   </div>
                   
-                  <div>
+                  <div className="space-y-6">
+                    {/* Referral Progress Card */}
+                    <SilentErrorBoundary>
+                      <ReferralProgressCard />
+                    </SilentErrorBoundary>
+                    
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -493,11 +536,16 @@ export const ContestLobby: React.FC = () => {
                       transition={{ delay: 0.1 }}
                       className="bg-dark-200/10 backdrop-blur-sm rounded-lg border border-dark-300 overflow-hidden h-[600px]"
                     >
-                      {contestIdFromParams && <ContestChat contestId={contestIdFromParams} onNewMessage={handleNewMessage} />}
+                      {contestIdFromParams && <SilentErrorBoundary><ContestChat contestId={contestIdFromParams} onNewMessage={handleNewMessage} /></SilentErrorBoundary>}
                     </motion.div>
                   </div>
                   
-                  <div>
+                  <div className="space-y-6">
+                    {/* Referral Progress Card */}
+                    <SilentErrorBoundary>
+                      <ReferralProgressCard />
+                    </SilentErrorBoundary>
+                    
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
