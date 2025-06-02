@@ -9,41 +9,35 @@ export const ReferralWelcomeModal: React.FC = () => {
   const {
     showWelcomeModal,
     setShowWelcomeModal,
-    trackConversion,
+    trackSignup,
     referralCode,
     referrerProfile,
-    referralRewards,
   } = useReferral();
   const { isAuthenticated, user } = useMigratedAuth();
   const { connectWallet, isConnecting } = useStore();
 
-  // Track when user connects wallet (but don't auto-close modal)
-  const [hasTrackedConversion, setHasTrackedConversion] = useState(false);
+  const [hasTrackedSignup, setHasTrackedSignup] = useState(false);
   
   useEffect(() => {
-    if (isAuthenticated && user && referralCode && !hasTrackedConversion) {
-      trackConversion().catch(console.error);
-      setHasTrackedConversion(true);
-      // Don't auto-close modal - let user explore first
+    if (isAuthenticated && user && referralCode && !hasTrackedSignup) {
+      trackSignup().catch(console.error);
+      setHasTrackedSignup(true);
     }
   }, [
     isAuthenticated,
     user,
     referralCode,
-    hasTrackedConversion,
-    trackConversion,
+    hasTrackedSignup,
+    trackSignup,
   ]);
 
   const handleGetStarted = () => {
     if (!isAuthenticated) {
-      // Connect wallet using store's connectWallet
       connectWallet().catch(console.error);
     } else {
-      // User is already authenticated, close modal and track if needed
       setShowWelcomeModal(false);
-      localStorage.setItem("has_seen_welcome", "true");
-      if (referralCode && !hasTrackedConversion) {
-        trackConversion().catch(console.error);
+      if (referralCode && !hasTrackedSignup) {
+        trackSignup().catch(console.error);
       }
     }
   };
@@ -93,17 +87,14 @@ export const ReferralWelcomeModal: React.FC = () => {
                     <div className="relative">
                       {referrerProfile.profile_image ? (
                         <img
-                          src={
-                            referrerProfile.profile_image.thumbnail_url ||
-                            referrerProfile.profile_image.url
-                          }
-                          alt={`${referrerProfile.nickname}'s profile`}
+                          src={referrerProfile.profile_image}
+                          alt={`${referrerProfile.username}'s profile`}
                           className="w-16 h-16 rounded-full object-cover border-2 border-brand-400/50"
                         />
                       ) : (
                         <div className="w-16 h-16 rounded-full bg-dark-300 flex items-center justify-center border-2 border-brand-400/50">
                           <span className="text-brand-300 text-xl font-bold">
-                            {referrerProfile.nickname
+                            {referrerProfile.username
                               .substring(0, 2)
                               .toUpperCase()}
                           </span>
@@ -125,7 +116,7 @@ export const ReferralWelcomeModal: React.FC = () => {
                         You were invited by
                       </p>
                       <p className="text-brand-400 font-bold">
-                        {referrerProfile.nickname}
+                        {referrerProfile.username}
                       </p>
                     </div>
                   </div>
@@ -142,19 +133,17 @@ export const ReferralWelcomeModal: React.FC = () => {
 
                 <p className="text-gray-400">
                   {referralCode
-                    ? "You've been invited to join the ultimate crypto portfolio battle arena. Connect your wallet to start your journey and receive special rewards."
+                    ? "You've been invited to compete in crypto portfolio battles. Connect your wallet to get started!"
                     : "Welcome to the ultimate crypto portfolio battle arena. Connect your wallet to start your journey."}
                 </p>
 
-                {/* Referral rewards information if available */}
-                {referralRewards && (
+                {referralCode && (
                   <div className="bg-dark-300/40 border border-brand-400/20 rounded-lg p-3 mt-2">
                     <p className="text-brand-300 font-semibold text-sm">
-                      Special Referral Bonus
+                      🎁 Special Invite Bonus
                     </p>
                     <p className="text-gray-300 text-sm">
-                      You'll receive a {referralRewards.user_bonus} bonus when
-                      you sign up!
+                      Your referrer will earn contest credits when you play your first contest!
                     </p>
                   </div>
                 )}

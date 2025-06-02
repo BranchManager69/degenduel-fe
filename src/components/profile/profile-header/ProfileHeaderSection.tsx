@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
-import { ProfileHeader } from "./ProfileHeader";
+import { getAuthStatus } from "../../../services/api/auth";
 import { ddApi, formatBonusPoints } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { LoadingSpinner } from "../../common/LoadingSpinner";
-import { getAuthStatus } from "../../../services/api/auth";
+import { ProfileHeader } from "./ProfileHeader";
 
 interface UserData {
   wallet_address: string;
@@ -160,27 +159,6 @@ export const ProfileHeaderSection: React.FC = () => {
     <div className="relative group overflow-hidden rounded-lg backdrop-blur-sm border border-dark-300/20">
       <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       <div className="relative">
-        <Link
-          to={`/profile/${userData.nickname || userData.wallet_address}`}
-          className="absolute top-2 right-2 px-3 py-1.5 bg-dark-200 border border-brand-500/50 hover:border-brand-500 rounded-lg flex items-center gap-2 transition-all duration-200 group/link z-10 hover:bg-dark-300"
-        >
-          <span className="text-sm text-brand-200 group-hover/link:text-brand-400 transition-colors font-medium">
-            View Public Profile
-          </span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 text-brand-400 group-hover/link:text-brand-300 transition-colors"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-            <path
-              fillRule="evenodd"
-              d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </Link>
         <ProfileHeader
           address={userData.wallet_address}
           username={userData.nickname || userData.wallet_address}

@@ -86,7 +86,6 @@ import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
 import { config, PRELAUNCH_BYPASS_KEY, PRELAUNCH_MODE } from './config/config';
 
 // Landing Page
-import { AffiliateSystemProvider } from '@/hooks/social/legacy/useAffiliateSystem';
 import { LandingPage } from "./pages/public/general/LandingPage";
 
 // Admin Chat Dashboard
@@ -163,6 +162,7 @@ const DegenLevelPage = lazy(() => import('./pages/public/leaderboards/DegenLevel
 const GlobalRankings = lazy(() => import('./pages/public/leaderboards/GlobalRankings').then(module => ({ default: module.GlobalRankings })));
 const LeaderboardLanding = lazy(() => import('./pages/public/leaderboards/LeaderboardLanding').then(module => ({ default: module.LeaderboardLanding })));
 const TokensPage = lazy(() => import('./pages/public/tokens/TokensPage').then(module => ({ default: module.TokensPage })));
+const TokenDetailPage = lazy(() => import('./pages/public/tokens/TokenDetailPage').then(module => ({ default: module.default })));
 const WebSocketAPIPage = lazy(() => import('./pages/public/WebSocketAPIPage'));
 
 export interface RpcContextType {
@@ -269,11 +269,9 @@ const AppProvidersAndContent: React.FC = () => {
         <WalletAdapterProviders>
           <UnifiedWebSocketProvider>
             <TokenDataProvider>
-              <AffiliateSystemProvider>
-                <ToastProvider>
-                  <AppContent />
-                </ToastProvider>
-              </AffiliateSystemProvider>
+              <ToastProvider>
+                <AppContent />
+              </ToastProvider>
             </TokenDataProvider>
           </UnifiedWebSocketProvider>
         </WalletAdapterProviders>
@@ -372,6 +370,7 @@ const AppContent: React.FC = () => {
           
           {/* Token Routes */}
           <Route path="/tokens" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><TokensPage /></Suspense></MaintenanceGuard>} />
+          <Route path="/tokens/:symbol" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><TokenDetailPage /></Suspense></MaintenanceGuard>} />
           
           {/* Game Routes */}
           <Route path="/game/virtual-agent" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><VirtualAgentPage /></Suspense></MaintenanceGuard>} />

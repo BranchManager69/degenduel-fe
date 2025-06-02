@@ -74,13 +74,8 @@ export const AchievementsSection: React.FC<AchievementsSectionProps> = ({
   }
 
   return (
-    <div
-      className={`relative group overflow-hidden rounded-lg backdrop-blur-sm border border-dark-300/20 ${className}`}
-    >
-      <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      <div className="relative">
-        <AchievementsList achievements={achievements} />
-      </div>
+    <div className={`rounded-lg border border-dark-300/20 bg-dark-200/30 ${className}`}>
+      <AchievementsList achievements={achievements} />
     </div>
   );
 };

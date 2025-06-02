@@ -6,6 +6,5 @@ export { useReferral } from './useReferral';
 // export { useJupiterWallet } from './useJupiterWallet'; // Deleted
 
 // Legacy exports
-export { useAffiliateSystem } from './legacy/useAffiliateSystem';
 export { useInviteSystem } from './legacy/useInviteSystem';
 

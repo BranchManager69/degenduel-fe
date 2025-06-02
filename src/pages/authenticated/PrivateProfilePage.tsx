@@ -9,7 +9,7 @@
  * @since 2025-04-02
  */
 
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import React from "react";
 import { Link } from "react-router-dom";
 
@@ -60,163 +60,84 @@ export const PrivateProfilePage: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
       >
         {/* Profile Page */}
-        <div className="relative space-y-8">
-          <AnimatePresence mode="wait">
+        <div className="relative space-y-6">
+          {/* Profile Header Section */}
+          <ProfileHeaderSection />
 
-            {/* User Data Section */}
-            <motion.div
-              key="user-data"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              {/* Profile Header Section */}
-              <ProfileHeaderSection />
-            </motion.div>
+          {/* Degen Level Progress */}
+          <UserProgress />
 
-            {/* Degen Level Progress */}
-            <motion.div
-              key="user-progress"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <UserProgress />
-            </motion.div>
-
-            {/* Lifetime User Stats */}
-            <motion.div
-              key="user-stats"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <UserStatsSection />
-            </motion.div>
-            
-            {/* Contest Credits */}
-            <motion.div
-              key="contest-credits"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-4"
-            >
-              <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
-                Contest Credits
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
-              </h2>
-              
-              <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg overflow-hidden border border-brand-500/20">
-                <div className="p-6">
-                  <div className="flex flex-col md:flex-row justify-between items-center mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Create Your Own Contests</h3>
-                      <p className="text-gray-400 max-w-xl">
-                        Purchase credits to create custom contests that are available to all users.
-                        Each contest creation requires one credit.
-                      </p>
-                    </div>
-                    <div className="mt-4 md:mt-0">
-                      <Link to="/contest-credits" className="bg-brand-500 hover:bg-brand-600 text-white font-bold py-2 px-4 rounded-full transition-colors flex items-center">
-                        <span>Manage Credits</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </Link>
-                    </div>
-                  </div>
+          {/* Lifetime User Stats */}
+          <UserStatsSection />
+          
+          {/* Contest Credits */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-brand-300">Contest Credits</h2>
+            <div className="bg-dark-200/30 rounded-lg border border-brand-500/20 p-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Create Your Own Contests</h3>
+                  <p className="text-gray-400 text-sm">
+                    Purchase credits to create custom contests. Each contest creation requires one credit.
+                  </p>
                 </div>
+                <Link to="/contest-credits" className="bg-brand-500 hover:bg-brand-600 text-white font-bold py-2 px-4 rounded transition-colors flex items-center whitespace-nowrap">
+                  <span>Manage Credits</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </Link>
               </div>
-            </motion.div>
+            </div>
+          </div>
 
-            {/* Social Accounts */}
-            <motion.div
-              key="social-accounts"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-4"
-            >
+          {/* Social Accounts */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-brand-300">Social Accounts</h2>
+            <SocialAccountsPanel />
+          </div>
 
-              {/* Social Accounts */}
-              <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
-                Social Accounts
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
-              </h2>
+          {/* AI Assistant Access */}
+          <div className="space-y-4">
+            <MCPTokenManagement />
+          </div>
 
-              {/* Social Accounts Panel */}
-              <SocialAccountsPanel />
+          {/* Achievements & Contest History Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Achievements Column */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-brand-300">Achievements</h2>
+              <AchievementsSection />
+            </div>
 
-            </motion.div>
-
-            {/* AI Assistant Access */}
-            <motion.div
-              key="mcp-access"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-4"
-            >
-              <MCPTokenManagement />
-            </motion.div>
-
-            {/* Achievements & Contest History (2 columns) */}
-            <motion.div
-              key="columns"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="grid grid-cols-1 gap-8"
-            >
-              {/* Achievements Column */}
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
-                  Achievements
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
-                </h2>
-                <AchievementsSection />
-              </div>
-
-              {/* Contest History Column */}
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
-                  Contest History
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
-                </h2>
-                <ContestHistorySection />
-              </div>
-              
-              {/* Admin Wallet Monitoring */}
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
-                  Wallet Monitoring
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
-                </h2>
-                {user?.wallet_address && (
-                  <UserProfileExtras 
-                    walletAddress={user.wallet_address}
-                    nickname={user.nickname || undefined}
-                    showWalletSelector={true}
-                    compareMode={true}
-                  />
-                )}
-              </div>
-              
-              {/* Auth Debug Panel */}
-              <div className="space-y-4 mt-8">
-                <h2 className="text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 text-transparent bg-clip-text relative group">
-                  Auth Debug
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
-                </h2>
-                <AuthDebugPanel position="floating" />
-              </div>
-              
-            </motion.div>
-          </AnimatePresence>
+            {/* Contest History Column */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-brand-300">Contest History</h2>
+              <ContestHistorySection />
+            </div>
+          </div>
+          
+          {/* Admin Wallet Monitoring */}
+          {user?.wallet_address && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-brand-300">Wallet Monitoring</h2>
+              <UserProfileExtras 
+                walletAddress={user.wallet_address}
+                nickname={user.nickname || undefined}
+                showWalletSelector={true}
+                compareMode={true}
+              />
+            </div>
+          )}
+          
+          {/* Auth Debug Panel */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-brand-300">Auth Debug</h2>
+            <AuthDebugPanel position="floating" />
+          </div>
         </div>
 
       </motion.div>

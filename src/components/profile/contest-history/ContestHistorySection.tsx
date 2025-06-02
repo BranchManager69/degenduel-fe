@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 
 import { ContestHistoryList } from "./ContestHistoryList";
@@ -84,42 +83,24 @@ export const ContestHistorySection: React.FC = () => {
   }
 
   return (
-    <div className="relative group overflow-hidden rounded-lg backdrop-blur-sm border border-dark-300/20">
-      <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      <div className="relative">
-        {contestHistory.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="p-8 rounded-lg border border-dark-300/20 backdrop-blur-sm relative group"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-            {/* Empty state content */}
-            <div className="relative text-center space-y-4">
-              <div className="text-4xl animate-bounce">⚔️</div>
-              <div>
-                <h3 className="text-xl font-cyber text-brand-300 mb-2">
-                  No Duels Yet
-                </h3>
-                <p className="text-gray-400 group-hover:animate-cyber-pulse">
-                  Ready to test your trading skills? Join your first duel and
-                  start climbing the ranks!
-                </p>
-              </div>
-
-              {/* Decorative elements */}
-              <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-brand-500/20 to-transparent" />
-                <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-brand-500/20 to-transparent" />
-              </div>
+    <div className="rounded-lg border border-dark-300/20 bg-dark-200/30">
+      {contestHistory.length === 0 ? (
+        <div className="p-6">
+          <div className="text-center space-y-3">
+            <div className="text-3xl">⚔️</div>
+            <div>
+              <h3 className="text-lg font-semibold text-brand-300 mb-1">
+                No Duels Yet
+              </h3>
+              <p className="text-gray-400 text-sm">
+                Ready to test your trading skills? Join your first duel and start climbing the ranks!
+              </p>
             </div>
-          </motion.div>
-        ) : (
-          <ContestHistoryList history={contestHistory} />
-        )}
-      </div>
+          </div>
+        </div>
+      ) : (
+        <ContestHistoryList history={contestHistory} />
+      )}
     </div>
   );
 };
