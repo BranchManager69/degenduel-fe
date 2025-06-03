@@ -68,7 +68,6 @@ import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import LoadingFallback from "./components/shared/LoadingFallback";
 import { Terminal } from "./components/terminal/Terminal";
-import { SmartPerformanceToggle } from "./components/ui/PerformanceToggle";
 // import { useNotifications } from './hooks/websocket/topic-hooks/useNotifications';
 // import { useSystemSettings } from './hooks/websocket/topic-hooks/useSystemSettings';
 
@@ -213,6 +212,28 @@ export const App: React.FC = () => {
   
   // Prelaunch Mode uses values from config/config.ts now
   const searchParams = new URLSearchParams(window.location.search);
+  
+  // EMERGENCY PERFORMANCE MODE RESET - for users stuck on mobile
+  React.useEffect(() => {
+    if (searchParams.get('reset-performance') === 'true') {
+      localStorage.removeItem('performance-mode');
+      localStorage.removeItem('performance-toggle-dismissed');
+      document.body.classList.remove('performance-mode');
+      
+      // Show a success message
+      console.log('🚀 Performance mode reset successfully!');
+      
+      // Remove the parameter and reload to clean URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('reset-performance');
+      window.history.replaceState({}, '', url.toString());
+      
+      // Small delay then reload to ensure settings are applied
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    }
+  }, []);
   
   /* PRELAUNCH BYPASS */
   // Log the expected bypass key for debugging
@@ -508,8 +529,8 @@ const AppContent: React.FC = () => {
       {/* Footer */}
       <Footer />
 
-      {/* Smart Performance Toggle - only shows when needed, positioned bottom right */}
-      <SmartPerformanceToggle />
+      {/* Smart Performance Toggle - DISABLED - was causing users to get stuck in low FPS mode */}
+      {/* <SmartPerformanceToggle /> */}
 
       {/* Invite Welcome Modal */}
       <InviteWelcomeModal />

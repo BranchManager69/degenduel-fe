@@ -1,7 +1,7 @@
 // src/hooks/useStandardizedTokenData.ts
 
 /**
- * Standardized Token Data Hook
+ * Standardized Token Data Hook - PARTIALLY NUKED! 🚀
  * 
  * This hook wraps the existing topic-hooks/useTokenData hook and provides
  * standardized transformations and utilities that our various components need.
@@ -10,22 +10,15 @@
  * 
  * 🔧 NOW FULLY FUNCTIONAL ✅
  * 
- * KEY INSIGHTS FROM PRODUCTION FIX:
- * - This hook was architecturally sound but wasn't working due to underlying useTokenData issues
- * - The abstraction layer design was correct - UI components should use this, not direct hooks
- * - All the sorting, filtering, and statistics calculations were working properly
- * - Issue was in the data source layer, not the transformation/standardization layer
- * 
- * BENEFITS NOW REALIZED:
- * ✅ All UI components get REAL market data instead of placeholder values
- * ✅ Consistent data processing, sorting, and filtering across application
- * ✅ Proper error handling and loading states
- * ✅ Market statistics calculation with real data
- * ✅ Standardized Token format for all components
+ * KEY UPDATES:
+ * ✅ Hot tokens now powered by new /api/tokens/trending REST API (quality_level=relaxed)
+ * ✅ Eliminated complex client-side hot token algorithm 
+ * ✅ Uses backend's superior momentum/change scoring
+ * ✅ All other functionality remains unchanged
  * 
  * FEATURES PROVIDED:
  * - Data processing: Filtering, sorting, search functionality
- * - Token collections: Hot tokens, top tokens by market cap
+ * - Token collections: Hot tokens (via REST API), top tokens by market cap
  * - Market statistics: Total volume, market cap, top gainers/losers
  * - Format adapters: Token ↔ TokenData conversion for backward compatibility
  * - Real-time updates: Automatic refresh and WebSocket integration
@@ -40,10 +33,11 @@
  * 
  * @author Claude
  * @created 2025-04-29
- * @updated 2025-01-15 - Now fully functional with real market data via fixed useTokenData
+ * @updated 2025-06-03 - NUCLEAR HOT TOKENS REPLACEMENT with REST API architecture
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { API_URL } from '../../config/config';
 import { Token, TokenData } from '../../types';
 import { formatNumber } from '../../utils/format';
 import { useTokenData } from '../websocket/topic-hooks/useTokenData';
@@ -210,6 +204,12 @@ export function useStandardizedTokenData(
   const [connectionState, setConnectionState] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // HOT TOKENS STATE - NOW POWERED BY REST API! 🚀
+  const [hotTokens, setHotTokens] = useState<Token[]>([]);
+  const [hotTokensLoading, setHotTokensLoading] = useState<boolean>(false);
+  const [hotTokensError, setHotTokensError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     setConnectionState(isConnected ? 'connected' : 'disconnected');
   }, [isConnected]);
@@ -217,6 +217,130 @@ export function useStandardizedTokenData(
   useEffect(() => {
     setError(wsError);
   }, [wsError]);
+
+  // NUCLEAR HOT TOKENS FETCH - REST API POWERED! 🚀
+  const fetchHotTokens = useCallback(async () => {
+    try {
+      // Cancel any pending request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
+      setHotTokensLoading(true);
+      console.log(`[useStandardizedTokenData] Fetching ${maxHotTokens} hot tokens (relaxed quality, 5%+ movers)`);
+
+      // Build URL with parameters for hot tokens: relaxed quality + 5% minimum change
+      const url = new URL(`${API_URL}/tokens/trending`);
+      url.searchParams.set('quality_level', 'relaxed'); // Relaxed quality for momentum plays
+      url.searchParams.set('min_change', '5'); // 5%+ price movement required
+      url.searchParams.set('limit', String(maxHotTokens * 2)); // Get more candidates to ensure we have enough
+
+      const response = await fetch(url.toString(), {
+        signal,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'API request failed');
+      }
+
+      console.log(`[useStandardizedTokenData] Successfully fetched ${data.data.length} hot tokens`);
+
+      // Transform tokens to frontend format and slice to requested amount
+      const transformedTokens = data.data
+        .map((backendToken: any): Token => ({
+          // Core identification
+          id: backendToken.id || 0,
+          address: backendToken.address || "",
+          contractAddress: backendToken.address || "",
+          symbol: backendToken.symbol || "",
+          name: backendToken.name || "",
+
+          // Price data (numbers, not strings!)
+          price: backendToken.price || 0,
+          change_24h: backendToken.change_24h || 0,
+          change24h: String(backendToken.change_24h || 0), // backward compat
+          market_cap: backendToken.market_cap || 0,
+          marketCap: String(backendToken.market_cap || 0), // backward compat
+          fdv: backendToken.fdv || 0,
+          liquidity: backendToken.liquidity || 0,
+          volume_24h: backendToken.volume_24h || 0,
+          volume24h: String(backendToken.volume_24h || 0), // backward compat
+
+          // Visual/metadata
+          image_url: backendToken.image_url || "",
+          header_image_url: backendToken.header_image_url || "",
+          color: backendToken.color || "#888888",
+          decimals: backendToken.decimals || 9,
+          description: backendToken.description,
+          tags: backendToken.tags || [],
+
+          // Enhanced timeframe data
+          priceChanges: backendToken.priceChanges,
+          volumes: backendToken.volumes,
+          transactions: backendToken.transactions,
+          pairCreatedAt: backendToken.pairCreatedAt,
+
+          // Social links
+          socials: {
+            twitter: backendToken.socials?.twitter,
+            telegram: backendToken.socials?.telegram,
+            discord: backendToken.socials?.discord,
+            website: backendToken.socials?.website
+          },
+
+          // Status
+          status: backendToken.is_active === false ? "inactive" : "active",
+          websites: backendToken.websites || [],
+
+          // Supply & ranking
+          total_supply: backendToken.total_supply,
+          priority_score: backendToken.priority_score,
+          first_seen_on_jupiter_at: backendToken.first_seen_on_jupiter_at,
+        }))
+        .slice(0, maxHotTokens);
+
+      setHotTokens(transformedTokens);
+      setHotTokensError(null);
+      setHotTokensLoading(false);
+
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.log('[useStandardizedTokenData] Hot tokens request aborted');
+        return;
+      }
+
+      console.error('[useStandardizedTokenData] Error fetching hot tokens:', err);
+      setHotTokensError(err.message || 'Failed to fetch hot tokens');
+      setHotTokensLoading(false);
+    }
+  }, [maxHotTokens]);
+
+  // Fetch hot tokens when maxHotTokens changes
+  useEffect(() => {
+    fetchHotTokens();
+  }, [fetchHotTokens]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Apply filters
   const filteredTokens = useMemo(() => {
@@ -291,30 +415,6 @@ export function useStandardizedTokenData(
       }
     });
   }, [filteredTokens, sortMethod]);
-
-  // Calculate hot tokens (most active/volatile)
-  const hotTokens = useMemo(() => {
-    if (!tokens || tokens.length === 0) return [];
-
-    // Filter tokens with volume > 0
-    const activeTokens = tokens.filter(token => Number(token.volume24h) > 0);
-
-    // Sort by hot score (custom algorithm)
-    return [...activeTokens]
-      .sort((a, b) => {
-        // Hot tokens algorithm: combination of change, volume, and marketcap with emphasis on volatility
-        const getHotScore = (token: Token) => {
-          const change = Number(token.change24h) || 0;
-          const volume = Number(token.volume24h) || 0;
-          const marketCap = Number(token.marketCap) || 0;
-          const absChange = Math.abs(change);
-          // Higher score for tokens with high volatility, decent volume, and reasonable market cap
-          return (absChange * 10) + (Math.log10(volume) * 2) + (Math.log10(marketCap) * 0.5);
-        };
-        return getHotScore(b) - getHotScore(a);
-      })
-      .slice(0, maxHotTokens);
-  }, [tokens, maxHotTokens]);
 
   // Calculate top tokens (by market cap)
   const topTokens = useMemo(() => {
@@ -403,6 +503,12 @@ export function useStandardizedTokenData(
     return colors[symbol] || '#7F00FF';
   }, []);
 
+  // Enhanced refresh function that refreshes both data sources
+  const enhancedRefresh = useCallback(() => {
+    refresh(); // Refresh main token data
+    fetchHotTokens(); // Refresh hot tokens
+  }, [refresh, fetchHotTokens]);
+
   // Create TokenData versions of token arrays for backward compatibility
   const tokensAsTokenData = useMemo(() => tokens.map(tokenToTokenData), [tokens]);
   const hotTokensAsTokenData = useMemo(() => hotTokens.map(tokenToTokenData), [hotTokens]);
@@ -410,8 +516,8 @@ export function useStandardizedTokenData(
 
   return {
     tokens,
-    isLoading: underlyingIsLoading,
-    error,
+    isLoading: underlyingIsLoading || hotTokensLoading,
+    error: error || hotTokensError,
     connectionState,
     isConnected,
     lastUpdate,
@@ -420,7 +526,7 @@ export function useStandardizedTokenData(
     filteredTokens,
     sortedTokens,
 
-    // Selected tokens
+    // Selected tokens - HOT TOKENS NOW FROM REST API! 🚀
     hotTokens,
     topTokens,
 
@@ -441,7 +547,7 @@ export function useStandardizedTokenData(
     topTokensAsTokenData,
 
     // Actions
-    refresh,
+    refresh: enhancedRefresh,
     setFilter,
     setSortMethod
   };

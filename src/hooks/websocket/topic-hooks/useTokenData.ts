@@ -45,7 +45,7 @@ const transformBackendTokenData = (backendToken: any): Token => {
     contractAddress: backendToken.address || "",
     symbol: backendToken.symbol || "",
     name: backendToken.name || "",
-    
+
     // Numbers not strings
     price: backendToken.price || 0,
     market_cap: backendToken.market_cap || 0,
@@ -57,18 +57,18 @@ const transformBackendTokenData = (backendToken: any): Token => {
     liquidity: backendToken.liquidity || 0,
     fdv: backendToken.fdv || 0,
     decimals: backendToken.decimals || 9,
-    
+
     // Visual/metadata
     image_url: backendToken.image_url || "",
     header_image_url: backendToken.header_image_url || "",
-    
+
     // Legacy images for backward compatibility
     images: {
       imageUrl: backendToken.image_url || "",
       headerImage: backendToken.header_image_url || "",
       openGraphImage: ""
     },
-    
+
     // Social links (now strings)
     socials: {
       twitter: backendToken.socials?.twitter,
@@ -76,7 +76,7 @@ const transformBackendTokenData = (backendToken: any): Token => {
       discord: backendToken.socials?.discord,
       website: backendToken.socials?.website
     },
-    
+
     status: backendToken.is_active === false ? "inactive" : "active",
     websites: backendToken.websites || []
   };

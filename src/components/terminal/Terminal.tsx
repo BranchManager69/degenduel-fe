@@ -955,7 +955,7 @@ export const Terminal = ({
           className="fixed z-[99999] cursor-grab active:cursor-grabbing group minimized-terminal-draggable-area overflow-visible"
           style={{
             left: '24px',
-            top: '50%',
+            top: '20%',
             transform: 'translateY(-50%)',
           }}
           drag

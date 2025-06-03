@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthDebugPanel } from "../../../components/debug";
+import { TokenSearch } from "../../../components/common/TokenSearch";
 import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
 import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeTokensGrid";
 import { OptimizedTokensHeader } from "../../../components/tokens-list/OptimizedTokensHeader";
@@ -10,7 +11,7 @@ import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
 import { TokenSortMethod, useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
 import { useStore } from "../../../store/useStore";
-import { Token, TokenResponseMetadata } from "../../../types";
+import { Token, TokenResponseMetadata, SearchToken } from "../../../types";
 import { resetToDefaultMeta } from "../../../utils/ogImageUtils";
 import { DegenDuelTop30 } from "@/components/trending/DegenDuelTop30";
 
@@ -280,10 +281,7 @@ export const TokensPage: React.FC = () => {
     };
   }, [hasMoreTokens, isLoadingMore, loadMoreTokens]);
 
-  // Handle search input with controlled component
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchQuery(value);
-  }, []);
+  // Note: handleSearchChange removed since we now use TokenSearch component
 
   // Handle sort change
   const handleSortChange = useCallback((field: string, direction: "asc" | "desc") => {
@@ -295,6 +293,17 @@ export const TokensPage: React.FC = () => {
   const handleRefresh = useCallback(() => {
     refresh();
   }, [refresh]);
+
+  // Handle token search selection
+  const handleTokenSearchSelect = useCallback((token: SearchToken) => {
+    // Navigate to the token detail page
+    if (token.symbol) {
+      navigate(`/tokens/${token.symbol}`);
+    } else {
+      // Fallback to address if no symbol
+      navigate(`/tokens?address=${token.address}`);
+    }
+  }, [navigate]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -338,12 +347,11 @@ export const TokensPage: React.FC = () => {
         <div className="mt-6 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Search tokens..."
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full px-4 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-brand-400"
+              <TokenSearch
+                onSelectToken={handleTokenSearchSelect}
+                placeholder="Search tokens by symbol, name, or address..."
+                variant="modern"
+                showPriceData={true}
               />
             </div>
             <div className="flex gap-2">

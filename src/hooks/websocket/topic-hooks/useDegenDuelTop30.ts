@@ -1,17 +1,17 @@
 /**
- * useDegenDuelTop30 Hook
+ * useDegenDuelTop30 Hook - NUKED AND REBUILT! 🚀
  * 
- * Specialized WebSocket Hook for DegenDuel's Proprietary Top 30 Trending Tokens
- * Uses the enhanced DegenDuel Score™ algorithm for curated, high-energy token list
+ * Now powered by the new /api/tokens/trending REST API with quality_level=strict
+ * Eliminated WebSocket complexity in favor of clean, fast REST calls
  * 
- * @author DegenDuel Team
+ * @author DegenDuel Team  
  * @created 2025-01-15
+ * @updated 2025-06-03 - NUCLEAR REPLACEMENT with REST API architecture
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
+import { API_URL } from '../../../config/config';
 import { Token } from '../../../types';
-import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 
 // Enhanced Token interface for DegenDuel Top 30
 export interface DegenDuelToken extends Token {
@@ -42,9 +42,9 @@ export interface DegenDuelTop30Response {
 }
 
 export interface DegenDuelTop30Options {
-  limit?: number; // Default 30, max 50
+  limit?: number; // Default 30, max 200
   refreshInterval?: number; // Auto-refresh interval in ms
-  includeSparklines?: boolean;
+  includeSparklines?: boolean; // When backend supports it, request sparkline data
 }
 
 // Transform backend DegenDuel token data to frontend format
@@ -56,7 +56,7 @@ const transformDegenDuelToken = (backendToken: any): DegenDuelToken => {
     contractAddress: backendToken.address || "", // backward compat
     symbol: backendToken.symbol || "",
     name: backendToken.name || "",
-    
+
     // Visual/metadata
     image_url: backendToken.image_url || "",
     header_image_url: backendToken.header_image_url || "",
@@ -64,12 +64,12 @@ const transformDegenDuelToken = (backendToken: any): DegenDuelToken => {
     decimals: backendToken.decimals || 9,
     description: backendToken.description,
     tags: backendToken.tags || [],
-    
+
     // Supply & ranking
     total_supply: backendToken.total_supply,
     priority_score: backendToken.priority_score,
     first_seen_on_jupiter_at: backendToken.first_seen_on_jupiter_at,
-    
+
     // Price data (numbers, not strings!)
     price: backendToken.price || 0,
     change_24h: backendToken.change_24h || 0,
@@ -80,13 +80,13 @@ const transformDegenDuelToken = (backendToken: any): DegenDuelToken => {
     liquidity: backendToken.liquidity || 0,
     volume_24h: backendToken.volume_24h || 0,
     volume24h: String(backendToken.volume_24h || 0), // backward compat
-    
+
     // Enhanced timeframe data
     priceChanges: backendToken.priceChanges,
     volumes: backendToken.volumes,
     transactions: backendToken.transactions,
     pairCreatedAt: backendToken.pairCreatedAt,
-    
+
     // Social links (now strings)
     socials: {
       twitter: backendToken.socials?.twitter,
@@ -94,7 +94,7 @@ const transformDegenDuelToken = (backendToken: any): DegenDuelToken => {
       discord: backendToken.socials?.discord,
       website: backendToken.socials?.website
     },
-    
+
     // Status
     status: backendToken.is_active === false ? "inactive" : "active",
     websites: backendToken.websites || []
@@ -116,135 +116,102 @@ const transformDegenDuelToken = (backendToken: any): DegenDuelToken => {
 
 /**
  * Hook for accessing DegenDuel's Top 30 trending tokens with proprietary scoring
+ * NOW POWERED BY REST API! 🚀
  */
 export function useDegenDuelTop30(options: DegenDuelTop30Options = {}) {
   const {
     limit = 30,
     refreshInterval = 30000, // 30 seconds
-    includeSparklines = true
+    includeSparklines = false // Will be used when backend supports sparklines
   } = options;
 
   // State
   const [tokens, setTokens] = useState<DegenDuelToken[]>([]);
   const [metadata, setMetadata] = useState<DegenDuelTop30Response['metadata'] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [initialized, setInitialized] = useState(false);
+  const [isConnected, setIsConnected] = useState<boolean>(true); // REST is always "connected"
 
   // Refs
-  const isLoadingRef = useRef(isLoading);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  isLoadingRef.current = isLoading;
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Message handler for WebSocket responses
-  const handleMessage = useCallback((message: any) => {
+  // Fetch tokens from REST API
+  const fetchTokens = useCallback(async () => {
     try {
-      console.log('[useDegenDuelTop30] Received message:', message);
+      // Cancel any pending request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
 
-      // Handle DegenDuel Top 30 responses
-      if (message.type === 'DATA' && message.topic === 'market-data' && message.action === 'degenDuelTop30') {
-        if (message.data && Array.isArray(message.data)) {
-          console.log(`[useDegenDuelTop30] Processing ${message.data.length} trending tokens`);
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
 
-          const transformedTokens = message.data.map(transformDegenDuelToken);
-          setTokens(transformedTokens);
-          setMetadata(message.metadata || null);
-          setLastUpdate(new Date());
-          setIsLoading(false);
+      console.log(`[useDegenDuelTop30] Fetching ${limit} DegenDuel Top tokens`);
 
-          dispatchWebSocketEvent('degenduel_top30_update', {
-            socketType: 'market-data',
-            message: `Updated ${message.data.length} DegenDuel Top 30 tokens`,
-            timestamp: new Date().toISOString(),
-            score_range: transformedTokens.length > 0 ?
-              `${transformedTokens[transformedTokens.length - 1].degenduel_score.toFixed(1)} - ${transformedTokens[0].degenduel_score.toFixed(1)}` :
-              'none'
-          });
+      // Build URL with parameters
+      // Note: /api/tokens/trending defaults to 'strict' quality when no quality_level is specified
+      const url = new URL(`${API_URL}/tokens/trending`);
+      url.searchParams.set('limit', String(limit));
+
+      // Add sparklines parameter when backend supports it
+      if (includeSparklines) {
+        url.searchParams.set('include_sparklines', 'true');
+      }
+
+      const response = await fetch(url.toString(), {
+        signal,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
         }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Handle RESPONSE messages for initial data
-      else if (message.type === 'RESPONSE' && message.topic === 'market-data' && message.action === 'getDegenDuelTop30') {
-        if (message.data && Array.isArray(message.data)) {
-          console.log(`[useDegenDuelTop30] Processing ${message.data.length} trending tokens from RESPONSE`);
+      const data = await response.json();
 
-          const transformedTokens = message.data.map(transformDegenDuelToken);
-          setTokens(transformedTokens);
-          setMetadata(message.metadata || null);
-          setLastUpdate(new Date());
-          setIsLoading(false);
-
-          dispatchWebSocketEvent('degenduel_top30_init', {
-            socketType: 'market-data',
-            message: `Initialized DegenDuel Top 30 with ${message.data.length} tokens`,
-            timestamp: new Date().toISOString()
-          });
-        }
+      if (!data.success) {
+        throw new Error(data.error || 'API request failed');
       }
 
-      if (isLoadingRef.current) {
-        setIsLoading(false);
-      }
-    } catch (err) {
-      console.error('[useDegenDuelTop30] Error processing message:', err);
+      console.log(`[useDegenDuelTop30] Successfully fetched ${data.data.length} tokens`);
+
+      // Transform tokens to frontend format
+      const transformedTokens = data.data.map(transformDegenDuelToken);
+
+      setTokens(transformedTokens);
+      setMetadata(data.metadata || null);
+      setLastUpdate(new Date());
+      setError(null);
       setIsLoading(false);
-      dispatchWebSocketEvent('error', {
-        socketType: 'market-data',
-        message: 'Error processing DegenDuel Top 30 data',
-        error: err instanceof Error ? err.message : String(err)
-      });
+      setIsConnected(true);
+
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.log('[useDegenDuelTop30] Request aborted');
+        return;
+      }
+
+      console.error('[useDegenDuelTop30] Error fetching tokens:', err);
+      setError(err.message || 'Failed to fetch tokens');
+      setIsLoading(false);
+      setIsConnected(false);
     }
-  }, []);
+  }, [limit, includeSparklines]);
 
-  // Connect to WebSocket
-  const ws = useWebSocket();
-
-  // Register message listener
+  // Initial load
   useEffect(() => {
-    const unregister = ws.registerListener(
-      'degenduel-top30-hook',
-      ['DATA', 'RESPONSE', 'ERROR'] as any[],
-      handleMessage,
-      ['market-data']
-    );
-    return unregister;
-  }, [handleMessage, ws.registerListener]);
-
-  // Subscribe and request initial data
-  useEffect(() => {
-    if (ws.isConnected && !initialized) {
-      // Subscribe to market-data topic
-      ws.subscribe(['market-data']);
-
-      // Request initial DegenDuel Top 30 data
-      const requestData = {
-        limit,
-        includeSparklines,
-        algorithm: 'degenduel'
-      };
-
-      ws.request('market-data', 'getDegenDuelTop30', requestData);
-      setInitialized(true);
-
-      dispatchWebSocketEvent('degenduel_top30_subscribe', {
-        socketType: 'market-data',
-        message: 'DegenDuel Top 30 subscription initialized',
-        options: { limit, includeSparklines }
-      });
-    }
-  }, [ws.isConnected, initialized, limit, includeSparklines, ws.subscribe, ws.request]);
+    fetchTokens();
+  }, [fetchTokens]);
 
   // Auto-refresh mechanism
   useEffect(() => {
-    if (refreshInterval > 0 && ws.isConnected && initialized) {
-      refreshIntervalRef.current = setInterval(() => {
-        const requestData = {
-          limit,
-          includeSparklines,
-          algorithm: 'degenduel'
-        };
-        ws.request('market-data', 'getDegenDuelTop30', requestData);
-      }, refreshInterval);
+    if (refreshInterval > 0) {
+      refreshIntervalRef.current = setInterval(fetchTokens, refreshInterval);
 
       return () => {
         if (refreshIntervalRef.current) {
@@ -253,31 +220,26 @@ export function useDegenDuelTop30(options: DegenDuelTop30Options = {}) {
         }
       };
     }
-  }, [refreshInterval, ws.isConnected, initialized, limit, includeSparklines, ws.request]);
+  }, [refreshInterval, fetchTokens]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   // Manual refresh function
   const refresh = useCallback(() => {
     setIsLoading(true);
-
-    if (ws.isConnected) {
-      const requestData = {
-        limit,
-        includeSparklines,
-        algorithm: 'degenduel'
-      };
-
-      ws.request('market-data', 'getDegenDuelTop30', requestData);
-
-      dispatchWebSocketEvent('degenduel_top30_refresh', {
-        socketType: 'market-data',
-        message: 'Manually refreshing DegenDuel Top 30',
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      console.warn('[useDegenDuelTop30] Cannot refresh - WebSocket not connected');
-      setIsLoading(false);
-    }
-  }, [ws.isConnected, ws.request, limit, includeSparklines]);
+    fetchTokens();
+  }, [fetchTokens]);
 
   // Helper functions
   const getTokensByCategory = useCallback((category: DegenDuelToken['trend_category']) => {
@@ -296,8 +258,8 @@ export function useDegenDuelTop30(options: DegenDuelTop30Options = {}) {
     metadata,
     isLoading,
     lastUpdate,
-    isConnected: ws.isConnected,
-    error: ws.connectionError,
+    isConnected,
+    error,
 
     // Helpers
     getTokensByCategory,

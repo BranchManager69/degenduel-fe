@@ -1,27 +1,37 @@
 import React, { useEffect, useRef, useState } from "react";
-
 import { useDebounce } from "../../hooks/utilities/useDebounce";
-import type { User } from "../../services/userService";
 
-interface UserSearchProps {
-  onSearch: (query: string) => void;
-  onSelectUser?: (user: User) => void;
+interface PublicUser {
+  nickname: string;
+  twitter_handle: string | null;
+  role: string;
+  is_banned: boolean;
+  total_contests: number;
+  experience_points: number;
+  profile_image_url?: string;
+  _count: {
+    contest_participants: number;
+    created_contests: number;
+  };
+}
+
+interface PublicUserSearchProps {
+  onSelectUser: (user: PublicUser) => void;
   placeholder?: string;
   className?: string;
   variant?: "default" | "minimal" | "modern";
   autoFocus?: boolean;
 }
 
-export const UserSearch: React.FC<UserSearchProps> = ({
-  onSearch,
+export const PublicUserSearch: React.FC<PublicUserSearchProps> = ({
   onSelectUser,
-  placeholder = "Search by wallet address or nickname...",
+  placeholder = "Search by username or @twitter...",
   className = "",
   variant = "default",
   autoFocus = false,
 }) => {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<User[]>([]);
+  const [suggestions, setSuggestions] = useState<PublicUser[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +47,7 @@ export const UserSearch: React.FC<UserSearchProps> = ({
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (!debouncedQuery) {
+      if (!debouncedQuery || debouncedQuery.length < 2) {
         setSuggestions([]);
         setError(null);
         return;
@@ -46,29 +56,26 @@ export const UserSearch: React.FC<UserSearchProps> = ({
       try {
         setLoading(true);
         setError(null);
-        // Use admin search endpoint for admin users
+        
         const response = await fetch(
-          `/api/users/admin/search?search=${encodeURIComponent(debouncedQuery)}&limit=10`,
-          { credentials: 'include' }
+          `/api/users/search?search=${encodeURIComponent(debouncedQuery)}&limit=5`,
+          {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
         );
         
         if (!response.ok) {
-          if (response.status === 403) {
-            throw new Error('Admin access required');
-          }
-          throw new Error('Failed to search users');
+          throw new Error(`Failed to search users: ${response.status}`);
         }
         
         const data = await response.json();
-        const results = data.users || [];
-        setSuggestions(results);
+        setSuggestions(data.users || []);
       } catch (error) {
         console.error("Failed to fetch suggestions:", error);
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch users. Please try again.",
-        );
+        setError("Failed to search users. Please try again.");
         setSuggestions([]);
       } finally {
         setLoading(false);
@@ -92,12 +99,9 @@ export const UserSearch: React.FC<UserSearchProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSuggestionClick = (user: User) => {
-    setQuery(user.nickname || user.wallet_address);
-    onSearch(user.wallet_address);
-    if (onSelectUser) {
-      onSelectUser(user);
-    }
+  const handleSuggestionClick = (user: PublicUser) => {
+    setQuery(user.twitter_handle || user.nickname);
+    onSelectUser(user);
     setShowSuggestions(false);
   };
 
@@ -135,9 +139,9 @@ export const UserSearch: React.FC<UserSearchProps> = ({
     if (suggestions.length > 0) {
       return (
         <ul className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-dark-300 scrollbar-track-dark-200">
-          {suggestions.map((user) => (
+          {suggestions.map((user, index) => (
             <li
-              key={user.wallet_address}
+              key={`${user.nickname}-${index}`}
               onClick={() => handleSuggestionClick(user)}
               className={`px-4 py-2 hover:bg-dark-300/50 cursor-pointer transition-colors border-b border-dark-300/50 last:border-0 ${
                 variant === "modern"
@@ -145,55 +149,45 @@ export const UserSearch: React.FC<UserSearchProps> = ({
                   : ""
               }`}
             >
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="text-gray-100 font-medium flex items-center gap-2">
-                    {user.nickname || "Anonymous"}
-                    {user.is_banned && (
-                      <span className="px-1.5 py-0.5 bg-red-500/10 text-red-400 rounded text-xs">
-                        BANNED
-                      </span>
-                    )}
-                  </div>
-                  {user.twitter_handle && (
-                    <div className="text-sm text-brand-400">
-                      {user.twitter_handle}
-                    </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {user.profile_image_url && (
+                    <img
+                      src={user.profile_image_url}
+                      alt={user.nickname}
+                      className="w-8 h-8 rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
                   )}
-                  <div className="text-sm text-gray-400 font-mono mt-1">
-                    {user.wallet_address.substring(0, 6)}...
-                    {user.wallet_address.substring(
-                      user.wallet_address.length - 4,
+                  <div>
+                    <div className="text-gray-100 font-medium flex items-center gap-2">
+                      {user.nickname}
+                      {user.is_banned && (
+                        <span className="px-1.5 py-0.5 bg-red-500/10 text-red-400 rounded text-xs">
+                          BANNED
+                        </span>
+                      )}
+                    </div>
+                    {user.twitter_handle && (
+                      <div className="text-sm text-brand-400">
+                        {user.twitter_handle}
+                      </div>
                     )}
                   </div>
                 </div>
                 {variant !== "minimal" && (
                   <div className="text-right text-xs">
                     <div className="text-gray-400">
-                      Win Rate:{" "}
-                      <span className="text-gray-100">
-                        {user.total_contests > 0
-                          ? `${(
-                              (user.total_wins / user.total_contests) *
-                              100
-                            ).toFixed(1)}%`
-                          : "0%"}
-                      </span>
+                      Contests: <span className="text-gray-100">{user.total_contests}</span>
                     </div>
-                    <div className="text-gray-400 mt-0.5">
-                      Balance:{" "}
-                      <span className="text-gray-100">
-                        ${parseFloat(user.balance).toLocaleString()}
-                      </span>
+                    <div className="text-gray-400">
+                      XP: <span className="text-gray-100">{user.experience_points}</span>
                     </div>
                   </div>
                 )}
               </div>
-              {user.ban_reason && variant !== "minimal" && (
-                <div className="mt-2 text-xs text-red-400">
-                  Ban reason: {user.ban_reason}
-                </div>
-              )}
             </li>
           ))}
         </ul>
@@ -238,7 +232,6 @@ export const UserSearch: React.FC<UserSearchProps> = ({
           onChange={(e) => {
             setQuery(e.target.value);
             setShowSuggestions(true);
-            onSearch(e.target.value);
             setError(null);
           }}
           onFocus={() => setShowSuggestions(true)}
@@ -252,7 +245,6 @@ export const UserSearch: React.FC<UserSearchProps> = ({
             onClick={() => {
               setQuery("");
               setShowSuggestions(false);
-              onSearch("");
               if (inputRef.current) {
                 inputRef.current.focus();
               }
@@ -274,7 +266,6 @@ export const UserSearch: React.FC<UserSearchProps> = ({
         )}
       </div>
 
-      {/* Suggestions Dropdown */}
       {showSuggestions && (query || loading) && (
         <div className={getSuggestionsContainerClass()}>
           {renderSuggestions()}

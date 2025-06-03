@@ -57,6 +57,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     const now = new Date();
     // Use user's local timezone, set to current hour with minutes/seconds zeroed
     const adjustedTime = new Date(now);
+    adjustedTime.setHours(adjustedTime.getHours() + 6);
     adjustedTime.setMinutes(0, 0, 0); // Zero out minutes and seconds for clean hour
     return adjustedTime.toISOString().slice(0, 16);
   };
@@ -86,7 +87,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     start_time: getNextHourDateTime(),
     end_time: new Date(
       new Date(getNextHourDateTime()).getTime() +
-        60 * 60 * 1000,
+        24 * 60 * 60 * 1000,
     )
       .toISOString()
       .slice(0, 16),

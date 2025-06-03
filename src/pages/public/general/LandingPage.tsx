@@ -177,22 +177,26 @@ export const LandingPage: React.FC = () => {
       setLoading(wsLoading);
       setError(wsError);
 
-      // Determine featured contest - prioritize by highest prize pool
+      // Determine featured contest - look for CROWN only
       const allAvailableContests = [...convertedActiveContests, ...convertedUpcomingContests];
-      if (allAvailableContests.length > 0) {
-        // Find contest with highest estimated prize pool
-        const featured = allAvailableContests.reduce((prev, current) => {
-          const prevPrize = Number(prev.max_participants) * Number(prev.entry_fee) * 0.9;
-          const currentPrize = Number(current.max_participants) * Number(current.entry_fee) * 0.9;
-          return currentPrize > prevPrize ? current : prev;
-        });
+      
+      // Find Crown Contest - ONE METHOD ONLY
+      const crownContests = allAvailableContests.filter(contest => 
+        contest.name.toUpperCase().includes('CROWN')
+      );
+      
+      if (crownContests.length > 0) {
+        // If multiple crown contests, pick the one starting soonest
+        const featured = crownContests.sort((a, b) => {
+          const aStart = new Date(a.start_time).getTime();
+          const bStart = new Date(b.start_time).getTime();
+          return aStart - bStart;
+        })[0];
         
-        // Only feature contests with substantial prize pools (over 0.5 SOL)
-        const featuredPrize = Number(featured.max_participants) * Number(featured.entry_fee) * 0.9;
-        if (featuredPrize >= 0.5) {
-          setFeaturedContest(featured);
-        } else {
-          setFeaturedContest(null);
+        setFeaturedContest(featured);
+        
+        if (crownContests.length > 1) {
+          console.warn(`[LandingPage] Multiple Crown Contests found (${crownContests.length}). Showing the one starting soonest:`, featured.name);
         }
       } else {
         setFeaturedContest(null);
@@ -804,15 +808,16 @@ export const LandingPage: React.FC = () => {
                         
                         {/* Contest sections container */}
                         <div className="mb-8">
-                          {/* Featured Contest Section - Show the most prominent contest */}
+                          {/* Featured Contest Section - Show CROWN CONTEST only */}
                           {featuredContest && (
                             <EnhancedContestSection
-                              title="Featured Contest"
-                              type="featured"
+                              title="Crown Contest"
+                              type={featuredContest.status}
                               contests={[]}
                               loading={loading}
                               featuredContest={featuredContest}
-                              featuredLabel="🏆 CONTEST OF THE WEEK"
+                              featuredLabel="👑 CROWN CONTEST"
+                              isFeatureSection={true}
                             />
                           )}
 
