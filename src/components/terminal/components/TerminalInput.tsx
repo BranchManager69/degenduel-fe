@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import React from 'react';
 import { TerminalInputProps } from '../types';
 import { VoiceInput } from './VoiceInput';
+import { useAuth } from '../../../contexts/UnifiedAuthContext';
 
 /**
  * TerminalInput - Handles user input in the terminal
@@ -23,6 +24,10 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   glitchActive = false,
 }) => {
   const inputRef = React.useRef<HTMLTextAreaElement>(null);
+  const { user } = useAuth();
+  
+  // Check if user has admin or super admin privileges for voice feature
+  const hasVoiceAccess = user?.is_admin || user?.is_superadmin;
   
   // Auto-resize textarea
   const adjustHeight = () => {
@@ -213,20 +218,6 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
             </motion.span>
           </motion.div>
           
-          {/* Voice input button */}
-          <VoiceInput
-            onTranscript={(transcript) => {
-              // Set the transcript as input
-              setUserInput(transcript);
-              // Don't auto-submit, let user review first
-            }}
-            onAudioResponse={() => {
-              // Audio responses are handled by the Real-Time API directly
-              console.log('[TerminalInput] Received audio response');
-            }}
-            className="mr-2"
-          />
-          
           {/* Animated placeholder text, visible only when input is empty */}
           {userInput === '' && (
             <div className="absolute left-9 pointer-events-none text-mauve-light/70 font-mono text-sm">
@@ -310,6 +301,22 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
               overflowY: 'auto'
             }}
           />
+          
+          {/* Voice input button - positioned at far right - Admin/SuperAdmin only */}
+          {hasVoiceAccess && (
+            <VoiceInput
+              onTranscript={(transcript) => {
+                // Set the transcript as input
+                setUserInput(transcript);
+                // Don't auto-submit, let user review first
+              }}
+              onAudioResponse={() => {
+                // Audio responses are handled by the Real-Time API directly
+                console.log('[TerminalInput] Received audio response');
+              }}
+              className="ml-2 flex-shrink-0"
+            />
+          )}
         </div>
       </motion.div>
     </div>

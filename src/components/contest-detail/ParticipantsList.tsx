@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { API_URL } from "../../config/config";
 import type { User, UserLevel } from "../../services/userService";
 import { userService } from "../../services/userService";
-import { UserSearch } from "../admin/UserSearch";
+import { PublicUserSearch } from "../common/PublicUserSearch";
 import { Card, CardContent, CardHeader } from "../ui/Card";
 
 interface Participant {
@@ -270,9 +270,11 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
         </div>
 
         {/* User search component */}
-        <UserSearch
-          onSearch={handleSearch}
-          onSelectUser={handleSelectUser}
+        <PublicUserSearch
+          onSelectUser={(user) => {
+            handleSelectUser(user as any);
+            handleSearch(user.nickname);
+          }}
           placeholder="Search participants..."
           variant="modern"
           className="w-full"

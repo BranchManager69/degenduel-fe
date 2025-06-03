@@ -19,10 +19,9 @@ import { TokenGrid } from "../../components/portfolio-selection/TokenGrid";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Skeleton } from "../../components/ui/Skeleton";
-import { useDebounce } from "../../hooks/utilities/useDebounce";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
-import { Contest, Token } from "../../types/index";
+import { Contest, Token, SearchToken } from "../../types/index";
 
 // Declare Buffer on window type
 declare global {
@@ -365,11 +364,10 @@ export const TokenSelection: React.FC = () => {
     new Map(),
   );
   const [marketCapFilter, setMarketCapFilter] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   
-  // Debounce search query to reduce filtering operations
-  const debouncedSearchQuery = useDebounce(searchQuery, 300); // 300ms delay
+  // Keep debouncedSearchQuery as empty for TokenGrid compatibility
+  const debouncedSearchQuery = "";
   const [contest, setContest] = useState<Contest | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const user = useStore((state) => state.user);
@@ -536,6 +534,19 @@ export const TokenSelection: React.FC = () => {
   const handlePreviewPortfolio = () => {
     setShowPreviewModal(true);
   };
+
+  // Handle token search selection
+  const handleTokenSearchSelect = useCallback((token: SearchToken) => {
+    // Find if this token exists in our current token list
+    const existingToken = memoizedTokens.find(t => t.contractAddress === token.address);
+    if (existingToken) {
+      // If found, select it with 10% weight as default
+      handleTokenSelect(token.address, 10);
+    } else {
+      // If not found in current list, show a message
+      console.log('Token not found in current token list:', token);
+    }
+  }, [memoizedTokens, handleTokenSelect]);
 
   // Generate portfolio summary for the modal
   const portfolioSummary = useMemo(() => {
@@ -1150,10 +1161,9 @@ export const TokenSelection: React.FC = () => {
                       <TokenFilters
                         marketCapFilter={marketCapFilter}
                         onMarketCapFilterChange={setMarketCapFilter}
-                        searchQuery={searchQuery}
-                        onSearchChange={setSearchQuery}
                         viewMode={viewMode}
                         onViewModeChange={setViewMode}
+                        onTokenSearchSelect={handleTokenSearchSelect}
                       />
                       
                       {/* Jupiter Filter Controls */}

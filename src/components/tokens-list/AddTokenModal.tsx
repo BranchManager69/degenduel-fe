@@ -6,6 +6,8 @@ import { ddApi } from "../../services/dd-api";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Select } from "../ui/Select";
+import { TokenSearch } from "../common/TokenSearch";
+import { SearchToken } from "../../types";
 // Note: Admin functionality still uses API for mutations
 // WebSocket is read-only for token data
 
@@ -26,6 +28,13 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
     contractAddress: "",
     chain: "SOLANA",
   });
+
+  const handleTokenSearchSelect = (token: SearchToken) => {
+    setFormData({
+      ...formData,
+      contractAddress: token.address,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,6 +124,18 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
 
           <div className="p-6 space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Search Token (Optional)
+                </label>
+                <TokenSearch
+                  onSelectToken={handleTokenSearchSelect}
+                  placeholder="Search existing tokens to auto-fill address..."
+                  variant="minimal"
+                  showPriceData={false}
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Contract Address

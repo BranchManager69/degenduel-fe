@@ -15,6 +15,7 @@ export interface UserStats {
 export interface User {
   wallet_address: string;
   nickname: string;
+  twitter_handle?: string | null;
   role: string;
   is_banned: boolean;
   ban_reason: string | null;

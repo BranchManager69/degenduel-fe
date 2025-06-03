@@ -28,23 +28,10 @@ import {
   Tooltip,
   XAxis, YAxis
 } from 'recharts';
+import { TokenSearch } from './common/TokenSearch';
+import { SearchToken } from '../types';
 import { AcquisitionLevel, ScenarioType, TokenInfo, useLiquiditySim } from '../hooks/websocket/topic-hooks/useLiquiditySim';
-import { ddApi } from '../services/dd-api';
-
-// Token search response
-interface TokenSearchResponse {
-  success: boolean;
-  tokens: {
-    address: string;
-    name: string;
-    symbol: string;
-    price_usd: number;
-    market_cap: number;
-    total_supply: number;
-    circulating_supply: number;
-    logo_url: string;
-  }[];
-}
+// Note: TokenSearchResponse and ddApi removed since we now use TokenSearch component
 
 // Formatters for numbers
 const formatters = {
@@ -163,12 +150,8 @@ const LiquiditySimulator: React.FC = () => {
     getTokenInfo
   } = useLiquiditySim();
   
-  // Token search state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<TokenSearchResponse | null>(null);
-  const [searching, setSearching] = useState(false);
+  // Token selection state
   const [selectedToken, setSelectedToken] = useState<TokenInfo | null>(null);
-  const [searchError, setSearchError] = useState<string | null>(null);
   
   // UI state
   const [activeTab, setActiveTab] = useState<'parameters' | 'results' | 'grid'>('parameters');
@@ -191,47 +174,11 @@ const LiquiditySimulator: React.FC = () => {
     }));
   };
   
-  // Handle token search
-  const searchTokens = useCallback(async () => {
-    if (!searchQuery || searchQuery.length < 2) {
-      setSearchResults(null);
-      return;
-    }
-    
-    try {
-      setSearching(true);
-      setSearchError(null);
-      
-      const response = await ddApi.fetch(`/api/tokens/search?query=${encodeURIComponent(searchQuery)}`);
-      
-      if (!response.ok) {
-        throw new Error(`Search failed: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      setSearchResults(data);
-    } catch (error) {
-      console.error('Token search error:', error);
-      setSearchError('Failed to search tokens. Please try again.');
-    } finally {
-      setSearching(false);
-    }
-  }, [searchQuery]);
-  
-  // Debounce search
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      searchTokens();
-    }, 500);
-    
-    return () => clearTimeout(handler);
-  }, [searchQuery, searchTokens]);
-  
-  // Select a token and fetch its pool information
-  const handleSelectToken = useCallback((token: TokenSearchResponse['tokens'][0]) => {
+  // Note: Token search functions removed since we now use TokenSearch component
+
+  // Handle TokenSearch selection
+  const handleTokenSearchSelect = useCallback((token: SearchToken) => {
     getTokenInfo(token.address);
-    setSearchResults(null);
-    setSearchQuery('');
   }, [getTokenInfo]);
 
   // Log the simulation results
@@ -410,47 +357,13 @@ const LiquiditySimulator: React.FC = () => {
             <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg p-6">
               <h2 className="text-xl font-bold text-gray-100 mb-4">Token Selection</h2>
               
-              <div className="relative mb-6">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for a token..."
-                  className="w-full bg-dark-300/50 border border-dark-400 rounded-lg px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent"
+              <div className="mb-6">
+                <TokenSearch
+                  onSelectToken={handleTokenSearchSelect}
+                  placeholder="Search for a token to simulate..."
+                  variant="default"
+                  showPriceData={true}
                 />
-                
-                {/* Search Results Dropdown */}
-                {searchResults && searchResults.tokens.length > 0 && (
-                  <div className="absolute z-10 w-full mt-2 bg-dark-300 border border-dark-400 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {searchResults.tokens.map((token) => (
-                      <button
-                        key={token.address}
-                        onClick={() => handleSelectToken(token)}
-                        className="w-full px-4 py-2 text-left hover:bg-dark-400/50 flex items-center space-x-3"
-                      >
-                        {token.logo_url && (
-                          <img src={token.logo_url} alt={token.symbol} className="w-6 h-6 rounded-full" />
-                        )}
-                        <div className="flex-1">
-                          <div className="flex justify-between">
-                            <span className="font-medium text-gray-100">{token.symbol}</span>
-                            <span className="text-sm text-gray-400">{formatters.price.format(token.price_usd)}</span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-400">{token.name}</span>
-                            <span className="text-gray-500">MC: {formatters.marketCap(token.market_cap)}</span>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                
-                {searching && (
-                  <div className="absolute right-3 top-2.5">
-                    <div className="animate-spin h-5 w-5 border-t-2 border-brand-400 rounded-full"></div>
-                  </div>
-                )}
               </div>
               
               {/* Selected Token */}
@@ -482,9 +395,6 @@ const LiquiditySimulator: React.FC = () => {
                 </div>
               )}
               
-              {searchError && (
-                <div className="text-red-500 text-sm mt-2">{searchError}</div>
-              )}
             </div>
             
             {/* Simulation Tabs */}

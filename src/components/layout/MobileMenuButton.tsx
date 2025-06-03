@@ -23,9 +23,9 @@ import { CompactBalance } from "../ui/CompactBalance";
 import { getMenuItems } from './menu/menuConfig';
 import { NotificationsDropdown } from './menu/NotificationsDropdown';
 import {
-  MenuBackdrop,
-  MenuDivider,
-  SectionHeader
+    MenuBackdrop,
+    MenuDivider,
+    SectionHeader
 } from './menu/SharedMenuComponents';
 
 interface MobileMenuButtonProps {
@@ -536,8 +536,8 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                   </MenuItem>
                 ))}
 
-                {/* MCP Section - Special Styling for Mobile */}
-                <MenuDivider />
+                {/* MCP Section - DISABLED FOR NOW */}
+                {/* <MenuDivider />
                 <motion.div variants={itemVariants}>
                   <Link
                     to="/mcp"
@@ -550,22 +550,16 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                     onClick={() => setIsOpen(false)}
                     role="menuitem"
                   >
-                    {/* Background shine effect */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-                    
-                    {/* Scan line effect */}
                     <div className="absolute inset-0 overflow-hidden">
                       <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
                     </div>
-                    
                     <span className="relative font-semibold tracking-wide group-hover:text-shadow-sm whitespace-nowrap">Connect to Degen MCP</span>
-                    
-                    {/* Subtle pulse indicator */}
                     <div className="relative w-2 h-2 rounded-full bg-purple-400 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="absolute inset-0 rounded-full bg-purple-300 animate-ping opacity-40 group-hover:opacity-60" />
                     </div>
                   </Link>
-                </motion.div>
+                </motion.div> */}
 
                 {/* Twitter/X Section - Special Styling for Mobile */}
                 <motion.div variants={itemVariants}>
@@ -623,6 +617,70 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                           <div className="relative w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
                             <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
                               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                          </div>
+                        </a>
+                      );
+                    }
+                  })()}
+                </motion.div>
+
+                {/* Telegram Section - Special Styling for Mobile */}
+                <motion.div variants={itemVariants}>
+                  {(() => {
+                    const isTelegramLinked = user?.social_links?.telegram;
+                    
+                    if (isTelegramLinked) {
+                      // Connected state - show handle or "Connected"
+                      return (
+                        <div
+                          className="relative group overflow-hidden transition-all duration-300 ease-out
+                            flex items-center justify-between mx-3 px-3 py-2.5 text-sm rounded-md
+                            bg-gradient-to-r from-green-600/20 via-emerald-500/20 to-green-600/20
+                            border border-green-500/30
+                            text-green-200 cursor-default"
+                          role="menuitem"
+                        >
+                          <span className="relative font-semibold tracking-wide whitespace-nowrap">
+                            {user?.social_links?.telegram ? `@${user.social_links.telegram}` : 'Telegram Connected'}
+                          </span>
+                          
+                          {/* Check icon */}
+                          <div className="relative w-4 h-4 opacity-80">
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full text-green-400">
+                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            </svg>
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // Not connected - show connect button
+                      return (
+                        <a
+                          href="https://degenduel.me/api/auth/telegram/login"
+                          className="relative group overflow-hidden transition-all duration-300 ease-out
+                            flex items-center justify-between mx-3 px-3 py-2.5 text-sm rounded-md
+                            bg-gradient-to-r from-cyan-600/20 via-sky-500/20 to-cyan-600/20
+                            border border-cyan-500/30 hover:border-cyan-400/50
+                            text-cyan-200 hover:text-white
+                            hover:shadow-[0_0_12px_rgba(6,182,212,0.4)]"
+                          onClick={() => setIsOpen(false)}
+                          role="menuitem"
+                        >
+                          {/* Background shine effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                          
+                          {/* Scan line effect */}
+                          <div className="absolute inset-0 overflow-hidden">
+                            <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
+                          </div>
+                          
+                          <span className="relative font-semibold tracking-wide group-hover:text-shadow-sm whitespace-nowrap">Connect with Telegram</span>
+                          
+                          {/* Telegram icon */}
+                          <div className="relative w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+                              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
                             </svg>
                           </div>
                         </a>

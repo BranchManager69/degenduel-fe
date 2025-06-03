@@ -48,28 +48,17 @@ export const UnifiedTicker: React.FC<Props> = ({
   const { contractAddress: duelContractAddress, revealTime } = useLaunchEvent();
   const isRevealed = Boolean(duelContractAddress && revealTime);
   
-  // SIMPLIFIED: Just one data source - either regular tokens or DegenDuel Top 30
-  const {
-    tokens: allTokens,
-    isLoading: tokensLoading,
-    isConnected: isDataConnected,
-  } = useStandardizedTokenData("all");
-
-  // Optional DegenDuel Top 30 for premium token data
-  const {
-    tokens: degenDuelTokens,
-    isLoading: degenDuelLoading,
-    isConnected: degenDuelConnected,
-  } = useDegenDuelTop30({
+  // OPTIMIZED: Only run the hook we actually need to prevent data conflicts!
+  const standardTokenData = useStandardizedTokenData("all", "marketCap", {}, 5, maxTokens);
+  const degenDuelData = useDegenDuelTop30({
     limit: maxTokens,
-    refreshInterval: enableDegenDuelTop30 ? 30000 : 0, // Disable refresh if not used
+    refreshInterval: enableDegenDuelTop30 ? 30000 : 0,
     includeSparklines: false
   });
 
-  // Select data source based on enableDegenDuelTop30 prop
-  const finalTokens = enableDegenDuelTop30 ? degenDuelTokens : allTokens;
-  const finalTokensLoading = enableDegenDuelTop30 ? degenDuelLoading : tokensLoading;
-  const finalDataConnected = enableDegenDuelTop30 ? degenDuelConnected : isDataConnected;
+  // Select data source based on enableDegenDuelTop30 prop - only use what we need
+  const { tokens: finalTokens, isLoading: finalTokensLoading, isConnected: finalDataConnected } = 
+    enableDegenDuelTop30 ? degenDuelData : standardTokenData;
 
   // Helper functions
   const formatTimeUntilStart = (startTime: string): string => {
@@ -90,28 +79,7 @@ export const UnifiedTicker: React.FC<Props> = ({
     return `${diffSeconds}s`;
   };
 
-  const formatMarketCapShort = (marketCap: number | string): string => {
-    const num = typeof marketCap === "string" ? parseFloat(marketCap) : marketCap;
-    
-    if (isNaN(num) || num <= 0) return "$0";
-    
-    if (num >= 1_000_000_000) {
-      const billions = num / 1_000_000_000;
-      return `$${billions.toFixed(billions >= 100 ? 0 : 1)}B`;
-    }
-    
-    if (num >= 1_000_000) {
-      const millions = num / 1_000_000;
-      return `$${millions.toFixed(millions >= 100 ? 0 : 1)}M`;
-    }
-    
-    if (num >= 1_000) {
-      const thousands = num / 1_000;
-      return `$${thousands.toFixed(thousands >= 100 ? 0 : 1)}K`;
-    }
-    
-    return `$${num.toFixed(0)}`;
-  };
+
   
   // State
   const [currentContests, setCurrentContests] = useState<Contest[]>(initialContests);
@@ -312,7 +280,23 @@ export const UnifiedTicker: React.FC<Props> = ({
       displayTokens.map((token: Token, index: number) => {
         const tokenKey = token.contractAddress || `token-${index}`;
         const logoUrl = token.images?.imageUrl || `https://via.placeholder.com/24?text=${token.symbol.substring(0,1)}`;
-        const marketCap = formatMarketCapShort(token.marketCap);
+        
+        // Format percentage change with proper color coding
+        const change24h = token.change_24h || parseFloat(token.change24h || '0');
+        const formatPercentageChange = (change: number): { text: string; colorClass: string } => {
+          const absChange = Math.abs(change);
+          const sign = change >= 0 ? '+' : '';
+          const text = `${sign}${absChange.toFixed(1)}%`;
+          
+          if (change > 10) return { text, colorClass: 'text-emerald-400 font-bold' };
+          if (change > 5) return { text, colorClass: 'text-emerald-300' };
+          if (change > 0) return { text, colorClass: 'text-green-400' };
+          if (change > -5) return { text, colorClass: 'text-red-400' };
+          if (change > -10) return { text, colorClass: 'text-red-300' };
+          return { text, colorClass: 'text-red-500 font-bold' };
+        };
+        
+        const changeData = formatPercentageChange(change24h);
         
         // Check if this is a DegenDuel token with enhanced data
         const isDegenDuelToken = enableDegenDuelTop30 && 'degenduel_score' in token;
@@ -343,8 +327,8 @@ export const UnifiedTicker: React.FC<Props> = ({
                 </span>
               </>
             ) : (
-              <span className="text-xs ml-1.5 text-gray-400 flex-shrink-0">
-                {marketCap}
+              <span className={`text-xs ml-1.5 flex-shrink-0 ${changeData.colorClass}`}>
+                {changeData.text}
               </span>
             )}
           </div>
@@ -386,7 +370,7 @@ export const UnifiedTicker: React.FC<Props> = ({
     }
     
     return items;
-  }, [activeTab, sortedContests, displayTokens, isOverallLoading, isDataConnected, duelAnnouncementItem, navigate]);
+  }, [activeTab, sortedContests, displayTokens, isOverallLoading, finalDataConnected, duelAnnouncementItem, navigate]);
 
   // Content width measurement
   useLayoutEffect(() => {
@@ -610,7 +594,7 @@ export const UnifiedTicker: React.FC<Props> = ({
               : "text-gray-400 hover:text-gray-300"
           }`}
         >
-          {enableDegenDuelTop30 ? "DD TOP 30" : "PRICES"}
+          {enableDegenDuelTop30 ? "DD TOP 30" : "GAINS"}
         </motion.button>
       </AnimatePresence>
     </div>

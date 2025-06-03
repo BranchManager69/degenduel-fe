@@ -8,11 +8,12 @@ import type { Contest } from "../../../types/index";
 
 interface EnhancedContestSectionProps {
   title: string;
-  type: "active" | "pending" | "featured";
+  type: "active" | "pending" | "completed" | "cancelled";
   contests: Contest[];
   loading: boolean;
   featuredContest?: Contest;
   featuredLabel?: string;
+  isFeatureSection?: boolean; // NEW: Flag to indicate this is showing the featured contest
 }
 
 export const EnhancedContestSection: React.FC<EnhancedContestSectionProps> = ({
@@ -21,15 +22,16 @@ export const EnhancedContestSection: React.FC<EnhancedContestSectionProps> = ({
   contests,
   loading,
   featuredContest,
-  featuredLabel = "🏆 CONTEST OF THE WEEK"
+  featuredLabel = "🏆 CONTEST OF THE WEEK",
+  isFeatureSection = false
 }) => {
   // Don't render the active contests section if there are no active contests
   if (type === "active" && contests.length === 0 && !loading) {
     return null;
   }
 
-  // For featured contests, show prominent card if provided
-  if (type === "featured" && featuredContest) {
+  // For feature section, show prominent card if provided
+  if (isFeatureSection && featuredContest) {
     return (
       <section className="relative py-16">
         {/* Enhanced cosmic effects for featured section */}

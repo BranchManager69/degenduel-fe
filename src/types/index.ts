@@ -226,6 +226,27 @@ export interface Token {
   };
 }
 
+// Search Token interface (for /api/tokens/search endpoint)
+export interface SearchToken {
+  address: string;
+  symbol: string | null;
+  name: string | null;
+  image_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  current_price: string | null;
+  market_cap: string | null;
+  volume_24h: string | null;
+  change_24h: string | null;
+  price_updated_at: string | null;
+}
+
+// Token search response
+export interface TokenSearchResponse {
+  tokens: SearchToken[];
+}
+
 // Token response metadata
 export interface TokenResponseMetadata {
   timestamp: string;

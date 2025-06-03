@@ -123,6 +123,13 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   // Audio level monitoring
   const startAudioMonitoring = async () => {
     try {
+      console.log('[VoiceInput] Checking for microphone availability...');
+      
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Microphone access not supported in this browser');
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           channelCount: 1,
@@ -132,6 +139,8 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
           autoGainControl: true
         } 
       });
+      
+      console.log('[VoiceInput] Microphone access granted');
       
       streamRef.current = stream;
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
@@ -181,7 +190,27 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
       updateAudioLevel();
     } catch (err) {
       console.error('[VoiceInput] Error accessing microphone:', err);
-      setError('Microphone access denied');
+      
+      // Provide more specific error messages
+      let errorMessage = 'Microphone access denied';
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          errorMessage = 'Microphone permission denied. Please allow microphone access.';
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          errorMessage = 'No microphone found. Please connect a microphone.';
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+          errorMessage = 'Microphone is being used by another application.';
+        } else if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
+          errorMessage = 'Microphone does not support required settings.';
+        } else if (err.name === 'TypeError') {
+          errorMessage = 'Browser does not support microphone access.';
+        } else {
+          errorMessage = `Microphone error: ${err.message}`;
+        }
+      }
+      
+      setError(errorMessage);
+      throw err; // Re-throw to be caught by startListening
     }
   };
   
@@ -199,25 +228,38 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
   };
   
   const startListening = async () => {
+    console.log('[VoiceInput] Starting listening...');
+    
+    // First check if we have a connection
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      setError('Not connected to voice service');
-      return;
+      console.warn('[VoiceInput] WebSocket not connected, attempting to connect...');
+      setError('Connecting to voice service...');
+      // Don't return here - try to start audio anyway for testing
     }
     
     try {
       setError(null);
-      setIsListening(true);
+      console.log('[VoiceInput] Requesting microphone access...');
+      
+      // Start audio monitoring first to get permissions
       await startAudioMonitoring();
       
-      // Tell backend we're starting to listen
-      wsRef.current.send(JSON.stringify({
-        type: 'start_listening'
-      }));
+      // Only set listening state if audio started successfully
+      setIsListening(true);
+      
+      // Tell backend we're starting to listen (if connected)
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
+          type: 'start_listening'
+        }));
+      }
       
       if (onVoiceStateChange) onVoiceStateChange(true);
+      console.log('[VoiceInput] Successfully started listening');
     } catch (err) {
       console.error('[VoiceInput] Error starting:', err);
-      setError('Failed to start voice input');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start voice input';
+      setError(errorMessage);
       stopListening();
     }
   };
@@ -250,20 +292,15 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
       <motion.button
         type="button"
         className={`voice-button relative ${isListening ? 'listening' : ''} ${isDidiSpeaking ? 'didi-speaking' : ''}`}
-        onMouseDown={startListening}
-        onMouseUp={stopListening}
-        onMouseLeave={stopListening}
-        onTouchStart={startListening}
-        onTouchEnd={stopListening}
         onClick={(e) => {
           e.preventDefault();
-          if (!e.detail || e.detail === 1) {
-            toggleListening();
-          }
+          e.stopPropagation();
+          console.log('[VoiceInput] Button clicked');
+          toggleListening();
         }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        title={isListening ? 'Release to stop' : 'Hold to speak or click to toggle'}
+        title={isListening ? 'Click to stop' : 'Click to start voice input'}
       >
         {/* Microphone icon */}
         <motion.svg
@@ -365,28 +402,30 @@ export const VoiceInput: React.FC<VoiceInputProps> = ({
         )}
       </motion.button>
       
-      {/* Connection status */}
-      {isConnected && (
-        <motion.div
-          className="absolute -bottom-6 left-1/2 transform -translate-x-1/2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <span className="text-xs text-green-400">Connected</span>
-        </motion.div>
-      )}
+      {/* Connection status - Always show status */}
+      <motion.div
+        className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <span className={`text-xs ${isConnected ? 'text-green-400' : 'text-yellow-400'}`}>
+          {isConnected ? 'Voice Ready' : 'Voice Service Offline'}
+        </span>
+      </motion.div>
       
-      {/* Error message */}
+      {/* Error message - Show prominently */}
       <AnimatePresence>
         {error && (
           <motion.div
-            className="voice-error"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 whitespace-nowrap z-50"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
           >
-            <span className="text-xs text-red-400">{error}</span>
+            <div className="bg-red-900/90 text-white px-3 py-1 rounded text-xs font-medium shadow-lg">
+              {error}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

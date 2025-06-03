@@ -1,14 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { ContestSelect } from "./ContestContext";
 import { ResponseDisplay } from "./ResponseDisplay";
 import { WalletInput } from "./WalletInput";
-
-interface Token {
-  symbol: string;
-  contractAddress: string;
-  name: string;
-}
+import { TokenSearch } from "../common/TokenSearch";
+import { SearchToken } from "../../types";
 
 interface TokenWeight {
   symbol: string;
@@ -19,26 +15,9 @@ interface TokenWeight {
 export function SetPortfolio() {
   const [selectedContestId, setSelectedContestId] = useState<number | "">("");
   const [walletAddress, setWalletAddress] = useState("");
-  const [tokens, setTokens] = useState<Token[]>([]);
   const [selectedTokens, setSelectedTokens] = useState<TokenWeight[]>([]);
   const [response, setResponse] = useState<any>(null);
   const [error, setError] = useState<any>(null);
-  const [tokenSearch, setTokenSearch] = useState("");
-
-  // Fetch available tokens when component mounts
-  useEffect(() => {
-    const fetchTokens = async () => {
-      try {
-        const response = await fetch("https://degenduel.me/api/tokens");
-        const data = await response.json();
-        if (!response.ok) throw data;
-        setTokens(data.tokens || []);
-      } catch (err) {
-        console.error("Failed to fetch tokens:", err);
-      }
-    };
-    fetchTokens();
-  }, []);
 
   const handleSetPortfolio = async () => {
     if (!selectedContestId) {
@@ -88,14 +67,22 @@ export function SetPortfolio() {
     }
   };
 
-  const handleAddToken = (token: Token) => {
+
+  const handleTokenSearchSelect = (token: SearchToken) => {
     if (
-      selectedTokens.some((t) => t.contractAddress === token.contractAddress)
+      selectedTokens.some((t) => t.contractAddress === token.address)
     ) {
       alert("Token already added to portfolio");
       return;
     }
-    setSelectedTokens([...selectedTokens, { ...token, weight: 0 }]);
+    setSelectedTokens([
+      ...selectedTokens, 
+      { 
+        symbol: token.symbol || 'Unknown',
+        contractAddress: token.address,
+        weight: 0
+      }
+    ]);
   };
 
   const handleRemoveToken = (contractAddress: string) => {
@@ -114,11 +101,6 @@ export function SetPortfolio() {
     );
   };
 
-  const filteredTokens = tokens.filter(
-    (token) =>
-      token.symbol.toLowerCase().includes(tokenSearch.toLowerCase()) ||
-      token.name.toLowerCase().includes(tokenSearch.toLowerCase()),
-  );
 
   return (
     <section className="bg-gray-800 rounded-lg p-6">
@@ -145,30 +127,14 @@ export function SetPortfolio() {
       </div>
 
       <div className="mb-4">
-        <label className="text-gray-400 mb-1 block">Search Tokens</label>
-        <input
-          type="text"
-          className="w-full bg-gray-900 text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-gray-700"
-          placeholder="Search by name or symbol"
-          value={tokenSearch}
-          onChange={(e) => setTokenSearch(e.target.value)}
+        <label className="text-gray-400 mb-1 block">Search & Add Tokens</label>
+        <TokenSearch
+          onSelectToken={handleTokenSearchSelect}
+          placeholder="Search tokens to add to portfolio..."
+          variant="default"
+          showPriceData={true}
         />
       </div>
-
-      {tokenSearch && (
-        <div className="mb-4 max-h-48 overflow-y-auto bg-gray-900 rounded border border-gray-700">
-          {filteredTokens.map((token) => (
-            <button
-              key={token.contractAddress}
-              onClick={() => handleAddToken(token)}
-              className="w-full text-left px-3 py-2 hover:bg-gray-800 transition-colors"
-            >
-              <span className="text-white font-medium">{token.symbol}</span>
-              <span className="text-gray-400 ml-2">{token.name}</span>
-            </button>
-          ))}
-        </div>
-      )}
 
       <div className="mb-4">
         <label className="text-gray-400 mb-1 block">Selected Tokens</label>

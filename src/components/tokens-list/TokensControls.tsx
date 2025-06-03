@@ -1,13 +1,12 @@
 import React from "react";
 
-import { Token } from "../../types";
+import { Token, SearchToken } from "../../types";
 import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
 import { Select, SelectOption } from "../ui/Select";
+import { TokenSearch } from "../common/TokenSearch";
 
 interface TokensControlsProps {
-  searchQuery: string;
-  onSearchChange: (value: string) => void;
+  onTokenSearchSelect: (token: SearchToken) => void;
   sortField: keyof Token;
   onSortFieldChange: (field: keyof Token) => void;
   sortDirection: "asc" | "desc";
@@ -17,8 +16,7 @@ interface TokensControlsProps {
 }
 
 export const TokensControls: React.FC<TokensControlsProps> = ({
-  searchQuery,
-  onSearchChange,
+  onTokenSearchSelect,
   sortField,
   onSortFieldChange,
   sortDirection,
@@ -42,12 +40,11 @@ export const TokensControls: React.FC<TokensControlsProps> = ({
   return (
     <div className="flex flex-col sm:flex-row gap-4 mb-6">
       <div className="flex-1">
-        <Input
-          type="text"
-          placeholder="Search tokens..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full bg-dark-200/50 border-dark-300"
+        <TokenSearch
+          onSelectToken={onTokenSearchSelect}
+          placeholder="Search tokens by symbol, name, or address..."
+          variant="default"
+          showPriceData={true}
         />
       </div>
       <div className="flex gap-2">

@@ -11,11 +11,9 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
-import { User } from "../../services/userService";
-import { UserSearch } from "../admin/UserSearch";
+import { PublicUserSearch } from "../common/PublicUserSearch";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
-import { Select } from "../ui/Select";
 import { Textarea } from "../ui/Textarea";
 
 interface ChallengeCreationModalProps {
@@ -44,11 +42,12 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
 }) => {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [selectedOpponent, setSelectedOpponent] = React.useState<User | null>(null);
+  const [selectedOpponent, setSelectedOpponent] = React.useState<any | null>(null);
 
   const getNextHourDateTime = () => {
     const now = new Date();
     const adjustedTime = new Date(now);
+    adjustedTime.setHours(adjustedTime.getHours() + 6);
     adjustedTime.setMinutes(0, 0, 0);
     return adjustedTime.toISOString().slice(0, 16);
   };
@@ -60,7 +59,7 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
     entry_fee: "0.01",
     start_time: getNextHourDateTime(),
     end_time: new Date(
-      new Date(getNextHourDateTime()).getTime() + 2 * 60 * 60 * 1000
+      new Date(getNextHourDateTime()).getTime() + 24 * 60 * 60 * 1000
     ).toISOString().slice(0, 16),
     settings: {
       difficulty: "shark",
@@ -84,27 +83,26 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
     }
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    if (name.startsWith('settings.')) {
-      const settingKey = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        settings: {
-          ...prev.settings,
-          [settingKey]: value
-        }
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
-  };
 
-  const handleOpponentSelect = (user: User) => {
-    setSelectedOpponent(user);
-    setFormData(prev => ({ 
-      ...prev, 
-      opponent_wallet: user.wallet_address 
-    }));
+  const handleOpponentSelect = async (user: any) => {
+    // Since PublicUserSearch doesn't return wallet addresses,
+    // we need to fetch the full user details
+    try {
+      const response = await fetch(`/api/users/by-username/${encodeURIComponent(user.nickname)}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch user details');
+      }
+      const fullUserData = await response.json();
+      
+      setSelectedOpponent(fullUserData);
+      setFormData(prev => ({ 
+        ...prev, 
+        opponent_wallet: fullUserData.wallet_address 
+      }));
+    } catch (error) {
+      console.error('Failed to fetch opponent details:', error);
+      toast.error('Failed to select opponent. Please try again.');
+    }
   };
 
   const formatEntryFee = (fee: string): string => {
@@ -255,10 +253,9 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
               </h3>
               
               <div className="space-y-4">
-                <UserSearch
-                  onSearch={() => {}} // We don't need this callback
+                <PublicUserSearch
                   onSelectUser={handleOpponentSelect}
-                  placeholder="Search by wallet address or nickname..."
+                  placeholder="Search by username or @twitter..."
                   variant="modern"
                 />
                 
@@ -269,10 +266,11 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
                         <div className="text-lg font-medium text-gray-200">
                           {selectedOpponent.nickname || "Anonymous"}
                         </div>
-                        <div className="text-sm text-gray-400 font-mono">
-                          {selectedOpponent.wallet_address.substring(0, 8)}...
-                          {selectedOpponent.wallet_address.substring(selectedOpponent.wallet_address.length - 4)}
-                        </div>
+                        {selectedOpponent.twitter_handle && (
+                          <div className="text-sm text-brand-400">
+                            {selectedOpponent.twitter_handle}
+                          </div>
+                        )}
                       </div>
                       <button
                         type="button"
@@ -337,44 +335,26 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
                 Stakes
               </h3>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Entry Fee (SOL)
-                  </label>
-                  <Input
-                    type="text"
-                    name="entry_fee"
-                    value={formData.entry_fee}
-                    onChange={handleInputChange}
-                    className="w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20"
-                    placeholder="0.01"
-                    required
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    You pay upfront, opponent pays if they accept
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Difficulty
-                  </label>
-                  <Select
-                    value={formData.settings.difficulty}
-                    onChange={(value) => handleSelectChange('settings.difficulty', value)}
-                    options={[
-                      { value: "guppy", label: "Guppy" },
-                      { value: "tadpole", label: "Tadpole" },
-                      { value: "squid", label: "Squid" },
-                      { value: "dolphin", label: "Dolphin" },
-                      { value: "shark", label: "Shark" },
-                      { value: "whale", label: "Whale" },
-                    ]}
-                    className="w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Entry Fee (SOL)
+                </label>
+                <Input
+                  type="text"
+                  name="entry_fee"
+                  value={formData.entry_fee}
+                  onChange={handleInputChange}
+                  className="w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20"
+                  placeholder="0.01"
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  You pay upfront, opponent pays if they accept
+                </p>
               </div>
+
+              {/* Hidden: Difficulty selection - using default "shark" */}
+              {/* Hidden: Buckets selection - using default [1,2,3,4,5,6,7,8,9] */}
             </div>
 
             {/* Schedule */}
