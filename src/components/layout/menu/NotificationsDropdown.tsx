@@ -9,7 +9,7 @@
 import { formatDistanceToNow } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useState } from 'react';
-import { FaBell, FaCheckDouble, FaRegBell, FaSpinner } from 'react-icons/fa';
+import { FaBell, FaRegBell } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { useNotifications } from '../../../hooks/websocket/topic-hooks/useNotifications';
 
@@ -38,14 +38,6 @@ export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
 
   // Get max 5 most recent notifications for preview
   const recentNotifications = notifications?.slice(0, 5) || [];
-  
-  // Color mapping for notification priorities
-  const priorityColors = {
-    high: 'bg-red-500 text-white',
-    medium: 'bg-amber-500 text-white',
-    low: 'bg-blue-500 text-white',
-    normal: 'bg-brand-500 text-white',
-  };
 
   // Format notification time as relative
   const formatTime = (timestamp: string) => {
@@ -112,105 +104,111 @@ export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
               onClick={closeDropdown}
             />
 
-            {/* Notifications Panel */}
+            {/* Notifications Panel - Clean Design */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
               className={`absolute ${isMobile ? 'right-0' : 'right-0'} mt-2 w-80 max-h-[70vh] overflow-hidden
-                bg-dark-200/95 border border-brand-500/30 rounded-lg shadow-lg z-50 origin-top-right backdrop-blur-xl`}
+                bg-gray-900/95 border border-gray-800 rounded-lg shadow-xl z-50 origin-top-right backdrop-blur-xl`}
             >
               {/* Header */}
-              <div className="flex items-center justify-between py-2 px-4 border-b border-brand-500/20 bg-dark-300/40">
+              <div className="flex items-center justify-between py-3 px-4 border-b border-gray-800">
                 <h3 className="text-sm font-medium text-white">Notifications</h3>
-                <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={handleMarkAllAsRead}
-                      className="text-xs text-brand-300 hover:text-brand-200 flex items-center gap-1"
-                      aria-label="Mark all as read"
-                    >
-                      <FaCheckDouble className="w-3 h-3" />
-                      <span>Mark all read</span>
-                    </button>
-                  )}
-                </div>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllAsRead}
+                    className="text-xs text-gray-400 hover:text-white transition-colors duration-200"
+                    aria-label="Mark all as read"
+                  >
+                    Mark all read
+                  </button>
+                )}
               </div>
 
               {/* Content */}
               <div className="overflow-y-auto max-h-[50vh]">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <FaSpinner className="w-6 h-6 text-brand-400 animate-spin" />
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-700 border-t-gray-400" />
                   </div>
                 ) : error ? (
                   <div className="p-4 text-center text-red-400 text-sm">
-                    Failed to load notifications. Try again later.
+                    Failed to load notifications
                   </div>
                 ) : recentNotifications.length === 0 ? (
-                  <div className="p-8 text-center text-gray-400 text-sm">
-                    <div className="flex justify-center mb-2">
-                      <FaRegBell className="w-8 h-8 text-gray-500/50" />
+                  <div className="p-6 text-center">
+                    <div className="mb-3 h-10 w-10 mx-auto rounded-full bg-gray-800 flex items-center justify-center">
+                      <svg
+                        className="h-5 w-5 text-gray-600"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
                     </div>
-                    <p>No notifications yet</p>
+                    <p className="text-sm text-gray-400">No notifications</p>
                   </div>
                 ) : (
-                  <ul className="py-1">
+                  <div className="py-1">
                     {recentNotifications.map((notification) => (
-                      <li key={notification.id} className="relative">
-                        <Link
-                          to={notification.link || '#'}
-                          onClick={() => handleNotificationClick(notification.id, notification.link)}
-                          className={`block px-4 py-3 hover:bg-brand-500/10 transition-all duration-200
-                            ${!notification.isRead ? 'bg-brand-500/5' : ''}`}
-                        >
-                          <div className="flex items-start gap-3">
-                            {/* Priority Dot */}
-                            <div className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${
-                              priorityColors[notification.priority as keyof typeof priorityColors] || priorityColors.normal
-                            }`} />
+                      <Link
+                        key={notification.id}
+                        to={notification.link || '#'}
+                        onClick={() => handleNotificationClick(notification.id, notification.link)}
+                        className={`block px-4 py-3 border-l-2 transition-all duration-200 ${
+                          !notification.isRead 
+                            ? 'border-l-brand-400 bg-gray-800/50 hover:bg-gray-800/70' 
+                            : 'border-l-transparent hover:bg-gray-800/30'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            {/* Title */}
+                            <p className={`text-sm leading-tight ${
+                              !notification.isRead ? 'font-medium text-white' : 'text-gray-300'
+                            }`}>
+                              {notification.title}
+                            </p>
                             
-                            <div className="flex-1 min-w-0">
-                              {/* Title */}
-                              <p className={`text-sm ${!notification.isRead ? 'font-medium text-white' : 'text-gray-300'}`}>
-                                {notification.title}
+                            {/* Message Preview */}
+                            {notification.content && (
+                              <p className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+                                {notification.content}
                               </p>
-                              
-                              {/* Message Preview */}
-                              {notification.content && (
-                                <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">
-                                  {notification.content}
-                                </p>
-                              )}
-                              
-                              {/* Timestamp */}
-                              <p className="text-xs text-gray-500 mt-1">
-                                {formatTime(notification.createdAt)}
-                              </p>
-                            </div>
-                            
-                            {/* Unread indicator */}
-                            {!notification.isRead && (
-                              <div className="w-2 h-2 bg-brand-400 rounded-full flex-shrink-0" />
                             )}
+                            
+                            {/* Timestamp */}
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formatTime(notification.createdAt)}
+                            </p>
                           </div>
-                        </Link>
-                      </li>
+                          
+                          {/* Unread indicator */}
+                          {!notification.isRead && (
+                            <div className="h-2 w-2 bg-brand-400 rounded-full flex-shrink-0 mt-1" />
+                          )}
+                        </div>
+                      </Link>
                     ))}
-                  </ul>
+                  </div>
                 )}
               </div>
 
               {/* Footer */}
-              <div className="p-2 border-t border-brand-500/20 bg-dark-300/40">
+              <div className="border-t border-gray-800 p-2">
                 <Link
                   to="/notifications"
                   onClick={closeDropdown}
-                  className="block w-full text-center py-2 text-sm text-brand-300 hover:text-brand-200 
-                    hover:bg-brand-500/10 rounded-md transition-all duration-200"
+                  className="block w-full text-center py-2 text-sm text-gray-400 hover:text-white 
+                    hover:bg-gray-800/50 rounded transition-all duration-200"
                 >
-                  View All Notifications
+                  View All Notifications →
                 </Link>
               </div>
             </motion.div>

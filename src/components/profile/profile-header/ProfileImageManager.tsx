@@ -4,7 +4,6 @@ import { toast } from "react-hot-toast";
 import ReactCrop, { Crop, PixelCrop } from "react-image-crop";
 
 import "react-image-crop/dist/ReactCrop.css";
-import { ddApi } from "../../../services/dd-api";
 
 interface ProfileImageManagerProps {
   userAddress: string;
@@ -42,9 +41,24 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
   });
   const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
+    console.log("Files dropped:", { acceptedFiles, rejectedFiles });
+    
     const file = acceptedFiles[0];
-    if (!file) return;
+    if (!file) {
+      if (rejectedFiles.length > 0) {
+        const rejection = rejectedFiles[0];
+        console.error("File rejected:", rejection);
+        toast.error(`File rejected: ${rejection.errors?.[0]?.message || 'Unknown error'}`);
+      }
+      return;
+    }
+
+    console.log("Processing file:", {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
 
     // Validate file size (10MB limit)
     if (file.size > MAX_FILE_SIZE) {
@@ -63,7 +77,12 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
     // Create preview
     const reader = new FileReader();
     reader.onload = () => {
+      console.log("File loaded, setting preview");
       setPreviewImage(reader.result as string);
+    };
+    reader.onerror = (error) => {
+      console.error("Error reading file:", error);
+      toast.error("Error reading file");
     };
     reader.readAsDataURL(file);
   }, []);
@@ -112,30 +131,58 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
   };
 
   const handleUpload = async () => {
-    if (!croppedImageUrl) return;
+    if (!croppedImageUrl) {
+      console.error("No cropped image URL available");
+      return;
+    }
 
     try {
+      console.log("Starting image upload for user:", userAddress);
       setIsUploading(true);
       setUploadProgress(0);
 
       // Convert base64 to blob
       const response = await fetch(croppedImageUrl);
       const blob = await response.blob();
+      console.log("Converted to blob:", {
+        size: blob.size,
+        type: blob.type
+      });
+      
       const formData = new FormData();
-      formData.append("image", blob, `${userAddress}_${Date.now()}.webp`);
+      const filename = `${userAddress}_${Date.now()}.webp`;
+      formData.append("image", blob, filename);
+      console.log("Created FormData with filename:", filename);
 
-      const uploadResponse = await ddApi.fetch(
+      // Use native fetch for file uploads to avoid Content-Type header issues
+      console.log("Sending upload request to:", `/api/users/${userAddress}/profile-image`);
+      const uploadResponse = await fetch(
         `/api/users/${userAddress}/profile-image`,
         {
           method: "POST",
           body: formData,
+          credentials: "include", // Important for auth
           headers: {
             Accept: "application/json",
+            // Don't set Content-Type - let browser set multipart/form-data automatically
           },
         },
       );
 
+      console.log("Upload response:", {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        headers: Object.fromEntries(uploadResponse.headers.entries())
+      });
+
       if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error("Upload failed:", {
+          status: uploadResponse.status,
+          statusText: uploadResponse.statusText,
+          body: errorText
+        });
+        
         switch (uploadResponse.status) {
           case 400:
             throw new Error("Invalid image format or size");
@@ -146,11 +193,12 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
           case 415:
             throw new Error("Unsupported image format");
           default:
-            throw new Error("Failed to upload image");
+            throw new Error(`Failed to upload image (${uploadResponse.status}): ${errorText}`);
         }
       }
 
       const responseData: ImageUploadResponse = await uploadResponse.json();
+      console.log("Upload successful:", responseData);
 
       if (!responseData.success) {
         throw new Error(responseData.message || "Failed to upload image");
@@ -179,10 +227,12 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
   const handleRemove = async () => {
     try {
       setIsUploading(true);
-      const response = await ddApi.fetch(
+      // Use native fetch for consistency with upload
+      const response = await fetch(
         `/api/users/${userAddress}/profile-image`,
         {
           method: "DELETE",
+          credentials: "include", // Important for auth
           headers: {
             Accept: "application/json",
           },
@@ -245,22 +295,27 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
 
       {/* Image Upload Area */}
       {!previewImage && (
-        <div
-          {...getRootProps()}
-          className={`border-2 border-dashed rounded-full aspect-square w-32 h-32 mx-auto flex items-center justify-center transition-all duration-300 ${
-            isDragActive
-              ? "border-brand-400 bg-brand-400/10 scale-105"
-              : "border-dark-400/50 hover:border-brand-400/50 hover:bg-brand-400/5"
-          }`}
-          aria-label="Upload profile image"
-        >
-          <input {...getInputProps()} />
-          <div className="flex flex-col items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className={`h-8 w-8 ${isDragActive ? 'text-brand-400' : 'text-gray-500'} transition-colors`} viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-            </svg>
-            <div className="text-xs mt-2 text-gray-500 max-w-[100px] text-center opacity-60">
-              {isDragActive ? "" : "PNG, JPG, GIF, WebP"}
+        <div className="space-y-4">
+          <div
+            {...getRootProps()}
+            className={`border-2 border-dashed rounded-lg p-8 mx-auto flex flex-col items-center justify-center transition-all duration-300 cursor-pointer ${
+              isDragActive
+                ? "border-brand-400 bg-brand-400/10 scale-105"
+                : "border-dark-400/50 hover:border-brand-400/50 hover:bg-brand-400/5"
+            }`}
+            aria-label="Upload profile image"
+          >
+            <input {...getInputProps()} />
+            <div className="flex flex-col items-center justify-center text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className={`h-12 w-12 ${isDragActive ? 'text-brand-400' : 'text-gray-500'} transition-colors mb-3`} viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+              </svg>
+              <div className="text-sm font-medium text-gray-300 mb-1">
+                {isDragActive ? "Drop image here" : "Click to upload or drag & drop"}
+              </div>
+              <div className="text-xs text-gray-500">
+                PNG, JPG, GIF, WebP (max 10MB)
+              </div>
             </div>
           </div>
         </div>

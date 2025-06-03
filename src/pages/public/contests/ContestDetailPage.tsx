@@ -17,6 +17,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
+import { ChallengeBadge } from "../../../components/contest-detail/ChallengeBadge";
 import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
 import { PrizeStructure } from "../../../components/contest-detail/PrizeStructure";
 import { ReferralProgressCard } from "../../../components/contest-lobby/ReferralProgressCard";
@@ -33,19 +34,32 @@ import {
     mapContestStatus,
 } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
-import { setupContestOGMeta, resetToDefaultMeta } from "../../../utils/ogImageUtils";
 import type { Contest as BaseContest, ContestViewData } from "../../../types/index";
+import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
 
 // TODO: move elsewhere
 interface ContestParticipant {
-  wallet_address?: string;
-  address?: string;
-  nickname?: string;
-  username?: string;
-  score?: number;
-  profile?: {
-    wallet_address?: string;
-    nickname?: string;
+  id: number;
+  contest_id: number;
+  wallet_address: string;
+  joined_at: string;
+  initial_dxd_points: string;
+  current_dxd_points: string;
+  rank: number | null;
+  prize_amount: string | null;
+  prize_paid_at: string | null;
+  refund_amount: string | null;
+  refunded_at: string | null;
+  entry_transaction_id: number | null;
+  entry_time: string;
+  final_rank: number | null;
+  prize_transaction_id: number | null;
+  status: string;
+  portfolio_value: string;
+  initial_balance: string;
+  users: {
+    nickname: string | null;
+    wallet_address: string;
   };
 }
 
@@ -242,16 +256,14 @@ export const ContestDetails: React.FC = () => {
         participants: Array.isArray(data.contest_participants)
           ? data.contest_participants.map(
               (p: ContestParticipant): Participant => {
-                // Extract address from either the participant or nested user object
-                const address =
-                  p.wallet_address || p.profile?.wallet_address || "";
-                // Extract nickname from either the participant or nested user object
+                // Extract address from participant and users object  
+                const address = p.wallet_address || "";
+                // Extract nickname from nested users object (API structure: contest_participants[].users)
                 const nickname =
-                  p.nickname ||
-                  p.profile?.nickname ||
+                  p.users?.nickname ||
                   `${address.slice(0, 6)}...${address.slice(-4)}`;
-                // Handle score if present
-                const score = typeof p.score === "number" ? p.score : undefined;
+                // Use rank for score (API doesn't provide score directly)
+                const score = p.rank || undefined;
 
                 return {
                   address,
@@ -780,16 +792,18 @@ export const ContestDetails: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Share Contest Button - Desktop Only */}
-                <div className="hidden md:flex mt-4">
-                  <SilentErrorBoundary>
-                    <ShareContestButton
-                      contestId={contest.id.toString()}
-                      contestName={contest.name}
-                      prizePool={(Number(contest.entry_fee) * contest.participant_count * 0.95).toString()}
-                    />
-                  </SilentErrorBoundary>
-                </div>
+                {/* Share Contest Button - Desktop Only - Hide for cancelled/completed/challenge contests */}
+                {displayStatus !== "cancelled" && displayStatus !== "completed" && (contest as any)?.contest_type !== "CHALLENGE" && (
+                  <div className="hidden md:flex mt-4">
+                    <SilentErrorBoundary>
+                      <ShareContestButton
+                        contestId={contest.id.toString()}
+                        contestName={contest.name}
+                        prizePool={(Number(contest.entry_fee) * contest.participant_count * 0.95).toString()}
+                      />
+                    </SilentErrorBoundary>
+                  </div>
+                )}
               </div>
               
               {/* Cancellation Overlay */}
@@ -830,6 +844,31 @@ export const ContestDetails: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* Challenge Badge - Show for challenge contests */}
+          {(contest as any).contest_type === "CHALLENGE" && (
+            <div className="mb-8">
+              <ChallengeBadge
+                challengeStatus={(contest as any).challenge_status || "PENDING_ACCEPTANCE"}
+                challengerWallet={(contest as any).challenger_wallet || ""}
+                challengedWallet={(contest as any).challenged_wallet || ""}
+                contestId={contest.id.toString()}
+                challengeExpiresAt={(contest as any).challenge_expires_at}
+                onAccept={() => {
+                  // Refresh contest data after accepting
+                  fetchContest();
+                }}
+                onReject={() => {
+                  // Refresh contest data after rejecting
+                  fetchContest();
+                }}
+                onCancel={() => {
+                  // Refresh contest data after cancelling
+                  fetchContest();
+                }}
+              />
+            </div>
+          )}
 
           {/* Contest Stats - Consolidated */}
           <div className="mb-8">
@@ -927,17 +966,19 @@ export const ContestDetails: React.FC = () => {
               </div>
             </div>
             
-            {/* Mobile share button */}
-            <div className="mb-8 md:hidden">
-              <SilentErrorBoundary>
-                <ShareContestButton
-                  contestId={contest.id.toString()}
-                  contestName={contest.name}
-                  prizePool={(Number(contest.entry_fee) * contest.participant_count * 0.95).toString()}
-                  className="w-full"
-                />
-              </SilentErrorBoundary>
-            </div>
+            {/* Mobile share button - Hide for cancelled/completed/challenge contests */}
+            {displayStatus !== "cancelled" && displayStatus !== "completed" && (contest as any)?.contest_type !== "CHALLENGE" && (
+              <div className="mb-8 md:hidden">
+                <SilentErrorBoundary>
+                  <ShareContestButton
+                    contestId={contest.id.toString()}
+                    contestName={contest.name}
+                    prizePool={(Number(contest.entry_fee) * contest.participant_count * 0.95).toString()}
+                    className="w-full"
+                  />
+                </SilentErrorBoundary>
+              </div>
+            )}
           </div>
 
           {/* Content Grid - Simplified */}
@@ -985,10 +1026,12 @@ export const ContestDetails: React.FC = () => {
 
             {/* Right Column - Prize Distribution & Participants */}
             <div className="space-y-8">
-              {/* Referral Progress Card */}
-              <SilentErrorBoundary>
-                <ReferralProgressCard />
-              </SilentErrorBoundary>
+              {/* Referral Progress Card - Only show for pending public contests */}
+              {displayStatus === "pending" && (contest as any)?.contest_type !== "CHALLENGE" && (
+                <SilentErrorBoundary>
+                  <ReferralProgressCard />
+                </SilentErrorBoundary>
+              )}
               
               {/* Prize Distribution */}
               <div className="group relative">
@@ -1004,7 +1047,7 @@ export const ContestDetails: React.FC = () => {
               </div>
 
               {/* Participants List */}
-              {Number(contest.participant_count) > 0 && Array.isArray(contest.participants) && contest.participants.length > 0 ? (
+              {Array.isArray(contest.participants) && contest.participants.length > 0 ? (
                 <div className="group relative">
                   <SilentErrorBoundary>
                     <ParticipantsList
@@ -1012,6 +1055,18 @@ export const ContestDetails: React.FC = () => {
                       contestStatus={mapContestStatus(contest.status)}
                     />
                   </SilentErrorBoundary>
+                </div>
+              ) : Number(contest.participant_count) > 0 ? (
+                <div className={`relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6`}>
+                  <h3 className="text-xl font-bold text-gray-100 mb-4">Participants ({contest.participant_count})</h3>
+                  <p className="text-gray-400">
+                    {isParticipating 
+                      ? "You and other participants are competing in this contest." 
+                      : `${contest.participant_count} ${contest.participant_count === 1 ? 'dueler has' : 'duelers have'} entered this contest.`}
+                  </p>
+                  <p className="text-gray-500 text-sm mt-2">
+                    Participant details will be visible once the contest starts.
+                  </p>
                 </div>
               ) : (
                 <div className={`relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6`}>

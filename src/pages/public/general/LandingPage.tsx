@@ -19,6 +19,7 @@ import { motion } from "framer-motion";
 // Landing page
 import { AuthDebugPanel } from "../../../components/debug";
 import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
+import { EnhancedContestSection } from "../../../components/landing/contests-preview/EnhancedContestSection";
 import { CtaSection } from "../../../components/landing/cta-section/CtaSection";
 // import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle"; // No longer using HeroTitle
 // Import new MarketTickerGrid component (replacing the three token display components)
@@ -113,6 +114,7 @@ export const LandingPage: React.FC = () => {
   // Map WebSocket contest statuses to our local state
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
   const [openContests, setOpenContests] = useState<Contest[]>([]);
+  const [featuredContest, setFeaturedContest] = useState<Contest | null>(null);
 
   // Sync WebSocket data to local state
   useEffect(() => {
@@ -174,6 +176,27 @@ export const LandingPage: React.FC = () => {
       setOpenContests(convertedUpcomingContests);
       setLoading(wsLoading);
       setError(wsError);
+
+      // Determine featured contest - prioritize by highest prize pool
+      const allAvailableContests = [...convertedActiveContests, ...convertedUpcomingContests];
+      if (allAvailableContests.length > 0) {
+        // Find contest with highest estimated prize pool
+        const featured = allAvailableContests.reduce((prev, current) => {
+          const prevPrize = Number(prev.max_participants) * Number(prev.entry_fee) * 0.9;
+          const currentPrize = Number(current.max_participants) * Number(current.entry_fee) * 0.9;
+          return currentPrize > prevPrize ? current : prev;
+        });
+        
+        // Only feature contests with substantial prize pools (over 0.5 SOL)
+        const featuredPrize = Number(featured.max_participants) * Number(featured.entry_fee) * 0.9;
+        if (featuredPrize >= 0.5) {
+          setFeaturedContest(featured);
+        } else {
+          setFeaturedContest(null);
+        }
+      } else {
+        setFeaturedContest(null);
+      }
 
       // Update debug info
       setContestDebugInfo(prev => ({
@@ -398,8 +421,8 @@ export const LandingPage: React.FC = () => {
         {/* Landing Page Content Section */}
         <section className="relative flex-1 pb-20" style={{ zIndex: 10 }}>
           
-          {/* Landing Page Container */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-0">
+          {/* Landing Page Container - responsive width for landscape mobile */}
+          <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-0">
             
             {/* Landing Page Content */}
             <div className="text-center space-y-4">
@@ -660,8 +683,8 @@ export const LandingPage: React.FC = () => {
                     }}
                   >
 
-                    {/* Features section container */}
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* Features section container - responsive width for landscape mobile */}
+                    <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                       {/* Features component is only imported and rendered when the flag is enabled */}
                       {(() => {
 
@@ -714,7 +737,7 @@ export const LandingPage: React.FC = () => {
                 >
                   {isMaintenanceModeActive ? (
                     <div className="relative">
-                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+                      <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
                         <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
                           <h3 className="text-2xl font-bold text-yellow-300 mb-2">⚙️ Maintenance Mode ⚙️</h3>
                           <p className="text-yellow-200">
@@ -725,7 +748,7 @@ export const LandingPage: React.FC = () => {
                     </div>
                   ) : error ? (
                     <div className="relative">
-                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                         <div className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border border-dark-300/60 shadow-lg">
                           <div className="text-center py-4">
                             <div className="text-red-400 mb-2">
@@ -777,31 +800,54 @@ export const LandingPage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="relative">
-                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                      <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                         
                         {/* Contest sections container */}
                         <div className="mb-8">
-                          {/* Use the shared ContestSection component for active contests */}
-                          {activeContests.length > 0 && (
-                            <ContestSection
-                              title="Live Duels"
-                              type="active"
-                              contests={activeContests}
+                          {/* Featured Contest Section - Show the most prominent contest */}
+                          {featuredContest && (
+                            <EnhancedContestSection
+                              title="Featured Contest"
+                              type="featured"
+                              contests={[]}
                               loading={loading}
+                              featuredContest={featuredContest}
+                              featuredLabel="🏆 CONTEST OF THE WEEK"
                             />
                           )}
 
-                          {/* Use the shared ContestSection component for upcoming contests */}
-                          <ContestSection
-                            title="Starting Soon"
-                            type="pending"
-                            contests={openContests}
-                            loading={loading}
-                          />
+                          {/* Filter out featured contest from regular sections */}
+                          {(() => {
+                            const filteredActiveContests = activeContests.filter(c => c.id !== featuredContest?.id);
+                            const filteredOpenContests = openContests.filter(c => c.id !== featuredContest?.id);
+                            
+                            return (
+                              <>
+                                {/* Use the shared ContestSection component for active contests */}
+                                {filteredActiveContests.length > 0 && (
+                                  <ContestSection
+                                    title="Live Duels"
+                                    type="active"
+                                    contests={filteredActiveContests}
+                                    loading={loading}
+                                  />
+                                )}
+
+                                {/* Use the shared ContestSection component for upcoming contests */}
+                                <ContestSection
+                                  title="Starting Soon"
+                                  type="pending"
+                                  contests={filteredOpenContests}
+                                  loading={loading}
+                                />
+                              </>
+                            );
+                          })()}
 
                           {/* No duels available */}
                           {activeContests.length === 0 &&
                             openContests.length === 0 &&
+                            !featuredContest &&
                             !loading && (
                               <div className="text-center py-16">
                                 

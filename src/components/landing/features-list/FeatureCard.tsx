@@ -64,36 +64,25 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   // If no image is provided, try to use a default one
   const featureImage = imagePath || (title in DEGENDUEL_FEATURES_IMAGES ? DEGENDUEL_FEATURES_IMAGES[title as keyof typeof DEGENDUEL_FEATURES_IMAGES] : null);
 
-  // Prevent scroll events when modal is open (but allow keyboard events)
+  // Prevent scroll events when modal is open (mobile-friendly version)
   const preventScroll = (e: Event) => {
-    e.preventDefault();
-    e.stopPropagation();
+    // Only prevent if it's a touch event on the backdrop
+    const target = e.target as HTMLElement;
+    if (target && target.classList && target.classList.contains('backdrop-blur-md')) {
+      e.preventDefault();
+    }
   };
 
   // Cleanup scroll lock on component unmount
   useEffect(() => {
     return () => {
-      // FIXED: Always clean up scroll lock and restore scroll position
-      document.body.style.removeProperty('overflow');
-      document.body.style.removeProperty('position');
-      document.body.style.removeProperty('top');
-      document.body.style.removeProperty('width');
+      // Simple cleanup - just restore overflow
+      document.body.style.overflow = '';
       
-      // Restore scroll position if we had one stored (with validation)
-      const savedPosition = scrollPositionRef.current;
-      if (typeof savedPosition === 'number' && savedPosition >= 0) {
-        try {
-          window.scrollTo({ top: savedPosition, behavior: 'auto' });
-        } catch (error) {
-          console.warn('Error restoring scroll position on cleanup:', error);
-        }
-      }
-      
-      // Remove event listeners
-      document.removeEventListener('wheel', preventScroll);
+      // Remove any lingering event listeners
       document.removeEventListener('touchmove', preventScroll);
     };
-  }, []);  // Remove dependencies to ensure cleanup always happens
+  }, []);  // Empty deps to ensure cleanup always happens
   
   // Escape key to close modal + Focus management
   useEffect(() => {
@@ -158,60 +147,43 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         tag: ""
       };
   
-  // Toggle expanded state with comprehensive scroll lock
+  // Toggle expanded state with mobile-safe scroll handling
   const toggleExpand = () => {
     const newExpandedState = !isExpanded;
     setIsExpanded(newExpandedState);
     
-    // FIXED: Store scroll position in ref for reliable restoration
     if (newExpandedState) {
-      // Store current scroll position in ref
-      scrollPositionRef.current = window.scrollY;
+      // Store current scroll position
+      scrollPositionRef.current = window.scrollY || window.pageYOffset || 0;
       
-      // Apply scroll lock using direct styles
+      // Mobile-safe scroll lock - only use overflow hidden
       document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollPositionRef.current}px`;
-      document.body.style.width = '100%';
       
-      // Add event listeners for additional scroll prevention (excluding keydown)
-      document.addEventListener('wheel', preventScroll, { passive: false });
-      document.addEventListener('touchmove', preventScroll, { passive: false });
+      // For iOS Safari, we need to prevent touchmove
+      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        document.addEventListener('touchmove', preventScroll, { passive: false });
+      }
     } else {
-      // Remove scroll lock styles with error handling
-      try {
-        document.body.style.removeProperty('overflow');
-        document.body.style.removeProperty('position');
-        document.body.style.removeProperty('top');
-        document.body.style.removeProperty('width');
-        
-        // Restore scroll position from ref with validation
-        const savedPosition = scrollPositionRef.current;
-        if (typeof savedPosition === 'number' && savedPosition >= 0) {
-          // Use requestAnimationFrame for smoother restoration
-          requestAnimationFrame(() => {
-            window.scrollTo({ top: savedPosition, behavior: 'auto' });
-          });
-        }
-      } catch (error) {
-        console.warn('Error restoring scroll state:', error);
-        // Fallback: just remove scroll lock without restoration
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
+      // Simple cleanup - just restore overflow
+      document.body.style.overflow = '';
+      
+      // Remove iOS-specific listener if it exists
+      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        document.removeEventListener('touchmove', preventScroll);
       }
       
-      // Remove event listeners
-      document.removeEventListener('wheel', preventScroll);
-      document.removeEventListener('touchmove', preventScroll);
-    }
-    
-    // Scroll expanded card into view if needed (only when closing)
-    if (!newExpandedState && cardRef.current) {
-      setTimeout(() => {
-        cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 100);
+      // Restore scroll position with a small delay for mobile browsers
+      const savedPosition = scrollPositionRef.current;
+      if (typeof savedPosition === 'number' && savedPosition >= 0) {
+        // Use setTimeout instead of requestAnimationFrame for better mobile support
+        setTimeout(() => {
+          try {
+            window.scrollTo(0, savedPosition);
+          } catch (e) {
+            // Silently fail if scroll restoration doesn't work
+          }
+        }, 50);
+      }
     }
   };
 

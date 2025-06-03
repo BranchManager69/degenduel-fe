@@ -10,9 +10,61 @@
 
 import { motion } from 'framer-motion';
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { AIMessage } from '../../../services/ai';
 import { useStore } from '../../../store/useStore';
 import { TerminalConsoleProps } from '../types';
+
+/**
+ * MarkdownRenderer - Renders markdown with terminal-appropriate styling
+ */
+interface MarkdownRendererProps {
+  content: string;
+  className?: string;
+}
+
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className }) => {
+  return (
+    <div className={className}>
+      <ReactMarkdown
+        components={{
+          // Style markdown elements for terminal
+          p: ({ children }) => <span className="block mb-2">{children}</span>,
+          strong: ({ children }) => <span className="text-purple-300 font-bold">{children}</span>,
+          em: ({ children }) => <span className="text-cyan-300 italic">{children}</span>,
+          h1: ({ children }) => <span className="text-mauve text-lg font-bold block mb-2">{children}</span>,
+          h2: ({ children }) => <span className="text-mauve-light text-base font-bold block mb-1">{children}</span>,
+          h3: ({ children }) => <span className="text-purple-300 font-semibold block mb-1">{children}</span>,
+          ul: ({ children }) => <div className="ml-2 mb-2">{children}</div>,
+          ol: ({ children }) => <div className="ml-2 mb-2">{children}</div>,
+          li: ({ children }) => <div className="text-gray-300 mb-1">• {children}</div>,
+          a: ({ children, href }) => (
+            <a 
+              href={href} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-cyan-400 hover:text-cyan-300 underline"
+            >
+              {children}
+            </a>
+          ),
+          code: ({ children }) => (
+            <span className="bg-gray-800 text-green-400 px-1 rounded font-mono text-sm">
+              {children}
+            </span>
+          ),
+          blockquote: ({ children }) => (
+            <div className="border-l-2 border-purple-500 pl-2 ml-2 text-gray-400 italic">
+              {children}
+            </div>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+};
 
 /**
  * TypeWriter - Creates a typewriter effect for text
@@ -188,6 +240,101 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
     }
   }, [messages.length]);
 
+  // Auto-scroll during streaming when content changes
+  useEffect(() => {
+    if (messages.length > 0 && consoleOutputRef.current) {
+      const lastMessage = messages[messages.length - 1];
+      
+      // Check if we should auto-scroll during streaming
+      const shouldAutoScroll = () => {
+        const element = consoleOutputRef.current;
+        if (!element) return false;
+        
+        // Only auto-scroll if user is already near the bottom (within 100px)
+        const isNearBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 100;
+        
+        // Always auto-scroll for the last assistant message (streaming)
+        const isLastAssistantMessage = lastMessage?.role === 'assistant';
+        
+        return isNearBottom || isLastAssistantMessage;
+      };
+      
+      if (shouldAutoScroll()) {
+        // Smooth scroll to bottom
+        consoleOutputRef.current.scrollTo({
+          top: consoleOutputRef.current.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    }
+  }, [messages]); // Triggers on any message content change
+
+  // Enhanced auto-scroll for streaming with MutationObserver
+  useEffect(() => {
+    const element = consoleOutputRef.current;
+    if (!element) return;
+
+    let isUserScrolling = false;
+    let scrollTimeout: NodeJS.Timeout;
+
+    // Track if user is manually scrolling
+    const handleUserScroll = () => {
+      isUserScrolling = true;
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        isUserScrolling = false;
+      }, 1000); // Consider user done scrolling after 1 second
+    };
+
+    // Auto-scroll function with user scroll detection
+    const autoScrollToBottom = () => {
+      if (!element || isUserScrolling) return;
+      
+      const isAtBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 50;
+      const hasContent = element.scrollHeight > element.clientHeight;
+      
+      if (hasContent && (isAtBottom || !isUserScrolling)) {
+        element.scrollTo({
+          top: element.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    };
+
+    // Watch for content changes (like streaming text)
+    const observer = new MutationObserver((mutations) => {
+      let hasContentChange = false;
+      
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList' || mutation.type === 'characterData') {
+          hasContentChange = true;
+        }
+      });
+      
+      if (hasContentChange) {
+        // Small delay to let content render
+        setTimeout(autoScrollToBottom, 10);
+      }
+    });
+
+    // Start observing
+    observer.observe(element, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+
+    // Add scroll listener
+    element.addEventListener('scroll', handleUserScroll);
+
+    // Cleanup
+    return () => {
+      observer.disconnect();
+      element.removeEventListener('scroll', handleUserScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, []); // Only setup once
+
   // Enhanced scrollbar auto-hide effect specifically for console output
   const scrollbarAutoHide = (element: HTMLElement | null, timeout = 2000) => {
     if (!element) return;
@@ -300,6 +447,20 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
           scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
           background: 'rgba(0, 0, 0, 0.6)',
           boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.5)',
+        }}
+        onWheel={(e) => {
+          // Prevent scroll propagation to background when scrolling in terminal
+          e.stopPropagation();
+          
+          // Check if we're at the boundaries to prevent background scroll
+          const element = e.currentTarget;
+          const isAtTop = element.scrollTop === 0;
+          const isAtBottom = element.scrollTop + element.clientHeight >= element.scrollHeight;
+          
+          // If scrolling up at the top or down at the bottom, prevent default
+          if ((e.deltaY < 0 && isAtTop) || (e.deltaY > 0 && isAtBottom)) {
+            e.preventDefault();
+          }
         }}
       >
         {messages.length === 0 ? (
@@ -419,7 +580,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                   )
                 ) : message.role === 'assistant' ? (
                   <>
-                    <span className={`${content.startsWith('ERROR:') ? 'text-red-400' : 'bg-gradient-to-r from-purple-400 to-cyan-300 bg-clip-text text-transparent'} font-semibold`}>
+                    <span className={`${content.startsWith('ERROR:') ? 'text-red-400' : 'text-purple-400 bg-gradient-to-r from-purple-400 to-cyan-300 bg-clip-text'} font-semibold`}>
                       Didi
                     </span>
                     <span className="text-mauve-light/70 mx-1">•</span>
@@ -436,9 +597,17 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                     onComplete={handleTypingComplete}
                   />
                 ) : (
-                  <span className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}>
-                    {content.startsWith('ERROR:') ? content.substring(6) : content}
-                  </span>
+                  // Render markdown for AI responses, plain text for others
+                  message.role === 'assistant' ? (
+                    <MarkdownRenderer 
+                      content={content.startsWith('ERROR:') ? content.substring(6) : content}
+                      className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}
+                    />
+                  ) : (
+                    <span className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}>
+                      {content.startsWith('ERROR:') ? content.substring(6) : content}
+                    </span>
+                  )
                 )}
               </motion.div>
             );

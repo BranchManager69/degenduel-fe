@@ -4,10 +4,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { ContestChat } from "../../../components/contest-chat/ContestChat";
-import { ReferralProgressCard } from "../../../components/contest-lobby/ReferralProgressCard";
-import { ShareContestButton } from "../../../components/contest-lobby/ShareContestButton";
 import { CelebrationOverlay } from "../../../components/contest-results/CelebrationOverlay";
 import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
@@ -429,16 +426,8 @@ export const ContestResults: React.FC = () => {
             
             {/* Action Buttons */}
             <div className="mt-4 sm:mt-0 flex flex-col sm:items-end gap-3">
-              {/* Share Contest Button */}
-              {contestDetails && (
-                <SilentErrorBoundary>
-                  <ShareContestButton
-                    contestId={contestDetails.id}
-                    contestName={contestDetails.name}
-                    prizePool={contestDetails.prizePool}
-                  />
-                </SilentErrorBoundary>
-              )}
+              {/* Share Contest Button - Removed for completed contests */}
+              {/* Contest is completed, no need to share for recruiting participants */}
               
               <Button
                 onClick={() => navigate("/contests")}
@@ -717,10 +706,8 @@ export const ContestResults: React.FC = () => {
                   
                   {/* Sidebar */}
                   <div className="space-y-6">
-                    {/* Referral Progress Card */}
-                    <SilentErrorBoundary>
-                      <ReferralProgressCard />
-                    </SilentErrorBoundary>
+                    {/* Referral Progress Card - Removed for completed contests */}
+                    {/* Contest is completed, no need to show referral incentives */}
                     
                     {/* Your Stats */}
                     <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors">
@@ -1065,10 +1052,8 @@ export const ContestResults: React.FC = () => {
 
                   {/* Final Standings Section */}
                   <div>
-                    {/* Referral Progress Card */}
-                    <SilentErrorBoundary>
-                      <ReferralProgressCard />
-                    </SilentErrorBoundary>
+                    {/* Referral Progress Card - Removed for completed contests */}
+                    {/* Contest is completed, no need to show referral incentives */}
                     
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}

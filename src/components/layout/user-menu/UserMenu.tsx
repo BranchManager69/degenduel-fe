@@ -24,8 +24,7 @@ import { getMenuItems } from '../menu/menuConfig';
 import { NotificationsDropdown } from '../menu/NotificationsDropdown';
 import {
     MenuDivider,
-    SectionHeader,
-    WalletDetailsSection
+    SectionHeader
 } from '../menu/SharedMenuComponents';
 
 interface UserMenuProps {
@@ -322,7 +321,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                         transition-all duration-300 shadow-lg
                         ${isCompact ? "w-5 h-5" : "w-6 h-6"}
                         bg-dark-300 group-hover:ring-opacity-80 
-                        group-hover:scale-105 group-hover:ring-white/30
+                        group-hover:scale-105
                       `}
                     >
                       <img
@@ -360,9 +359,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                 <div className="relative">
                   {/* Admin Controls Section */}
                   <AdminControls />
-
-                  {/* Wallet Balances Section - Use shared component */}
-                  <WalletDetailsSection user={user} />
 
                   {/* Profile Menu Items */}
                   <div className="p-1">
@@ -498,38 +494,71 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
                     {/* Twitter/X Section - Special Styling */}
                     <Menu.Item>
-                      {({ active }) => (
-                        <a
-                          href="https://degenduel.me/api/auth/twitter/login"
-                          className={`
-                            relative group overflow-hidden transition-all duration-300 ease-out
-                            flex items-center justify-between px-4 py-2 text-sm rounded-md
-                            bg-gradient-to-r from-blue-600/20 via-cyan-500/20 to-blue-600/20
-                            border border-blue-500/30 hover:border-blue-400/50
-                            text-blue-200 hover:text-white
-                            hover:shadow-[0_0_12px_rgba(59,130,246,0.4)]
-                            ${active ? 'from-blue-500/30 via-cyan-400/30 to-blue-500/30 border-blue-400/60 text-white shadow-[0_0_8px_rgba(59,130,246,0.3)]' : ''}
-                          `}
-                          role="menuitem"
-                        >
-                          {/* Background shine effect */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-                          
-                          {/* Scan line effect */}
-                          <div className="absolute inset-0 overflow-hidden">
-                            <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
-                          </div>
-                          
-                          <span className="relative font-semibold tracking-wide group-hover:text-shadow-sm whitespace-nowrap">Connect with X</span>
-                          
-                          {/* X icon */}
-                          <div className="relative w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
-                              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                            </svg>
-                          </div>
-                        </a>
-                      )}
+                      {({ active }) => {
+                        const isTwitterLinked = user?.twitter_id || user?.twitter_handle;
+                        
+                        if (isTwitterLinked) {
+                          // Connected state - show handle or "Connected"
+                          return (
+                            <div
+                              className={`
+                                relative group overflow-hidden transition-all duration-300 ease-out
+                                flex items-center justify-between px-4 py-2 text-sm rounded-md
+                                bg-gradient-to-r from-green-600/20 via-emerald-500/20 to-green-600/20
+                                border border-green-500/30
+                                text-green-200 cursor-default
+                                ${active ? 'from-green-500/30 via-emerald-400/30 to-green-500/30 border-green-400/60 text-white' : ''}
+                              `}
+                              role="menuitem"
+                            >
+                              <span className="relative font-semibold tracking-wide whitespace-nowrap">
+                                {user?.twitter_handle ? `@${user.twitter_handle}` : 'X Connected'}
+                              </span>
+                              
+                              {/* Check icon */}
+                              <div className="relative w-4 h-4 opacity-80">
+                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full text-green-400">
+                                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                                </svg>
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          // Not connected - show connect button
+                          return (
+                            <a
+                              href="https://degenduel.me/api/auth/twitter/login"
+                              className={`
+                                relative group overflow-hidden transition-all duration-300 ease-out
+                                flex items-center justify-between px-4 py-2 text-sm rounded-md
+                                bg-gradient-to-r from-blue-600/20 via-cyan-500/20 to-blue-600/20
+                                border border-blue-500/30 hover:border-blue-400/50
+                                text-blue-200 hover:text-white
+                                hover:shadow-[0_0_12px_rgba(59,130,246,0.4)]
+                                ${active ? 'from-blue-500/30 via-cyan-400/30 to-blue-500/30 border-blue-400/60 text-white shadow-[0_0_8px_rgba(59,130,246,0.3)]' : ''}
+                              `}
+                              role="menuitem"
+                            >
+                              {/* Background shine effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                              
+                              {/* Scan line effect */}
+                              <div className="absolute inset-0 overflow-hidden">
+                                <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
+                              </div>
+                              
+                              <span className="relative font-semibold tracking-wide group-hover:text-shadow-sm whitespace-nowrap">Connect with X</span>
+                              
+                              {/* X icon */}
+                              <div className="relative w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+                                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                </svg>
+                              </div>
+                            </a>
+                          );
+                        }
+                      }}
                     </Menu.Item>
 
                     <MenuDivider />

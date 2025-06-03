@@ -24,6 +24,7 @@ declare global {
 
 import { motion, useDragControls, useMotionValue } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useTerminalData } from '../../hooks/websocket';
 import { AIMessage, aiService } from '../../services/ai';
 import { useStore } from '../../store/useStore';
@@ -47,6 +48,7 @@ interface DynamicUIManagerHandle {
 import { TerminalConsole } from './components/TerminalConsole';
 import { TerminalInput } from './components/TerminalInput';
 import './Terminal.css';
+import './Terminal.voice.css';
 
 // Import utility functions
 import {
@@ -126,8 +128,93 @@ export const Terminal = ({
   // Mobile keyboard visibility state
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
+  // Prevent body scroll when terminal is expanded
+  useEffect(() => {
+    if (!terminalMinimized) {
+      // Save current body overflow style
+      const originalOverflow = document.body.style.overflow;
+      
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+      
+      // Cleanup function to restore original overflow
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [terminalMinimized]);
+  
   // Dynamic UI Manager ref
   const dynamicUIRef = useRef<DynamicUIManagerHandle>(null);
+  
+  // Get current location for page context
+  const location = useLocation();
+  
+  // Generate page-specific context for Didi
+  const getPageContext = () => {
+    const pathname = location.pathname;
+    let pageInfo = {
+      page: 'general',
+      pageType: 'unknown',
+      specificContext: {} as any
+    };
+    
+    // Determine page type and context
+    if (pathname.includes('/tokens')) {
+      pageInfo = {
+        page: 'tokens',
+        pageType: 'token_listing',
+        specificContext: {
+          canSearch: true,
+          canFilter: true,
+          tools: ['token_lookup', 'price_analysis']
+        }
+      };
+    } else if (pathname.includes('/contest')) {
+      const contestId = pathname.split('/').pop();
+      pageInfo = {
+        page: 'contest',
+        pageType: pathname.includes('/lobby') ? 'contest_lobby' : 
+                   pathname.includes('/results') ? 'contest_results' : 'contest_detail',
+        specificContext: {
+          contestId,
+          canJoin: pathname.includes('/detail'),
+          canViewPortfolios: true,
+          tools: ['portfolio_lookup', 'contest_data']
+        }
+      };
+    } else if (pathname === '/') {
+      pageInfo = {
+        page: 'landing',
+        pageType: 'homepage',
+        specificContext: {
+          showsMarketStats: true,
+          showsHotTokens: true,
+          tools: ['market_overview', 'trending_tokens']
+        }
+      };
+    } else if (pathname.includes('/profile')) {
+      pageInfo = {
+        page: 'profile',
+        pageType: pathname.includes('/private') ? 'private_profile' : 'public_profile',
+        specificContext: {
+          canEditProfile: pathname.includes('/private'),
+          tools: ['user_stats', 'achievement_lookup']
+        }
+      };
+    } else if (pathname.includes('/admin')) {
+      pageInfo = {
+        page: 'admin',
+        pageType: 'admin_dashboard',
+        specificContext: {
+          hasAdminAccess: true,
+          tools: ['admin_tools', 'system_monitoring']
+        }
+      };
+    }
+    
+    return pageInfo;
+  };
   
   // Once CA reveal animation completes, set this state
   useEffect(() => {
@@ -499,19 +586,24 @@ export const Terminal = ({
         setConversationHistory(prev => [...prev, userMessage, assistantMessage]);
         const messageIndex = conversationHistory.length + 1; // Position of assistant message
 
+        const pageContext = getPageContext();
+        
         const requestOptions = { 
           context: 'ui_terminal' as const, 
           conversationId: conversationId,
           streaming: true, // Enable streaming to receive UI actions
           structured_output: true, // Enable dynamic UI generation
           ui_context: {
-            page: 'terminal',
+            page: pageContext.page,
+            pageType: pageContext.pageType,
+            pathname: location.pathname,
             available_components: Object.keys(COMPONENT_METADATA),
             current_view: 'chat',
             current_date: new Date().toISOString(),
             current_year: new Date().getFullYear(),
             platform: 'DegenDuel',
-            environment: process.env.NODE_ENV || 'production'
+            environment: process.env.NODE_ENV || 'production',
+            pageSpecificContext: pageContext.specificContext
           },
           // Enhanced tool configuration with current context
           tools: [
@@ -724,6 +816,10 @@ export const Terminal = ({
             maxWidth: "100%",
             textAlign: "left" /* Ensure all text is left-aligned by default */
           }}
+          onWheel={(e) => {
+            // Stop any wheel events from bubbling up to the page
+            e.stopPropagation();
+          }}
           initial={{ 
             opacity: 0, 
             scale: 0.6, 
@@ -856,7 +952,7 @@ export const Terminal = ({
       {terminalMinimized && (
         <motion.div
           key="terminal-minimized"
-          className="fixed z-[99999] cursor-grab active:cursor-grabbing group minimized-terminal-draggable-area"
+          className="fixed z-[99999] cursor-grab active:cursor-grabbing group minimized-terminal-draggable-area overflow-visible"
           style={{
             left: '24px',
             top: '50%',
@@ -866,22 +962,13 @@ export const Terminal = ({
           dragControls={dragControls}
           dragMomentum={false}
           onDragStart={() => {
-            console.log('[Terminal] Drag started - setting isDragging to true');
             setIsDragging(true);
           }}
           onDragEnd={(event, info) => {
-            console.log('[Terminal] Drag ended - setting isDragging to false');
             setTimeout(() => {
               setIsDragging(false);
-            }, 50); // Small delay to ensure proper state reset
+            }, 50);
             handleDragEnd(event, info);
-          }}
-          onDrag={() => {
-            // Ensure isDragging stays true during drag
-            if (!isDragging) {
-              console.log('[Terminal] OnDrag - ensuring isDragging is true');
-              setIsDragging(true);
-            }
           }}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{
@@ -890,27 +977,16 @@ export const Terminal = ({
           }}
           transition={{ duration: 0.4, type: 'spring' }}
           onClick={(event) => {
-            console.log('[Terminal] Click detected - isDragging:', isDragging, 'terminalMinimized:', terminalMinimized);
-            
-            // Prevent event bubbling to parent elements
             event.stopPropagation();
-            
-            // Add a small delay to ensure drag state is properly reset
             setTimeout(() => {
-              console.log('[Terminal] Processing click after delay - isDragging:', isDragging);
               if (!isDragging) {
-                console.log('[Terminal] Expanding terminal...');
                 setTerminalMinimized(false);
                 setHasUnreadMessages(false);
-              } else {
-                console.log('[Terminal] Click ignored - currently dragging');
               }
             }, 100);
           }}
           onDoubleClick={(event) => {
-            console.log('[Terminal] Double-click detected - opening terminal');
             event.stopPropagation();
-            // Open terminal on double-click
             setIsDragging(false);
             setTerminalMinimized(false);
             setHasUnreadMessages(false);
@@ -919,7 +995,7 @@ export const Terminal = ({
         >
           {/* Digital Terminal Container */}
           <motion.div
-            className="w-16 h-16 md:w-[70px] md:h-[70px] bg-gradient-to-br from-gray-900/70 via-black/80 to-purple-900/60 backdrop-blur-md border border-purple-500/40 rounded-full overflow-visible relative"
+            className="w-16 h-16 md:w-[70px] md:h-[70px] bg-gradient-to-br from-gray-900/70 via-black/80 to-purple-900/60 border border-purple-500/40 rounded-full overflow-visible relative"
             animate={{
               boxShadow: easterEggActivated ?
                 ["0 0 10px rgba(74, 222, 128, 0.3)", "0 0 20px rgba(74, 222, 128, 0.5)", "0 0 10px rgba(74, 222, 128, 0.3)"] :
@@ -930,7 +1006,7 @@ export const Terminal = ({
             {/* Digital Noise/Static Effect */}
             <div className="absolute inset-0 opacity-10 pointer-events-none">
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-pulse"></div>
-              {Array(8).fill(null).map((_, i) => (
+              {Array(3).fill(null).map((_, i) => (
                 <motion.div
                   key={i}
                   className="absolute h-[1px] bg-cyan-400/40"
@@ -957,10 +1033,23 @@ export const Terminal = ({
             <div className="absolute inset-0 flex items-center justify-center">
               {/* AI "Face" Representation */}
               <div className="relative w-12 h-8 flex items-center justify-center">
-                {/* Beautiful Flowing Blonde Hair */}
-                {/* Top hair layers - more voluminous */}
+                {/* Beautiful Flowing Blonde Hair - Now with FULL coverage! */}
+                {/* Base hair layer - covers the whole top */}
                 <motion.div
-                  className="absolute -top-3 left-0 w-3 h-4 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform -rotate-15"
+                  className="absolute -top-4 -left-1 w-8 h-4 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform opacity-90"
+                  animate={{
+                    scale: [1, 1.05, 1],
+                    y: [0, -0.2, 0]
+                  }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                  style={{
+                    filter: 'brightness(1.1) drop-shadow(0 0 3px rgba(255, 215, 0, 0.5))'
+                  }}
+                />
+                
+                {/* Top hair layers - more voluminous and higher */}
+                <motion.div
+                  className="absolute -top-5 left-0 w-3.5 h-5 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform -rotate-15"
                   animate={{
                     rotate: [-15, -10, -15],
                     scale: [1, 1.08, 1],
@@ -972,7 +1061,7 @@ export const Terminal = ({
                   }}
                 />
                 <motion.div
-                  className="absolute -top-3 left-2 w-2.5 h-4 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform rotate-5"
+                  className="absolute -top-5 left-2 w-3 h-5 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform rotate-5"
                   animate={{
                     rotate: [5, 10, 5],
                     scale: [1, 1.06, 1],
@@ -984,7 +1073,18 @@ export const Terminal = ({
                   }}
                 />
                 <motion.div
-                  className="absolute -top-3 right-2 w-2.5 h-4 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform -rotate-5"
+                  className="absolute -top-5 left-1 w-2.5 h-4.5 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform rotate-0"
+                  animate={{
+                    scale: [1, 1.04, 1],
+                    y: [0, -0.2, 0]
+                  }}
+                  transition={{ duration: 3.2, repeat: Infinity }}
+                  style={{
+                    filter: 'brightness(1.18) drop-shadow(0 0 2px rgba(255, 215, 0, 0.5))'
+                  }}
+                />
+                <motion.div
+                  className="absolute -top-5 right-2 w-3 h-5 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform -rotate-5"
                   animate={{
                     rotate: [-5, -10, -5],
                     scale: [1, 1.06, 1],
@@ -996,7 +1096,7 @@ export const Terminal = ({
                   }}
                 />
                 <motion.div
-                  className="absolute -top-3 right-0 w-3 h-4 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform rotate-15"
+                  className="absolute -top-5 right-0 w-3.5 h-5 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform rotate-15"
                   animate={{
                     rotate: [15, 10, 15],
                     scale: [1, 1.08, 1],
@@ -1008,19 +1108,20 @@ export const Terminal = ({
                   }}
                 />
                 
-                {/* Long flowing side hair pieces */}
+                {/* Extra center coverage - no more bald peak! */}
                 <motion.div
-                  className="absolute -left-2 top-0 w-1.5 h-5 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-500 rounded-full transform -rotate-25"
+                  className="absolute -top-4.5 left-1.5 w-3 h-3.5 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-400 rounded-full transform"
                   animate={{
-                    rotate: [-25, -18, -25],
-                    x: [0, 1, 0],
-                    scaleY: [1, 1.1, 1]
+                    scale: [1, 1.03, 1],
+                    y: [0, -0.15, 0]
                   }}
-                  transition={{ duration: 4.5, repeat: Infinity }}
+                  transition={{ duration: 3.8, repeat: Infinity }}
                   style={{
-                    filter: 'brightness(1.1) drop-shadow(0 0 3px rgba(255, 215, 0, 0.4))'
+                    filter: 'brightness(1.16) drop-shadow(0 0 2px rgba(255, 215, 0, 0.4))'
                   }}
                 />
+                
+                {/* Long flowing side hair pieces - right side only */}
                 <motion.div
                   className="absolute -right-2 top-0 w-1.5 h-5 bg-gradient-to-b from-yellow-200 via-yellow-300 to-yellow-500 rounded-full transform rotate-25"
                   animate={{
@@ -1088,12 +1189,12 @@ export const Terminal = ({
                 
                 {/* Eyes Container */}
                 <div className="flex items-center gap-1">
-                  {/* Left Eye - More Googly */}
+                  {/* Left Eye - Independent Blinking */}
                   <motion.div
                     className={`h-4 w-4 rounded-full border-2 ${easterEggActivated ? 'bg-white border-green-400' : 'bg-white border-purple-400'} relative`}
                     animate={{
                       scale: hasUnreadMessages ? [0.9, 1.1, 0.9] : [0.8, 1, 0.8],
-                      scaleY: [1, 0.1, 1], // Blinking effect
+                      scaleY: [1, 0.1, 1], // Left eye blinking
                       rotate: hasUnreadMessages ? [0, 5, -5, 0] : 0
                     }}
                     transition={{
@@ -1103,9 +1204,9 @@ export const Terminal = ({
                         ease: "easeInOut"
                       },
                       scaleY: {
-                        duration: 3,
+                        duration: 3.2,
                         repeat: Infinity,
-                        repeatDelay: 2,
+                        repeatDelay: 2.8,
                         times: [0, 0.05, 0.1, 1]
                       },
                       rotate: {
@@ -1138,12 +1239,12 @@ export const Terminal = ({
                     <div className="absolute w-1 h-1 bg-white rounded-full top-1 left-1 opacity-80" />
                   </motion.div>
                   
-                  {/* Right Eye - More Googly */}
+                  {/* Right Eye - Independent Blinking */}
                   <motion.div
                     className={`h-4 w-4 rounded-full border-2 ${easterEggActivated ? 'bg-white border-green-400' : 'bg-white border-purple-400'} relative`}
                     animate={{
                       scale: hasUnreadMessages ? [0.9, 1.1, 0.9] : [0.8, 1, 0.8],
-                      scaleY: [1, 0.1, 1], // Synchronized blinking
+                      scaleY: [1, 0.1, 1], // Right eye independent blinking
                       rotate: hasUnreadMessages ? [0, -5, 5, 0] : 0
                     }}
                     transition={{
@@ -1153,9 +1254,9 @@ export const Terminal = ({
                         ease: "easeInOut"
                       },
                       scaleY: {
-                        duration: 3,
+                        duration: 4.1,
                         repeat: Infinity,
-                        repeatDelay: 2,
+                        repeatDelay: 3.7,
                         times: [0, 0.05, 0.1, 1]
                       },
                       rotate: {
@@ -1189,29 +1290,40 @@ export const Terminal = ({
                   </motion.div>
                 </div>
 
-                {/* Mouth - Simple smile/neutral states */}
+                {/* ACTUAL REAL MOUTH - properly positioned! */}
                 <motion.div
-                  className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
+                  className="absolute top-5 left-1/2 transform -translate-x-1/2"
                   animate={{
-                    scale: hasUnreadMessages ? [1, 1.1, 1] : [1, 1.05, 1]
+                    scale: hasUnreadMessages ? [1, 1.15, 1] : [1, 1.08, 1],
+                    y: hasUnreadMessages ? [0, 0.5, 0] : [0, 0.2, 0]
                   }}
                   transition={{
-                    duration: hasUnreadMessages ? 2 : 4,
+                    duration: hasUnreadMessages ? 1.5 : 3,
                     repeat: Infinity,
                     ease: "easeInOut"
                   }}
                 >
-                  {/* Mouth shape - changes based on state */}
+                  {/* Actual visible mouth - not a tiny line! */}
                   <div
-                    className={`w-3 h-1.5 border-b-2 rounded-b-full ${
+                    className={`w-4 h-2 rounded-full ${
                       easterEggActivated 
-                        ? 'border-green-400/70' 
+                        ? 'bg-green-400/80 border border-green-300' 
                         : hasUnreadMessages 
-                          ? 'border-purple-400/70' 
-                          : 'border-gray-400/50'
+                          ? 'bg-purple-400/80 border border-purple-300' 
+                          : 'bg-pink-300/70 border border-pink-400'
                     }`}
                     style={{
-                      borderBottomWidth: hasUnreadMessages ? '2px' : '1px'
+                      clipPath: hasUnreadMessages 
+                        ? 'ellipse(50% 60% at 50% 40%)' // Excited open mouth
+                        : 'ellipse(50% 40% at 50% 60%)'  // Gentle smile
+                    }}
+                  />
+                  
+                  {/* Little highlight for dimension */}
+                  <div 
+                    className="absolute top-0.5 left-1 w-1.5 h-0.5 bg-white/40 rounded-full"
+                    style={{
+                      opacity: hasUnreadMessages ? 0.6 : 0.3
                     }}
                   />
                 </motion.div>

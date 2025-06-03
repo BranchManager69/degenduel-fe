@@ -56,16 +56,16 @@ export function tokenToTokenData(token: Token): TokenData {
   return {
     symbol: token.symbol,
     name: token.name,
-    price: token.price,
-    marketCap: token.marketCap,
-    volume24h: token.volume24h,
-    change24h: token.change24h,
-    // Convert the liquidity object to a number (using USD value)
-    liquidity: token.liquidity ? Number(token.liquidity.usd) : undefined,
+    price: String(token.price || 0),
+    marketCap: String(token.market_cap || token.marketCap || 0),
+    volume24h: String(token.volume_24h || token.volume24h || 0),
+    change24h: String(token.change_24h || token.change24h || 0),
+    // Convert the liquidity number to a number
+    liquidity: token.liquidity || undefined,
     status: token.status as "active" | "inactive",
-    contractAddress: token.contractAddress,
-    // For images, use the first image URL if available
-    imageUrl: token.images?.imageUrl
+    contractAddress: token.address || token.contractAddress,
+    // For images, use the new image_url property
+    imageUrl: token.image_url || token.images?.imageUrl
   };
 }
 
@@ -75,20 +75,23 @@ export function tokenToTokenData(token: Token): TokenData {
  */
 export function tokenDataToToken(tokenData: TokenData): Token {
   return {
+    id: 0, // Default ID
+    address: tokenData.contractAddress || `synthetic-${tokenData.symbol}`,
     symbol: tokenData.symbol,
     name: tokenData.name,
-    price: tokenData.price,
-    marketCap: tokenData.marketCap,
-    volume24h: tokenData.volume24h,
-    change24h: tokenData.change24h,
-    // Create a liquidity object from the number
-    liquidity: {
-      usd: tokenData.liquidity ? String(tokenData.liquidity) : "0",
-      base: "0",
-      quote: "0"
-    },
+    price: Number(tokenData.price) || 0,
+    market_cap: Number(tokenData.marketCap) || 0,
+    marketCap: tokenData.marketCap, // Keep for backward compatibility
+    volume_24h: Number(tokenData.volume24h) || 0,
+    volume24h: tokenData.volume24h, // Keep for backward compatibility
+    change_24h: Number(tokenData.change24h) || 0,
+    change24h: tokenData.change24h, // Keep for backward compatibility
+    liquidity: tokenData.liquidity || 0,
+    fdv: 0, // Default
+    decimals: 9, // Default
     status: tokenData.status || "active",
     contractAddress: tokenData.contractAddress || `synthetic-${tokenData.symbol}`,
+    image_url: tokenData.imageUrl
   };
 }
 
@@ -106,6 +109,11 @@ export interface TokenFilter {
   minVolume?: number;
   search?: string;
   status?: 'active' | 'inactive' | 'all';
+  // Jupiter tag filtering
+  tags?: string[];
+  excludeTags?: string[];
+  strictOnly?: boolean;
+  verifiedOnly?: boolean;
 }
 
 export interface TokenStatistics {
@@ -178,6 +186,16 @@ export function useStandardizedTokenData(
   maxHotTokens: number = 5,
   maxTopTokens: number = 6
 ): UseStandardizedTokenDataReturn {
+  // Extract Jupiter tag filters for backend
+  const backendFilters = {
+    minMarketCap: initialFilter.minMarketCap,
+    minVolume: initialFilter.minVolume,
+    tags: initialFilter.tags,
+    excludeTags: initialFilter.excludeTags,
+    strictOnly: initialFilter.strictOnly,
+    verifiedOnly: initialFilter.verifiedOnly
+  };
+
   const {
     tokens,
     isConnected,
@@ -185,7 +203,7 @@ export function useStandardizedTokenData(
     lastUpdate,
     refresh,
     isLoading: underlyingIsLoading
-  } = useTokenData(tokensToSubscribe);
+  } = useTokenData(tokensToSubscribe, backendFilters);
 
   const [sortMethod, setSortMethod] = useState<TokenSortMethod>(initialSortMethod);
   const [filter, setFilter] = useState<TokenFilter>(initialFilter);

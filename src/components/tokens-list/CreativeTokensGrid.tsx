@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import { OptimizedTokenCard } from "./OptimizedTokenCard";
 import { Token } from "../../types";
-import { formatNumber } from "../../utils/format";
+import { formatNumber, formatTokenPrice, formatPercentage } from "../../utils/format";
 
 interface CreativeTokensGridProps {
   tokens: Token[];
@@ -47,14 +47,14 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
   // ENHANCED "hotness" calculation using new multi-timeframe data
   const calculateHotness = (token: Token) => {
     // Short-term momentum (5m, 1h) - 40% weight
-    const change5m = parseFloat(token.priceChanges?.["5m"] || "0");
-    const change1h = parseFloat(token.priceChanges?.["1h"] || "0");
+    const change5m = token.priceChanges?.["5m"] || 0;
+    const change1h = token.priceChanges?.["1h"] || 0;
     const shortTermMomentum = (Math.abs(change5m) + Math.abs(change1h)) / 2;
     
     // Volume activity across timeframes - 30% weight
-    const volume5m = parseFloat(token.volumes?.["5m"] || "0");
-    const volume1h = parseFloat(token.volumes?.["1h"] || "0");
-    const volume24h = parseFloat(token.volume24h || "0");
+    const volume5m = token.volumes?.["5m"] || 0;
+    const volume1h = token.volumes?.["1h"] || 0;
+    const volume24h = token.volume_24h || Number(token.volume24h) || 0;
     const avgVolume = (volume5m + volume1h + volume24h) / 3;
     const volumeNormalized = Math.min(avgVolume / 10000000000, 1); // Cap at 10B
     
@@ -67,7 +67,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     const activityNormalized = Math.min(totalActivity / 1000, 1); // Cap at 1000 trades
     
     // Priority score from backend - 10% weight
-    const priorityNormalized = (token.priorityScore || 0) / 100;
+    const priorityNormalized = (token.priority_score || token.priorityScore || 0) / 100;
     
     // Combined hotness formula
     return (
@@ -108,7 +108,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     // Calculate hotness score for display
     const hotnessScore = calculateHotness(token) * 100;
     const isTopThree = index < 3;
-    const changeNum = parseFloat(token.change24h);
+    const changeNum = token.change_24h || Number(token.change24h) || 0;
     
     // Dynamic rank colors for top 3
     const getRankStyle = (rank: number) => {
@@ -133,10 +133,10 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
       >
         {/* STUNNING BANNER BACKGROUND */}
         <div className="absolute inset-0 overflow-hidden">
-          {(token.images?.headerImage || token.images?.imageUrl) ? (
+          {(token.header_image_url || token.image_url) ? (
             <>
               <img 
-                src={token.images.headerImage || token.images.imageUrl} 
+                src={token.header_image_url || token.image_url} 
                 alt={token.symbol}
                 className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
               />
@@ -153,7 +153,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
             <div 
               className="absolute inset-0 transform group-hover:scale-110 transition-transform duration-700" 
               style={{
-                background: `linear-gradient(135deg, ${getTokenColor(token.symbol)} 0%, rgba(18, 16, 25, 0.9) 100%)`,
+                background: `linear-gradient(135deg, ${token.color || getTokenColor(token.symbol)} 0%, rgba(18, 16, 25, 0.9) 100%)`,
               }}
             />
           )}
@@ -222,7 +222,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
             {/* ENHANCED PRICE DISPLAY */}
             <div className="mb-3">
               <div className="text-lg font-bold text-white font-mono drop-shadow-md">
-                ${formatNumber(token.price)}
+                {formatTokenPrice(token.price)}
               </div>
               <div className="flex items-center gap-2 mt-1">
                 <div className={`px-2 py-1 rounded-lg font-bold text-sm shadow-lg
@@ -231,7 +231,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
                     'bg-red-500/30 text-red-200 border border-red-400/30'
                   }
                 `}>
-                  {changeNum >= 0 ? '↗' : '↘'} {formatNumber(token.change24h)}%
+                  {changeNum >= 0 ? '↗' : '↘'} {formatPercentage(token.change_24h || token.change24h)}
                 </div>
                 <div className="text-xs text-yellow-300 font-bold bg-yellow-500/10 px-2 py-1 rounded border border-yellow-400/20">
                   🔥 {hotnessScore.toFixed(0)}
@@ -240,16 +240,56 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
             </div>
           </div>
           
-          {/* BOTTOM - QUICK STATS */}
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
-              <div className="text-gray-400 mb-1">MCap</div>
-              <div className="text-white font-bold">${formatNumber(token.marketCap, 'short')}</div>
+          {/* BOTTOM - ENHANCED STATS GRID */}
+          <div className="space-y-2">
+            {/* Primary Stats Row */}
+            <div className="grid grid-cols-3 gap-1 text-xs">
+              <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
+                <div className="text-gray-400 mb-0.5">MCap</div>
+                <div className="text-white font-bold">${formatNumber(token.market_cap || token.marketCap, 'short')}</div>
+              </div>
+              <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
+                <div className="text-gray-400 mb-0.5">FDV</div>
+                <div className="text-white font-bold">${formatNumber(token.fdv, 'short')}</div>
+              </div>
+              <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
+                <div className="text-gray-400 mb-0.5">Liq</div>
+                <div className="text-white font-bold">${formatNumber(token.liquidity, 'short')}</div>
+              </div>
             </div>
-            <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
-              <div className="text-gray-400 mb-1">Vol 24h</div>
-              <div className="text-white font-bold">${formatNumber(token.volume24h, 'short')}</div>
-            </div>
+            
+            {/* Multi-timeframe Changes */}
+            {token.priceChanges && (
+              <div className="flex items-center justify-between px-1">
+                <div className="flex gap-1">
+                  <div className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    (token.priceChanges["5m"] || 0) >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                  }`}>
+                    5m: {formatPercentage(token.priceChanges["5m"], false)}
+                  </div>
+                  <div className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    (token.priceChanges["1h"] || 0) >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                  }`}>
+                    1h: {formatPercentage(token.priceChanges["1h"], false)}
+                  </div>
+                </div>
+                {/* Volume indicator */}
+                <div className="text-[10px] text-gray-400">
+                  Vol: ${formatNumber(token.volume_24h || token.volume24h, 'short')}
+                </div>
+              </div>
+            )}
+            
+            {/* Tags if available */}
+            {token.tags && token.tags.length > 0 && (
+              <div className="flex gap-1 flex-wrap px-1">
+                {token.tags.slice(0, 3).map((tag, i) => (
+                  <span key={i} className="text-[10px] px-1.5 py-0.5 bg-brand-500/20 text-brand-300 rounded">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         

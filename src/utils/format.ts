@@ -38,3 +38,82 @@ export const formatNumber = (value: string | number, format?: 'short' | number, 
 
   return num.toFixed(0);
 };
+
+/**
+ * Format crypto token prices with intelligent decimal handling
+ * Handles micro-cap tokens worth fractions of a cent
+ * 
+ * @param price - The price to format (string or number)
+ * @param options - Formatting options
+ * @returns Formatted price string
+ */
+export const formatTokenPrice = (price: string | number, options?: {
+  showDollarSign?: boolean;
+  forceDecimals?: number;
+  compact?: boolean;
+}) => {
+  const num = Number(price);
+  if (isNaN(num)) return "$0.00";
+  
+  const { showDollarSign = true, forceDecimals, compact = false } = options || {};
+  const dollarSign = showDollarSign ? "$" : "";
+  
+  // For compact display of large prices
+  if (compact && num >= 1) {
+    if (num >= 1e6) return `${dollarSign}${(num / 1e6).toFixed(2)}M`;
+    if (num >= 1e3) return `${dollarSign}${(num / 1e3).toFixed(2)}K`;
+    return `${dollarSign}${num.toFixed(2)}`;
+  }
+  
+  // Force specific decimal places if requested
+  if (forceDecimals !== undefined) {
+    return `${dollarSign}${num.toFixed(forceDecimals)}`;
+  }
+  
+  // Intelligent decimal handling based on price magnitude
+  if (num >= 1000) {
+    return `${dollarSign}${num.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+  } else if (num >= 1) {
+    return `${dollarSign}${num.toFixed(2)}`;
+  } else if (num >= 0.01) {
+    return `${dollarSign}${num.toFixed(4)}`;
+  } else if (num >= 0.0001) {
+    return `${dollarSign}${num.toFixed(6)}`;
+  } else if (num >= 0.000001) {
+    return `${dollarSign}${num.toFixed(8)}`;
+  } else if (num > 0) {
+    // For extremely small prices, use scientific notation or show significant digits
+    const zeros = -Math.floor(Math.log10(num));
+    if (zeros > 10) {
+      // Scientific notation for ultra-micro prices
+      return `${dollarSign}${num.toExponential(3)}`;
+    } else {
+      // Show up to 12 decimal places for micro prices
+      const formatted = num.toFixed(Math.min(zeros + 3, 12));
+      return `${dollarSign}${formatted}`;
+    }
+  } else {
+    return `${dollarSign}0.00`;
+  }
+};
+
+/**
+ * Format percentage changes with color coding
+ * @param change - The percentage change
+ * @param includeSign - Whether to include + for positive changes
+ * @returns Formatted percentage string
+ */
+export const formatPercentage = (change: string | number | undefined, includeSign = true) => {
+  const num = Number(change || 0);
+  if (isNaN(num)) return "0.00%";
+  
+  const sign = num >= 0 && includeSign ? "+" : "";
+  
+  // Use appropriate decimal places based on magnitude
+  let decimals = 2;
+  if (Math.abs(num) >= 100) decimals = 0;
+  else if (Math.abs(num) >= 10) decimals = 1;
+  else if (Math.abs(num) < 0.01) decimals = 4;
+  
+  return `${sign}${num.toFixed(decimals)}%`;
+};

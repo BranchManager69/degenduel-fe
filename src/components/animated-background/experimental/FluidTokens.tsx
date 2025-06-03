@@ -115,7 +115,7 @@ export const FluidTokens: React.FC = () => {
       const y = dimensions.height / 2 + Math.sin(angle) * radius;
 
       // Use 5-minute change instead of 24h for more dynamic animations
-      const change = token.changesJson?.m5 || parseFloat(token.change24h?.toString() || "0");
+      const change = token.priceChanges?.["5m"] || parseFloat(token.change24h?.toString() || "0");
       let color: [number, number, number];
 
       if (change > 1) {

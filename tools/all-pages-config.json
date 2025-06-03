@@ -1,0 +1,139 @@
+{
+    "baseUrl": "https://degenduel.me",
+    "outputDir": "../screenshots/all-pages/",
+    "viewport": {
+        "width": 1920,
+        "height": 1080
+    },
+    "delay": 4000,
+    "timeout": 45000,
+    "fullPage": true,
+    "format": "png",
+    "routes": [
+        {
+            "path": "/",
+            "name": "homepage",
+            "requiresAuth": false
+        },
+        {
+            "path": "/login",
+            "name": "login-page",
+            "requiresAuth": false
+        },
+        {
+            "path": "/contests",
+            "name": "contests-listing",
+            "requiresAuth": false
+        },
+        {
+            "path": "/leaderboard",
+            "name": "global-leaderboard",
+            "requiresAuth": false
+        },
+        {
+            "path": "/profile",
+            "name": "user-profile",
+            "requiresAuth": true
+        },
+        {
+            "path": "/dashboard",
+            "name": "user-dashboard",
+            "requiresAuth": true
+        },
+        {
+            "path": "#/contests/demo/results",
+            "name": "contest-results-demo",
+            "requiresAuth": false
+        },
+        {
+            "path": "/admin",
+            "name": "admin-dashboard",
+            "requiresAuth": true
+        },
+        {
+            "path": "/admin/chat-dashboard",
+            "name": "admin-chat-dashboard",
+            "requiresAuth": true
+        },
+        {
+            "path": "/connection-debugger",
+            "name": "connection-debugger",
+            "requiresAuth": true
+        },
+        {
+            "path": "/websocket-hub",
+            "name": "websocket-hub",
+            "requiresAuth": true
+        },
+        {
+            "path": "/api/superadmin-bypass",
+            "name": "superadmin-dashboard",
+            "requiresAuth": true
+        },
+        {
+            "path": "/api/superadmin-bypass/wallet-monitoring",
+            "name": "superadmin-wallet-monitoring",
+            "requiresAuth": true
+        },
+        {
+            "path": "/api/superadmin-bypass/control-hub",
+            "name": "superadmin-control-hub",
+            "requiresAuth": true
+        },
+        {
+            "path": "/api/superadmin-bypass/chat-dashboard",
+            "name": "superadmin-chat-dashboard",
+            "requiresAuth": true
+        },
+        {
+            "path": "/api/superadmin-bypass/services",
+            "name": "superadmin-services",
+            "requiresAuth": true
+        },
+        {
+            "path": "/api/superadmin-bypass/switchboard",
+            "name": "superadmin-switchboard",
+            "requiresAuth": true
+        },
+        {
+            "path": "/api/superadmin-bypass/circuit-breaker",
+            "name": "superadmin-circuit-breaker",
+            "requiresAuth": true
+        },
+        {
+            "path": "/api/superadmin-bypass/ai-testing",
+            "name": "superadmin-ai-testing",
+            "requiresAuth": true
+        },
+        {
+            "path": "/api/superadmin-bypass/liquidity-simulator",
+            "name": "superadmin-liquidity-simulator",
+            "requiresAuth": true
+        },
+        {
+            "path": "/api/superadmin-bypass/websocket-monitor",
+            "name": "superadmin-websocket-monitor",
+            "requiresAuth": true
+        },
+        {
+            "path": "/api-playground",
+            "name": "api-playground",
+            "requiresAuth": true
+        },
+        {
+            "path": "/wss-playground",
+            "name": "wss-playground",
+            "requiresAuth": true
+        },
+        {
+            "path": "/amm-sim",
+            "name": "amm-simulator",
+            "requiresAuth": true
+        },
+        {
+            "path": "/admin/skyduel",
+            "name": "admin-skyduel",
+            "requiresAuth": true
+        }
+    ]
+}

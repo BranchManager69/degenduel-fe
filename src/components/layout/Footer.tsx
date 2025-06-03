@@ -8,6 +8,7 @@ import { useScrollFooter } from "../../hooks/ui/useScrollFooter";
 import { DDExtendedMessageType, DDExtendedMessageType as MessageType } from '../../hooks/websocket/types';
 import { useStore } from "../../store/useStore";
 
+
 export const Footer: React.FC = () => {
   const unifiedWs = useWebSocket();
   
@@ -291,7 +292,7 @@ export const Footer: React.FC = () => {
       */}
 
       <footer
-        className="backdrop-blur-sm border-t border-dark-300/30 sticky bottom-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-visible relative"
+        className="backdrop-blur-sm border-t border-dark-300/30 fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-visible"
         style={{ paddingTop: '4px' }} 
       >
         {/* Full footer-width status background based on derived styles.statusText */}

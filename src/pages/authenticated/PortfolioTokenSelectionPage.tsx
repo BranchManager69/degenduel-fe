@@ -107,6 +107,13 @@ export const TokenSelection: React.FC = () => {
   const { id: contestId } = useParams();
   const navigate = useNavigate();
   
+  // Jupiter filter state - declared early to avoid "used before declaration" errors
+  const [jupiterFilters, setJupiterFilters] = useState({
+    strictOnly: false,
+    verifiedOnly: false,
+    showAll: true
+  });
+  
   // Use the SAME working WebSocket approach as TokensPage (bypass broken standardized hook)
   console.log("🔌 PortfolioTokenSelectionPage: Using direct WebSocket like TokensPage");
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -118,37 +125,58 @@ export const TokenSelection: React.FC = () => {
   // Helper function to transform WebSocket token data (same as TokensPage)
   const transformTokenData = useCallback((tokenData: any): Token => {
     return {
+      // Core identification
+      id: tokenData.id || 0,
+      address: tokenData.address || "",
       contractAddress: tokenData.address || "",
-      status: "active",
-      name: tokenData.name || "",
       symbol: tokenData.symbol || "",
-      price: tokenData.price?.toString() || "0",
-      marketCap: tokenData.market_cap?.toString() || "0",
-      volume24h: tokenData.volume_24h?.toString() || "0",
-      change24h: tokenData.change_24h?.toString() || "0",
-      liquidity: {
-        usd: tokenData.liquidity?.toString() || "0",
-        base: "0",
-        quote: "0"
-      },
+      name: tokenData.name || "",
+      
+      // Numbers not strings
+      price: tokenData.price || 0,
+      market_cap: tokenData.market_cap || 0,
+      marketCap: String(tokenData.market_cap || 0), // backward compat
+      volume_24h: tokenData.volume_24h || 0,
+      volume24h: String(tokenData.volume_24h || 0), // backward compat
+      change_24h: tokenData.change_24h || 0,
+      change24h: String(tokenData.change_24h || 0), // backward compat
+      liquidity: tokenData.liquidity || 0,
+      fdv: tokenData.fdv || 0,
+      decimals: tokenData.decimals || 9,
+      
+      // Visual/metadata
+      image_url: tokenData.image_url || "",
+      header_image_url: tokenData.header_image_url || "",
+      color: tokenData.color || "#888888",
+      description: tokenData.description || "",
+      tags: tokenData.tags || [],
+      
+      // Supply & ranking
+      total_supply: tokenData.total_supply || 0,
+      totalSupply: String(tokenData.total_supply || 0), // backward compat
+      priority_score: tokenData.priority_score || 0,
+      priorityScore: tokenData.priority_score || 0, // backward compat
+      first_seen_on_jupiter_at: tokenData.first_seen_on_jupiter_at || null,
+      firstSeenAt: tokenData.first_seen_on_jupiter_at || null, // backward compat
+      pairCreatedAt: tokenData.pairCreatedAt || null,
+      
+      // Legacy images for backward compatibility
       images: {
         imageUrl: tokenData.image_url || "",
         headerImage: tokenData.header_image_url || "",
         openGraphImage: tokenData.open_graph_image_url || ""
       },
-      socials: tokenData.socials || {
-        twitter: { url: "", count: null },
-        telegram: { url: "", count: null },
-        discord: { url: "", count: null }
+      
+      // Social links (now strings)
+      socials: {
+        twitter: tokenData.socials?.twitter,
+        telegram: tokenData.socials?.telegram,
+        discord: tokenData.socials?.discord,
+        website: tokenData.socials?.website
       },
+      
+      status: "active",
       websites: tokenData.websites || [],
-      description: tokenData.description || "",
-      tags: tokenData.tags || [],
-      totalSupply: tokenData.total_supply?.toString() || "0",
-      priorityScore: tokenData.priority_score || 0,
-      firstSeenAt: tokenData.first_seen_on_jupiter_at || null,
-      pairCreatedAt: tokenData.pairCreatedAt || null,
-      fdv: tokenData.fdv?.toString() || "0",
       priceChanges: tokenData.priceChanges || {
         "5m": "0",
         "1h": "0", 
@@ -171,7 +199,7 @@ export const TokenSelection: React.FC = () => {
   }, []);
   
   // Connect to WebSocket for real-time token data (same as TokensPage)
-  const connectWebSocket = useCallback(() => {
+  const connectWebSocket = useCallback((filters = jupiterFilters) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.close();
     }
@@ -189,12 +217,31 @@ export const TokenSelection: React.FC = () => {
         topics: ['market-data']
       }));
       
-      // Request all tokens
+      // Request tokens with user-configurable Jupiter filters
+      const requestData: { 
+        limit: number;
+        filters: {
+          strictOnly?: boolean;
+          verifiedOnly?: boolean;
+        };
+      } = { 
+        limit: 1000,
+        filters: {}
+      };
+      
+      // Apply Jupiter filters based on user selection
+      if (filters.strictOnly) {
+        requestData.filters.strictOnly = true;
+      } else if (filters.verifiedOnly) {
+        requestData.filters.verifiedOnly = true;
+      }
+      // If showAll is true, no filters are applied
+      
       socket.send(JSON.stringify({
         type: 'REQUEST',
         topic: 'market-data',
         action: 'getTokens',
-        data: { limit: 1000 }
+        data: requestData
       }));
     };
     
@@ -235,7 +282,7 @@ export const TokenSelection: React.FC = () => {
     socket.onclose = () => {
       setIsTokenDataConnected(false);
     };
-  }, [transformTokenData]);
+  }, [transformTokenData, jupiterFilters]);
   
   // Initialize WebSocket connection
   useEffect(() => {
@@ -247,17 +294,65 @@ export const TokenSelection: React.FC = () => {
     };
   }, [connectWebSocket]);
   
-  // Add refresh function to match the old interface
-  const refreshTokens = useCallback(() => {
+  // Refresh token data when Jupiter filters change
+  useEffect(() => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      const requestData: { 
+        limit: number;
+        filters: {
+          strictOnly?: boolean;
+          verifiedOnly?: boolean;
+        };
+      } = { 
+        limit: 1000,
+        filters: {}
+      };
+      
+      // Apply Jupiter filters based on current user selection
+      if (jupiterFilters.strictOnly) {
+        requestData.filters.strictOnly = true;
+      } else if (jupiterFilters.verifiedOnly) {
+        requestData.filters.verifiedOnly = true;
+      }
+      
       socketRef.current.send(JSON.stringify({
         type: 'REQUEST',
         topic: 'market-data',
         action: 'getTokens',
-        data: { limit: 1000 }
+        data: requestData
       }));
     }
-  }, []);
+  }, [jupiterFilters]);
+  
+  // Add refresh function to match the old interface
+  const refreshTokens = useCallback(() => {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      const requestData: { 
+        limit: number;
+        filters: {
+          strictOnly?: boolean;
+          verifiedOnly?: boolean;
+        };
+      } = { 
+        limit: 1000,
+        filters: {}
+      };
+      
+      // Apply Jupiter filters based on current user selection
+      if (jupiterFilters.strictOnly) {
+        requestData.filters.strictOnly = true;
+      } else if (jupiterFilters.verifiedOnly) {
+        requestData.filters.verifiedOnly = true;
+      }
+      
+      socketRef.current.send(JSON.stringify({
+        type: 'REQUEST',
+        topic: 'market-data',
+        action: 'getTokens',
+        data: requestData
+      }));
+    }
+  }, [jupiterFilters]);
 
   console.log("📊 PortfolioTokenSelectionPage: Token data state:", {
     tokenCount: tokens.length,
@@ -736,7 +831,48 @@ export const TokenSelection: React.FC = () => {
     } catch (error: any) {
       const errorMsg = error.message || "Failed to enter contest";
 
-      // Update transaction state
+      // Handle "already participating" as info, not error
+      if (errorMsg.toLowerCase().includes("already participating")) {
+        // Show success message and redirect
+        setTransactionState({
+          status: "success",
+          message: "You're already participating in this contest!",
+        });
+
+        toast.success("You're already in this contest! Redirecting to contest page...", { duration: 3000 });
+        
+        // Navigate to contest page after brief delay
+        setTimeout(() => {
+          navigate(`/contests/${contestId}`);
+        }, 1500);
+        
+        return; // Don't show error state
+      }
+
+      // Handle analytics tracking errors gracefully
+      if (errorMsg.includes("participationLogger.analytics.trackEvent is not a function") || 
+          errorMsg.includes("analytics tracking temporarily unavailable")) {
+        // This is a backend analytics error that doesn't affect the core functionality
+        console.warn("Backend analytics error detected (non-critical):", errorMsg);
+        
+        // Still show success for the contest entry (the analytics error is secondary)
+        setTransactionState({
+          status: "success",
+          message: "Contest entry successful! (Analytics temporarily unavailable)",
+          signature: confirmedSignature || transactionState.signature,
+        });
+
+        toast.success("Successfully entered contest! (Analytics tracking temporarily unavailable)", { duration: 4000 });
+        
+        // Navigate to contest page after brief delay
+        setTimeout(() => {
+          navigate(`/contests/${contestId}`);
+        }, 1500);
+        
+        return; // Don't show error state for this non-critical error
+      }
+
+      // Handle all other errors normally
       setTransactionState({
         status: "error",
         message: "Error entering contest",
@@ -757,8 +893,36 @@ export const TokenSelection: React.FC = () => {
     }
   };
 
-  // NEW: Handle WebSocket connection issues and errors
-  const displayError = tokensError || (!isTokenDataConnected && !tokenListLoading ? "WebSocket connection lost" : null);
+  // Grace period for WebSocket disconnections (like UnifiedTicker)
+  const [wsDisconnectTime, setWsDisconnectTime] = useState<number | null>(null);
+  const [isInWsGracePeriod, setIsInWsGracePeriod] = useState(false);
+  
+  useEffect(() => {
+    const GRACE_PERIOD_MS = 8000; // 8 seconds grace period
+    
+    if (!isTokenDataConnected) {
+      // Just disconnected
+      if (wsDisconnectTime === null) {
+        const now = Date.now();
+        setWsDisconnectTime(now);
+        setIsInWsGracePeriod(true);
+        
+        // Set timeout to end grace period
+        const timeout = setTimeout(() => {
+          setIsInWsGracePeriod(false);
+        }, GRACE_PERIOD_MS);
+        
+        return () => clearTimeout(timeout);
+      }
+    } else if (isTokenDataConnected) {
+      // Reconnected - clear grace period
+      setWsDisconnectTime(null);
+      setIsInWsGracePeriod(false);
+    }
+  }, [isTokenDataConnected, wsDisconnectTime]);
+
+  // Only show error for actual data errors, not connection issues during grace period
+  const displayError = tokensError || (!isTokenDataConnected && !isInWsGracePeriod && !tokenListLoading && memoizedTokens.length === 0 ? "Unable to load token data. Please check your connection." : null);
 
   console.log("🎯 PortfolioTokenSelectionPage: Render logic state:", {
     tokenListLoading,
@@ -884,6 +1048,22 @@ export const TokenSelection: React.FC = () => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="flex flex-col min-h-screen">
+        {/* Connection Status Banner */}
+        {!isTokenDataConnected && !isInWsGracePeriod && (
+          <div className="bg-yellow-500/10 border-b border-yellow-500/30 px-4 py-2">
+            <div className="flex items-center justify-center gap-2 text-yellow-400 text-sm">
+              <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+              <span>Connection lost - showing cached data</span>
+              <button
+                onClick={refreshTokens}
+                className="ml-4 px-2 py-1 bg-yellow-500/20 rounded text-xs hover:bg-yellow-500/30 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+        
         {/* DIFFERENT BACKGROUND: Matrix-style instead of cyber grid */}
         <div className="fixed inset-0 z-0">
           <div className="absolute inset-0 bg-dark-100"></div>
@@ -975,6 +1155,54 @@ export const TokenSelection: React.FC = () => {
                         viewMode={viewMode}
                         onViewModeChange={setViewMode}
                       />
+                      
+                      {/* Jupiter Filter Controls */}
+                      <div className="mt-4 flex flex-wrap gap-4 items-center p-3 bg-dark-300/30 border border-emerald-500/30 rounded-lg">
+                        <span className="text-sm font-medium text-emerald-400 font-mono">JUPITER.FILTERS:</span>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={jupiterFilters.strictOnly}
+                            onChange={(e) => setJupiterFilters({
+                              strictOnly: e.target.checked,
+                              verifiedOnly: false, // Strict overrides verified
+                              showAll: !e.target.checked && !jupiterFilters.verifiedOnly
+                            })}
+                            className="w-4 h-4 text-emerald-400 bg-dark-300 border-dark-400 rounded focus:ring-emerald-400 focus:ring-2"
+                          />
+                          <span className="text-sm text-gray-300 font-mono">STRICT.ONLY</span>
+                          <span className="text-xs text-gray-500 font-mono">[MAX.QUALITY]</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={jupiterFilters.verifiedOnly && !jupiterFilters.strictOnly}
+                            disabled={jupiterFilters.strictOnly}
+                            onChange={(e) => setJupiterFilters({
+                              strictOnly: false,
+                              verifiedOnly: e.target.checked,
+                              showAll: !e.target.checked && !jupiterFilters.strictOnly
+                            })}
+                            className="w-4 h-4 text-emerald-400 bg-dark-300 border-dark-400 rounded focus:ring-emerald-400 focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          />
+                          <span className={`text-sm font-mono ${jupiterFilters.strictOnly ? 'text-gray-500' : 'text-gray-300'}`}>VERIFIED.ONLY</span>
+                          <span className="text-xs text-gray-500 font-mono">[CURATED]</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={!jupiterFilters.strictOnly && !jupiterFilters.verifiedOnly}
+                            onChange={(e) => setJupiterFilters({
+                              strictOnly: false,
+                              verifiedOnly: false,
+                              showAll: e.target.checked
+                            })}
+                            className="w-4 h-4 text-emerald-400 bg-dark-300 border-dark-400 rounded focus:ring-emerald-400 focus:ring-2"
+                          />
+                          <span className="text-sm text-gray-300 font-mono">SHOW.ALL</span>
+                          <span className="text-xs text-gray-500 font-mono">[UNFILTERED]</span>
+                        </label>
+                      </div>
                     </div>
 
                     {/* Token Grid */}

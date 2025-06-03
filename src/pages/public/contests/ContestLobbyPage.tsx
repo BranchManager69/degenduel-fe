@@ -28,8 +28,8 @@ import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 import { formatCurrency } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
-import { setupContestOGMeta, resetToDefaultMeta } from "../../../utils/ogImageUtils";
 import { ContestViewData } from "../../../types";
+import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
 
 // Contest Lobby page
 export const ContestLobby: React.FC = () => {
@@ -332,8 +332,8 @@ export const ContestLobby: React.FC = () => {
             
             {/* Timer, Share Button & Mobile Menu Button */}
             <div className="flex items-center justify-between gap-3">
-              {/* Share Contest Button */}
-              {contestDetails && (
+              {/* Share Contest Button - Hide for challenge contests */}
+              {contestDetails && (contestViewData?.contest as any)?.contest_type !== "CHALLENGE" && (
                 <SilentErrorBoundary>
                   <ShareContestButton
                     contestId={contestDetails.id}
@@ -445,10 +445,12 @@ export const ContestLobby: React.FC = () => {
                     <Leaderboard entries={leaderboardEntries} />
                   </div>
                   <div className="space-y-6">
-                    {/* Referral Progress Card */}
-                    <SilentErrorBoundary>
-                      <ReferralProgressCard />
-                    </SilentErrorBoundary>
+                    {/* Referral Progress Card - Hide for challenge contests */}
+                    {(contestViewData?.contest as any)?.contest_type !== "CHALLENGE" && (
+                      <SilentErrorBoundary>
+                        <ReferralProgressCard />
+                      </SilentErrorBoundary>
+                    )}
                     
                     {/* Token Performance Cards */}
                     {currentUserPerformance?.tokens.map((token, index) => {
@@ -511,10 +513,12 @@ export const ContestLobby: React.FC = () => {
                   </div>
                   
                   <div className="space-y-6">
-                    {/* Referral Progress Card */}
-                    <SilentErrorBoundary>
-                      <ReferralProgressCard />
-                    </SilentErrorBoundary>
+                    {/* Referral Progress Card - Hide for challenge contests */}
+                    {(contestViewData?.contest as any)?.contest_type !== "CHALLENGE" && (
+                      <SilentErrorBoundary>
+                        <ReferralProgressCard />
+                      </SilentErrorBoundary>
+                    )}
                     
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -541,10 +545,12 @@ export const ContestLobby: React.FC = () => {
                   </div>
                   
                   <div className="space-y-6">
-                    {/* Referral Progress Card */}
-                    <SilentErrorBoundary>
-                      <ReferralProgressCard />
-                    </SilentErrorBoundary>
+                    {/* Referral Progress Card - Hide for challenge contests */}
+                    {(contestViewData?.contest as any)?.contest_type !== "CHALLENGE" && (
+                      <SilentErrorBoundary>
+                        <ReferralProgressCard />
+                      </SilentErrorBoundary>
+                    )}
                     
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}

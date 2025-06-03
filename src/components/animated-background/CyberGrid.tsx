@@ -2,23 +2,74 @@
 
 
 import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { usePerformanceMode } from '../ui/PerformanceToggle';
 
 // Modified to act as a standalone background layer instead of a wrapper
 export function CyberGrid() { // Removed children prop
+  const [documentHeight, setDocumentHeight] = useState('100vh');
+  const isPerformanceMode = usePerformanceMode();
+  
+  useEffect(() => {
+    const updateHeight = () => {
+      const height = Math.max(
+        document.body.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.clientHeight,
+        document.documentElement.scrollHeight,
+        document.documentElement.offsetHeight,
+        window.innerHeight
+      );
+      setDocumentHeight(`${height}px`);
+    };
+    
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    // Also update when content changes
+    const observer = new MutationObserver(updateHeight);
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    return () => {
+      window.removeEventListener('resize', updateHeight);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    // Changed to fixed position, full screen, negative z-index, removed overflow-hidden
-    <div className="fixed inset-0 z-[-1] bg-gradient-to-br from-darkGrey-dark via-darkGrey to-mauve-dark">
-      {/* Grid overlay - still absolute within the fixed container */}
+    // Fixed positioning covering full viewport width and calculated document height
+    <div className="fixed top-0 left-0 z-[-1] bg-gradient-to-br from-darkGrey-dark via-darkGrey to-mauve-dark"
+         style={{ 
+           height: documentHeight,
+           width: '100vw',
+           right: 0
+         }}>
+      {/* Grid overlay - responsive sizing based on viewport */}
       <div 
         className="absolute inset-0 opacity-10"
         style={{
           backgroundImage: 'linear-gradient(#9D4EDD 1px, transparent 1px), linear-gradient(90deg, #9D4EDD 1px, transparent 1px)',
-          backgroundSize: '50px 50px',
+          backgroundSize: 'clamp(30px, 4vw, 60px) clamp(30px, 4vw, 60px)',
         }}
       />
 
-      {/* Particles - still absolute within the fixed container */}
-      <FloatingParticles />
+      {/* Particles - conditional rendering based on performance mode */}
+      {!isPerformanceMode ? (
+        <FloatingParticles />
+      ) : (
+        // Static particles for performance mode - minimal visual impact
+        <div className="absolute inset-0 pointer-events-none opacity-20">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 bg-mauve-light rounded-full"
+              style={{
+                left: `${15 + (i * 12)}%`,
+                top: `${20 + (i * 8)}%`,
+              }}
+            />
+          ))}
+        </div>
+      )}
       
       {/* Removed the children wrapper div */}
     </div>
@@ -26,12 +77,11 @@ export function CyberGrid() { // Removed children prop
 }
 
 function FloatingParticles() {
-  // Ensure particles render within the new fixed container bounds
-  // Using 100vw and 100vh for initial positioning relative to viewport
-  const initialX = () => Math.random() * 100 + 'vw';
-  const initialY = () => -20; // Start above the screen
-  const animateY = () => window.innerHeight + 20; // Animate below the screen
-  const animateX = (i: number) => `calc(${Math.random() * 100}vw + ${Math.sin(i) * 50}px)`;
+  // Use CSS viewport units for truly dynamic, responsive positioning
+  const getInitialX = () => Math.random() * 100; // 0-100% of viewport width
+  const getInitialY = () => -5; // Start slightly above viewport
+  const getAnimateY = () => 105; // End slightly below viewport (105vh)
+  const getAnimateX = (_i: number) => Math.random() * 100; // Random position across viewport width
 
   return (
     <div className="absolute inset-0 pointer-events-none">
@@ -39,19 +89,19 @@ function FloatingParticles() {
         <motion.div
           key={i}
           className="absolute w-1 h-1 bg-mauve-light rounded-full opacity-30"
-          // Updated initial/animate props to use viewport units or explicit window dimensions
-          initial={{ x: initialX(), y: initialY() }}
+          style={{
+            left: `${getInitialX()}vw`,
+            top: `${getInitialY()}vh`,
+          }}
           animate={{
-            y: animateY(),
-            x: animateX(i),
+            top: `${getAnimateY()}vh`,
+            left: `${getAnimateX(i)}vw`,
           }}
           transition={{
             duration: Math.random() * 5 + 5,
             repeat: Infinity,
             ease: "linear",
-            // Ensure x animation stays within reasonable bounds if needed
-            // The previous calculation seemed fine, retaining it
-            x: {
+            left: {
               duration: Math.random() * 3 + 2,
               repeat: Infinity,
               ease: "easeInOut",

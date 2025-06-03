@@ -1,0 +1,38 @@
+{
+    "baseUrl": "http://127.0.0.1:8080",
+    "outputDir": "../screenshots/",
+    "viewport": {
+        "width": 1920,
+        "height": 1080
+    },
+    "delay": 3000,
+    "timeout": 30000,
+    "fullPage": true,
+    "format": "png",
+    "routes": [
+        {
+            "path": "/",
+            "name": "homepage"
+        },
+        {
+            "path": "/contests",
+            "name": "contests-listing"
+        },
+        {
+            "path": "/leaderboard",
+            "name": "global-leaderboard"
+        },
+        {
+            "path": "#/contests/demo/results",
+            "name": "contest-results-demo"
+        },
+        {
+            "path": "/profile",
+            "name": "user-profile"
+        },
+        {
+            "path": "/dashboard",
+            "name": "user-dashboard"
+        }
+    ]
+}

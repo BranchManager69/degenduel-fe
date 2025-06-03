@@ -137,44 +137,57 @@ export interface TokensResponse {
   data: Token[];
 }
 
-// Enhanced Token interface (matches new DegenDuel WebSocket data)
+// Enhanced Token interface (ACTUAL API RESPONSE STRUCTURE)
 export interface Token {
-  contractAddress: string;
-  status: string;
-  name: string;
-  symbol: string;
-  price: string;
-  marketCap: string;
-  liquidity: {
-    usd: string;
-    base: string;
-    quote: string;
-  };
-  volume24h: string;
-  change24h: string;
+  // Core identification
+  id: number;                    // Database ID
+  address: string;                // Token contract address (was contractAddress)
+  contractAddress: string;        // Keep for backward compatibility
+  symbol: string;                 // Token symbol (e.g., "BONK")
+  name: string;                   // Full token name
   
-  // NEW: Enhanced metadata
-  description?: string;
-  tags?: string[];
-  totalSupply?: string;
-  priorityScore?: number;
-  firstSeenAt?: string | null;
-  pairCreatedAt?: string | null;
-  fdv?: string;
+  // Visual/metadata
+  image_url?: string;             // Square logo URL
+  header_image_url?: string;      // Banner image URL
+  color?: string;                 // Hex color (default: "#888888")
+  decimals: number;               // Token decimals (default: 9)
+  description?: string;           // Token description
+  tags?: string[];                // ["verified", "strict", "defi"]
   
-  // NEW: Multi-timeframe data
+  // Supply & ranking
+  total_supply?: number;          // Normalized total supply (was totalSupply)
+  totalSupply?: string;           // Keep for backward compatibility
+  priority_score?: number;        // 0-100 ranking score (was priorityScore)
+  priorityScore?: number;         // Keep for backward compatibility
+  first_seen_on_jupiter_at?: string; // ISO timestamp
+  firstSeenAt?: string | null;    // Keep for backward compatibility
+  
+  // Price data (ALL NUMBERS NOW, NOT STRINGS!)
+  price: number;                  // Current USD price
+  change_24h: number;             // 24h price change % (was change24h string)
+  change24h: string;              // Keep for backward compatibility
+  market_cap: number;             // Market cap in USD (was marketCap string)
+  marketCap: string;              // Keep for backward compatibility
+  fdv: number;                    // Fully diluted valuation
+  liquidity: number;              // Total liquidity USD (simplified from object)
+  volume_24h: number;             // 24h volume USD (was volume24h string)
+  volume24h: string;              // Keep for backward compatibility
+  
+  // Enhanced timeframe data (ALL NUMBERS NOW!)
   priceChanges?: {
-    "5m": string;
-    "1h": string;
-    "6h": string;
-    "24h": string;
+    "5m": number;
+    "1h": number;
+    "6h": number;
+    "24h": number;
   };
+  
   volumes?: {
-    "5m": string;
-    "1h": string;
-    "6h": string;
-    "24h": string;
+    "5m": number;
+    "1h": number;
+    "6h": number;
+    "24h": number;
   };
+  
   transactions?: {
     "5m": { buys: number; sells: number };
     "1h": { buys: number; sells: number };
@@ -182,37 +195,35 @@ export interface Token {
     "24h": { buys: number; sells: number };
   };
   
-  // Legacy fields for backward compatibility
-  changesJson?: {
-    m5: number;
-    h1: number;
-    h6: number;
-    h24: number;
-    [key: string]: number;
+  pairCreatedAt?: string;         // When trading started
+  
+  // Social links (UPDATED STRUCTURE)
+  socials?: {
+    twitter?: string;             // Just URL now, not object
+    telegram?: string;
+    discord?: string;
+    website?: string;
   };
-  transactionsJson?: {
-    m5: TimeframeStats;
-    h1: TimeframeStats;
-    h6: TimeframeStats;
-    h24: TimeframeStats;
-    [key: string]: TimeframeStats;
-  };
+  
+  // Websites array
+  websites?: Array<{
+    label: string;
+    url: string;
+  }>;
+  
+  // Status
+  status: string;
+  
+  // Legacy fields we need to keep for now
   baseToken?: BaseToken;
   quoteToken?: BaseToken;
+  
+  // Deprecated - remove eventually
   images?: {
     imageUrl: string;
     headerImage: string;
     openGraphImage: string;
   };
-  socials?: {
-    twitter?: { url: string; count: number | null };
-    telegram?: { url: string; count: number | null };
-    discord?: { url: string; count: number | null };
-  };
-  websites?: Array<{
-    url: string;
-    label: string;
-  }>;
 }
 
 // Token response metadata

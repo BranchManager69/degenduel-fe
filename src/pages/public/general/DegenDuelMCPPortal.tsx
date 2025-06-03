@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { MCPTokenManagement } from "../../../components/mcp/MCPTokenManagement";
 import { MCPUserGuide } from "../../../components/mcp/MCPUserGuide";
 import { useAuth } from "../../../contexts/UnifiedAuthContext";
@@ -7,6 +8,7 @@ import { getFeatureFlag } from "../../../config/featureFlags";
 
 export const DegenDuelMCPPortal: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const userGuideRef = useRef<HTMLDivElement>(null);
   const isMCPEnabled = getFeatureFlag('enableMCP');
 
@@ -146,6 +148,30 @@ export const DegenDuelMCPPortal: React.FC = () => {
         exit={{ opacity: 0 }}
         className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12"
       >
+        {/* Back Button */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="mb-6 sm:mb-8"
+        >
+          <motion.button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
+            whileHover={{ scale: 1.02, x: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <svg 
+              className="w-4 h-4" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="text-sm font-medium">Back</span>
+          </motion.button>
+        </motion.div>
+
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}

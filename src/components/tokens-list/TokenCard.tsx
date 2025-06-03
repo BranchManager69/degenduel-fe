@@ -24,18 +24,15 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
         socialsObject: token.socials,
         twitter: {
           exists: !!token.socials.twitter,
-          hasUrl: !!token.socials.twitter?.url,
-          fullObject: token.socials.twitter,
+          value: token.socials.twitter,
         },
         telegram: {
           exists: !!token.socials.telegram,
-          hasUrl: !!token.socials.telegram?.url,
-          fullObject: token.socials.telegram,
+          value: token.socials.telegram,
         },
         discord: {
           exists: !!token.socials.discord,
-          hasUrl: !!token.socials.discord?.url,
-          fullObject: token.socials.discord,
+          value: token.socials.discord,
         },
         rawData: JSON.stringify(token.socials, null, 2),
       });
@@ -216,19 +213,16 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
                 {/* Social Links - More Compact with Debug Info */}
                 {token.socials && (
                   <div className="flex gap-2 mb-4">
-                    {token.socials?.twitter?.url && (
+                    {token.socials?.twitter && (
                       <a
-                        href={token.socials?.twitter?.url}
+                        href={token.socials.twitter}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (token.socials?.twitter) {
-                            console.log("Twitter link clicked:", {
-                              url: token.socials.twitter.url,
-                              fullObject: token.socials.twitter,
-                            });
-                          }
+                          console.log("Twitter link clicked:", {
+                            url: token.socials?.twitter,
+                          });
                         }}
                         className="flex-1 flex items-center justify-center py-2 bg-dark-300/30 rounded-lg border border-white/5 hover:border-brand-400/20 hover:bg-dark-300/50 transition-all duration-300 group"
                       >
@@ -237,19 +231,16 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
                         </span>
                       </a>
                     )}
-                    {token.socials?.telegram?.url && (
+                    {token.socials?.telegram && (
                       <a
-                        href={token.socials?.telegram?.url}
+                        href={token.socials.telegram}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (token.socials?.telegram) {
-                            console.log("Telegram link clicked:", {
-                              url: token.socials.telegram.url,
-                              fullObject: token.socials.telegram,
-                            });
-                          }
+                          console.log("Telegram link clicked:", {
+                            url: token.socials?.telegram,
+                          });
                         }}
                         className="flex-1 flex items-center justify-center py-2 bg-dark-300/30 rounded-lg border border-white/5 hover:border-brand-400/20 hover:bg-dark-300/50 transition-all duration-300 group"
                       >
@@ -258,19 +249,16 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
                         </span>
                       </a>
                     )}
-                    {token.socials?.discord?.url && (
+                    {token.socials?.discord && (
                       <a
-                        href={token.socials?.discord?.url}
+                        href={token.socials.discord}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (token.socials?.discord) {
-                            console.log("Discord link clicked:", {
-                              url: token.socials.discord.url,
-                              fullObject: token.socials.discord,
-                            });
-                          }
+                          console.log("Discord link clicked:", {
+                            url: token.socials?.discord,
+                          });
                         }}
                         className="flex-1 flex items-center justify-center py-2 bg-dark-300/30 rounded-lg border border-white/5 hover:border-brand-400/20 hover:bg-dark-300/50 transition-all duration-300 group"
                       >
