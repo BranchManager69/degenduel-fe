@@ -31,9 +31,9 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-  TrustWalletAdapter
+    PhantomWalletAdapter,
+    SolflareWalletAdapter,
+    TrustWalletAdapter
 } from "@solana/wallet-adapter-wallets";
 
 // Other providers of dubious quality:
@@ -68,6 +68,7 @@ import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import LoadingFallback from "./components/shared/LoadingFallback";
 import { Terminal } from "./components/terminal/Terminal";
+import { SmartPerformanceToggle } from "./components/ui/PerformanceToggle";
 // import { useNotifications } from './hooks/websocket/topic-hooks/useNotifications';
 // import { useSystemSettings } from './hooks/websocket/topic-hooks/useSystemSettings';
 
@@ -337,6 +338,8 @@ const AppContent: React.FC = () => {
       {user && (user as any).is_superadmin && <ServiceDebugPanel />}
       {user && (user as any).is_superadmin && <GameDebugPanel />}
       
+      {/* Performance Toggle moved to Footer */}
+      
       {/* Background Effects */}
       <BackgroundEffectsBoundary>
         <BackgroundEffects />
@@ -504,6 +507,9 @@ const AppContent: React.FC = () => {
 
       {/* Footer */}
       <Footer />
+
+      {/* Smart Performance Toggle - only shows when needed, positioned bottom right */}
+      <SmartPerformanceToggle />
 
       {/* Invite Welcome Modal */}
       <InviteWelcomeModal />

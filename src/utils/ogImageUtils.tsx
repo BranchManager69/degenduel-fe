@@ -6,6 +6,11 @@
  * @description Utility functions for dynamically managing Open Graph meta tags
  * for contest and referral pages with dynamic OG images.
  * 
+ * IMPORTANT: Contest OG images are server-generated at /api/og/contest/{contestId}
+ * The backend takes the contest's stored image and applies DegenDuel branding/logo
+ * to create branded social sharing images. This is separate from the raw contest
+ * images displayed on the actual pages.
+ * 
  * @author BranchManager69
  * @version 1.0.0
  * @created 2025-01-29

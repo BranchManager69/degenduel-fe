@@ -39,29 +39,45 @@ import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 // Transform backend token data to frontend Token format
 const transformBackendTokenData = (backendToken: any): Token => {
   return {
+    // Core identification
+    id: backendToken.id || 0,
+    address: backendToken.address || "",
     contractAddress: backendToken.address || "",
-    status: backendToken.is_active === false ? "inactive" : "active", // Use backend is_active flag
-    name: backendToken.name || "",
     symbol: backendToken.symbol || "",
-    price: backendToken.price?.toString() || "0",
-    marketCap: backendToken.market_cap?.toString() || "0",
-    volume24h: backendToken.volume_24h?.toString() || "0",
-    change24h: backendToken.change_24h?.toString() || "0",
-    liquidity: {
-      usd: backendToken.liquidity?.toString() || "0",
-      base: "0",
-      quote: "0"
-    },
+    name: backendToken.name || "",
+    
+    // Numbers not strings
+    price: backendToken.price || 0,
+    market_cap: backendToken.market_cap || 0,
+    marketCap: String(backendToken.market_cap || 0), // backward compat
+    volume_24h: backendToken.volume_24h || 0,
+    volume24h: String(backendToken.volume_24h || 0), // backward compat
+    change_24h: backendToken.change_24h || 0,
+    change24h: String(backendToken.change_24h || 0), // backward compat
+    liquidity: backendToken.liquidity || 0,
+    fdv: backendToken.fdv || 0,
+    decimals: backendToken.decimals || 9,
+    
+    // Visual/metadata
+    image_url: backendToken.image_url || "",
+    header_image_url: backendToken.header_image_url || "",
+    
+    // Legacy images for backward compatibility
     images: {
       imageUrl: backendToken.image_url || "",
-      headerImage: "",
+      headerImage: backendToken.header_image_url || "",
       openGraphImage: ""
     },
-    socials: backendToken.socials || {
-      twitter: { url: "", count: null },
-      telegram: { url: "", count: null },
-      discord: { url: "", count: null }
+    
+    // Social links (now strings)
+    socials: {
+      twitter: backendToken.socials?.twitter,
+      telegram: backendToken.socials?.telegram,
+      discord: backendToken.socials?.discord,
+      website: backendToken.socials?.website
     },
+    
+    status: backendToken.is_active === false ? "inactive" : "active",
     websites: backendToken.websites || []
   };
 };
@@ -72,7 +88,19 @@ const transformBackendTokenData = (backendToken: any): Token => {
  * 
  * @param tokensToSubscribe Optional string array of specific token symbols to subscribe to, or "all" for all tokens
  */
-export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
+interface TokenDataFilters {
+  minMarketCap?: number;
+  minVolume?: number;
+  tags?: string[];
+  excludeTags?: string[];
+  strictOnly?: boolean;
+  verifiedOnly?: boolean;
+}
+
+export function useTokenData(
+  tokensToSubscribe: string[] | "all" = "all",
+  filters?: TokenDataFilters
+) {
   // State for token data
   const [tokens, setTokens] = useState<Token[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -177,6 +205,11 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
         requestData.symbols = tokensToSubscribe;
       }
 
+      // Add filters if provided
+      if (filters) {
+        requestData.filters = filters;
+      }
+
       ws.request('market-data', 'getTokens', requestData);
 
       setInitialized(true);
@@ -197,7 +230,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [ws.isConnected, initialized, tokensToSubscribe, ws.subscribe, ws.request]);
+  }, [ws.isConnected, initialized, tokensToSubscribe, filters, ws.subscribe, ws.request]);
 
   // Force refresh function for token data
   const refresh = useCallback(() => {
@@ -212,6 +245,11 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
 
       if (tokensToSubscribe !== "all" && Array.isArray(tokensToSubscribe) && tokensToSubscribe.length > 0) {
         requestData.symbols = tokensToSubscribe;
+      }
+
+      // Add filters if provided
+      if (filters) {
+        requestData.filters = filters;
       }
 
       ws.request('market-data', 'getTokens', requestData);
@@ -232,7 +270,7 @@ export function useTokenData(tokensToSubscribe: string[] | "all" = "all") {
       console.warn('[useTokenData] Cannot refresh - WebSocket not connected');
       setIsLoading(false);
     }
-  }, [ws.isConnected, ws.request, tokensToSubscribe]);
+  }, [ws.isConnected, ws.request, tokensToSubscribe, filters]);
 
   // Return the token data and helper functions
   return {

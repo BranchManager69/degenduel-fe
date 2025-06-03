@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../store/useStore";
 import { SimpleWalletButton } from "../auth";
+import { CompactBalance } from "../ui/CompactBalance";
 
 // Import shared menu components and configuration
 import { getMenuItems } from './menu/menuConfig';
@@ -24,8 +25,7 @@ import { NotificationsDropdown } from './menu/NotificationsDropdown';
 import {
   MenuBackdrop,
   MenuDivider,
-  SectionHeader,
-  WalletDetailsSection
+  SectionHeader
 } from './menu/SharedMenuComponents';
 
 interface MobileMenuButtonProps {
@@ -103,56 +103,142 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
     },
   };
 
-  // Get level color scheme for styling the level badge
+  // Get level color scheme for styling the level badge (unified with desktop)
   const getLevelColorScheme = useMemo(() => {
-    // Default colors for no level
-    if (userLevel <= 0) {
-      return {
-        bg: "bg-brand-500/80",
-        border: "border-brand-400/50",
-        text: "text-white"
-      };
-    }
-    
-    // Return color scheme based on level tiers
+    // Return different color schemes based on level tiers
     if (userLevel >= 40) {
       return {
-        bg: "bg-amber-500/80",
-        border: "border-amber-400/50",
-        text: "text-white"
+        bg: "from-amber-500/20 via-amber-400/20 to-amber-300/20",
+        text: "text-amber-300",
+        border: "border-amber-400/30",
+        badge: "bg-gradient-to-r from-amber-600 to-amber-400",
+        badgeBorder: "border-amber-500/30",
+        ring: "ring-amber-400/30 group-hover:ring-amber-400/50"
       };
     } else if (userLevel >= 30) {
       return {
-        bg: "bg-fuchsia-500/80",
-        border: "border-fuchsia-400/50",
-        text: "text-white"
+        bg: "from-fuchsia-500/20 via-fuchsia-400/20 to-fuchsia-300/20",
+        text: "text-fuchsia-300",
+        border: "border-fuchsia-400/30",
+        badge: "bg-gradient-to-r from-fuchsia-600 to-fuchsia-400",
+        badgeBorder: "border-fuchsia-500/30",
+        ring: "ring-fuchsia-400/30 group-hover:ring-fuchsia-400/50"
       };
     } else if (userLevel >= 20) {
       return {
-        bg: "bg-blue-500/80", 
-        border: "border-blue-400/50",
-        text: "text-white"
+        bg: "from-blue-500/20 via-blue-400/20 to-blue-300/20",
+        text: "text-blue-300",
+        border: "border-blue-400/30",
+        badge: "bg-gradient-to-r from-blue-600 to-blue-400",
+        badgeBorder: "border-blue-500/30",
+        ring: "ring-blue-400/30 group-hover:ring-blue-400/50"
       };
     } else if (userLevel >= 10) {
       return {
-        bg: "bg-emerald-500/80",
-        border: "border-emerald-400/50",
-        text: "text-white"
+        bg: "from-emerald-500/20 via-emerald-400/20 to-emerald-300/20",
+        text: "text-emerald-300",
+        border: "border-emerald-400/30",
+        badge: "bg-gradient-to-r from-emerald-600 to-emerald-400",
+        badgeBorder: "border-emerald-500/30",
+        ring: "ring-emerald-400/30 group-hover:ring-emerald-400/50"
+      };
+    } else if (userLevel >= 5) {
+      return {
+        bg: "from-cyan-500/20 via-cyan-400/20 to-cyan-300/20",
+        text: "text-cyan-300",
+        border: "border-cyan-400/30",
+        badge: "bg-gradient-to-r from-cyan-600 to-cyan-400",
+        badgeBorder: "border-cyan-500/30",
+        ring: "ring-cyan-400/30 group-hover:ring-cyan-400/50"
       };
     } else {
-      // Level 1-9
+      // Default colors for levels 1-4
       return {
-        bg: "bg-brand-500/80",
-        border: "border-brand-400/50",
-        text: "text-white"
+        bg: "from-brand-500/20 via-brand-400/20 to-brand-300/20",
+        text: "text-brand-300",
+        border: "border-brand-400/30",
+        badge: "bg-gradient-to-r from-brand-600 to-brand-400",
+        badgeBorder: "border-brand-500/30",
+        ring: "ring-brand-400/30 group-hover:ring-brand-400/50"
       };
     }
   }, [userLevel]);
 
+  // Add role-based button styling like desktop
+  const buttonStyles = useMemo(() => {
+    // Super Admin styling takes precedence
+    if (isSuperAdmin) {
+      return {
+        bg: "from-amber-500/20 via-amber-400/20 to-amber-300/20",
+        text: "text-amber-100",
+        border: "border-amber-400/30",
+        hover: {
+          bg: "group-hover:from-amber-400/30 group-hover:via-amber-300/30 group-hover:to-amber-200/30",
+          border: "group-hover:border-amber-400/50",
+          glow: "group-hover:shadow-[0_0_15px_rgba(251,191,36,0.3)]",
+        },
+        ring: "ring-amber-400/30 group-hover:ring-amber-400/50",
+      };
+    }
+
+    // Admin styling takes secondary precedence
+    if (isAdministrator) {
+      return {
+        bg: "from-brand-600/20 via-brand-500/20 to-brand-400/20",
+        text: "text-brand-100",
+        border: "border-brand-400/30",
+        hover: {
+          bg: "group-hover:from-brand-500/30 group-hover:via-brand-400/30 group-hover:to-brand-300/30",
+          border: "group-hover:border-brand-400/50",
+          glow: "group-hover:shadow-[0_0_12px_rgba(153,51,255,0.25)]",
+        },
+        ring: "ring-brand-400/30 group-hover:ring-brand-400/50",
+      };
+    }
+
+    // For regular users, use level-based styling if they have a level
+    if (userLevel > 0) {
+      const levelColors = getLevelColorScheme;
+      return {
+        bg: levelColors.bg,
+        text: levelColors.text,
+        border: levelColors.border,
+        hover: {
+          bg: `group-hover:${levelColors.bg.replace("from-", "from-").replace("/20", "/30")}`,
+          border: levelColors.border.replace("/30", "/50"),
+          glow: `group-hover:shadow-[0_0_10px_rgba(153,51,255,0.2)]`,
+        },
+        ring: levelColors.ring,
+      };
+    }
+
+    // Default styling for users with no level
+    return {
+      bg: "from-brand-500/20 to-brand-400/20",
+      text: "text-gray-200",
+      border: "border-brand-400/20",
+      hover: {
+        bg: "group-hover:from-brand-400/25 group-hover:to-brand-300/25",
+        border: "group-hover:border-brand-400/30",
+        glow: "group-hover:shadow-[0_0_8px_rgba(153,51,255,0.15)]",
+      },
+      ring: "ring-brand-400/20 group-hover:ring-brand-400/30",
+    };
+  }, [isAdministrator, isSuperAdmin, userLevel, getLevelColorScheme]);
+
   return (
     <div className={`relative ${className}`}>
-      {/* Header Menu Controls - Row Layout for Profile and Notifications */}
+      {/* Header Menu Controls - Row Layout for Balances, Profile and Notifications */}
       <div className="flex items-center space-x-1">
+        {/* Compact Balance Display (only for logged in users) */}
+        {user && (
+          <CompactBalance 
+            walletAddress={user.wallet_address}
+            className="mr-1"
+            showLabels={false}
+          />
+        )}
+        
         {/* Notifications Dropdown (only for logged in users) */}
         {user && (
           <NotificationsDropdown 
@@ -164,34 +250,39 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
         {/* User Menu Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`relative flex items-center justify-center transition-all duration-200 group
+          className={`relative flex items-center justify-center transition-all duration-300 group overflow-hidden
             ${isCompact ? "w-8 h-8" : "w-9 h-9"}
-            hover:bg-dark-300/30 active:bg-dark-300/40 rounded-full relative z-50`}
+            rounded-full border ${buttonStyles.border} ${buttonStyles.hover.border}
+            ${buttonStyles.hover.glow} z-50`}
           aria-label="User menu"
           aria-expanded={isOpen}
           aria-haspopup="true"
         >
+          {/* Background gradient */}
+          <div
+            className={`absolute inset-0 bg-gradient-to-r ${buttonStyles.bg} ${buttonStyles.hover.bg} transition-all duration-300`}
+          />
           {user ? (
             <>
               {/* User Profile Avatar Button */}
               <div className="relative">
                 {/* Profile Image */}
-                <div className="relative rounded-full overflow-hidden ring-2 ring-brand-400/30 group-hover:ring-brand-400/50 transition-all duration-300 shadow-lg bg-dark-300 w-full h-full">
+                <div className={`relative rounded-full overflow-hidden ring-2 ${buttonStyles.ring} transition-all duration-300 shadow-lg bg-dark-300 w-full h-full group-hover:scale-105`}>
                   <img
                     src={profileImageUrl}
                     alt={displayName}
                     onError={handleImageError}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:brightness-110"
                     loading="eager"
                     crossOrigin="anonymous"
                   />
                 </div>
                 
-                {/* Level Badge - Small circle with level number */}
+                {/* Level Badge - Small circle with level number (unified with desktop) */}
                 {userLevel > 0 && (
                   <div className={`absolute -bottom-0.5 -right-0.5 flex items-center justify-center h-4 w-4 
-                    ${getLevelColorScheme.bg} text-xs font-bold rounded-full border ${getLevelColorScheme.border} 
-                    ${getLevelColorScheme.text} shadow-md`}
+                    ${getLevelColorScheme.badge} text-xs font-bold rounded-full border ${getLevelColorScheme.badgeBorder} 
+                    text-white shadow-inner transition-all duration-300`}
                   >
                     {userLevel > 99 ? "99+" : userLevel}
                   </div>
@@ -289,13 +380,13 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                           {/* Level Badge */}
                           {userLevel > 0 && (
                             <div className={`absolute -bottom-0.5 -right-0.5 z-10 flex items-center justify-center h-4 w-4 
-                              ${getLevelColorScheme.bg} text-xs font-bold rounded-full border ${getLevelColorScheme.border} 
-                              ${getLevelColorScheme.text} shadow-md`}
+                              ${getLevelColorScheme.badge} text-xs font-bold rounded-full border ${getLevelColorScheme.badgeBorder} 
+                              text-white shadow-inner transition-all duration-300`}
                             >
                               {userLevel > 99 ? "99+" : userLevel}
                             </div>
                           )}
-                          <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-brand-400/30 group-hover:ring-brand-400/50 transition-all duration-300 shadow-lg bg-dark-300">
+                          <div className={`w-9 h-9 rounded-full overflow-hidden ring-2 ${buttonStyles.ring} transition-all duration-300 shadow-lg bg-dark-300`}>
                             <img
                               src={profileImageUrl}
                               alt={displayName}
@@ -314,9 +405,6 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                         </div>
                       </div>
                     </div>
-                    
-                    {/* Add Wallet Details Section (shared component) */}
-                    <WalletDetailsSection user={user} />
                     
                     {/* Admin controls section moved to top for consistency with desktop */}
                     {(isAdministrator || isSuperAdmin) && (
@@ -481,34 +569,66 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
 
                 {/* Twitter/X Section - Special Styling for Mobile */}
                 <motion.div variants={itemVariants}>
-                  <a
-                    href="https://degenduel.me/api/auth/twitter/login"
-                    className="relative group overflow-hidden transition-all duration-300 ease-out
-                      flex items-center justify-between mx-3 px-3 py-2.5 text-sm rounded-md
-                      bg-gradient-to-r from-blue-600/20 via-cyan-500/20 to-blue-600/20
-                      border border-blue-500/30 hover:border-blue-400/50
-                      text-blue-200 hover:text-white
-                      hover:shadow-[0_0_12px_rgba(59,130,246,0.4)]"
-                    onClick={() => setIsOpen(false)}
-                    role="menuitem"
-                  >
-                    {/* Background shine effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                  {(() => {
+                    const isTwitterLinked = user?.twitter_id || user?.twitter_handle;
                     
-                    {/* Scan line effect */}
-                    <div className="absolute inset-0 overflow-hidden">
-                      <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
-                    </div>
-                    
-                    <span className="relative font-semibold tracking-wide group-hover:text-shadow-sm whitespace-nowrap">Connect with X</span>
-                    
-                    {/* X icon */}
-                    <div className="relative w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                      </svg>
-                    </div>
-                  </a>
+                    if (isTwitterLinked) {
+                      // Connected state - show handle or "Connected"
+                      return (
+                        <div
+                          className="relative group overflow-hidden transition-all duration-300 ease-out
+                            flex items-center justify-between mx-3 px-3 py-2.5 text-sm rounded-md
+                            bg-gradient-to-r from-green-600/20 via-emerald-500/20 to-green-600/20
+                            border border-green-500/30
+                            text-green-200 cursor-default"
+                          role="menuitem"
+                        >
+                          <span className="relative font-semibold tracking-wide whitespace-nowrap">
+                            {user?.twitter_handle ? `@${user.twitter_handle}` : 'X Connected'}
+                          </span>
+                          
+                          {/* Check icon */}
+                          <div className="relative w-4 h-4 opacity-80">
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full text-green-400">
+                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            </svg>
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // Not connected - show connect button
+                      return (
+                        <a
+                          href="https://degenduel.me/api/auth/twitter/login"
+                          className="relative group overflow-hidden transition-all duration-300 ease-out
+                            flex items-center justify-between mx-3 px-3 py-2.5 text-sm rounded-md
+                            bg-gradient-to-r from-blue-600/20 via-cyan-500/20 to-blue-600/20
+                            border border-blue-500/30 hover:border-blue-400/50
+                            text-blue-200 hover:text-white
+                            hover:shadow-[0_0_12px_rgba(59,130,246,0.4)]"
+                          onClick={() => setIsOpen(false)}
+                          role="menuitem"
+                        >
+                          {/* Background shine effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+                          
+                          {/* Scan line effect */}
+                          <div className="absolute inset-0 overflow-hidden">
+                            <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
+                          </div>
+                          
+                          <span className="relative font-semibold tracking-wide group-hover:text-shadow-sm whitespace-nowrap">Connect with X</span>
+                          
+                          {/* X icon */}
+                          <div className="relative w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+                              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                          </div>
+                        </a>
+                      );
+                    }
+                  })()}
                 </motion.div>
 
                 {/* Disconnect button (if logged in) */}

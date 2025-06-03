@@ -100,10 +100,8 @@ export const MyPortfoliosPage: React.FC = () => {
                 weight: token.weight,
                 name: tokenInfo?.name || "Unknown Token",
                 symbol: tokenInfo?.symbol || "???",
-                price: tokenInfo?.price ? parseFloat(tokenInfo.price) : 0,
-                priceChange: tokenInfo?.change24h
-                  ? parseFloat(tokenInfo.change24h)
-                  : 0,
+                price: tokenInfo?.price || 0,
+                priceChange: tokenInfo?.change_24h || tokenInfo?.change24h ? Number(tokenInfo?.change_24h || tokenInfo?.change24h) : 0,
                 logoUrl:
                   tokenInfo?.images?.imageUrl || "/images/tokens/default.png",
               };

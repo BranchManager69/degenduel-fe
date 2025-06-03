@@ -6,34 +6,24 @@ import { AuthDebugPanel } from "../../../components/debug";
 import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
 import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeTokensGrid";
 import { OptimizedTokensHeader } from "../../../components/tokens-list/OptimizedTokensHeader";
-import { TokenDetailModal } from "../../../components/tokens-list/TokenDetailModal";
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
-import { MessageType, TopicType } from "../../../hooks/websocket";
-import { ddApi } from "../../../services/dd-api";
+import { TokenSortMethod, useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
 import { useStore } from "../../../store/useStore";
 import { Token, TokenResponseMetadata } from "../../../types";
 import { resetToDefaultMeta } from "../../../utils/ogImageUtils";
+import { DegenDuelTop30 } from "@/components/trending/DegenDuelTop30";
 
 /**
- * TokensPage - Production version based on the StoryTokensPage design
- * with real data from WebSocket and enhanced UI experience
+ * TokensPage - Production version using the UnifiedWebSocket system
+ * through the useStandardizedTokenData hook
  */
 export const TokensPage: React.FC = () => {
   // State initialization
-  const [metadata, setMetadata] = useState<TokenResponseMetadata>({
-    timestamp: new Date().toISOString(),
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<keyof Token>("marketCap");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false);
-  const [selectedTokenSymbol, setSelectedTokenSymbol] = useState<string | null>(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  
+  // View toggle state - NEW
+  const [activeView, setActiveView] = useState<'tokens' | 'degenduel'>('tokens');
   
   // Infinite scroll state
   const [visibleTokensCount, setVisibleTokensCount] = useState(50); // Start with 50 tokens
@@ -45,28 +35,48 @@ export const TokensPage: React.FC = () => {
   const searchDebounceRef = useRef<number | null>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
   
-  // Token state management with address indexing
-  const [tokenMap, setTokenMap] = useState<Record<string, Token>>({});
-  const [connectionState, setConnectionState] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
-  const socketRef = useRef<WebSocket | null>(null);
-  const reconnectAttemptsRef = useRef(0);
-  const maxReconnectAttempts = 5;
-  const pingIntervalRef = useRef<number | null>(null);
-  const lastUpdateRef = useRef<Date>(new Date());
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   
-  // Request data for a specific token by address if needed
-  const requestTokenByAddress = useCallback((address: string) => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify({
-        type: 'REQUEST',
-        topic: TopicType.MARKET_DATA,
-        action: 'getToken',
-        data: {
-          address: address
-        }
-      }));
-    }
-  }, []);
+  // Jupiter filter state
+  const [jupiterFilters, setJupiterFilters] = useState({
+    strictOnly: false,
+    verifiedOnly: false,
+    showAll: true
+  });
+  
+  // Sort state
+  const [sortField, setSortField] = useState<string>("marketCap");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  
+  // Use the standardized token data hook - this uses UnifiedWebSocket!
+  // Apply proper filtering like the ticker does to ensure quality tokens
+  const {
+    tokens: allTokens,
+    isLoading,
+    error,
+    lastUpdate,
+    getTokenBySymbol,
+    refresh,
+    setFilter,
+    setSortMethod,
+  } = useStandardizedTokenData("all", "marketCap", { 
+    status: "active",
+    minMarketCap: 50000,    // $50k minimum market cap
+    minVolume: 5000,        // $5k minimum 24h volume
+    search: debouncedSearchQuery,
+    // User-configurable Jupiter filters
+    strictOnly: jupiterFilters.strictOnly,
+    verifiedOnly: jupiterFilters.verifiedOnly && !jupiterFilters.strictOnly  // Strict overrides verified
+  });
+  
+  // Token metadata for compatibility
+  const metadata = useMemo<TokenResponseMetadata>(() => ({
+    timestamp: lastUpdate?.toISOString() || new Date().toISOString(),
+    _cached: false,
+    _stale: false,
+  }), [lastUpdate]);
 
   // Token selection handler
   const handleTokenClick = useCallback((token: Token) => {
@@ -74,12 +84,7 @@ export const TokensPage: React.FC = () => {
     navigate(`/tokens/${token.symbol}`);
   }, [navigate]);
 
-  // Close the detail modal and reset URL
-  const handleCloseDetailModal = useCallback(() => {
-    setIsDetailModalOpen(false);
-    // Remove both address and symbol from the URL without page reload
-    navigate(location.pathname, { replace: true });
-  }, [location.pathname, navigate]);
+  // Modal close handler removed - no longer needed
 
   // Load more tokens for infinite scroll
   const loadMoreTokens = useCallback(() => {
@@ -94,304 +99,73 @@ export const TokensPage: React.FC = () => {
     }, 300);
   }, [isLoadingMore]);
 
-  // Helper function to transform ENHANCED WebSocket token data to Token format
-  const transformTokenData = useCallback((tokenData: any): Token => {
-    return {
-      contractAddress: tokenData.address || "",
-      status: "active",
-      name: tokenData.name || "",
-      symbol: tokenData.symbol || "",
-      price: tokenData.price?.toString() || "0",
-      marketCap: tokenData.market_cap?.toString() || "0",
-      volume24h: tokenData.volume_24h?.toString() || "0",
-      change24h: tokenData.change_24h?.toString() || "0",
-      liquidity: {
-        usd: tokenData.liquidity?.toString() || "0",
-        base: "0",
-        quote: "0"
-      },
-      images: {
-        imageUrl: tokenData.image_url || "",
-        headerImage: tokenData.header_image_url || "", // NEW: Header banner
-        openGraphImage: tokenData.open_graph_image_url || ""
-      },
-      socials: tokenData.socials || {
-        twitter: { url: "", count: null },
-        telegram: { url: "", count: null },
-        discord: { url: "", count: null }
-      },
-      websites: tokenData.websites || [],
-      // NEW: Enhanced data fields
-      description: tokenData.description || "",
-      tags: tokenData.tags || [],
-      totalSupply: tokenData.total_supply?.toString() || "0",
-      priorityScore: tokenData.priority_score || 0,
-      firstSeenAt: tokenData.first_seen_on_jupiter_at || null,
-      pairCreatedAt: tokenData.pairCreatedAt || null,
-      fdv: tokenData.fdv?.toString() || "0",
-      priceChanges: tokenData.priceChanges || {
-        "5m": "0",
-        "1h": "0", 
-        "6h": "0",
-        "24h": tokenData.change_24h?.toString() || "0"
-      },
-      volumes: tokenData.volumes || {
-        "5m": "0",
-        "1h": "0",
-        "6h": "0", 
-        "24h": tokenData.volume_24h?.toString() || "0"
-      },
-      transactions: tokenData.transactions || {
-        "5m": { buys: 0, sells: 0 },
-        "1h": { buys: 0, sells: 0 },
-        "6h": { buys: 0, sells: 0 },
-        "24h": { buys: 0, sells: 0 }
-      }
-    };
-  }, []);
-  
-  // Request all tokens from WebSocket 
-  const requestAllTokens = useCallback(() => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      console.log('Requesting all tokens from WebSocket...');
-      socketRef.current.send(JSON.stringify({
-        type: 'REQUEST',
-        topic: 'market-data',
-        action: 'getTokens',
-        data: {
-          limit: 1000 // Request all 1000 tokens
-        }
-      }));
-    }
-  }, []);
-  
-  // Connect to WebSocket for real-time updates
-  const connectWebSocket = useCallback(() => {
-    // Close existing connection if any
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.close();
-    }
-    
-    setConnectionState('connecting');
-    
-    // Create new WebSocket connection
-    const socket = new WebSocket('wss://degenduel.me/api/v69/ws');
-    socketRef.current = socket;
-    
-    socket.onopen = () => {
-      setConnectionState('connected');
-      reconnectAttemptsRef.current = 0;
-      
-      // Subscribe to market data updates AND request initial tokens
-      socket.send(JSON.stringify({
-        type: 'SUBSCRIBE',
-        topics: [TopicType.MARKET_DATA]
-      }));
-      
-      // Request all tokens immediately after connection
-      requestAllTokens();
-      
-      // Set up ping interval to keep connection alive
-      if (pingIntervalRef.current) {
-        window.clearInterval(pingIntervalRef.current);
-      }
-      
-      pingIntervalRef.current = window.setInterval(() => {
-        if (socket.readyState === WebSocket.OPEN) {
-          socket.send(JSON.stringify({ type: 'PING' }));
-        }
-      }, 30000);
-    };
-    
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        // Handle direct market-data messages (your real format!)
-        if (data.topic === 'market-data' && data.action === 'getTokens' && Array.isArray(data.data)) {
-          console.log(`Processing ${data.data.length} tokens from WebSocket`);
-          lastUpdateRef.current = new Date();
-          
-          // Update metadata
-          setMetadata({
-            timestamp: lastUpdateRef.current.toISOString(),
-            _cached: false,
-            _stale: false
-          });
-          
-          // Transform and index all tokens by address
-          const newTokenMap: Record<string, Token> = {};
-          data.data.forEach((tokenData: any) => {
-            const token = transformTokenData(tokenData);
-            if (token.contractAddress) {
-              newTokenMap[token.contractAddress] = token;
-            }
-          });
-          
-          setTokenMap(newTokenMap);
-          setLoading(false);
-        }
-        
-        // Handle legacy format for compatibility
-        else if (data.type === MessageType.DATA && data.topic === TopicType.MARKET_DATA) {
-          lastUpdateRef.current = new Date();
-          
-          // Update metadata
-          setMetadata({
-            timestamp: lastUpdateRef.current.toISOString(),
-            _cached: false,
-            _stale: false
-          });
-          
-          // Handle token removals
-          if (data.subtype === 'removal' && Array.isArray(data.data)) {
-            setTokenMap(prev => {
-              const updated = { ...prev };
-              data.data.forEach((address: string) => {
-                delete updated[address];
-              });
-              return updated;
-            });
-          } 
-          // Handle token updates
-          else if (Array.isArray(data.data)) {
-            setTokenMap(prev => {
-              const updated = { ...prev };
-              
-              data.data.forEach((tokenUpdate: any) => {
-                const address = tokenUpdate.address;
-                if (address) {
-                  if (updated[address]) {
-                    // Update existing token - merge current with updates
-                    const updatedToken = {
-                      ...updated[address],
-                      ...transformTokenData(tokenUpdate)
-                    };
-                    updated[address] = updatedToken;
-                  } else {
-                    // Add new token if it has required fields
-                    if (tokenUpdate.name && tokenUpdate.symbol) {
-                      const newToken = transformTokenData(tokenUpdate);
-                      updated[address] = newToken;
-                    }
-                  }
-                }
-              });
-              
-              return updated;
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Failed to process WebSocket message:", err);
-      }
-    };
-    
-    socket.onclose = () => {
-      setConnectionState('disconnected');
-      
-      // Clear ping interval
-      if (pingIntervalRef.current) {
-        window.clearInterval(pingIntervalRef.current);
-        pingIntervalRef.current = null;
-      }
-      
-      // Implement reconnection with exponential backoff
-      if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-        const delay = Math.min(1000 * (2 ** reconnectAttemptsRef.current), 30000);
-        reconnectAttemptsRef.current++;
-        
-        console.log(`WebSocket reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
-        setTimeout(connectWebSocket, delay);
-      } else {
-        console.error("Max WebSocket reconnection attempts reached");
-        setConnectionState('error');
-      }
-    };
-    
-    socket.onerror = () => {
-      setConnectionState('error');
-    };
-    
-    return socket;
-  }, [transformTokenData]);
+  // Token selection logic removed - using dedicated pages now
 
-  // Find the selected token based on address or symbol
-  const selectedToken = useMemo(() => {
-    if (!selectedTokenSymbol) return null;
+  // Apply custom sorting for the grid (the hook handles basic sorting, but we need direction control)
+  const sortedTokens = useMemo(() => {
+    if (!allTokens || allTokens.length === 0) return [];
     
-    // First try to find by direct address match (most reliable)
-    if (tokenMap[selectedTokenSymbol]) {
-      return tokenMap[selectedTokenSymbol];
-    }
-    
-    // Then check if selectedTokenSymbol is actually an address
-    const foundByAddress = Object.values(tokenMap).find(
-      token => token.contractAddress?.toLowerCase() === selectedTokenSymbol.toLowerCase()
-    );
-    
-    if (foundByAddress) {
-      return foundByAddress;
-    }
-    
-    // Fall back to symbol matching for backward compatibility
-    const foundBySymbol = Object.values(tokenMap).find(
-      token => token.symbol?.toLowerCase() === selectedTokenSymbol.toLowerCase()
-    );
-    
-    if (foundBySymbol) {
-      return foundBySymbol;
-    }
-    
-    // If we still don't have a match and it looks like an address, try to request it
-    if (selectedTokenSymbol.length > 30 && connectionState === 'connected') {
-      // This looks like it could be an address - request it from the server
-      requestTokenByAddress(selectedTokenSymbol);
-    }
-    
-    return null;
-  }, [tokenMap, selectedTokenSymbol, connectionState, requestTokenByAddress]);
-
-  // Compute filtered and sorted tokens list (all tokens for search/filter)
-  const allFilteredAndSortedTokens = useMemo(() => {
-    // Get tokens array from map
-    const tokensArray = Object.values(tokenMap);
-    
-    if (tokensArray.length === 0) return [];
-    
-    // Apply liquidity filter FIRST - minimum $10,000 liquidity
-    const liquidityFilteredTokens = tokensArray.filter(token => {
-      const liquidityUSD = Number(token.liquidity?.usd || 0);
-      return liquidityUSD >= 10000; // Minimum $10,000 liquidity
-    });
-    
-    // Apply search filter
-    const filteredTokens = liquidityFilteredTokens.filter(token => 
-      token.name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-      token.symbol?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-    );
-    
-    // Sort tokens - handle fields consistently
-    const sortedTokens = filteredTokens.sort((a, b) => {
+    const sorted = [...allTokens].sort((a, b) => {
       let aValue = 0;
       let bValue = 0;
       
       switch(sortField) {
         case 'marketCap':
-          aValue = Number(a.marketCap) || 0;
-          bValue = Number(b.marketCap) || 0;
+          aValue = a.market_cap || Number(a.marketCap) || 0;
+          bValue = b.market_cap || Number(b.marketCap) || 0;
           break;
         case 'volume24h':
-          aValue = Number(a.volume24h) || 0;
-          bValue = Number(b.volume24h) || 0;
+          aValue = a.volume_24h || Number(a.volume24h) || 0;
+          bValue = b.volume_24h || Number(b.volume24h) || 0;
           break;
         case 'change24h':
-          aValue = Number(a.change24h) || 0;
-          bValue = Number(b.change24h) || 0;
+          aValue = a.change_24h || Number(a.change24h) || 0;
+          bValue = b.change_24h || Number(b.change24h) || 0;
           break;
         case 'price':
           aValue = Number(a.price) || 0;
           bValue = Number(b.price) || 0;
+          break;
+        case 'liquidity':
+          aValue = a.liquidity || 0;
+          bValue = b.liquidity || 0;
+          break;
+        case 'fdv':
+          aValue = a.fdv || 0;
+          bValue = b.fdv || 0;
+          break;
+        case 'priorityScore':
+          aValue = a.priority_score || a.priorityScore || 0;
+          bValue = b.priority_score || b.priorityScore || 0;
+          break;
+        case 'change5m':
+          aValue = a.priceChanges?.["5m"] || 0;
+          bValue = b.priceChanges?.["5m"] || 0;
+          break;
+        case 'change1h':
+          aValue = a.priceChanges?.["1h"] || 0;
+          bValue = b.priceChanges?.["1h"] || 0;
+          break;
+        case 'volume5m':
+          aValue = a.volumes?.["5m"] || 0;
+          bValue = b.volumes?.["5m"] || 0;
+          break;
+        case 'volume1h':
+          aValue = a.volumes?.["1h"] || 0;
+          bValue = b.volumes?.["1h"] || 0;
+          break;
+        case 'transactions5m':
+          aValue = (a.transactions?.["5m"]?.buys || 0) + (a.transactions?.["5m"]?.sells || 0);
+          bValue = (b.transactions?.["5m"]?.buys || 0) + (b.transactions?.["5m"]?.sells || 0);
+          break;
+        case 'transactions1h':
+          aValue = (a.transactions?.["1h"]?.buys || 0) + (a.transactions?.["1h"]?.sells || 0);
+          bValue = (b.transactions?.["1h"]?.buys || 0) + (b.transactions?.["1h"]?.sells || 0);
+          break;
+        case 'age':
+          // Newer tokens first when descending
+          aValue = a.pairCreatedAt ? new Date(a.pairCreatedAt).getTime() : 0;
+          bValue = b.pairCreatedAt ? new Date(b.pairCreatedAt).getTime() : 0;
           break;
         default:
           aValue = Number(a[sortField as keyof Token]) || 0;
@@ -401,16 +175,16 @@ export const TokensPage: React.FC = () => {
       return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
     });
     
-    return sortedTokens;
-  }, [tokenMap, debouncedSearchQuery, sortField, sortDirection]);
+    return sorted;
+  }, [allTokens, sortField, sortDirection]);
 
   // Visible tokens for infinite scroll (only show up to visibleTokensCount)
   const visibleTokens = useMemo(() => {
-    return allFilteredAndSortedTokens.slice(0, visibleTokensCount);
-  }, [allFilteredAndSortedTokens, visibleTokensCount]);
+    return sortedTokens.slice(0, visibleTokensCount);
+  }, [sortedTokens, visibleTokensCount]);
 
   // Check if there are more tokens to load
-  const hasMoreTokens = allFilteredAndSortedTokens.length > visibleTokensCount;
+  const hasMoreTokens = sortedTokens.length > visibleTokensCount;
 
   // Create debounce for search to improve performance
   useEffect(() => {
@@ -429,446 +203,328 @@ export const TokensPage: React.FC = () => {
     };
   }, [searchQuery]);
 
-  // Parse URL parameters for token selection
+  // Update filter when debounced search changes
+  useEffect(() => {
+    setFilter({
+      status: "active",
+      minMarketCap: 50000,    // $50k minimum market cap
+      minVolume: 5000,        // $5k minimum 24h volume  
+      search: debouncedSearchQuery
+    });
+  }, [debouncedSearchQuery, setFilter]);
+
+  // Update sort method when sort field/direction changes
+  useEffect(() => {
+    const sortMethodMap: Record<string, TokenSortMethod> = {
+      'marketCap': 'marketCap',
+      'volume24h': 'volume',
+      'price': 'price',
+      'change24h': sortDirection === 'desc' ? 'gainers' : 'losers'
+    };
+    
+    const method = sortMethodMap[sortField] || 'marketCap';
+    setSortMethod(method);
+  }, [sortField, sortDirection, setSortMethod]);
+
+  // Parse URL parameters for token selection - redirect to dedicated page
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tokenAddress = params.get('address');
     const tokenSymbol = params.get('symbol'); // For backward compatibility
     
-    if (tokenAddress) {
-      // Prioritize address if available (more reliable)
-      setSelectedTokenSymbol(tokenAddress);
-      // DON'T auto-fill search field when opening from ticker
-      setIsDetailModalOpen(true);
+    if (tokenAddress || tokenSymbol) {
+      // Find the token to get its symbol for the URL
+      const token = getTokenBySymbol(tokenAddress || tokenSymbol || '') || 
+                   allTokens.find(t => t.contractAddress?.toLowerCase() === (tokenAddress || tokenSymbol || '').toLowerCase());
       
-      // If we have a WebSocket connection, request specific token data
-      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-        requestTokenByAddress(tokenAddress);
+      if (token) {
+        // Redirect to the dedicated token page
+        navigate(`/tokens/${token.symbol}`, { replace: true });
+      } else {
+        // If token not found, clear the URL parameters
+        navigate(location.pathname, { replace: true });
       }
-    } else if (tokenSymbol) {
-      // Fall back to symbol for backward compatibility
-      setSelectedTokenSymbol(tokenSymbol);
-      // DON'T auto-fill search field when opening from ticker
-      setIsDetailModalOpen(true);
     }
-  }, [location.search, requestTokenByAddress]);
+  }, [location.search, allTokens, getTokenBySymbol, navigate, location.pathname]);
   
-  // WebSocket-only connection
+  // Setup OG meta tags
   useEffect(() => {
-    // Connect to WebSocket (it will request tokens automatically)
-    connectWebSocket();
-    
-    // Cleanup on unmount
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
-      
-      if (pingIntervalRef.current) {
-        window.clearInterval(pingIntervalRef.current);
-        pingIntervalRef.current = null;
-      }
-    };
-  }, [connectWebSocket]);
-  
-  // Check maintenance mode and setup OG meta tags
-  useEffect(() => {
-    const checkMaintenanceMode = async () => {
-      try {
-        const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
-        setIsMaintenanceMode(isInMaintenance);
-
-        if (isInMaintenance) {
-          setError(
-            "DegenDuel is undergoing scheduled maintenance ⚙️ Try again later."
-          );
-          setLoading(false);
-        }
-      } catch (err) {
-        console.warn("Failed to check maintenance mode:", err);
-      }
-    };
-
     // Setup page title and meta tags
     document.title = "Tokens | DegenDuel";
-
-    checkMaintenanceMode();
 
     return () => {
       // Reset to default meta tags when leaving the page
       resetToDefaultMeta();
     };
   }, []);
-  
-  // Handle connection state changes
-  useEffect(() => {
-    if (connectionState === 'error') {
-      setError("Connection error. Please try again later.");
-    } else if (connectionState === 'connecting') {
-      // Only show loading if we're connecting for the first time and don't have data
-      if (Object.keys(tokenMap).length === 0) {
-        setLoading(true);
-      }
-    }
-     }, [connectionState, tokenMap]);
 
-  // Reset visible tokens when search/filter changes
+  // Set up infinite scroll observer
   useEffect(() => {
-    setVisibleTokensCount(50);
-  }, [debouncedSearchQuery, sortField, sortDirection]);
-
-  // Intersection Observer for infinite scroll
-  useEffect(() => {
-    const trigger = loadMoreTriggerRef.current;
-    if (!trigger || !hasMoreTokens) return;
-
+    if (!loadMoreTriggerRef.current) return;
+    
     const observer = new IntersectionObserver(
       (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting && !isLoadingMore && hasMoreTokens) {
+        if (entries[0].isIntersecting && hasMoreTokens && !isLoadingMore) {
           loadMoreTokens();
         }
       },
-      {
-        rootMargin: '100px', // Trigger 100px before the element comes into view
-      }
+      { threshold: 0.1 }
     );
-
-    observer.observe(trigger);
-
+    
+    observer.observe(loadMoreTriggerRef.current);
+    
     return () => {
-      observer.unobserve(trigger);
+      if (loadMoreTriggerRef.current) {
+        observer.unobserve(loadMoreTriggerRef.current);
+      }
     };
   }, [hasMoreTokens, isLoadingMore, loadMoreTokens]);
 
-  // Pre-calculate JSX elements to avoid conditional hooks
-  const floatingParticles = useMemo(() => 
-    Array.from({ length: 30 }).map((_, i) => {
-      // Pre-calculate random values to prevent re-renders
-      const left = `${Math.random() * 100}%`;
-      const top = `${Math.random() * 100}%`;
-      const duration = `${Math.random() * 5 + 5}s`;
-      const delay = `${Math.random() * 2}s`;
-      
-      return (
-        <div
-          key={i}
-          className="absolute w-1 h-1 bg-brand-500 rounded-full opacity-30 animate-float"
-          style={{
-            left,
-            top,
-            animationDuration: duration,
-            animationDelay: delay
-          }}
-        />
-      );
-    }), 
-  []);
+  // Handle search input with controlled component
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+  }, []);
 
-  const scanningLines = useMemo(() => (
-    <>
-      <div
-        className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-pulse"
-        style={{ left: "20%", animationDuration: "8s" }}
-      />
-      <div
-        className="absolute w-[1px] h-full bg-gradient-to-b from-transparent via-brand-400/10 to-transparent animate-pulse"
-        style={{ left: "80%", animationDuration: "8s", animationDelay: "2s" }}
-      />
-    </>
-  ), []);
+  // Handle sort change
+  const handleSortChange = useCallback((field: string, direction: "asc" | "desc") => {
+    setSortField(field);
+    setSortDirection(direction);
+  }, []);
 
-  // Loading state UI
-  if (loading) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i} className="bg-dark-200/50 backdrop-blur-sm">
-                <CardContent className="p-6 h-24">
-                  <div className="animate-pulse flex space-x-4">
-                    <div className="rounded-full bg-dark-300 h-12 w-12"></div>
-                    <div className="flex-1 space-y-4">
-                      <div className="h-4 bg-dark-300 rounded w-3/4"></div>
-                      <div className="h-4 bg-dark-300 rounded w-1/2"></div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Refresh data
+  const handleRefresh = useCallback(() => {
+    refresh();
+  }, [refresh]);
 
-  // Maintenance mode UI
-  if (isMaintenanceMode) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
-            <div className="flex items-center justify-center gap-2 text-yellow-400">
-              <span>⚠</span>
-              <span>
-                DegenDuel is undergoing scheduled maintenance ⚙️ Try again
-                later.
-              </span>
-              <span>⚠</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state UI
-  if (error) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-red-500 p-8 bg-dark-200/50 rounded-lg">
-            {error}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Main content UI
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Auth Debug Panel */}
-      <AuthDebugPanel position="top-right" />
-      
-      {/* CyberGrid background */}
-      <div className="fixed inset-0 z-0">
-        {/* Grid overlay */}
-        <div className="absolute inset-0 bg-dark-100"></div>
-        <div 
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: 'linear-gradient(#9D4EDD 1px, transparent 1px), linear-gradient(90deg, #9D4EDD 1px, transparent 1px)',
-            backgroundSize: '50px 50px',
-          }}
+      {/* Admin Debug Panel - Show only for admin users */}
+      {user && typeof user === 'object' && 'isAdministrator' in user && user.isAdministrator === true && <AuthDebugPanel />}
+
+      {/* Header */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <OptimizedTokensHeader
+          metadata={metadata}
         />
         
-        {/* Floating particles - Memoized to prevent re-renders */}
-        <div className="absolute inset-0 pointer-events-none">
-          {floatingParticles}
+        {/* View Toggle */}
+        <div className="mt-6 flex items-center justify-center">
+          <div className="bg-gray-800/50 p-1 rounded-lg border border-gray-600/30">
+            <button
+              onClick={() => setActiveView('tokens')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                activeView === 'tokens'
+                  ? 'bg-brand-600 text-white shadow-lg'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              All Tokens
+            </button>
+            <button
+              onClick={() => setActiveView('degenduel')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                activeView === 'degenduel'
+                  ? 'bg-gradient-to-r from-brand-600 to-cyber-600 text-white shadow-lg'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              🏆 DegenDuel Top 30
+            </button>
+          </div>
         </div>
         
-        {/* Scanning lines - Static to prevent reflows */}
-        <div className="absolute inset-0 overflow-hidden" style={{ opacity: 0.3 }}>
-          {scanningLines}
+        {/* Search and Sort Controls - Only show for regular token view */}
+        {activeView === 'tokens' && (
+        <div className="mt-6 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search tokens..."
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="w-full px-4 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-brand-400"
+              />
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={sortField}
+                onChange={(e) => handleSortChange(e.target.value, sortDirection)}
+                className="px-4 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white focus:outline-none focus:border-brand-400"
+              >
+                <option value="marketCap">Market Cap</option>
+                <option value="volume24h">24h Volume</option>
+                <option value="change24h">24h Change</option>
+                <option value="price">Price</option>
+                <option value="liquidity">Liquidity</option>
+                <option value="fdv">FDV</option>
+                <option value="priorityScore">Priority Score</option>
+                <option value="change5m">5m Change</option>
+                <option value="change1h">1h Change</option>
+                <option value="volume5m">5m Volume</option>
+                <option value="volume1h">1h Volume</option>
+                <option value="transactions5m">5m Activity</option>
+                <option value="transactions1h">1h Activity</option>
+                <option value="age">Token Age</option>
+              </select>
+              <button
+                onClick={() => handleSortChange(sortField, sortDirection === 'asc' ? 'desc' : 'asc')}
+                className="px-4 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white hover:bg-dark-300/50 focus:outline-none focus:border-brand-400"
+              >
+                {sortDirection === 'asc' ? '↑' : '↓'}
+              </button>
+              <button
+                onClick={handleRefresh}
+                className="px-4 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white hover:bg-dark-300/50 focus:outline-none focus:border-brand-400"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+          
+          {/* Jupiter Filter Controls */}
+          <div className="flex flex-wrap gap-4 items-center p-3 bg-dark-200/30 border border-dark-300/50 rounded-lg">
+            <span className="text-sm font-medium text-gray-300">Jupiter Filters:</span>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={jupiterFilters.strictOnly}
+                onChange={(e) => setJupiterFilters({
+                  strictOnly: e.target.checked,
+                  verifiedOnly: false, // Strict overrides verified
+                  showAll: !e.target.checked && !jupiterFilters.verifiedOnly
+                })}
+                className="w-4 h-4 text-brand-400 bg-dark-300 border-dark-400 rounded focus:ring-brand-400 focus:ring-2"
+              />
+              <span className="text-sm text-gray-300">Strict Only</span>
+              <span className="text-xs text-gray-500">(Highest Quality)</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={jupiterFilters.verifiedOnly && !jupiterFilters.strictOnly}
+                disabled={jupiterFilters.strictOnly}
+                onChange={(e) => setJupiterFilters({
+                  strictOnly: false,
+                  verifiedOnly: e.target.checked,
+                  showAll: !e.target.checked && !jupiterFilters.strictOnly
+                })}
+                className="w-4 h-4 text-brand-400 bg-dark-300 border-dark-400 rounded focus:ring-brand-400 focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              <span className={`text-sm ${jupiterFilters.strictOnly ? 'text-gray-500' : 'text-gray-300'}`}>Verified Only</span>
+              <span className="text-xs text-gray-500">(Curated)</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={!jupiterFilters.strictOnly && !jupiterFilters.verifiedOnly}
+                onChange={(e) => setJupiterFilters({
+                  strictOnly: false,
+                  verifiedOnly: false,
+                  showAll: e.target.checked
+                })}
+                className="w-4 h-4 text-brand-400 bg-dark-300 border-dark-400 rounded focus:ring-brand-400 focus:ring-2"
+              />
+              <span className="text-sm text-gray-300">Show All</span>
+              <span className="text-xs text-gray-500">(Unfiltered)</span>
+            </label>
+          </div>
         </div>
+        )}
       </div>
 
-      {/* Content Section */}
-      <div className="relative z-10">
-        {/* Global cyberpunk accents */}
-        <div className="fixed top-24 right-8 w-24 h-24 pointer-events-none">
-          <div className="absolute top-0 right-0 w-12 h-1 bg-cyan-500/30"></div>
-          <div className="absolute top-0 right-0 w-1 h-12 bg-cyan-500/30"></div>
-          <div className="absolute top-6 right-6 w-6 h-6 border border-cyan-500/20 rounded-full"></div>
-        </div>
-        <div className="fixed bottom-24 left-8 w-24 h-24 pointer-events-none">
-          <div className="absolute bottom-0 left-0 w-12 h-1 bg-brand-500/30"></div>
-          <div className="absolute bottom-0 left-0 w-1 h-12 bg-brand-500/30"></div>
-          <div className="absolute bottom-16 left-6 w-6 h-6 border border-brand-500/20 transform rotate-45"></div>
-        </div>
-      
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
-          <div className="grid grid-cols-1 gap-6">
-            {/* Main Content - Full width */}
-            <div className="col-span-1">
-              {/* Header with metadata and admin controls */}
-              <div className="flex justify-between items-start mb-4 sm:mb-8">
-                <OptimizedTokensHeader metadata={metadata} />
-                {user?.is_admin && (
-              <Button
-                onClick={() => setIsAddTokenModalOpen(true)}
-                className="ml-4 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 relative group overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
-                <span className="relative flex items-center gap-2">
-                  <span className="hidden sm:inline">Add Token</span>
-                  <span className="sm:hidden">+</span>
-                </span>
-              </Button>
-            )}
-          </div>
-
-          {/* Enhanced Controls Section */}
-          <div className="mb-4 sm:mb-6 relative">
-            {/* Background decorative elements */}
-            <div className="absolute -z-10 inset-0 rounded-xl overflow-hidden">
-              <div className="absolute inset-0 bg-dark-200/40 backdrop-blur-sm"></div>
-              <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent"></div>
-              <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
-              <div className="absolute right-1/4 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-brand-500/20 to-transparent"></div>
-              <div className="absolute left-1/4 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-cyan-500/20 to-transparent"></div>
-              
-              {/* Enhanced cyberpunk corner cuts */}
-              <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-brand-500/40 rounded-tl"></div>
-              <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-cyan-500/40 rounded-tr"></div>
-              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-brand-500/40 rounded-bl"></div>
-              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-cyan-500/40 rounded-br"></div>
-              
-              {/* Digital code segments */}
-              <div className="absolute top-2 left-10 flex space-x-1">
-                <div className="w-1 h-1 bg-brand-500/60"></div>
-                <div className="w-3 h-1 bg-brand-500/40"></div>
-                <div className="w-2 h-1 bg-brand-500/60"></div>
-              </div>
-              <div className="absolute bottom-2 right-10 flex space-x-1">
-                <div className="w-2 h-1 bg-cyan-500/60"></div>
-                <div className="w-3 h-1 bg-cyan-500/40"></div>
-                <div className="w-1 h-1 bg-cyan-500/60"></div>
+      {/* Main Content Area */}
+      <div className="flex-1 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+          
+          {/* DegenDuel Top 30 View */}
+          {activeView === 'degenduel' ? (
+            <DegenDuelTop30
+              limit={30}
+              showCategories={true}
+              showSparklines={true}
+              refreshInterval={30000}
+            />
+          ) : (
+          <>
+          {/* Regular Token List View */}
+          {/* Loading State */}
+          {isLoading && visibleTokens.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="w-16 h-16 mb-4 mx-auto">
+                  <div className="w-full h-full border-4 border-brand-500/20 border-t-brand-500 rounded-full animate-spin" />
+                </div>
+                <p className="text-gray-400">Loading tokens...</p>
               </div>
             </div>
-            
-            <div className="p-2">
-              <div className="flex gap-2">
-                {/* Search */}
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-dark-300/50 rounded px-3 py-2 text-sm text-gray-100 placeholder-gray-500"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                    >
-                      ×
-                    </button>
+          ) : error ? (
+            // Error State
+            <Card className="bg-dark-300/50 backdrop-blur-sm border-red-500/20">
+              <CardContent className="p-8 text-center">
+                <p className="text-red-400 mb-4">{error}</p>
+                <Button onClick={handleRefresh} variant="outline">
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          ) : visibleTokens.length === 0 ? (
+            // No Results State
+            <Card className="bg-dark-300/50 backdrop-blur-sm border-dark-400">
+              <CardContent className="p-8 text-center">
+                <p className="text-gray-400 mb-4">
+                  {searchQuery ? 
+                    `No tokens found matching "${searchQuery}"` : 
+                    "No tokens available"
+                  }
+                </p>
+                {searchQuery && (
+                  <Button 
+                    onClick={() => setSearchQuery("")} 
+                    variant="outline"
+                  >
+                    Clear Search
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            // Tokens Grid
+            <>
+              <CreativeTokensGrid
+                tokens={visibleTokens}
+                selectedTokenSymbol={null}
+                onTokenClick={handleTokenClick}
+              />
+              
+              {/* Load More Trigger */}
+              {hasMoreTokens && (
+                <div 
+                  ref={loadMoreTriggerRef}
+                  className="flex items-center justify-center py-8"
+                >
+                  {isLoadingMore && (
+                    <div className="text-center">
+                      <div className="w-8 h-8 border-3 border-brand-500/20 border-t-brand-500 rounded-full animate-spin" />
+                      <p className="text-gray-400 mt-2 text-sm">Loading more tokens...</p>
+                    </div>
                   )}
                 </div>
-                
-                {/* Sort field */}
-                <div className="w-24 sm:w-32">
-                  <select
-                    value={sortField}
-                    onChange={(e) => setSortField(e.target.value as keyof Token)}
-                    className="w-full bg-dark-300/50 rounded px-2 py-2 text-sm text-gray-100"
-                  >
-                    <option value="marketCap">Cap</option>
-                    <option value="volume24h">Vol</option>
-                    <option value="change24h">Change</option>
-                    <option value="price">Price</option>
-                  </select>
-                </div>
-                
-                {/* Sort direction */}
-                <button
-                  onClick={() => setSortDirection(prev => prev === "asc" ? "desc" : "asc")}
-                  className="w-10 h-10 flex items-center justify-center bg-dark-300/70 rounded text-white"
-                >
-                  {sortDirection === "asc" ? "↑" : "↓"}
-                </button>
-              </div>
-              
-              {searchQuery && (
-                <div className="mt-2 text-xs text-gray-400">
-                  {allFilteredAndSortedTokens.length} results
-                </div>
               )}
-            </div>
-          </div>
-
-          {/* Main grid with glow effect on selected token */}
-          <div className="relative">
-            {/* Decorative circuit board pattern background */}
-            <div className="absolute inset-0 -z-10 overflow-hidden opacity-10 pointer-events-none">
-              <div className="absolute top-1/4 left-0 w-full h-px bg-brand-500/50"></div>
-              <div className="absolute top-2/4 left-0 w-full h-px bg-cyan-500/50"></div>
-              <div className="absolute top-3/4 left-0 w-full h-px bg-purple-500/50"></div>
-              <div className="absolute left-1/4 top-0 h-full w-px bg-brand-500/50"></div>
-              <div className="absolute left-2/4 top-0 h-full w-px bg-cyan-500/50"></div>
-              <div className="absolute left-3/4 top-0 h-full w-px bg-purple-500/50"></div>
-              
-              {/* Digital pixels */}
-              <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-brand-500/80"></div>
-              <div className="absolute top-1/4 left-2/4 w-2 h-2 bg-brand-500/80"></div>
-              <div className="absolute top-1/4 left-3/4 w-2 h-2 bg-brand-500/80"></div>
-              <div className="absolute top-2/4 left-1/4 w-2 h-2 bg-cyan-500/80"></div>
-              <div className="absolute top-2/4 left-2/4 w-2 h-2 bg-cyan-500/80"></div>
-              <div className="absolute top-2/4 left-3/4 w-2 h-2 bg-cyan-500/80"></div>
-              <div className="absolute top-3/4 left-1/4 w-2 h-2 bg-purple-500/80"></div>
-              <div className="absolute top-3/4 left-2/4 w-2 h-2 bg-purple-500/80"></div>
-              <div className="absolute top-3/4 left-3/4 w-2 h-2 bg-purple-500/80"></div>
-            </div>
-            
-            <CreativeTokensGrid 
-              tokens={visibleTokens} 
-              selectedTokenSymbol={selectedTokenSymbol}
-              onTokenClick={handleTokenClick}
-            />
-            
-            {/* Infinite scroll trigger and loading indicator */}
-            {hasMoreTokens && (
-              <div 
-                ref={loadMoreTriggerRef}
-                className="flex justify-center items-center py-8"
-              >
-                {isLoadingMore ? (
-                  <div className="flex items-center gap-3 text-gray-400">
-                    <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Loading more tokens...</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={loadMoreTokens}
-                    className="px-6 py-3 bg-dark-300/70 hover:bg-brand-500/20 border-2 border-dark-400 hover:border-brand-400/30 rounded-lg text-gray-300 hover:text-white transition-all duration-300 flex items-center gap-2"
-                  >
-                    <span>Load more tokens</span>
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                      <path d="M19 9l-7 7-7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            )}
-            
-            {/* End of tokens indicator */}
-            {!hasMoreTokens && allFilteredAndSortedTokens.length > 0 && (
-              <div className="flex justify-center py-8">
-                <div className="text-gray-500 text-sm flex items-center gap-2">
-                  <div className="w-2 h-2 bg-brand-500/60 rounded-full"></div>
-                  <span>You've seen all {allFilteredAndSortedTokens.length} tokens</span>
-                  <div className="w-2 h-2 bg-brand-500/60 rounded-full"></div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-              {/* Cyberpunk footer accent */}
-              <div className="mt-10 mb-6 relative h-1 w-full overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/30 to-transparent"></div>
-                <div className="absolute top-0 left-1/4 right-1/4 h-px bg-brand-500/60"></div>
-                <div className="absolute left-1/2 top-0 w-px h-4 -translate-x-1/2 bg-brand-500/60 -translate-y-1/2"></div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Modals */}
-          <AddTokenModal
-            isOpen={isAddTokenModalOpen}
-            onClose={() => setIsAddTokenModalOpen(false)}
-          />
-          
-          <TokenDetailModal
-            isOpen={isDetailModalOpen && !!selectedToken}
-            onClose={handleCloseDetailModal}
-            token={selectedToken}
-          />
+            </>
+          )}
+          </>
+          )}
         </div>
       </div>
+
+      {/* Modals */}
+      {isAddTokenModalOpen && (
+        <AddTokenModal
+          isOpen={isAddTokenModalOpen}
+          onClose={() => setIsAddTokenModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

@@ -17,6 +17,7 @@ body {
   min-height: 100vh; /* Ensure body takes at least full viewport height */
   margin: 0;
   padding: 0;
+  background-color: #13151A; /* Dark background to match your theme */
   /* background-color: #f0f0f0; /* Optional: For debugging body extent */
 }
 
@@ -105,4 +106,55 @@ body {
 
 .animate-toast-exit {
   animation: toast-exit 0.3s ease-in forwards;
+}
+
+/* Performance Mode - disables expensive visual effects */
+.performance-mode {
+  /* Disable all animations and transitions */
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    transition-delay: 0.001ms !important;
+  }
+  
+  /* Remove blur effects (expensive on mobile) */
+  .backdrop-blur-sm,
+  .backdrop-blur-md,
+  .backdrop-blur-lg {
+    backdrop-filter: none !important;
+  }
+  
+  /* Simplify gradients to solid colors */
+  .bg-gradient-to-r,
+  .bg-gradient-to-br,
+  .bg-gradient-to-l {
+    background: #9945FF !important; /* Simple brand color */
+  }
+  
+  /* Hide particle effects and complex backgrounds */
+  .animate-float,
+  .animate-pulse,
+  .animate-spin,
+  [class*="animate-"] {
+    animation: none !important;
+  }
+  
+  /* Disable transform effects */
+  .transform {
+    transform: none !important;
+  }
+}
+
+/* Auto-detect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  body {
+    /* Apply performance mode automatically */
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-delay: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+      transition-delay: 0.001ms !important;
+    }
+  }
 }

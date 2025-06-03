@@ -11,6 +11,7 @@
 import { motion } from 'framer-motion';
 import React from 'react';
 import { TerminalInputProps } from '../types';
+import { VoiceInput } from './VoiceInput';
 
 /**
  * TerminalInput - Handles user input in the terminal
@@ -212,6 +213,20 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
             </motion.span>
           </motion.div>
           
+          {/* Voice input button */}
+          <VoiceInput
+            onTranscript={(transcript) => {
+              // Set the transcript as input
+              setUserInput(transcript);
+              // Don't auto-submit, let user review first
+            }}
+            onAudioResponse={() => {
+              // Audio responses are handled by the Real-Time API directly
+              console.log('[TerminalInput] Received audio response');
+            }}
+            className="mr-2"
+          />
+          
           {/* Animated placeholder text, visible only when input is empty */}
           {userInput === '' && (
             <div className="absolute left-9 pointer-events-none text-mauve-light/70 font-mono text-sm">
@@ -228,7 +243,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
                   repeatType: "loop"
                 }}
               >
-                ""
+                Ask Didi anything...
               </motion.div>
             </div>
           )}
@@ -240,12 +255,22 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey && userInput.trim()) {
                 e.preventDefault(); // Prevent newline
-                // Process user command
-                const command = userInput.trim();
-                setUserInput('');
+                e.stopPropagation(); // Stop event bubbling
                 
-                // Call the onEnter callback
-                onEnter(command);
+                // Add small delay for mobile to ensure proper keyboard handling
+                const isMobile = window.innerWidth <= 768;
+                const processCommand = () => {
+                  const command = userInput.trim();
+                  setUserInput('');
+                  onEnter(command);
+                };
+                
+                if (isMobile) {
+                  // Small delay for mobile keyboards
+                  setTimeout(processCommand, 100);
+                } else {
+                  processCommand();
+                }
               }
               // Allow Shift+Enter for new lines
             }}
@@ -265,7 +290,8 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
               }
             }}
             className="w-full bg-transparent outline-none border-none text-white placeholder-mauve-dark/50 focus:ring-0 resize-none"
-            placeholder="Type to chat with Didi..."
+            // THIS IS *BEHIND* THE TRUE INPUT FIELD!
+            placeholder=""
             autoComplete="off"
             spellCheck="false"
             rows={1}

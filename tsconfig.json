@@ -42,6 +42,6 @@
     }
   },
   "include": ["src", "archive/incinerator/DEPRECATED_Logo3D.tsx"],
-  "exclude": ["src/stories/archive/**/*", "archive/**/*"],
+  "exclude": ["src/stories/**/*", "archive/**/*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

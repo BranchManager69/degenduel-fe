@@ -23,6 +23,7 @@ import { useStore } from "../../store/useStore";
 import { SimpleWalletButton } from "../auth";
 import MiniLogo from "../logo/MiniLogo";
 import NanoLogo from "../logo/NanoLogo";
+import { CompactBalance } from "../ui/CompactBalance";
 import { MobileMenuButton } from './MobileMenuButton'; // TEMP
 import { UserMenu } from './user-menu/UserMenu';
 
@@ -163,8 +164,16 @@ export const Header: React.FC = () => {
             }`}
           >
 
-            {/* User Menu (Desktop) */}
-            <div className="hidden md:block">
+            {/* Desktop Balances and User Menu */}
+            <div className="hidden md:flex items-center gap-3">
+              {/* Compact Balance Display (Desktop) */}
+              {isAuthenticated && user && (
+                <CompactBalance 
+                  walletAddress={user.wallet_address}
+                  showLabels={true}
+                />
+              )}
+              
               <AnimatePresence mode="wait">
                 {isAuthenticated && user ? (
                   <motion.div 

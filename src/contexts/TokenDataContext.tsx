@@ -26,24 +26,8 @@ const TokenDataContext = createContext<TokenDataContextType | undefined>(
   undefined,
 );
 
-// Default fallback tokens for when connection is unavailable
-const FALLBACK_TOKENS: Token[] = [
-  {
-    symbol: "SOL",
-    name: "Solana",
-    price: "420.69",
-    marketCap: "420420069",
-    volume24h: "420420069",
-    change24h: "42069.69",
-    status: "active",
-    contractAddress: "So11111111111111111111111111111111111111112", // Solana native token
-    liquidity: {
-      usd: "69420000",
-      base: "420000",
-      quote: "69000",
-    }
-  },
-];
+// No fallback tokens - we want real data only
+const FALLBACK_TOKENS: Token[] = [];
 
 export const TokenDataProvider: React.FC<{ children: React.ReactNode }> = ({
   children,

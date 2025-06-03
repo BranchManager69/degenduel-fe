@@ -201,8 +201,8 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                   <div className="flex items-center gap-1 sm:gap-2">
                     {/* Social Media Links */}
                     {Object.entries(token.socials || {})
-                      .filter(([_, data]) => data?.url)
-                      .map(([platform, data]) => {
+                      .filter(([_, url]) => url)
+                      .map(([platform, url]) => {
                         const Icon: IconType =
                           {
                             discord: FaDiscord,
@@ -211,12 +211,12 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                           }[platform as keyof typeof token.socials] ||
                           FaDiscord;
 
-                        if (!data) return null;
+                        if (!url) return null;
 
                         return (
                           <a
                             key={platform}
-                            href={data.url}
+                            href={url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-gray-400 hover:text-brand-400 transition-colors"
@@ -282,8 +282,8 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                 <div>
                   <span className="text-gray-400">Liquidity</span>
                   <div className="font-medium text-gray-200 truncate">
-                    {token.liquidity?.usd
-                      ? formatCurrency(token.liquidity.usd)
+                    {token.liquidity
+                      ? formatCurrency(token.liquidity)
                       : "N/A"}
                   </div>
                 </div>
@@ -302,10 +302,10 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                 <div>
                   <span className="text-gray-400">24h Trades</span>
                   <div className="font-medium text-gray-200 truncate">
-                    {token.transactionsJson?.h24
+                    {token.transactions?.["24h"]
                       ? `${(
-                          token.transactionsJson.h24.buys +
-                          token.transactionsJson.h24.sells
+                          token.transactions["24h"].buys +
+                          token.transactions["24h"].sells
                         ).toLocaleString()}`
                       : "N/A"}
                   </div>

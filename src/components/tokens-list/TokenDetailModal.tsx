@@ -309,7 +309,7 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
                         LIQUIDITY
                       </span>
                       <p className="font-numbers text-xl font-bold text-white/90 mt-1 transition-colors duration-300">
-                        ${formatNumber(token.liquidity?.usd || "0")}
+                        ${formatNumber(token.liquidity || 0)}
                       </p>
                     </div>
                   </div>
@@ -353,9 +353,9 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
                 {/* Social Links with cyber styling */}
                 {token.socials && (
                   <div className="flex gap-2 mb-6">
-                    {token.socials?.twitter?.url && (
+                    {token.socials?.twitter && (
                       <a
-                        href={token.socials?.twitter?.url}
+                        href={token.socials.twitter}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 py-3 bg-dark-200/80 rounded border border-dark-300 hover:border-brand-400/30 transition-all duration-300 group flex items-center justify-center gap-2 overflow-hidden relative"
@@ -371,9 +371,9 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
                       </a>
                     )}
                     
-                    {token.socials?.telegram?.url && (
+                    {token.socials?.telegram && (
                       <a
-                        href={token.socials?.telegram?.url}
+                        href={token.socials.telegram}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 py-3 bg-dark-200/80 rounded border border-dark-300 hover:border-brand-400/30 transition-all duration-300 group flex items-center justify-center gap-2 overflow-hidden relative"
@@ -389,9 +389,9 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
                       </a>
                     )}
                     
-                    {token.socials?.discord?.url && (
+                    {token.socials?.discord && (
                       <a
-                        href={token.socials?.discord?.url}
+                        href={token.socials.discord}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 py-3 bg-dark-200/80 rounded border border-dark-300 hover:border-brand-400/30 transition-all duration-300 group flex items-center justify-center gap-2 overflow-hidden relative"
