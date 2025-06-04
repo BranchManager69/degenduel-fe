@@ -83,7 +83,7 @@ export const UnifiedTicker: React.FC<Props> = ({
   
   // State
   const [currentContests, setCurrentContests] = useState<Contest[]>(initialContests);
-  const [activeTab, setActiveTab] = useState<"all" | "contests" | "tokens">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "contests" | "tokens">("tokens");
   const [viewportWidth, setViewportWidth] = useState<number>(0);
   const [tabsWidth, setTabsWidth] = useState(160);
   const [measurementNonce, setMeasurementNonce] = useState(0);

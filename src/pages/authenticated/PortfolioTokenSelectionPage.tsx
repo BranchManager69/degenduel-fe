@@ -8,7 +8,7 @@ import {
     SystemProgram,
     Transaction,
 } from "@solana/web3.js";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
@@ -21,7 +21,8 @@ import { Card } from "../../components/ui/Card";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
-import { Contest, Token, SearchToken } from "../../types/index";
+import { Contest, SearchToken } from "../../types/index";
+import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
 
 // Declare Buffer on window type
 declare global {
@@ -113,245 +114,19 @@ export const TokenSelection: React.FC = () => {
     showAll: true
   });
   
-  // Use the SAME working WebSocket approach as TokensPage (bypass broken standardized hook)
-  console.log("🔌 PortfolioTokenSelectionPage: Using direct WebSocket like TokensPage");
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [tokenListLoading, setTokenListLoading] = useState(true);
-  const [tokensError, setTokensError] = useState<string | null>(null);
-  const [isTokenDataConnected, setIsTokenDataConnected] = useState(false);
-  const socketRef = useRef<WebSocket | null>(null);
+  // Use the standardized token data hook - now properly filtered!
+  console.log("🔌 PortfolioTokenSelectionPage: Using standardized token data hook");
   
-  // Helper function to transform WebSocket token data (same as TokensPage)
-  const transformTokenData = useCallback((tokenData: any): Token => {
-    return {
-      // Core identification
-      id: tokenData.id || 0,
-      address: tokenData.address || "",
-      contractAddress: tokenData.address || "",
-      symbol: tokenData.symbol || "",
-      name: tokenData.name || "",
-      
-      // Numbers not strings
-      price: tokenData.price || 0,
-      market_cap: tokenData.market_cap || 0,
-      marketCap: String(tokenData.market_cap || 0), // backward compat
-      volume_24h: tokenData.volume_24h || 0,
-      volume24h: String(tokenData.volume_24h || 0), // backward compat
-      change_24h: tokenData.change_24h || 0,
-      change24h: String(tokenData.change_24h || 0), // backward compat
-      liquidity: tokenData.liquidity || 0,
-      fdv: tokenData.fdv || 0,
-      decimals: tokenData.decimals || 9,
-      
-      // Visual/metadata
-      image_url: tokenData.image_url || "",
-      header_image_url: tokenData.header_image_url || "",
-      color: tokenData.color || "#888888",
-      description: tokenData.description || "",
-      tags: tokenData.tags || [],
-      
-      // Supply & ranking
-      total_supply: tokenData.total_supply || 0,
-      totalSupply: String(tokenData.total_supply || 0), // backward compat
-      priority_score: tokenData.priority_score || 0,
-      priorityScore: tokenData.priority_score || 0, // backward compat
-      first_seen_on_jupiter_at: tokenData.first_seen_on_jupiter_at || null,
-      firstSeenAt: tokenData.first_seen_on_jupiter_at || null, // backward compat
-      pairCreatedAt: tokenData.pairCreatedAt || null,
-      
-      // Legacy images for backward compatibility
-      images: {
-        imageUrl: tokenData.image_url || "",
-        headerImage: tokenData.header_image_url || "",
-        openGraphImage: tokenData.open_graph_image_url || ""
-      },
-      
-      // Social links (now strings)
-      socials: {
-        twitter: tokenData.socials?.twitter,
-        telegram: tokenData.socials?.telegram,
-        discord: tokenData.socials?.discord,
-        website: tokenData.socials?.website
-      },
-      
-      status: "active",
-      websites: tokenData.websites || [],
-      priceChanges: tokenData.priceChanges || {
-        "5m": "0",
-        "1h": "0", 
-        "6h": "0",
-        "24h": tokenData.change_24h?.toString() || "0"
-      },
-      volumes: tokenData.volumes || {
-        "5m": "0",
-        "1h": "0",
-        "6h": "0", 
-        "24h": tokenData.volume_24h?.toString() || "0"
-      },
-      transactions: tokenData.transactions || {
-        "5m": { buys: 0, sells: 0 },
-        "1h": { buys: 0, sells: 0 },
-        "6h": { buys: 0, sells: 0 },
-        "24h": { buys: 0, sells: 0 }
-      }
-    };
-  }, []);
+  const {
+    tokens,
+    isLoading: tokenListLoading,
+    error: tokensError,
+    isConnected: isTokenDataConnected,
+    refresh: refreshTokens
+  } = useStandardizedTokenData();
   
-  // Connect to WebSocket for real-time token data (same as TokensPage)
-  const connectWebSocket = useCallback((filters = jupiterFilters) => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.close();
-    }
-    
-    setIsTokenDataConnected(false);
-    const socket = new WebSocket('wss://degenduel.me/api/v69/ws');
-    socketRef.current = socket;
-    
-    socket.onopen = () => {
-      setIsTokenDataConnected(true);
-      
-      // Subscribe to market data
-      socket.send(JSON.stringify({
-        type: 'SUBSCRIBE',
-        topics: ['market-data']
-      }));
-      
-      // Request tokens with user-configurable Jupiter filters
-      const requestData: { 
-        limit: number;
-        filters: {
-          strictOnly?: boolean;
-          verifiedOnly?: boolean;
-        };
-      } = { 
-        limit: 1000,
-        filters: {}
-      };
-      
-      // Apply Jupiter filters based on user selection
-      if (filters.strictOnly) {
-        requestData.filters.strictOnly = true;
-      } else if (filters.verifiedOnly) {
-        requestData.filters.verifiedOnly = true;
-      }
-      // If showAll is true, no filters are applied
-      
-      socket.send(JSON.stringify({
-        type: 'REQUEST',
-        topic: 'market-data',
-        action: 'getTokens',
-        data: requestData
-      }));
-    };
-    
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        if (data.topic === 'market-data' && data.action === 'getTokens' && Array.isArray(data.data)) {
-          console.log(`Processing ${data.data.length} tokens from WebSocket`);
-          
-          const newTokenMap: Record<string, Token> = {};
-          const tokensList: Token[] = [];
-          
-          data.data.forEach((tokenData: any) => {
-            const token = transformTokenData(tokenData);
-            if (token.contractAddress) {
-              newTokenMap[token.contractAddress] = token;
-              tokensList.push(token);
-            }
-          });
-          
-          // setTokenMap(newTokenMap); // tokenMap not used
-          setTokens(tokensList);
-          setTokenListLoading(false);
-          setTokensError(null);
-        }
-      } catch (err) {
-        console.error("Failed to process WebSocket message:", err);
-        setTokensError("Failed to process token data");
-      }
-    };
-    
-    socket.onerror = () => {
-      setTokensError("WebSocket connection error");
-      setIsTokenDataConnected(false);
-    };
-    
-    socket.onclose = () => {
-      setIsTokenDataConnected(false);
-    };
-  }, [transformTokenData, jupiterFilters]);
-  
-  // Initialize WebSocket connection
-  useEffect(() => {
-    connectWebSocket();
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
-    };
-  }, [connectWebSocket]);
-  
-  // Refresh token data when Jupiter filters change
-  useEffect(() => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      const requestData: { 
-        limit: number;
-        filters: {
-          strictOnly?: boolean;
-          verifiedOnly?: boolean;
-        };
-      } = { 
-        limit: 1000,
-        filters: {}
-      };
-      
-      // Apply Jupiter filters based on current user selection
-      if (jupiterFilters.strictOnly) {
-        requestData.filters.strictOnly = true;
-      } else if (jupiterFilters.verifiedOnly) {
-        requestData.filters.verifiedOnly = true;
-      }
-      
-      socketRef.current.send(JSON.stringify({
-        type: 'REQUEST',
-        topic: 'market-data',
-        action: 'getTokens',
-        data: requestData
-      }));
-    }
-  }, [jupiterFilters]);
-  
-  // Add refresh function to match the old interface
-  const refreshTokens = useCallback(() => {
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      const requestData: { 
-        limit: number;
-        filters: {
-          strictOnly?: boolean;
-          verifiedOnly?: boolean;
-        };
-      } = { 
-        limit: 1000,
-        filters: {}
-      };
-      
-      // Apply Jupiter filters based on current user selection
-      if (jupiterFilters.strictOnly) {
-        requestData.filters.strictOnly = true;
-      } else if (jupiterFilters.verifiedOnly) {
-        requestData.filters.verifiedOnly = true;
-      }
-      
-      socketRef.current.send(JSON.stringify({
-        type: 'REQUEST',
-        topic: 'market-data',
-        action: 'getTokens',
-        data: requestData
-      }));
-    }
-  }, [jupiterFilters]);
+  // Jupiter filters don't work with the centralized hook right now
+  // The backend already filters duplicates for us
 
   console.log("📊 PortfolioTokenSelectionPage: Token data state:", {
     tokenCount: tokens.length,
@@ -391,8 +166,8 @@ export const TokenSelection: React.FC = () => {
     message: "",
   });
 
-  // Remove the old REST API fetchTokens function - now using WebSocket data!
-  console.log("🚀 PortfolioTokenSelectionPage: Using WebSocket-based token data");
+  // Now using the standardized hook with filtered data!
+  console.log("🚀 PortfolioTokenSelectionPage: Using standardized token data hook");
   
   useEffect(() => {
     const fetchContest = async () => {

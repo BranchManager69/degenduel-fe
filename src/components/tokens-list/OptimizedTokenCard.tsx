@@ -137,21 +137,29 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
               {/* COMPACT DATA OVERLAY */}
               <div className="absolute inset-0 p-3 flex flex-col justify-between">
                 
-                {/* TOP ROW - Priority & Tags */}
+                {/* TOP ROW - DegenDuel Score & Momentum */}
                 <div className="flex justify-between items-start">
-                  {/* Priority Score Indicator */}
-                  {metrics.priority > 0 && (
-                    <div className="bg-black/60 backdrop-blur-sm rounded px-2 py-1 text-xs font-mono">
-                      <span className="text-yellow-400">⭐</span>
-                      <span className="text-white ml-1">{metrics.priority}</span>
+                  {/* DegenDuel Score Indicator */}
+                  {token.degenduel_score && token.degenduel_score > 0 && (
+                    <div className="bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1 border border-brand-500/30">
+                      <div className="flex items-center space-x-1">
+                        <span className="text-brand-400 text-xs font-bold">🚀</span>
+                        <span className="text-white text-xs font-mono">{formatNumber(token.degenduel_score, 'short')}</span>
+                      </div>
                     </div>
                   )}
                   
-                  {/* Activity Indicator */}
-                  {metrics.activity > 5 && (
-                    <div className="bg-black/60 backdrop-blur-sm rounded px-2 py-1 text-xs">
-                      <span className="text-orange-400">🔥</span>
-                      <span className="text-white ml-1">{metrics.activity}</span>
+                  {/* Momentum Category Badge */}
+                  {token.trend_category && (
+                    <div className={`
+                      bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1 text-xs font-medium
+                      ${token.momentum_indicator === 'explosive' ? 'border border-red-500/50 text-red-300' :
+                        token.momentum_indicator === 'rising' ? 'border border-yellow-500/50 text-yellow-300' :
+                        token.momentum_indicator === 'gaining' ? 'border border-green-500/50 text-green-300' :
+                        'border border-gray-500/50 text-gray-300'
+                      }
+                    `}>
+                      {token.trend_category}
                     </div>
                   )}
                 </div>

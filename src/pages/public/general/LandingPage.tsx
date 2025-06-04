@@ -26,7 +26,7 @@ import { CtaSection } from "../../../components/landing/cta-section/CtaSection";
 // import IntroLogo from "../../../components/logo/IntroLogo"; // Original logo (no longer used)
 import EnhancedIntroLogo from "../../../components/logo/EnhancedIntroLogo"; // Enhanced, more dramatic logo
 import { FEATURE_FLAGS } from "../../../config/config";
-import { isContestCurrentlyUnderway } from "../../../lib/utils";
+import { isContestCurrentlyUnderway, isContestJoinable } from "../../../lib/utils";
 import { Contest } from "../../../types";
 // Hooks
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
@@ -296,7 +296,7 @@ export const LandingPage: React.FC = () => {
         console.log("[LandingPage] Fallback REST API data:", contestsData);
         
         const liveContests = contestsData.filter(isContestCurrentlyUnderway);
-        const pendingContests = contestsData.filter((contest: Contest) => contest.status === "pending");
+        const pendingContests = contestsData.filter(isContestJoinable);
         
         console.log("[LandingPage] Fallback - Live contests:", liveContests.length);
         console.log("[LandingPage] Fallback - Pending contests:", pendingContests.length);
@@ -344,7 +344,7 @@ export const LandingPage: React.FC = () => {
     if (cachedContests && cachedContests.length > 0) {
       console.log('[LandingPage] Using cached contests data.');
       const cachedActive = cachedContests.filter(isContestCurrentlyUnderway);
-      const cachedPending = cachedContests.filter((contest: Contest) => contest.status === "pending");
+      const cachedPending = cachedContests.filter(isContestJoinable);
       setActiveContests(cachedActive);
       setOpenContests(cachedPending);
       setLoading(false);

@@ -251,17 +251,25 @@ export function useWallet(walletAddress?: string) {
 
       // Set a timeout to reset loading state if we don't get data
       timeoutId = setTimeout(() => {
-        console.warn('[Wallet WebSocket] Timed out waiting for data');
-        setIsLoading(false);
-      }, 10000);
+        // Only log warning and clear loading if still waiting and connection is stable
+        if (isLoading && ws.isConnected) {
+          console.warn('[Wallet WebSocket] Timed out waiting for data');
+          setIsLoading(false);
+        }
+      }, 15000); // Increased timeout to 15 seconds for more stability
     } else if (!ws.isConnected) {
       isSubscribedRef.current = false;
+      // Clear timeout if connection lost
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = undefined;
+      }
     }
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [ws.isConnected, ws.subscribe, ws.request, walletAddress]);
+  }, [ws.isConnected, ws.subscribe, ws.request, walletAddress, isLoading]);
 
   // Cleanup subscription on unmount
   useEffect(() => {
@@ -385,11 +393,16 @@ export function useWallet(walletAddress?: string) {
       });
 
       // Set a timeout to reset loading state if we don't get data
-      setTimeout(() => {
-        if (isLoading) {
+      const refreshTimeoutId = setTimeout(() => {
+        // Only clear loading if still waiting and connection is stable
+        if (isLoading && ws.isConnected) {
+          console.warn('[Wallet WebSocket] Refresh timed out waiting for data');
           setIsLoading(false);
         }
-      }, 10000);
+      }, 15000);
+      
+      // Return cleanup function for the timeout
+      return () => clearTimeout(refreshTimeoutId);
     } else {
       console.warn('[Wallet WebSocket] Cannot refresh - WebSocket not connected');
       setIsLoading(false);

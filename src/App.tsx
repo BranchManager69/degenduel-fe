@@ -113,6 +113,7 @@ const AiTesting = lazy(() => import('./pages/admin/AiTesting').then(module => ({
 const ClientErrorsPage = lazy(() => import('./pages/admin/ClientErrorsPage'));
 const ConnectionDebugger = lazy(() => import('./pages/admin/ConnectionDebugger').then(module => ({ default: module.ConnectionDebugger })));
 const ContestImageBrowserPage = lazy(() => import('./pages/admin/ContestImageBrowserPage').then(module => ({ default: module.ContestImageBrowserPage })));
+const ContestImageGeneratorPage = lazy(() => import('./pages/admin/ContestImageGeneratorPage'));
 const IpBanManagementPage = lazy(() => import('./pages/admin/ip-ban/IpBanManagementPage'));
 const SkyDuelPage = lazy(() => import('./pages/admin/SkyDuelPage').then(module => ({ default: module.SkyDuelPage })));
 const SystemReports = lazy(() => import('./pages/admin/SystemReports').then(module => ({ default: module.SystemReports })));
@@ -481,7 +482,7 @@ const AppContent: React.FC = () => {
           <Route path="/admin/wallet-dashboard" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Admin Wallet Dashboard..." />}><AdminWalletDashboard /></Suspense></AdminRoute>} />
           <Route path="/admin/ip-ban" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><IpBanManagementPage /></Suspense></AdminRoute>} />
           <Route path="/admin/vanity-wallets" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><VanityWalletManagementPage /></Suspense></AdminRoute>} />
-          <Route path="/admin/contest-management/regenerate-image/:contestId" element={<AdminRoute><div>Contest Image Generator Page</div></AdminRoute>} />
+          <Route path="/admin/contest-management/regenerate-image/:contestId" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><ContestImageGeneratorPage /></Suspense></AdminRoute>} />
           <Route path="/admin/contest-image-browser" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><ContestImageBrowserPage /></Suspense></AdminRoute>} />
           <Route path="/admin/chat-dashboard" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Chat Dashboard..." />}><AdminChatDashboard /></Suspense></AdminRoute>} />
           <Route path="/connection-debugger" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><ConnectionDebugger /></Suspense></AdminRoute>} />

@@ -150,15 +150,15 @@ const TokenCard: React.FC<{
             ${formatNumber(Number(token.price))}
           </div>
           <div className="text-xs text-gray-400">
-            MC: {formatNumber(Number(token.marketCap))}
+            MC: {formatNumber(Number(token.market_cap))}
           </div>
         </div>
         
         <div className="text-right">
           <div className={`text-sm font-semibold ${
-            Number(token.change24h) >= 0 ? 'text-green-400' : 'text-red-400'
+            Number(token.change_24h) >= 0 ? 'text-green-400' : 'text-red-400'
           }`}>
-            {Number(token.change24h) >= 0 ? '+' : ''}{Number(token.change24h).toFixed(2)}%
+            {Number(token.change_24h) >= 0 ? '+' : ''}{Number(token.change_24h).toFixed(2)}%
           </div>
           {showSparkline && token.sparkline_1h && (
             <Sparkline data={token.sparkline_1h} className="mt-1" />

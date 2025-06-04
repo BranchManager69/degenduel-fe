@@ -183,19 +183,24 @@ export function useNotifications() {
         timestamp: new Date().toISOString()
       });
       
+      // Set timeout to clear loading state if no data received
       timeoutId = setTimeout(() => {
-        if (isLoading) {
+        // Only log warning and clear loading if still in loading state and connection is stable
+        if (isLoading && ws.isReadyForSecureInteraction) {
           console.warn('[Notifications] Timed out waiting for data');
           setIsLoading(false);
         }
-      }, 10000);
-    } else if (!ws.isReadyForSecureInteraction && isLoading) {
+      }, 15000); // Increased timeout to 15 seconds for more stability
+    } else if (!ws.isReadyForSecureInteraction) {
       console.log('[useNotifications] WebSocket not ready for secure interaction, deferring setup.');
-      // Optionally, if not loading and connection lost, reset state
-      // if (!isLoading && notifications.length > 0) { setNotifications([]); setIsLoading(true); } 
+      // Clear any existing timeout if connection is lost
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = undefined;
+      }
     }
     return () => { if(timeoutId) clearTimeout(timeoutId); };
-  }, [ws.isReadyForSecureInteraction, ws.subscribe, ws.request, isLoading, notifications.length]); // Added notifications.length to potentially reset if connection lost after loading
+  }, [ws.isReadyForSecureInteraction, ws.subscribe, ws.request, isLoading])
 
   // Helper methods for managing notifications
   const markAsRead = useCallback((notificationId: string) => {
@@ -257,10 +262,14 @@ export function useNotifications() {
       timestamp: new Date().toISOString()
     });
     
-    const timeoutId = setTimeout(() => { // Renamed to avoid conflict
-      if (isLoading) setIsLoading(false);
-    }, 10000);
-    return () => clearTimeout(timeoutId); // Return cleanup for this timeout
+    const refreshTimeoutId = setTimeout(() => {
+      // Only clear loading if still waiting and connection is stable
+      if (isLoading && ws.isReadyForSecureInteraction) {
+        console.warn('[Notifications] Refresh timed out waiting for data');
+        setIsLoading(false);
+      }
+    }, 15000);
+    return () => clearTimeout(refreshTimeoutId);
   }, [ws.isReadyForSecureInteraction, ws.request, isLoading]); // isLoading is a dependency here
   
   return {

@@ -15,6 +15,7 @@
 import { motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { ConnectWalletButton } from "../../../components/auth/ConnectWalletButton";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
 import { ChallengeBadge } from "../../../components/contest-detail/ChallengeBadge";
@@ -86,6 +87,7 @@ export const ContestDetails: React.FC = () => {
   const { user, isAuthenticated } = useMigratedAuth();
   const [isParticipating, setIsParticipating] = useState<boolean>(false);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+  const [showWalletConnect, setShowWalletConnect] = useState(false);
   
   // Image loading states
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -326,6 +328,13 @@ export const ContestDetails: React.FC = () => {
     };
   }, [id, user]);
 
+  // Hide wallet connect modal when user becomes authenticated
+  useEffect(() => {
+    if (isAuthenticated && showWalletConnect) {
+      setShowWalletConnect(false);
+    }
+  }, [isAuthenticated, showWalletConnect]);
+
   // Setup OG meta tags when contest data is loaded
   useEffect(() => {
     if (contest && id) {
@@ -398,19 +407,11 @@ export const ContestDetails: React.FC = () => {
     // Get contest status for logic branching
     const contestStatus = hasEnded ? "ended" : hasStarted ? "live" : "upcoming";
 
-    // Not connected to wallet - need to connect first
+    // Not connected to wallet - trigger wallet connection flow
     if (!isAuthenticated) {
-      console.log("Wallet Connection Check Failed:", {
-        isWalletConnected,
-        isConnected: isAuthenticated,
-        walletAddress: user?.wallet_address,
-        timestamp: new Date().toISOString(),
-      });
-
-      // Removed Aptos wallet connection logic
-      {
-        setError("Please connect your wallet to participate.");
-      }
+      console.log("User not authenticated, showing wallet connection options");
+      setShowWalletConnect(true);
+      setError(null); // Clear any previous errors
       return;
     }
 
@@ -766,10 +767,12 @@ export const ContestDetails: React.FC = () => {
                   <div className="max-w-md">
                     <button
                       onClick={handleJoinContest}
-                      disabled={!isWalletConnected || (displayStatus !== "pending" && !isParticipating)}
+                      disabled={isWalletConnected && (displayStatus !== "pending" && !isParticipating)}
                       className={`w-full relative group overflow-hidden text-lg py-4 px-6 shadow-xl transition-all duration-300 rounded-xl ${
-                        !isWalletConnected || (displayStatus !== "pending" && !isParticipating)
+                        isWalletConnected && (displayStatus !== "pending" && !isParticipating)
                           ? "bg-gradient-to-r from-gray-600/40 to-gray-700/40 border-2 border-gray-500/30 text-gray-400 cursor-not-allowed"
+                          : !isWalletConnected
+                          ? "bg-gradient-to-r from-blue-500 to-blue-600 border-2 border-blue-400/50 text-white hover:from-blue-400 hover:to-blue-500 hover:border-blue-300 hover:shadow-blue-500/30"
                           : displayStatus === "pending" && !isParticipating
                           ? "bg-gradient-to-r from-brand-500 to-brand-600 border-2 border-brand-400/50 text-white hover:from-brand-400 hover:to-brand-500 hover:border-brand-300 hover:shadow-brand-500/30"
                           : "bg-gradient-to-r from-emerald-500 to-emerald-600 border-2 border-emerald-400/50 text-white hover:from-emerald-400 hover:to-emerald-500 hover:border-emerald-300"
@@ -789,6 +792,38 @@ export const ContestDetails: React.FC = () => {
                         {error}
                       </div>
                     )}
+                    
+                    {/* Wallet Connection Modal */}
+                    {showWalletConnect && (
+                      <div className="mt-4 p-4 bg-dark-200/90 backdrop-blur-sm border border-brand-400/30 rounded-lg">
+                        <div className="text-center mb-3">
+                          <h3 className="text-lg font-semibold text-brand-400 mb-1">Connect Your Wallet</h3>
+                          <p className="text-sm text-gray-400">Choose a wallet to connect and join the contest</p>
+                        </div>
+                        
+                        <ConnectWalletButton
+                          className="w-full mb-3"
+                          onSuccess={() => {
+                            setShowWalletConnect(false);
+                            // After successful connection, user can join the contest
+                            setTimeout(() => {
+                              handleJoinContest();
+                            }, 500);
+                          }}
+                          onError={(error) => {
+                            setError(error.message);
+                            setShowWalletConnect(false);
+                          }}
+                        />
+                        
+                        <button
+                          onClick={() => setShowWalletConnect(false)}
+                          className="w-full text-sm text-gray-400 hover:text-gray-300 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -799,7 +834,7 @@ export const ContestDetails: React.FC = () => {
                       <ShareContestButton
                         contestId={contest.id.toString()}
                         contestName={contest.name}
-                        prizePool={(Number(contest.entry_fee) * contest.participant_count * 0.95).toString()}
+                        prizePool={contest.total_prize_pool || contest.prize_pool || "0"}
                       />
                     </SilentErrorBoundary>
                   </div>
@@ -897,7 +932,7 @@ export const ContestDetails: React.FC = () => {
                       Current Prize Pool
                     </span>
                     <div className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600"}`}>
-                      {formatCurrency(Number(contest.entry_fee) * contest.participant_count * 0.95)}
+                      {formatCurrency(Number(contest.total_prize_pool || contest.prize_pool || "0"))}
                     </div>
                     <div className="mt-1 text-xs text-gray-500">
                       grows with participation
@@ -973,7 +1008,7 @@ export const ContestDetails: React.FC = () => {
                   <ShareContestButton
                     contestId={contest.id.toString()}
                     contestName={contest.name}
-                    prizePool={(Number(contest.entry_fee) * contest.participant_count * 0.95).toString()}
+                    prizePool={contest.total_prize_pool || contest.prize_pool || "0"}
                     className="w-full"
                   />
                 </SilentErrorBoundary>
@@ -1037,7 +1072,7 @@ export const ContestDetails: React.FC = () => {
               <div className="group relative">
                 <SilentErrorBoundary>
                   <PrizeStructure
-                    prizePool={Number(contest.entry_fee) * contest.participant_count * 0.95}
+                    prizePool={Number(contest.total_prize_pool || contest.prize_pool || "0")}
                     entryFee={Number(contest?.entry_fee || 0)}
                     maxParticipants={Number(contest?.max_participants || 0)}
                     currentParticipants={Number(contest?.participant_count || 0)}
