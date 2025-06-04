@@ -42,49 +42,12 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     }
   }, [onTokenClick]);
 
-  // We only need hotness calculation now since we removed the other sections
+  // RESPECT BACKEND ORDER - The backend already sorted by DegenDuel algorithm!
+  // We no longer need client-side hotness calculation since the backend does it better
   
-  // ENHANCED "hotness" calculation using new multi-timeframe data
-  const calculateHotness = (token: Token) => {
-    // Short-term momentum (5m, 1h) - 40% weight
-    const change5m = token.priceChanges?.["5m"] || 0;
-    const change1h = token.priceChanges?.["1h"] || 0;
-    const shortTermMomentum = (Math.abs(change5m) + Math.abs(change1h)) / 2;
-    
-    // Volume activity across timeframes - 30% weight
-    const volume5m = token.volumes?.["5m"] || 0;
-    const volume1h = token.volumes?.["1h"] || 0;
-    const volume24h = token.volume_24h || Number(token.volume24h) || 0;
-    const avgVolume = (volume5m + volume1h + volume24h) / 3;
-    const volumeNormalized = Math.min(avgVolume / 10000000000, 1); // Cap at 10B
-    
-    // Transaction activity - 20% weight
-    const buys5m = token.transactions?.["5m"]?.buys || 0;
-    const sells5m = token.transactions?.["5m"]?.sells || 0;
-    const buys1h = token.transactions?.["1h"]?.buys || 0;
-    const sells1h = token.transactions?.["1h"]?.sells || 0;
-    const totalActivity = buys5m + sells5m + buys1h + sells1h;
-    const activityNormalized = Math.min(totalActivity / 1000, 1); // Cap at 1000 trades
-    
-    // Priority score from backend - 10% weight
-    const priorityNormalized = (token.priority_score || token.priorityScore || 0) / 100;
-    
-    // Combined hotness formula
-    return (
-      (shortTermMomentum / 10) * 0.4 +  // Short-term price movement
-      volumeNormalized * 0.3 +           // Volume activity
-      activityNormalized * 0.2 +         // Transaction count
-      priorityNormalized * 0.1           // Backend priority
-    );
-  };
-  
-  // Hottest tokens by enhanced algorithm
-  const tokensByHotness = [...tokens].sort((a, b) => 
-    calculateHotness(b) - calculateHotness(a)
-  );
-  
-  // Create our groupings based on the sorted lists
-  const trendingTokens = tokensByHotness.slice(0, 12);   // Top 12 hottest tokens for enhanced display
+  // For the "Hottest Tokens" section, just take the first 12 tokens as they come from backend
+  // The backend has already sorted them by the DegenDuel scoring algorithm
+  const trendingTokens = tokens.slice(0, 12);   // Top 12 tokens in backend order
   
   // Exclude tokens already shown in hottest section
   const featuredTokenAddresses = new Set(
@@ -105,8 +68,8 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
   const HottestTokenCard = ({ token, index }: { token: Token, index: number }) => {
     const isSelected = token.symbol.toLowerCase() === selectedTokenSymbol?.toLowerCase();
     
-    // Calculate hotness score for display
-    const hotnessScore = calculateHotness(token) * 100;
+    // Backend already calculated the hotness - use position in list as score
+    const hotnessScore = Math.max(0, 100 - (index * 8)); // Diminishing score by position
     const isTopThree = index < 3;
     const changeNum = token.change_24h || Number(token.change24h) || 0;
     
