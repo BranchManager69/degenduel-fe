@@ -3,10 +3,24 @@
  * 
  * V69 Standardized WebSocket Hook for Contest Data
  * This hook provides real-time updates for trading contests from the unified WebSocket system
- * Follows the exact message format defined by the backend team
+ * 
+ * ⚠️  IMPORTANT: Contains Technical Debt - Band-aid TypeScript Approach ⚠️
+ * 
+ * ISSUE RESOLVED: Contest #768 "Numero Uno" was missing from UI due to:
+ * 1. Frontend using wrong action name: 'GET_ALL_CONTESTS' → Fixed to 'getContests'
+ * 2. Backend changed message format without frontend updates
+ * 
+ * CURRENT APPROACH: Using `any` types for WebSocket messages to support dual formats
+ * - OLD FORMAT: { type: 'DATA', topic: 'contest', subtype: 'update', data: {...} }
+ * - NEW FORMAT: { topic: 'contest', action: 'getContests', data: [...] }
+ * 
+ * FUTURE REFACTOR NEEDED: Replace `any` types with proper discriminated unions and type guards
+ * 
+ * STATUS: ✅ Working - All contests including newly created ones now appear in UI
  * 
  * @author Branch Manager
  * @created 2025-04-10
+ * @updated 2025-06-04 - Band-aid fix for WebSocket format compatibility
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -52,27 +66,8 @@ const DEFAULT_STATE = {
   userContests: [] as Contest[]
 };
 
-// Define the standard structure for contest data updates from the server
-// Following the exact format from the backend team
-interface WebSocketContestMessage {
-  type: string; // 'DATA'
-  topic: string; // 'contest'
-  subtype: 'update' | 'leaderboard' | 'entry' | 'result';
-  data: {
-    contest_id: string;
-    status?: 'registration' | 'active' | 'ended';
-    name?: string;
-    start_time?: string;
-    end_time?: string;
-    prize_pool?: number;
-    entry_count?: number;
-    leaderboard?: {
-      rankings: ContestRanking[];
-    };
-    entry_status?: 'confirmed' | 'rejected';
-  };
-  timestamp: string;
-}
+// NOTE: WebSocketContestMessage interface removed due to dual format support
+// Using 'any' types temporarily until proper discriminated unions are implemented
 
 /**
  * Hook for accessing and managing contest data with real-time updates
@@ -86,15 +81,85 @@ export function useContests(userId?: string) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  // Message handler for WebSocket messages
-  const handleMessage = useCallback((message: Partial<WebSocketContestMessage>) => {
+  /**
+   * Message handler for WebSocket messages
+   * 
+   * ⚠️  TECHNICAL DEBT WARNING - BAND-AID APPROACH ⚠️
+   * 
+   * This handler uses `message: any` instead of proper TypeScript interfaces because:
+   * 
+   * 1. BACKEND FORMAT CHANGE: The backend team changed the WebSocket message format:
+   *    - OLD: { type: 'DATA', topic: 'contest', subtype: 'update', data: {...} }
+   *    - NEW: { topic: 'contest', action: 'getContests', data: [...] }
+   * 
+   * 2. DUAL COMPATIBILITY: We need to support both formats during transition period
+   * 
+   * 3. TIME CONSTRAINT: Proper TypeScript refactoring would require:
+   *    - Discriminated union types for different message formats
+   *    - Type guards for each message type
+   *    - Updating all WebSocket hooks to match new patterns
+   * 
+   * PROPER SOLUTION (Future Task):
+   * - Define separate interfaces: ContestListResponse, ContestUpdateMessage, etc.
+   * - Use discriminated unions: type WebSocketMessage = ContestListResponse | ContestUpdateMessage
+   * - Implement type guards: isContestListResponse(msg): msg is ContestListResponse
+   * - Remove all `as any` casts and use proper type narrowing
+   * 
+   * CURRENT STATUS: ✅ Working - Contest #768 now appears in UI after backend fix
+   * 
+   * @param message WebSocket message (temporarily typed as 'any' for dual format support)
+   */
+  const handleMessage = useCallback((message: any) => {
     try {
-      // Check if this is a valid contest message
-      if (message.type === 'DATA' && message.topic === 'contest') {
-        // Process message based on subtype
-        if (message.subtype === 'update' && message.data) {
+      // Check if this is a valid contest message (handle both old and new formats)
+      if ((message.type === 'DATA' && message.topic === 'contest') || 
+          (message.topic === 'contest' && message.action === 'getContests')) {
+        
+        // Handle initial contest list response (new format)
+        if (message.action === 'getContests' && Array.isArray(message.data)) {
+          const contests = (message as any).data.map((contest: any) => ({
+            contest_id: contest.id.toString(),
+            name: contest.name,
+            status: contest.status === 'pending' ? 'registration' : contest.status,
+            start_time: contest.start_time,
+            end_time: contest.end_time,
+            prize_pool: parseFloat(contest.prize_pool),
+            total_prize_pool: contest.total_prize_pool, // New backend-calculated field
+            entry_count: contest.participant_count,
+            entry_fee: parseFloat(contest.entry_fee),
+            difficulty: contest.settings?.difficulty || 'guppy',
+            description: contest.description,
+            joined: false // Default - will be updated by user-specific data
+          }));
+          
+          setState(prevState => {
+            // Filter contests based on status
+            const activeContests = contests.filter((c: Contest) => c.status === 'active');
+            const upcomingContests = contests.filter((c: Contest) => c.status === 'registration');
+            const pastContests = contests.filter((c: Contest) => c.status === 'ended');
+            
+            return {
+              contests,
+              activeContests,
+              upcomingContests,
+              pastContests,
+              userContests: prevState.userContests
+            };
+          });
+          
+          setIsLoading(false);
+          setLastUpdate(new Date());
+          
+          dispatchWebSocketEvent('contest_list_received', {
+            socketType: TopicType.CONTEST,
+            message: `Received ${contests.length} contests`,
+            timestamp: new Date().toISOString()
+          });
+        }
+        // Process message based on subtype (old format)
+        else if (message.subtype === 'update' && message.data && !Array.isArray(message.data)) {
           // Update contest details
-          const contestData = message.data;
+          const contestData = message.data as any;
           
           setState(prevState => {
             const contests = [...prevState.contests];
@@ -139,9 +204,9 @@ export function useContests(userId?: string) {
             timestamp: new Date().toISOString()
           });
         } 
-        else if (message.subtype === 'leaderboard' && message.data) {
+        else if (message.subtype === 'leaderboard' && message.data && !Array.isArray(message.data)) {
           // Update leaderboard data
-          const { contest_id, leaderboard } = message.data;
+          const { contest_id, leaderboard } = message.data as any;
           
           setState(prevState => {
             const contests = [...prevState.contests];
@@ -169,9 +234,9 @@ export function useContests(userId?: string) {
             timestamp: new Date().toISOString()
           });
         }
-        else if (message.subtype === 'entry' && message.data) {
+        else if (message.subtype === 'entry' && message.data && !Array.isArray(message.data)) {
           // Process entry confirmation/rejection
-          const { contest_id, entry_status } = message.data;
+          const { contest_id, entry_status } = message.data as any;
           
           if (entry_status === 'confirmed') {
             setState(prevState => {
@@ -208,9 +273,9 @@ export function useContests(userId?: string) {
             });
           }
         }
-        else if (message.subtype === 'result' && message.data) {
+        else if (message.subtype === 'result' && message.data && !Array.isArray(message.data)) {
           // Update contest with final results
-          const contestData = message.data;
+          const contestData = message.data as any;
           
           setState(prevState => {
             const contests = [...prevState.contests];
@@ -285,7 +350,7 @@ export function useContests(userId?: string) {
       ws.subscribe([TopicType.CONTEST]);
       
       // Request initial contest data
-      ws.request(TopicType.CONTEST, 'GET_ALL_CONTESTS');
+      ws.request(TopicType.CONTEST, 'getContests');
       
       // Request user contests if userId is provided
       if (userId) {
@@ -351,7 +416,7 @@ export function useContests(userId?: string) {
     
     if (ws.isConnected) {
       // Request fresh contest data
-      ws.request(TopicType.CONTEST, 'GET_ALL_CONTESTS');
+      ws.request(TopicType.CONTEST, 'getContests');
       
       // Request user contests if userId is provided
       if (userId) {

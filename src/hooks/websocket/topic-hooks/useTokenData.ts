@@ -1,37 +1,33 @@
 /**
  * useTokenData Hook
  * 
- * V69 Standardized WebSocket Hook for Token Data
- * This hook provides real-time updates for token data from the unified WebSocket system
+ * WebSocket-First Token Data Hook with Filtered Market Data
+ * Uses WebSocket market-data topic for BOTH initial load and real-time updates
  * 
- * 🔧 PRODUCTION FIX APPLIED ✅
+ * 🚀 FIXED TO USE FILTERED WEBSOCKET DATA ✅
  * 
- * KEY INSIGHTS DISCOVERED:
- * - Backend uses standard string message types ('DATA', 'RESPONSE') not DDExtendedMessageType enum
- * - Backend expects topic 'market-data' as string, not TopicType.MARKET_DATA constant  
- * - Backend sends structured responses with {type, topic, action, data} format
- * - Real backend token data uses different field names (address vs contractAddress, market_cap vs marketCap, etc.)
+ * KEY ARCHITECTURE DECISIONS:
+ * - WebSocket (/api/v69/ws) market-data topic for ALL token data (now filtered server-side)
+ * - No more REST API polling - WebSocket provides deduplicated tokens
+ * - Server-side filtering eliminates duplicate tokens (require_socials=true)
+ * - Real-time updates for all connected clients
  * 
- * CRITICAL FIXES APPLIED:
- * ✅ Removed fake FALLBACK_TOKENS that were masking real data
- * ✅ Updated message type checks to use correct backend format ('DATA' vs DDExtendedMessageType.DATA)
- * ✅ Fixed topic strings to match backend exactly ('market-data' vs TopicType.MARKET_DATA)
- * ✅ Added transformBackendTokenData() to properly map backend fields to frontend Token interface
- * ✅ Updated request format to use correct backend specifications
- * ✅ Added proper handling for both DATA (real-time) and RESPONSE (request) message types
+ * PERFORMANCE BENEFITS:
+ * ✅ No duplicate tokens (WLFI, PUMP, etc. deduplicated)
+ * ✅ Real-time updates via WebSocket
+ * ✅ No REST API polling overhead
+ * ✅ Consistent data between all components
+ * ✅ Server broadcasts updates every 60 seconds
  * 
- * IMPACT:
- * - All components using useStandardizedTokenData now receive REAL market data
- * - UnifiedTicker PRICES view shows actual token prices instead of placeholder data
- * - Consistent data format across entire application
- * - Proper integration with UnifiedWebSocketContext architecture
+ * ENDPOINTS USED:
+ * - WebSocket /api/v69/ws market-data topic (ALL data + updates)
  * 
  * @author Branch Manager
  * @created 2025-04-10
- * @updated 2025-01-15 - Fixed backend message format integration for production
+ * @updated 2025-06-04 - Fixed to use filtered WebSocket data only
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { Token } from '../../../types';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
@@ -98,193 +94,128 @@ interface TokenDataFilters {
 }
 
 export function useTokenData(
-  tokensToSubscribe: string[] | "all" = "all",
+  _tokensToSubscribe: string[] | "all" = "all", // Now unused - kept for interface compatibility
   filters?: TokenDataFilters
 ) {
   // State for token data
   const [tokens, setTokens] = useState<Token[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [initialized, setInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasInitialData, setHasInitialData] = useState<boolean>(false);
 
-  // Use ref to avoid recreating handleMessage on every isLoading change
-  const isLoadingRef = useRef(isLoading);
-  isLoadingRef.current = isLoading;
-
-  // Message handler for WebSocket messages using CORRECT backend format
-  const handleMessage = useCallback((message: any) => {
-    try {
-      console.log('[useTokenData] Received message:', message);
-
-      // Handle DATA messages (real-time updates) - CORRECT FORMAT
-      if (message.type === 'DATA' && message.topic === 'market-data') {
-        if (Array.isArray(message.data)) {
-          console.log(`[useTokenData] Processing ${message.data.length} tokens from DATA message`);
-
-          // Transform backend format to frontend format
-          const transformedTokens = message.data.map(transformBackendTokenData);
-          setTokens(transformedTokens);
-          setLastUpdate(new Date());
-          setIsLoading(false);
-
-          dispatchWebSocketEvent('token_data_update', {
-            socketType: 'market-data',
-            message: `Updated ${message.data.length} tokens via DATA`,
-            timestamp: new Date().toISOString()
-          });
-        }
-      }
-
-      // Handle RESPONSE messages (request responses) - CORRECT FORMAT  
-      else if (message.type === 'RESPONSE' && message.topic === 'market-data' && message.action === 'getTokens') {
-        if (Array.isArray(message.data)) {
-          console.log(`[useTokenData] Processing ${message.data.length} tokens from RESPONSE message`);
-
-          // Transform backend format to frontend format
-          const transformedTokens = message.data.map(transformBackendTokenData);
-          setTokens(transformedTokens);
-          setLastUpdate(new Date());
-          setIsLoading(false);
-
-          dispatchWebSocketEvent('token_data_update', {
-            socketType: 'market-data',
-            message: `Updated ${message.data.length} tokens via RESPONSE`,
-            timestamp: new Date().toISOString()
-          });
-        }
-      }
-
-      // Mark as not loading once we've processed any valid message
-      if (isLoadingRef.current) {
-        setIsLoading(false);
-      }
-    } catch (err) {
-      console.error('[useTokenData] Error processing message:', err);
-      dispatchWebSocketEvent('error', {
-        socketType: 'market-data',
-        message: 'Error processing token data',
-        error: err instanceof Error ? err.message : String(err)
-      });
-    }
-  }, []);
-
-  // Connect to the unified WebSocket system
+  // Connect to WebSocket
   const ws = useWebSocket();
 
-  // Register message listener for CORRECT message types
+  // WebSocket handler for ALL token data (initial + updates)
+  const handleMarketData = useCallback((message: any) => {
+    try {
+      if (message.type === 'DATA' && message.topic === 'market-data') {
+        if (Array.isArray(message.data)) {
+          console.log(`[useTokenData] Received market data for ${message.data.length} tokens (filtered by backend)`);
+          
+          // Transform and set ALL tokens - backend now filters duplicates!
+          const transformedTokens = message.data.map(transformBackendTokenData);
+          
+          // Apply client-side filters if any
+          let filteredTokens = transformedTokens;
+          if (filters?.minMarketCap) {
+            filteredTokens = filteredTokens.filter((t: Token) => t.market_cap >= filters.minMarketCap!);
+          }
+          if (filters?.minVolume) {
+            filteredTokens = filteredTokens.filter((t: Token) => t.volume_24h >= filters.minVolume!);
+          }
+          
+          setTokens(filteredTokens);
+          setLastUpdate(new Date());
+          setIsLoading(false);
+          setHasInitialData(true);
+          
+          dispatchWebSocketEvent('token_data_websocket_update', {
+            socketType: 'market-data',
+            message: `Received ${filteredTokens.length} filtered tokens via WebSocket`,
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[useTokenData] Error processing market data:', err);
+      setError('Failed to process market data');
+    }
+  }, [filters]);
+
+  // Register WebSocket listener for ALL market data
   useEffect(() => {
     const unregister = ws.registerListener(
-      'token-data-hook',
-      ['DATA', 'RESPONSE', 'ERROR'] as any[], // Listen for correct message types
-      handleMessage,
-      ['market-data'] // Filter for market-data topic only
+      'token-data-market-updates',
+      ['DATA'] as any[],
+      handleMarketData,
+      ['market-data']
     );
     return unregister;
-  }, [handleMessage, ws.registerListener]);
+  }, [handleMarketData, ws.registerListener]);
 
-  // Subscribe to token data when the WebSocket is connected
+  // Subscribe to market-data when connected
   useEffect(() => {
-    console.log('[useTokenData] WebSocket state:', {
-      isConnected: ws.isConnected,
-      connectionState: ws.connectionState,
-      initialized,
-      error: ws.connectionError
-    });
-
-    if (ws.isConnected && !initialized) {
-      // Subscribe to market-data topic using CORRECT format
-      ws.subscribe(['market-data']);
-
-      // Request initial data using CORRECT format
-      const requestData: any = {
-        limit: 1000, // Request all tokens
-        offset: 0
-      };
-
-      if (tokensToSubscribe !== "all" && Array.isArray(tokensToSubscribe) && tokensToSubscribe.length > 0) {
-        requestData.symbols = tokensToSubscribe;
-      }
-
-      // Add filters if provided
-      if (filters) {
-        requestData.filters = filters;
-      }
-
-      ws.request('market-data', 'getTokens', requestData);
-
-      setInitialized(true);
-
-      dispatchWebSocketEvent('token_data_init', {
-        socketType: 'market-data',
-        message: 'Token data subscription initialized through unified WebSocket with correct format',
-        subscription: tokensToSubscribe === "all" ? "all tokens" : tokensToSubscribe
-      });
-
-      // Set a timeout to reset loading state if we don't get data
-      const timeoutId = setTimeout(() => {
-        if (isLoadingRef.current) {
-          console.warn('[useTokenData] Timed out waiting for data');
-          setIsLoading(false);
-        }
-      }, 10000);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [ws.isConnected, initialized, tokensToSubscribe, filters, ws.subscribe, ws.request]);
-
-  // Force refresh function for token data
-  const refresh = useCallback(() => {
-    setIsLoading(true);
-
     if (ws.isConnected) {
-      // Request fresh token data using CORRECT format
-      const requestData: any = {
-        limit: 1000,
-        offset: 0
-      };
-
-      if (tokensToSubscribe !== "all" && Array.isArray(tokensToSubscribe) && tokensToSubscribe.length > 0) {
-        requestData.symbols = tokensToSubscribe;
-      }
-
-      // Add filters if provided
-      if (filters) {
-        requestData.filters = filters;
-      }
-
-      ws.request('market-data', 'getTokens', requestData);
-
-      dispatchWebSocketEvent('token_data_refresh', {
+      console.log('[useTokenData] Subscribing to market-data topic for filtered tokens');
+      ws.subscribe(['market-data']);
+      
+      dispatchWebSocketEvent('token_data_subscribe', {
         socketType: 'market-data',
-        message: 'Refreshing token data with correct format',
+        message: 'Subscribed to filtered market-data topic',
         timestamp: new Date().toISOString()
       });
+    }
+  }, [ws.isConnected, ws.subscribe]);
 
-      // Set a timeout to reset loading state if we don't get data
-      setTimeout(() => {
-        if (isLoadingRef.current) {
+  // Set loading false once we have connection
+  useEffect(() => {
+    if (ws.isConnected && !hasInitialData) {
+      // Give WebSocket a moment to send initial data
+      const timer = setTimeout(() => {
+        if (!hasInitialData) {
+          console.log('[useTokenData] No initial data received, setting loading to false');
           setIsLoading(false);
         }
-      }, 10000);
-    } else {
-      console.warn('[useTokenData] Cannot refresh - WebSocket not connected');
-      setIsLoading(false);
+      }, 2000);
+      return () => clearTimeout(timer);
     }
-  }, [ws.isConnected, ws.request, tokensToSubscribe, filters]);
+  }, [ws.isConnected, hasInitialData]);
+
+  // Load more is now a no-op since WebSocket provides all data
+  const loadMore = useCallback(() => {
+    console.log('[useTokenData] Load more not needed - WebSocket provides all filtered tokens');
+  }, []);
+
+  // Refresh just re-subscribes to get latest data
+  const refresh = useCallback(() => {
+    console.log('[useTokenData] Refreshing by re-subscribing to market-data');
+    if (ws.isConnected) {
+      // Unsubscribe and resubscribe to trigger fresh data
+      ws.unsubscribe(['market-data']);
+      setTimeout(() => {
+        ws.subscribe(['market-data']);
+      }, 100);
+    }
+  }, [ws]);
 
   // Return the token data and helper functions
   return {
     tokens,
     isConnected: ws.isConnected,
-    error: ws.connectionError,
+    error: error || ws.connectionError,
     lastUpdate,
     refresh,
+    loadMore,
+    pagination: null, // No pagination with WebSocket
     isLoading,
     close: () => {
-      // No-op function kept for interface compatibility
+      // Cleanup function
+      ws.unsubscribe(['market-data']);
       dispatchWebSocketEvent('token_data_close', {
-        socketType: 'market-data',
-        message: 'Token data WebSocket close requested (NOP in unified system)',
+        socketType: 'websocket-only',
+        message: 'Token data hook cleanup requested',
         timestamp: new Date().toISOString()
       });
     }

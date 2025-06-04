@@ -79,6 +79,7 @@ export interface Contest {
   entry_fee: string;
   prize_pool: string;
   current_prize_pool?: string;
+  total_prize_pool?: string; // Backend-calculated: prize_pool + current_prize_pool
   start_time: string;
   end_time: string;
   entry_deadline?: string;
@@ -161,6 +162,11 @@ export interface Token {
   priorityScore?: number;         // Keep for backward compatibility
   first_seen_on_jupiter_at?: string; // ISO timestamp
   firstSeenAt?: string | null;    // Keep for backward compatibility
+  
+  // DegenDuel Scoring (NEW!)
+  degenduel_score?: number;       // Real momentum score (can be millions!)
+  trend_category?: string;        // "Hot", "Heating Up", "Hidden Gem", etc.
+  momentum_indicator?: string;    // "explosive", "rising", "gaining", etc.
   
   // Price data (ALL NUMBERS NOW, NOT STRINGS!)
   price: number;                  // Current USD price
@@ -471,7 +477,8 @@ export interface ContestDetails {
   startTime: string; 
   endTime: string; 
   entryFee: string; 
-  prizePool: string; 
+  prizePool: string;
+  totalPrizePool?: string; // Backend-calculated: prizePool + accumulated entry fees
   currency: string; 
   participantCount: number;
   settings: ContestSettings; // Uses the new ContestSettings definition above

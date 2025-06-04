@@ -140,6 +140,14 @@ export interface UseStandardizedTokenDataReturn {
   isConnected: boolean;
   lastUpdate: Date | null;
 
+  // Pagination data
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  } | null;
+
   // Filtered and sorted tokens
   filteredTokens: Token[];
   sortedTokens: Token[];
@@ -166,6 +174,7 @@ export interface UseStandardizedTokenDataReturn {
 
   // Actions
   refresh: () => void;
+  loadMore: () => void;
   setFilter: (filter: TokenFilter) => void;
   setSortMethod: (method: TokenSortMethod) => void;
 }
@@ -196,6 +205,8 @@ export function useStandardizedTokenData(
     error: wsError,
     lastUpdate,
     refresh,
+    loadMore,
+    pagination,
     isLoading: underlyingIsLoading
   } = useTokenData(tokensToSubscribe, backendFilters);
 
@@ -522,6 +533,9 @@ export function useStandardizedTokenData(
     isConnected,
     lastUpdate,
 
+    // Pagination data
+    pagination,
+
     // Filtered and sorted tokens
     filteredTokens,
     sortedTokens,
@@ -548,6 +562,7 @@ export function useStandardizedTokenData(
 
     // Actions
     refresh: enhancedRefresh,
+    loadMore,
     setFilter,
     setSortMethod
   };

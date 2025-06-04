@@ -424,9 +424,9 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                   {/* The value */}
                   <div className="relative z-10 px-3 py-2 flex items-center justify-between w-full">
                     
-                    {/* Est. prize pool display */}
+                    {/* Prize pool display - use total_prize_pool if available, fallback to calculated */}
                     <span className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-brand-300"}`}>
-                      {formatCurrency(Number(contest.max_participants) * Number(contest.entry_fee) * (1 - 0.1))}
+                      {formatCurrency(Number(contest.total_prize_pool || contest.prize_pool || "0"))}
                     </span>
                     
                     {/* Visual multiplier */}

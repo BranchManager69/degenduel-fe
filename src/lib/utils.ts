@@ -102,12 +102,57 @@ export function calculatePortfolioValue(holdings: any[], prices: any): number {
 }
 
 // Helper: Is contest currently underway? (active)
-export function isContestCurrentlyUnderway(contest: { status: ContestStatus }): boolean {
+export function isContestCurrentlyUnderway(contest: { 
+  status: ContestStatus; 
+  start_time?: string; 
+  end_time?: string; 
+}): boolean {
+  // If we have timestamp information, use it for more accurate status determination
+  if (contest.start_time && contest.end_time) {
+    const now = new Date();
+    const startTime = new Date(contest.start_time);
+    const endTime = new Date(contest.end_time);
+    
+    const hasStarted = now >= startTime;
+    const hasEnded = now >= endTime;
+    
+    // Contest is truly underway if it has started but not ended, regardless of status field
+    // Only respect cancelled status to avoid showing cancelled contests as active
+    if (contest.status === "cancelled") {
+      return false;
+    }
+    
+    return hasStarted && !hasEnded;
+  }
+  
+  // Fallback to status-only check if no timestamps available
   return contest.status === "active";
 }
 
 // Helper: Is contest joinable? (pending)
-export function isContestJoinable(contest: { status: ContestStatus }): boolean {
+export function isContestJoinable(contest: { 
+  status: ContestStatus; 
+  start_time?: string; 
+  end_time?: string; 
+}): boolean {
+  // If we have timestamp information, use it for more accurate status determination
+  if (contest.start_time && contest.end_time) {
+    const now = new Date();
+    const startTime = new Date(contest.start_time);
+    const endTime = new Date(contest.end_time);
+    
+    const hasStarted = now >= startTime;
+    const hasEnded = now >= endTime;
+    
+    // Contest is joinable if it hasn't started yet and isn't cancelled
+    if (contest.status === "cancelled") {
+      return false;
+    }
+    
+    return !hasStarted && !hasEnded;
+  }
+  
+  // Fallback to status-only check if no timestamps available
   return contest.status === "pending";
 }
 
@@ -117,8 +162,58 @@ export function isContestCancelled(contest: { status: ContestStatus }): boolean 
 }
 
 // Helper: Is contest completed? (completed and winner(s) resolved)
-export function isContestCompleted(contest: { status: ContestStatus }): boolean {
+export function isContestCompleted(contest: { 
+  status: ContestStatus; 
+  start_time?: string; 
+  end_time?: string; 
+}): boolean {
+  // If we have timestamp information, use it for more accurate status determination
+  if (contest.start_time && contest.end_time) {
+    const now = new Date();
+    const endTime = new Date(contest.end_time);
+    
+    const hasEnded = now >= endTime;
+    
+    // Contest is completed if it has ended, regardless of status field
+    // (unless it was cancelled before completion)
+    return hasEnded || contest.status === "completed";
+  }
+  
+  // Fallback to status-only check if no timestamps available
   return contest.status === "completed";
+}
+
+// Helper: Get actual contest status based on timestamps (matching ContestCard logic)
+export function getActualContestStatus(contest: { 
+  status: ContestStatus; 
+  start_time?: string; 
+  end_time?: string; 
+}): ContestStatus {
+  // Always respect cancelled status
+  if (contest.status === "cancelled") {
+    return "cancelled";
+  }
+  
+  // If we have timestamp information, use it for accurate status determination
+  if (contest.start_time && contest.end_time) {
+    const now = new Date();
+    const startTime = new Date(contest.start_time);
+    const endTime = new Date(contest.end_time);
+    
+    const hasStarted = now >= startTime;
+    const hasEnded = now >= endTime;
+    
+    if (hasEnded) {
+      return "completed";
+    } else if (hasStarted) {
+      return "active";
+    } else {
+      return "pending";
+    }
+  }
+  
+  // Fallback to stored status if no timestamps available
+  return contest.status;
 }
 
 // Helper: Get contest status

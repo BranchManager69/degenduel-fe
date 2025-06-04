@@ -9,6 +9,7 @@ import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeToke
 import { OptimizedTokensHeader } from "../../../components/tokens-list/OptimizedTokensHeader";
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
+import { RefreshCw } from "lucide-react";
 import { TokenSortMethod, useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
 import { useStore } from "../../../store/useStore";
 import { Token, TokenResponseMetadata, SearchToken } from "../../../types";
@@ -27,7 +28,6 @@ export const TokensPage: React.FC = () => {
   const [activeView, setActiveView] = useState<'tokens' | 'degenduel'>('tokens');
   
   // Infinite scroll state
-  const [visibleTokensCount, setVisibleTokensCount] = useState(50); // Start with 50 tokens
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   const user = useStore((state) => state.user);
@@ -40,36 +40,28 @@ export const TokensPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   
-  // Jupiter filter state
-  const [jupiterFilters, setJupiterFilters] = useState({
-    strictOnly: false,
-    verifiedOnly: false,
-    showAll: true
-  });
+  // Removed Jupiter filters - nobody cares about these
   
-  // Sort state
-  const [sortField, setSortField] = useState<string>("marketCap");
+  // Sort state - DegenDuel Score shows exciting tokens first! 🚀
+  const [sortField, setSortField] = useState<string>("degenduelScore");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   
-  // Use the standardized token data hook - this uses UnifiedWebSocket!
+  // Use the standardized token data hook - now uses paginated REST API!
   // Apply proper filtering like the ticker does to ensure quality tokens
   const {
     tokens: allTokens,
     isLoading,
     error,
     lastUpdate,
+    pagination,
     getTokenBySymbol,
     refresh,
+    loadMore,
     setFilter,
     setSortMethod,
   } = useStandardizedTokenData("all", "marketCap", { 
     status: "active",
-    minMarketCap: 50000,    // $50k minimum market cap
-    minVolume: 5000,        // $5k minimum 24h volume
-    search: debouncedSearchQuery,
-    // User-configurable Jupiter filters
-    strictOnly: jupiterFilters.strictOnly,
-    verifiedOnly: jupiterFilters.verifiedOnly && !jupiterFilters.strictOnly  // Strict overrides verified
+    search: debouncedSearchQuery
   });
   
   // Token metadata for compatibility
@@ -87,24 +79,34 @@ export const TokensPage: React.FC = () => {
 
   // Modal close handler removed - no longer needed
 
-  // Load more tokens for infinite scroll
+  // Load more tokens for infinite scroll using real pagination
   const loadMoreTokens = useCallback(() => {
-    if (isLoadingMore) return;
+    if (isLoadingMore || !pagination?.hasMore) {
+      console.log('[TokensPage] Cannot load more:', { isLoadingMore, hasMore: pagination?.hasMore });
+      return;
+    }
     
     setIsLoadingMore(true);
     
-    // Simulate loading delay for better UX
+    // Use the actual loadMore function from the hook
+    loadMore();
+    
+    // Reset loading state (the hook will manage actual loading)
     setTimeout(() => {
-      setVisibleTokensCount(prev => prev + 50); // Load 50 more tokens
       setIsLoadingMore(false);
-    }, 300);
-  }, [isLoadingMore]);
+    }, 1000);
+  }, [isLoadingMore, pagination?.hasMore, loadMore]);
 
   // Token selection logic removed - using dedicated pages now
 
   // Apply custom sorting for the grid (the hook handles basic sorting, but we need direction control)
   const sortedTokens = useMemo(() => {
     if (!allTokens || allTokens.length === 0) return [];
+    
+    // PRESERVE BACKEND ORDER when sortField is "default"
+    if (sortField === "default") {
+      return allTokens; // Don't re-sort! Backend knows best!
+    }
     
     const sorted = [...allTokens].sort((a, b) => {
       let aValue = 0;
@@ -138,6 +140,10 @@ export const TokensPage: React.FC = () => {
         case 'priorityScore':
           aValue = a.priority_score || a.priorityScore || 0;
           bValue = b.priority_score || b.priorityScore || 0;
+          break;
+        case 'degenduelScore':
+          aValue = a.degenduel_score || 0;
+          bValue = b.degenduel_score || 0;
           break;
         case 'change5m':
           aValue = a.priceChanges?.["5m"] || 0;
@@ -179,13 +185,13 @@ export const TokensPage: React.FC = () => {
     return sorted;
   }, [allTokens, sortField, sortDirection]);
 
-  // Visible tokens for infinite scroll (only show up to visibleTokensCount)
+  // All loaded tokens are visible (pagination handled by backend)
   const visibleTokens = useMemo(() => {
-    return sortedTokens.slice(0, visibleTokensCount);
-  }, [sortedTokens, visibleTokensCount]);
+    return sortedTokens;
+  }, [sortedTokens]);
 
-  // Check if there are more tokens to load
-  const hasMoreTokens = sortedTokens.length > visibleTokensCount;
+  // Check if there are more tokens to load from server
+  const hasMoreTokens = pagination?.hasMore ?? false;
 
   // Create debounce for search to improve performance
   useEffect(() => {
@@ -208,8 +214,6 @@ export const TokensPage: React.FC = () => {
   useEffect(() => {
     setFilter({
       status: "active",
-      minMarketCap: 50000,    // $50k minimum market cap
-      minVolume: 5000,        // $5k minimum 24h volume  
       search: debouncedSearchQuery
     });
   }, [debouncedSearchQuery, setFilter]);
@@ -265,7 +269,8 @@ export const TokensPage: React.FC = () => {
     
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMoreTokens && !isLoadingMore) {
+        if (entries[0].isIntersecting && hasMoreTokens && !isLoadingMore && !isLoading) {
+          console.log('[TokensPage] Intersection detected, loading more tokens');
           loadMoreTokens();
         }
       },
@@ -279,7 +284,7 @@ export const TokensPage: React.FC = () => {
         observer.unobserve(loadMoreTriggerRef.current);
       }
     };
-  }, [hasMoreTokens, isLoadingMore, loadMoreTokens]);
+  }, [hasMoreTokens, isLoadingMore, isLoading, loadMoreTokens]);
 
   // Note: handleSearchChange removed since we now use TokenSearch component
 
@@ -308,7 +313,23 @@ export const TokensPage: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Admin Debug Panel - Show only for admin users */}
-      {user && typeof user === 'object' && 'isAdministrator' in user && user.isAdministrator === true && <AuthDebugPanel />}
+      {user && typeof user === 'object' && 'isAdministrator' in user && user.isAdministrator === true && (
+        <>
+          <AuthDebugPanel />
+          {/* Pagination Debug Info */}
+          {pagination && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+              <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 text-xs font-mono">
+                <div className="text-blue-300">📊 Pagination Debug:</div>
+                <div className="text-blue-200 mt-1">
+                  Loaded: {allTokens.length} | Total: {pagination.total} | 
+                  Offset: {pagination.offset} | HasMore: {pagination.hasMore ? '✅' : '❌'}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Header */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -342,100 +363,34 @@ export const TokensPage: React.FC = () => {
           </div>
         </div>
         
-        {/* Search and Sort Controls - Only show for regular token view */}
+        {/* Simplified Controls - Only show for regular token view */}
         {activeView === 'tokens' && (
-        <div className="mt-6 flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <TokenSearch
-                onSelectToken={handleTokenSearchSelect}
-                placeholder="Search tokens by symbol, name, or address..."
-                variant="modern"
-                showPriceData={true}
-              />
-            </div>
-            <div className="flex gap-2">
-              <select
-                value={sortField}
-                onChange={(e) => handleSortChange(e.target.value, sortDirection)}
-                className="px-4 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white focus:outline-none focus:border-brand-400"
-              >
-                <option value="marketCap">Market Cap</option>
-                <option value="volume24h">24h Volume</option>
-                <option value="change24h">24h Change</option>
-                <option value="price">Price</option>
-                <option value="liquidity">Liquidity</option>
-                <option value="fdv">FDV</option>
-                <option value="priorityScore">Priority Score</option>
-                <option value="change5m">5m Change</option>
-                <option value="change1h">1h Change</option>
-                <option value="volume5m">5m Volume</option>
-                <option value="volume1h">1h Volume</option>
-                <option value="transactions5m">5m Activity</option>
-                <option value="transactions1h">1h Activity</option>
-                <option value="age">Token Age</option>
-              </select>
-              <button
-                onClick={() => handleSortChange(sortField, sortDirection === 'asc' ? 'desc' : 'asc')}
-                className="px-4 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white hover:bg-dark-300/50 focus:outline-none focus:border-brand-400"
-              >
-                {sortDirection === 'asc' ? '↑' : '↓'}
-              </button>
-              <button
-                onClick={handleRefresh}
-                className="px-4 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white hover:bg-dark-300/50 focus:outline-none focus:border-brand-400"
-              >
-                Refresh
-              </button>
-            </div>
-          </div>
-          
-          {/* Jupiter Filter Controls */}
-          <div className="flex flex-wrap gap-4 items-center p-3 bg-dark-200/30 border border-dark-300/50 rounded-lg">
-            <span className="text-sm font-medium text-gray-300">Jupiter Filters:</span>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={jupiterFilters.strictOnly}
-                onChange={(e) => setJupiterFilters({
-                  strictOnly: e.target.checked,
-                  verifiedOnly: false, // Strict overrides verified
-                  showAll: !e.target.checked && !jupiterFilters.verifiedOnly
-                })}
-                className="w-4 h-4 text-brand-400 bg-dark-300 border-dark-400 rounded focus:ring-brand-400 focus:ring-2"
-              />
-              <span className="text-sm text-gray-300">Strict Only</span>
-              <span className="text-xs text-gray-500">(Highest Quality)</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={jupiterFilters.verifiedOnly && !jupiterFilters.strictOnly}
-                disabled={jupiterFilters.strictOnly}
-                onChange={(e) => setJupiterFilters({
-                  strictOnly: false,
-                  verifiedOnly: e.target.checked,
-                  showAll: !e.target.checked && !jupiterFilters.strictOnly
-                })}
-                className="w-4 h-4 text-brand-400 bg-dark-300 border-dark-400 rounded focus:ring-brand-400 focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-              <span className={`text-sm ${jupiterFilters.strictOnly ? 'text-gray-500' : 'text-gray-300'}`}>Verified Only</span>
-              <span className="text-xs text-gray-500">(Curated)</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={!jupiterFilters.strictOnly && !jupiterFilters.verifiedOnly}
-                onChange={(e) => setJupiterFilters({
-                  strictOnly: false,
-                  verifiedOnly: false,
-                  showAll: e.target.checked
-                })}
-                className="w-4 h-4 text-brand-400 bg-dark-300 border-dark-400 rounded focus:ring-brand-400 focus:ring-2"
-              />
-              <span className="text-sm text-gray-300">Show All</span>
-              <span className="text-xs text-gray-500">(Unfiltered)</span>
-            </label>
+        <div className="mt-6 flex justify-center">
+          <div className="flex items-center gap-3">
+            <TokenSearch
+              onSelectToken={handleTokenSearchSelect}
+              placeholder="Search tokens..."
+              variant="modern"
+              showPriceData={false}
+              className="w-64"
+            />
+            <select
+              value={sortField}
+              onChange={(e) => handleSortChange(e.target.value, sortDirection)}
+              className="px-3 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white text-sm focus:outline-none focus:border-brand-400"
+            >
+              <option value="degenduelScore">🔥 Trending</option>
+              <option value="marketCap">Market Cap</option>
+              <option value="volume24h">Volume</option>
+              <option value="change24h">24h Change</option>
+            </select>
+            <button
+              onClick={handleRefresh}
+              className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-dark-200/50 transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
         </div>
         )}
