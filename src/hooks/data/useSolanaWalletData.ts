@@ -71,13 +71,9 @@ export function useSolanaWalletData(walletAddress?: string): {
       return;
     }
 
-    // Don't fetch if no user is authenticated (avoids 403 errors on public tier)
-    if (!user?.wallet_address) {
-      setWalletData(null);
-      setIsLoading(false);
-      setError(null);
-      return;
-    }
+    // For the SolanaWalletData hook, we need a wallet address to query
+    // But we should allow querying any wallet address, not just the authenticated user's
+    // The public tier should be able to query wallet data with rate limits
 
     setIsLoading(true);
     setError(null);
@@ -189,7 +185,7 @@ export function useSolanaWalletData(walletAddress?: string): {
       setError(err instanceof Error ? err.message : 'Unknown error fetching wallet data');
       setIsLoading(false);
     }
-  }, [walletAddress, connection]);
+  }, [effectiveWalletAddress, connection]);
 
   // Helper function to extract addresses from transaction
   const extractAddresses = (tx: ParsedTransactionWithMeta, role: 'sender' | 'receiver'): string[] => {

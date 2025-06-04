@@ -20,8 +20,13 @@ import { User } from '../../../types';
 // Define WhaleRoomButton component (encapsulated within CtaSection)
 const WhaleRoomButton = () => {
   // Use server-side whale status verification (same as whale room page)
-  const { useWhaleStatus } = require('../../../hooks/data/useWhaleStatus');
-  const { isWhale, isLoading: whaleStatusLoading } = useWhaleStatus();
+  // TODO: Import useWhaleStatus hook properly when it exists
+  // import { useWhaleStatus } from '../../../hooks/data/useWhaleStatus';
+  // const { isWhale, isLoading: whaleStatusLoading } = useWhaleStatus();
+  
+  // Temporarily disable whale room button until hook is implemented
+  const isWhale = false;
+  const whaleStatusLoading = false;
   
   // Only show whale room button if user is verified whale on server-side
   if (whaleStatusLoading || !isWhale) return null;

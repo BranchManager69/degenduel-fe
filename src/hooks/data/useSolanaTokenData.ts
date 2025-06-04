@@ -89,13 +89,16 @@ export function useSolanaTokenData(
       return;
     }
 
-    // Don't fetch if no user is authenticated (avoids 403 errors on public tier)
-    if (!user?.wallet_address) {
-      setTokenData(null);
+    // For wallet-specific queries, skip if no wallet address is available
+    // But allow public queries for token data when no wallet is needed
+    if (!effectiveMintAddress) {
+      setError('No mint address provided');
       setIsLoading(false);
-      setError(null);
       return;
     }
+    
+    // If wallet address is requested but user is not authenticated, skip wallet balance fetch
+    const skipWalletBalance = effectiveWalletAddress && !user?.wallet_address;
 
     setIsLoading(true);
     setError(null);
@@ -139,8 +142,8 @@ export function useSolanaTokenData(
         symbol: effectiveMintAddress === config.SOLANA.DEGEN_TOKEN_ADDRESS ? 'DEGEN' : 'Unknown'
       };
       
-      // If a wallet address is provided, fetch token balance for that wallet
-      if (effectiveWalletAddress) {
+      // If a wallet address is provided and user is authenticated, fetch token balance for that wallet
+      if (effectiveWalletAddress && !skipWalletBalance) {
         try {
           // Attempt to get token accounts owned by this wallet
           const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
@@ -176,7 +179,7 @@ export function useSolanaTokenData(
       setError(err instanceof Error ? err.message : 'Unknown error fetching token data');
       setIsLoading(false);
     }
-  }, [effectiveMintAddress, connection, connectionTier, effectiveWalletAddress]);
+  }, [effectiveMintAddress, connection, connectionTier, effectiveWalletAddress, user]);
 
   // Fetch data on mount and when addresses change
   useEffect(() => {
