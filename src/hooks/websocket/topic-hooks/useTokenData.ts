@@ -169,19 +169,67 @@ export function useTokenData(
     }
   }, [ws.isConnected, ws.subscribe]);
 
-  // Set loading false once we have connection
+  // Enhanced retry logic for initial data loading
   useEffect(() => {
     if (ws.isConnected && !hasInitialData) {
-      // Give WebSocket a moment to send initial data
-      const timer = setTimeout(() => {
-        if (!hasInitialData) {
-          console.log('[useTokenData] No initial data received, setting loading to false');
-          setIsLoading(false);
-        }
-      }, 2000);
-      return () => clearTimeout(timer);
+      let retryCount = 0;
+      const maxRetries = 5;
+      let retryTimer: NodeJS.Timeout;
+      
+      const attemptDataLoad = () => {
+        console.log(`[useTokenData] Attempt ${retryCount + 1}/${maxRetries} to get initial data`);
+        
+        // Re-subscribe to ensure we get data (using proven refresh pattern)
+        ws.unsubscribe(['market-data']);
+        setTimeout(() => {
+          ws.subscribe(['market-data']);
+          
+          dispatchWebSocketEvent('token_data_retry_attempt', {
+            socketType: 'market-data',
+            message: `Retry attempt ${retryCount + 1}/${maxRetries} for initial data`,
+            timestamp: new Date().toISOString()
+          });
+        }, 100);
+        
+        // Calculate timeout with exponential backoff (2s, 3s, 4.5s, 6.75s, 10s max)
+        const timeout = Math.min(2000 * Math.pow(1.5, retryCount), 10000);
+        
+        retryTimer = setTimeout(() => {
+          if (!hasInitialData && retryCount < maxRetries - 1) {
+            retryCount++;
+            attemptDataLoad(); // Retry
+          } else {
+            console.log('[useTokenData] Max retries reached or timed out');
+            setIsLoading(false);
+            if (!hasInitialData) {
+              setError(`Failed to load token data after ${maxRetries} attempts. Try refreshing the page.`);
+              
+              dispatchWebSocketEvent('token_data_retry_failed', {
+                socketType: 'market-data',
+                message: `Failed to get initial data after ${maxRetries} attempts`,
+                timestamp: new Date().toISOString()
+              });
+            }
+          }
+        }, timeout);
+      };
+      
+      attemptDataLoad();
+      
+      return () => {
+        if (retryTimer) clearTimeout(retryTimer);
+      };
     }
-  }, [ws.isConnected, hasInitialData]);
+  }, [ws.isConnected, hasInitialData, ws.subscribe, ws.unsubscribe]);
+
+  // Handle reconnection events - retry getting data when WebSocket reconnects
+  useEffect(() => {
+    if (ws.isConnected && hasInitialData && tokens.length === 0) {
+      console.log('[useTokenData] Reconnected but lost data, triggering retry');
+      setHasInitialData(false); // Trigger retry logic
+      setError(null); // Clear any previous errors
+    }
+  }, [ws.isConnected, hasInitialData, tokens.length]);
 
   // Load more is now a no-op since WebSocket provides all data
   const loadMore = useCallback(() => {
