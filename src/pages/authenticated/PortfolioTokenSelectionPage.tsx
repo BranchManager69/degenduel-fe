@@ -122,6 +122,7 @@ export const TokenSelection: React.FC = () => {
     isLoading: tokenListLoading,
     error: tokensError,
     isConnected: isTokenDataConnected,
+    lastUpdate,
     refresh: refreshTokens
   } = useStandardizedTokenData();
   
@@ -310,18 +311,52 @@ export const TokenSelection: React.FC = () => {
     setShowPreviewModal(true);
   };
 
-  // Handle token search selection
-  const handleTokenSearchSelect = useCallback((token: SearchToken) => {
+  // Handle token search selection with smart weight calculation
+  const handleTokenSearchSelect = useCallback((token: SearchToken, customWeight?: number) => {
     // Find if this token exists in our current token list
     const existingToken = memoizedTokens.find(t => t.contractAddress === token.address);
     if (existingToken) {
-      // If found, select it with 10% weight as default
-      handleTokenSelect(token.address, 10);
+      // Calculate smart default weight based on remaining portfolio space
+      const usedWeight = Array.from(selectedTokens.values()).reduce((sum, w) => sum + w, 0);
+      const remainingWeight = 100 - usedWeight;
+      
+      let defaultWeight: number;
+      if (customWeight) {
+        defaultWeight = customWeight;
+      } else if (remainingWeight >= 20) {
+        defaultWeight = 20; // Give more meaningful chunk when plenty of space
+      } else if (remainingWeight >= 10) {
+        defaultWeight = 10; // Standard default when moderate space
+      } else if (remainingWeight >= 5) {
+        defaultWeight = remainingWeight; // Use all remaining when little space
+      } else if (remainingWeight > 0) {
+        defaultWeight = remainingWeight; // Use exactly what's left
+      } else {
+        // Portfolio full - show helpful error
+        toast.error(`Portfolio is full (${usedWeight}%). Remove tokens or adjust weights first.`, { 
+          duration: 4000 
+        });
+        return;
+      }
+      
+      // Check if token is already selected
+      if (selectedTokens.has(token.address)) {
+        toast.error(`${token.symbol} is already in your portfolio`, { duration: 3000 });
+        return;
+      }
+      
+      handleTokenSelect(token.address, defaultWeight);
+      toast.success(`Added ${token.symbol} with ${defaultWeight}% weight`, { 
+        duration: 3000 
+      });
     } else {
-      // If not found in current list, show a message
+      // If not found in current list, show helpful message
       console.log('Token not found in current token list:', token);
+      toast.error(`${token.symbol} not available in current market data. Try searching for a different token.`, { 
+        duration: 4000 
+      });
     }
-  }, [memoizedTokens, handleTokenSelect]);
+  }, [memoizedTokens, handleTokenSelect, selectedTokens]);
 
   // Generate portfolio summary for the modal
   const portfolioSummary = useMemo(() => {
@@ -747,12 +782,35 @@ export const TokenSelection: React.FC = () => {
                 LOADING.TOKENS → PREPARING.SELECTION
               </p>
               
-              {/* Loading indicator */}
-              <div className="mt-2 flex justify-center items-center gap-2 text-xs">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="font-mono text-emerald-400">
-                  LOADING.DATA.STREAM ({tokens.length}/1000)
-                </span>
+              {/* Enhanced loading indicator with retry */}
+              <div className="mt-4 flex flex-col items-center gap-3">
+                <div className="flex items-center gap-2 text-xs">
+                  <div className={`w-2 h-2 rounded-full ${isTokenDataConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+                  <span className={`font-mono ${isTokenDataConnected ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {isTokenDataConnected ? 
+                      `LOADING.DATA.STREAM (${tokens.length}/1000)` : 
+                      'CONNECTION.LOST'
+                    }
+                  </span>
+                </div>
+                
+                {/* Manual retry button during loading */}
+                <button
+                  onClick={() => {
+                    console.log("🔄 PortfolioTokenSelectionPage: Manual refresh triggered during loading");
+                    refreshTokens();
+                  }}
+                  className="px-4 py-2 bg-emerald-600/20 border border-emerald-500/30 rounded text-emerald-400 text-sm font-mono hover:bg-emerald-600/30 transition-colors"
+                >
+                  [RETRY.CONNECTION]
+                </button>
+                
+                {/* Show last update time if available */}
+                {lastUpdate && (
+                  <span className="text-xs text-gray-500 font-mono">
+                    Last update: {lastUpdate.toLocaleTimeString()}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -810,20 +868,70 @@ export const TokenSelection: React.FC = () => {
   if (displayError) {
     console.log("❌ PortfolioTokenSelectionPage: Rendering error state:", displayError);
     return (
-      <div className="p-6 bg-dark-300/20 rounded-lg border border-red-500/30 backdrop-blur-sm max-w-2xl mx-auto mt-8">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">⚠️</span>
-          <div>
-            <p className="text-red-400 animate-glitch">{displayError}</p>
-            <button
-              onClick={() => {
-                console.log("🔄 PortfolioTokenSelectionPage: Manual refresh triggered");
-                refreshTokens();
-              }}
-              className="mt-2 px-4 py-2 bg-dark-400/50 hover:bg-dark-400 rounded text-emerald-400 text-sm transition-all duration-300 hover:scale-105"
-            >
-              Retry Connection
-            </button>
+      <div className="flex flex-col min-h-screen">
+        <div className="relative z-10 max-w-2xl mx-auto mt-8 px-4">
+          <div className="p-6 bg-dark-300/20 rounded-lg border border-red-500/30 backdrop-blur-sm">
+            <div className="flex items-start gap-4">
+              <span className="text-2xl flex-shrink-0">⚠️</span>
+              <div className="flex-1">
+                <h2 className="text-red-400 font-bold mb-2 font-mono">DATA.STREAM.ERROR</h2>
+                <p className="text-red-400 mb-4 font-mono text-sm">{displayError}</p>
+                
+                {/* Connection diagnostics */}
+                <div className="mb-4 p-3 bg-dark-400/30 rounded border border-red-500/20">
+                  <div className="text-xs font-mono space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">WebSocket:</span>
+                      <span className={isTokenDataConnected ? 'text-emerald-400' : 'text-red-400'}>
+                        {isTokenDataConnected ? 'CONNECTED' : 'DISCONNECTED'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Tokens Loaded:</span>
+                      <span className="text-gray-300">{memoizedTokens.length}</span>
+                    </div>
+                    {lastUpdate && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Last Update:</span>
+                        <span className="text-gray-300">{lastUpdate.toLocaleTimeString()}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => {
+                      console.log("🔄 PortfolioTokenSelectionPage: Manual refresh triggered from error state");
+                      refreshTokens();
+                    }}
+                    className="px-4 py-2 bg-red-600/20 border border-red-500/30 rounded text-red-400 text-sm font-mono hover:bg-red-600/30 transition-colors"
+                  >
+                    [RETRY.CONNECTION]
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      console.log("🔄 PortfolioTokenSelectionPage: Hard refresh triggered");
+                      window.location.reload();
+                    }}
+                    className="px-4 py-2 bg-gray-600/20 border border-gray-500/30 rounded text-gray-400 text-sm font-mono hover:bg-gray-600/30 transition-colors"
+                  >
+                    [HARD.REFRESH]
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      console.log("🔄 PortfolioTokenSelectionPage: Navigate back to contests");
+                      navigate('/contests');
+                    }}
+                    className="px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded text-blue-400 text-sm font-mono hover:bg-blue-600/30 transition-colors"
+                  >
+                    [BACK.TO.CONTESTS]
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -834,18 +942,30 @@ export const TokenSelection: React.FC = () => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="flex flex-col min-h-screen">
-        {/* Connection Status Banner */}
+        {/* Enhanced Connection Status Banner */}
         {!isTokenDataConnected && !isInWsGracePeriod && (
-          <div className="bg-yellow-500/10 border-b border-yellow-500/30 px-4 py-2">
-            <div className="flex items-center justify-center gap-2 text-yellow-400 text-sm">
-              <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-              <span>Connection lost - showing cached data</span>
-              <button
-                onClick={refreshTokens}
-                className="ml-4 px-2 py-1 bg-yellow-500/20 rounded text-xs hover:bg-yellow-500/30 transition-colors"
-              >
-                Retry
-              </button>
+          <div className="bg-yellow-500/10 border-b border-yellow-500/30 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-yellow-400 text-sm">
+                <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                <span>Connection lost - showing cached data ({memoizedTokens.length} tokens)</span>
+              </div>
+              <div className="flex items-center gap-3">
+                {lastUpdate && (
+                  <span className="text-xs text-yellow-300">
+                    Last update: {lastUpdate.toLocaleTimeString()}
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    console.log("🔄 PortfolioTokenSelectionPage: Retry from connection banner");
+                    refreshTokens();
+                  }}
+                  className="px-3 py-1 bg-yellow-500/20 rounded text-xs hover:bg-yellow-500/30 transition-colors font-mono"
+                >
+                  [RETRY]
+                </button>
+              </div>
             </div>
           </div>
         )}
