@@ -211,6 +211,16 @@ export const SuperAdminDashboard: React.FC = () => {
       category: "Advanced-Management"
     },
     {
+      id: "token-data-control",
+      title: "Token Data Control Center",
+      icon: "🎯",
+      description: "Control which tokens appear in game - the brain of our system",
+      link: "/admin/token-data-control",
+      color: "cyber",
+      category: "Advanced-Management",
+      isNew: true
+    },
+    {
       id: "service-control",
       title: "Service Command Center",
       icon: "⚙️",

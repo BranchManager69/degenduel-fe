@@ -299,6 +299,16 @@ export const AdminDashboard: React.FC = () => {
       category: "System-Core"
     },
     {
+      id: "token-data-control",
+      title: "Token Data Control Center",
+      icon: "🎯",
+      description: "Control which tokens appear in game - the brain of our system",
+      link: "/admin/token-data-control",
+      color: "brand",
+      category: "System-Core",
+      isNew: true
+    },
+    {
       id: "system-reports",
       title: "System Reports",
       icon: "📊",

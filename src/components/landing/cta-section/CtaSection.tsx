@@ -18,19 +18,13 @@ import { Link as RouterLink } from 'react-router-dom';
 import { User } from '../../../types';
 
 // Define WhaleRoomButton component (encapsulated within CtaSection)
-const WhaleRoomButton = (
-  { walletAddress }: { walletAddress: string }
-) => {
-  // For now, simple whale logic - only show for users with wallet addresses
-  // TODO: Add proper balance checking logic
-  const isWhale = React.useMemo(() => {
-    // Simple whale check: only show if user has a wallet connected
-    // This can be expanded later with actual balance/portfolio checks
-    return !!walletAddress;
-  }, [walletAddress]);
+const WhaleRoomButton = () => {
+  // Use server-side whale status verification (same as whale room page)
+  const { useWhaleStatus } = require('../../../hooks/data/useWhaleStatus');
+  const { isWhale, isLoading: whaleStatusLoading } = useWhaleStatus();
   
-  // If user does not meet whale criteria, do not show the button
-  if (!isWhale) return null;
+  // Only show whale room button if user is verified whale on server-side
+  if (whaleStatusLoading || !isWhale) return null;
   return (
     <div className="w-full max-w-md">
       
@@ -293,10 +287,10 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
         </RouterLink>
       </div>
 
-      {/* Conditional WHALE ROOM button - only for authenticated users */}
-      {user?.wallet_address && (
-        <WhaleRoomButton walletAddress={user.wallet_address} />
-      )}
+              {/* Conditional WHALE ROOM button - only for authenticated users */}
+        {user?.wallet_address && (
+          <WhaleRoomButton />
+        )}
 
     </motion.div>
   );

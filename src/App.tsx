@@ -120,6 +120,7 @@ const VanityWalletManagementPage = lazy(() => import('./pages/admin/VanityWallet
 const WalletManagementPage = lazy(() => import('./pages/admin/WalletManagementPage'));
 const WebSocketHub = lazy(() => import('./pages/admin/WebSocketHub'));
 const TokenSyncTest = lazy(() => import('./pages/admin/TokenSyncTest'));
+const TokenDataControlCenter = lazy(() => import('./pages/admin/TokenDataControlCenter').then(module => ({ default: module.TokenDataControlCenter })));
 
 
 // Authenticated routes lazy loaded
@@ -164,6 +165,7 @@ const LeaderboardLanding = lazy(() => import('./pages/public/leaderboards/Leader
 const TokensPage = lazy(() => import('./pages/public/tokens/TokensPage').then(module => ({ default: module.TokensPage })));
 const TokenDetailPage = lazy(() => import('./pages/public/tokens/TokenDetailPage').then(module => ({ default: module.default })));
 const WebSocketAPIPage = lazy(() => import('./pages/public/WebSocketAPIPage'));
+const WhaleRoomPage = lazy(() => import('./pages/public/whaleroom/WhaleRoomPage').then(module => ({ default: module.default })));
 
 export interface RpcContextType {
   rpcClient: Rpc<SolanaRpcApi> | null;
@@ -396,6 +398,9 @@ const AppContent: React.FC = () => {
           <Route path="/tokens" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><TokensPage /></Suspense></MaintenanceGuard>} />
           <Route path="/tokens/:symbol" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><TokenDetailPage /></Suspense></MaintenanceGuard>} />
           
+          {/* Whale Room - Institutional Analytics Dashboard */}
+          <Route path="/whale-room" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><WhaleRoomPage /></Suspense></MaintenanceGuard>} />
+          
           {/* Game Routes */}
           <Route path="/game/virtual-agent" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><VirtualAgentPage /></Suspense></MaintenanceGuard>} />
           
@@ -471,6 +476,7 @@ const AppContent: React.FC = () => {
           <Route path="/admin/skyduel" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading SkyDuel..." />}><SkyDuelPage /></Suspense></AdminRoute>} />
           <Route path="/admin/system-reports" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><SystemReports /></Suspense></AdminRoute>} />
           <Route path="/admin/client-errors" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><ClientErrorsPage /></Suspense></AdminRoute>} />
+          <Route path="/admin/token-data-control" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Token Data Control Center..." />}><TokenDataControlCenter /></Suspense></AdminRoute>} />
           <Route path="/admin" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><AdminDashboard /></Suspense></AdminRoute>} />
           <Route path="/admin/wallet-dashboard" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Admin Wallet Dashboard..." />}><AdminWalletDashboard /></Suspense></AdminRoute>} />
           <Route path="/admin/ip-ban" element={<AdminRoute><Suspense fallback={<LoadingFallback />}><IpBanManagementPage /></Suspense></AdminRoute>} />
