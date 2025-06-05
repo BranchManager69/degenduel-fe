@@ -116,7 +116,9 @@ export const TokenSelection: React.FC = () => {
     error: tokensError,
     isConnected: isTokenDataConnected,
     lastUpdate,
-    refresh: refreshTokens
+    refresh: refreshTokens,
+    loadMore,
+    pagination
   } = useStandardizedTokenData();
   
   // Jupiter filters don't work with the centralized hook right now
@@ -1186,6 +1188,36 @@ export const TokenSelection: React.FC = () => {
                         searchQuery={debouncedSearchQuery}
                         viewMode={viewMode}
                       />
+                      
+                      {/* Load more tokens from server if available */}
+                      {pagination && pagination.hasMore && (
+                        <div className="mt-8 text-center">
+                          <button
+                            onClick={() => {
+                              console.log('[PortfolioTokenSelectionPage] Loading more tokens from server');
+                              loadMore();
+                            }}
+                            className="px-6 py-3 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-400 font-mono text-sm hover:bg-emerald-500/30 transition-colors"
+                            disabled={tokenListLoading}
+                          >
+                            {tokenListLoading ? (
+                              <span className="flex items-center gap-2">
+                                <div className="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin"></div>
+                                LOADING...
+                              </span>
+                            ) : (
+                              `LOAD MORE TOKENS (${memoizedTokens.length}/${pagination.total})`
+                            )}
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Pagination info for admins */}
+                      {pagination && user && (user.role === 'admin' || user.role === 'superadmin') && (
+                        <div className="mt-4 text-center text-xs font-mono text-gray-500">
+                          Loaded: {memoizedTokens.length} | Total: {pagination.total} | HasMore: {pagination.hasMore ? '✅' : '❌'}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Card>

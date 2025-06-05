@@ -85,7 +85,12 @@ export const MyPortfoliosPage: React.FC = () => {
             );
 
             // Get token metadata for display
-            const allTokens = await ddApi.tokens.getAll();
+            const allTokensResponse = await ddApi.tokens.getAll();
+            
+            // Handle both legacy array format and new paginated format
+            const allTokens = Array.isArray(allTokensResponse) 
+              ? allTokensResponse 
+              : allTokensResponse.tokens || [];
 
             // Map the tokens with additional info where available
             const tokensWithInfo = portfolioResponse.tokens.map((token) => {

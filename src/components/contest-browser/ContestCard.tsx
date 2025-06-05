@@ -9,6 +9,16 @@ import { ContestButton } from "../landing/contests-preview/ContestButton";
 import { CountdownTimer } from "../ui/CountdownTimer";
 import { ShareContestButton } from "./ShareContestButton";
 
+// Global cache to prevent repeated 404 warnings for the same URLs
+const warned404URLs = new Set<string>();
+
+// Clear cache on page unload to prevent memory buildup
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    warned404URLs.clear();
+  });
+}
+
 interface ContestCardProps {
   contest: Contest;
   onClick?: () => void;
@@ -137,8 +147,16 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                     // Small delay for smoother transition from placeholder
                     setTimeout(() => setImageLoaded(true), 100);
                   }}
-                  onError={() => {
-                    console.error(`Failed to load image: ${getContestImageUrl(contest.image_url)}`);
+                  onError={(e) => {
+                    const url = getContestImageUrl(contest.image_url);
+                    // Only warn once per URL to prevent spam
+                    if (url && !warned404URLs.has(url)) {
+                      console.warn(`Contest image not found: ${url}`);
+                      warned404URLs.add(url);
+                    }
+                    // Set fallback image source
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/images/contests/placeholder.png';
                     setImageError(true);
                   }}
                   initial={{ scale: 1.2, filter: "blur(8px)" }}

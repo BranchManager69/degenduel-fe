@@ -10,7 +10,7 @@
  * @created 2025-05-26
  */
 
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 
@@ -70,11 +70,11 @@ export interface TokenSchedulerPriceHistoryEvent {
   timestamp: string;
 }
 
-export type TokenSchedulerEvent = 
+export type TokenSchedulerEvent =
   | TokenSchedulerBatchStartedEvent
-  | TokenSchedulerBatchCompletedEvent 
-  | TokenSchedulerFailureEvent 
-  | TokenSchedulerInactiveEvent 
+  | TokenSchedulerBatchCompletedEvent
+  | TokenSchedulerFailureEvent
+  | TokenSchedulerInactiveEvent
   | TokenSchedulerQueueEvent
   | TokenSchedulerPriceHistoryEvent;
 
@@ -102,11 +102,11 @@ export interface TokenSchedulerStatus {
   connected: boolean;
   loading: boolean;
   error: string | null;
-  
+
   // Real-time events
   events: TokenSchedulerEvent[];
   latestEvent: TokenSchedulerEvent | null;
-  
+
   // Aggregated state
   tokens: TokenStatus[];
   totalTokens: number;
@@ -114,12 +114,12 @@ export interface TokenSchedulerStatus {
   warningTokens: number;
   criticalTokens: number;
   inactiveTokens: number;
-  
+
   // Price history tracking
   lastPriceUpdate: TokenSchedulerPriceHistoryEvent | null;
   isUpdatingPrices: boolean;
   totalPriceUpdates: number;
-  
+
   // Batch processing state
   queueStatus: {
     processing: boolean;
@@ -127,11 +127,11 @@ export interface TokenSchedulerStatus {
     totalBatches: number;
     tokensRemaining: number;
   };
-  
+
   // Error tracking
   persistenceIssues: PersistenceIssue[];
   recentFailures: TokenSchedulerFailureEvent[];
-  
+
   // Actions
   refreshStatus: () => void;
   clearEvents: () => void;
@@ -143,8 +143,8 @@ const MAX_PERSISTENCE_ISSUES = 10;
 const MAX_RECENT_FAILURES = 20;
 
 export const useTokenSchedulerStatus = (): TokenSchedulerStatus => {
-  const { subscribe, isConnected, sendMessage, registerListener } = useWebSocket();
-  
+  const { subscribe, unsubscribe, isConnected, sendMessage, registerListener } = useWebSocket();
+
   // State management
   const [events, setEvents] = useState<TokenSchedulerEvent[]>([]);
   const [latestEvent, setLatestEvent] = useState<TokenSchedulerEvent | null>(null);
@@ -159,12 +159,12 @@ export const useTokenSchedulerStatus = (): TokenSchedulerStatus => {
   const [recentFailures, setRecentFailures] = useState<TokenSchedulerFailureEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Price history state
   const [lastPriceUpdate, setLastPriceUpdate] = useState<TokenSchedulerPriceHistoryEvent | null>(null);
   const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
   const [totalPriceUpdates, setTotalPriceUpdates] = useState(0);
-  
+
   // Refs for stable references
   const latestEventRef = useRef<TokenSchedulerEvent | null>(null);
   const tokensMapRef = useRef<Map<string, TokenStatus>>(new Map());
@@ -181,7 +181,7 @@ export const useTokenSchedulerStatus = (): TokenSchedulerStatus => {
   // Process incoming scheduler events
   const processSchedulerEvent = useCallback((event: TokenSchedulerEvent) => {
     const now = new Date();
-    
+
     // Update latest event
     setLatestEvent(event);
     latestEventRef.current = event;
@@ -295,15 +295,15 @@ export const useTokenSchedulerStatus = (): TokenSchedulerStatus => {
           tokensRemaining: event.tokensRemaining
         });
         break;
-        
+
       case 'price_history_recorded':
         // Update price history tracking
         setLastPriceUpdate(event as TokenSchedulerPriceHistoryEvent);
         setIsUpdatingPrices(true);
         setTotalPriceUpdates(prev => prev + 1);
-        
+
         console.log(`[TokenScheduler] Price history recorded: ${event.tokenCount} tokens from ${event.source}`);
-        
+
         // Clear "updating" status after 3 seconds
         setTimeout(() => {
           setIsUpdatingPrices(false);
@@ -395,16 +395,30 @@ export const useTokenSchedulerStatus = (): TokenSchedulerStatus => {
     return unregister;
   }, [handleMessage, registerListener]);
 
-  // Subscribe to topic on mount
+  // Subscribe to topic once when connected (no re-subscription on every isConnected change)
+  const hasSubscribedRef = useRef(false);
+
   useEffect(() => {
-    if (isConnected) {
+    if (isConnected && !hasSubscribedRef.current) {
       console.log('[useTokenSchedulerStatus] Subscribing to', TOPIC);
       subscribe([TOPIC]);
-      
+      hasSubscribedRef.current = true;
+
       // Request initial status
       setTimeout(() => refreshStatus(), 100);
+    } else if (!isConnected) {
+      // Reset subscription flag when disconnected
+      hasSubscribedRef.current = false;
     }
-  }, [isConnected, subscribe, refreshStatus]);
+
+    // Cleanup function
+    return () => {
+      if (hasSubscribedRef.current) {
+        unsubscribe([TOPIC]);
+        hasSubscribedRef.current = false;
+      }
+    };
+  }, [isConnected]); // Remove unstable dependencies
 
   // Set loading false after initial connection
   useEffect(() => {
@@ -419,27 +433,27 @@ export const useTokenSchedulerStatus = (): TokenSchedulerStatus => {
     connected: isConnected,
     loading,
     error,
-    
+
     // Real-time events
     events,
     latestEvent,
-    
+
     // Aggregated state
     tokens,
     ...stats,
-    
+
     // Batch processing state
     queueStatus,
-    
+
     // Price history tracking
     lastPriceUpdate,
     isUpdatingPrices,
     totalPriceUpdates,
-    
+
     // Error tracking
     persistenceIssues,
     recentFailures,
-    
+
     // Actions
     refreshStatus,
     clearEvents

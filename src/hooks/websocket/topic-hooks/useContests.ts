@@ -23,11 +23,11 @@
  * @updated 2025-06-04 - Band-aid fix for WebSocket format compatibility
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
-import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
+import { DDExtendedMessageType } from '../types';
+import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Contest data interfaces based on backend API documentation
 export interface ContestRanking {
@@ -112,9 +112,9 @@ export function useContests(userId?: string) {
   const handleMessage = useCallback((message: any) => {
     try {
       // Check if this is a valid contest message (handle both old and new formats)
-      if ((message.type === 'DATA' && message.topic === 'contest') || 
-          (message.topic === 'contest' && message.action === 'getContests')) {
-        
+      if ((message.type === 'DATA' && message.topic === 'contest') ||
+        (message.topic === 'contest' && message.action === 'getContests')) {
+
         // Handle initial contest list response (new format)
         if (message.action === 'getContests' && Array.isArray(message.data)) {
           const contests = (message as any).data.map((contest: any) => ({
@@ -131,13 +131,13 @@ export function useContests(userId?: string) {
             description: contest.description,
             joined: false // Default - will be updated by user-specific data
           }));
-          
+
           setState(prevState => {
             // Filter contests based on status
             const activeContests = contests.filter((c: Contest) => c.status === 'active');
             const upcomingContests = contests.filter((c: Contest) => c.status === 'registration');
             const pastContests = contests.filter((c: Contest) => c.status === 'ended');
-            
+
             return {
               contests,
               activeContests,
@@ -146,10 +146,10 @@ export function useContests(userId?: string) {
               userContests: prevState.userContests
             };
           });
-          
+
           setIsLoading(false);
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('contest_list_received', {
             socketType: TopicType.CONTEST,
             message: `Received ${contests.length} contests`,
@@ -160,11 +160,11 @@ export function useContests(userId?: string) {
         else if (message.subtype === 'update' && message.data && !Array.isArray(message.data)) {
           // Update contest details
           const contestData = message.data as any;
-          
+
           setState(prevState => {
             const contests = [...prevState.contests];
             const existingIndex = contests.findIndex(c => c.contest_id === contestData.contest_id);
-            
+
             if (existingIndex >= 0) {
               // Update existing contest
               contests[existingIndex] = {
@@ -175,17 +175,17 @@ export function useContests(userId?: string) {
               // Add new contest if it has required fields
               contests.push(contestData as Contest);
             }
-            
+
             // Filter contests based on status
             const activeContests = contests.filter(c => c.status === 'active');
             const upcomingContests = contests.filter(c => c.status === 'registration');
             const pastContests = contests.filter(c => c.status === 'ended');
-            
+
             // Filter user contests if userId is provided
-            const userContests = userId 
-              ? contests.filter(c => c.joined) 
+            const userContests = userId
+              ? contests.filter(c => c.joined)
               : [];
-            
+
             return {
               contests,
               activeContests,
@@ -194,24 +194,24 @@ export function useContests(userId?: string) {
               userContests
             };
           });
-          
+
           setIsLoading(false);
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('contest_update', {
             socketType: TopicType.CONTEST,
             message: `Updated contest ${contestData.contest_id}`,
             timestamp: new Date().toISOString()
           });
-        } 
+        }
         else if (message.subtype === 'leaderboard' && message.data && !Array.isArray(message.data)) {
           // Update leaderboard data
           const { contest_id, leaderboard } = message.data as any;
-          
+
           setState(prevState => {
             const contests = [...prevState.contests];
             const existingIndex = contests.findIndex(c => c.contest_id === contest_id);
-            
+
             if (existingIndex >= 0 && leaderboard) {
               // Update existing contest's leaderboard
               contests[existingIndex] = {
@@ -219,15 +219,15 @@ export function useContests(userId?: string) {
                 leaderboard
               };
             }
-            
+
             return {
               ...prevState,
               contests
             };
           });
-          
+
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('contest_leaderboard_update', {
             socketType: TopicType.CONTEST,
             message: `Updated leaderboard for contest ${contest_id}`,
@@ -237,35 +237,35 @@ export function useContests(userId?: string) {
         else if (message.subtype === 'entry' && message.data && !Array.isArray(message.data)) {
           // Process entry confirmation/rejection
           const { contest_id, entry_status } = message.data as any;
-          
+
           if (entry_status === 'confirmed') {
             setState(prevState => {
               const contests = [...prevState.contests];
               const existingIndex = contests.findIndex(c => c.contest_id === contest_id);
-              
+
               if (existingIndex >= 0) {
                 // Mark contest as joined
                 contests[existingIndex] = {
                   ...contests[existingIndex],
                   joined: true
                 };
-                
+
                 // Update user contests
                 const userContests = [...prevState.userContests];
                 if (!userContests.find(c => c.contest_id === contest_id)) {
                   userContests.push(contests[existingIndex]);
                 }
-                
+
                 return {
                   ...prevState,
                   contests,
                   userContests
                 };
               }
-              
+
               return prevState;
             });
-            
+
             dispatchWebSocketEvent('contest_entry_confirmed', {
               socketType: TopicType.CONTEST,
               message: `Entry confirmed for contest ${contest_id}`,
@@ -276,11 +276,11 @@ export function useContests(userId?: string) {
         else if (message.subtype === 'result' && message.data && !Array.isArray(message.data)) {
           // Update contest with final results
           const contestData = message.data as any;
-          
+
           setState(prevState => {
             const contests = [...prevState.contests];
             const existingIndex = contests.findIndex(c => c.contest_id === contestData.contest_id);
-            
+
             if (existingIndex >= 0) {
               // Update contest with results
               contests[existingIndex] = {
@@ -288,18 +288,18 @@ export function useContests(userId?: string) {
                 ...contestData,
                 status: 'ended'
               };
-              
+
               // Update past contests
               const pastContests = [
                 ...prevState.pastContests.filter(c => c.contest_id !== contestData.contest_id),
                 contests[existingIndex]
               ];
-              
+
               // Remove from active contests
               const activeContests = prevState.activeContests.filter(
                 c => c.contest_id !== contestData.contest_id
               );
-              
+
               return {
                 ...prevState,
                 contests,
@@ -307,12 +307,12 @@ export function useContests(userId?: string) {
                 pastContests
               };
             }
-            
+
             return prevState;
           });
-          
+
           setLastUpdate(new Date());
-          
+
           dispatchWebSocketEvent('contest_result', {
             socketType: TopicType.CONTEST,
             message: `Received results for contest ${contestData.contest_id}`,
@@ -320,7 +320,7 @@ export function useContests(userId?: string) {
           });
         }
       }
-      
+
       // Mark as not loading once we've processed any valid message
       if (isLoading) {
         setIsLoading(false);
@@ -343,37 +343,51 @@ export function useContests(userId?: string) {
     [TopicType.CONTEST, TopicType.SYSTEM]
   );
 
-  // Subscribe to contest data when connected
+  // Subscribe to contest data when connected (prevent duplicate subscriptions)
+  const hasSubscribedContestRef = useRef(false);
+
   useEffect(() => {
-    if (ws.isConnected && isLoading) {
+    let timeoutId: NodeJS.Timeout;
+
+    if (ws.isConnected && !hasSubscribedContestRef.current) {
       // Subscribe to contest data topic
       ws.subscribe([TopicType.CONTEST]);
-      
+      hasSubscribedContestRef.current = true;
+
       // Request initial contest data
       ws.request(TopicType.CONTEST, 'getContests');
-      
+
       // Request user contests if userId is provided
       if (userId) {
         ws.request(TopicType.CONTEST, 'GET_USER_CONTESTS', { userId });
       }
-      
+
       dispatchWebSocketEvent('contest_subscribe', {
         socketType: TopicType.CONTEST,
         message: 'Subscribing to contest data',
         timestamp: new Date().toISOString()
       });
-      
+
       // Set a timeout to reset loading state if we don't get data
-      const timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         if (isLoading) {
           console.warn('[Contest WebSocket] Timed out waiting for data');
           setIsLoading(false);
         }
       }, 10000);
-      
-      return () => clearTimeout(timeoutId);
+    } else if (!ws.isConnected) {
+      hasSubscribedContestRef.current = false;
     }
-  }, [ws.isConnected, isLoading, ws.subscribe, ws.request, userId]);
+
+    // Cleanup function
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (hasSubscribedContestRef.current) {
+        ws.unsubscribe([TopicType.CONTEST]);
+        hasSubscribedContestRef.current = false;
+      }
+    };
+  }, [ws.isConnected, userId]); // Remove unstable dependencies
 
   // Helper to join a contest
   const joinContest = useCallback((contestId: string) => {
@@ -381,11 +395,11 @@ export function useContests(userId?: string) {
       console.warn('[Contest WebSocket] Cannot join contest - WebSocket not connected');
       return Promise.reject(new Error('WebSocket not connected'));
     }
-    
+
     return new Promise<void>((resolve, reject) => {
       // The request method returns a boolean indicating if the message was sent
       const requestSent = ws.request(TopicType.CONTEST, 'JOIN_CONTEST', { contestId });
-      
+
       if (requestSent) {
         // Success path - request was sent
         dispatchWebSocketEvent('contest_join_request', {
@@ -393,7 +407,7 @@ export function useContests(userId?: string) {
           message: `Requested to join contest ${contestId}`,
           timestamp: new Date().toISOString()
         });
-        
+
         // Note: The actual confirmation will come via the 'entry' subtype message
         // For now, resolve immediately when request is sent successfully
         resolve();
@@ -413,22 +427,22 @@ export function useContests(userId?: string) {
   // Force refresh function
   const refreshContests = useCallback(() => {
     setIsLoading(true);
-    
+
     if (ws.isConnected) {
       // Request fresh contest data
       ws.request(TopicType.CONTEST, 'getContests');
-      
+
       // Request user contests if userId is provided
       if (userId) {
         ws.request(TopicType.CONTEST, 'GET_USER_CONTESTS', { userId });
       }
-      
+
       dispatchWebSocketEvent('contest_refresh', {
         socketType: TopicType.CONTEST,
         message: 'Refreshing contest data',
         timestamp: new Date().toISOString()
       });
-      
+
       // Set a timeout to reset loading state if we don't get data
       setTimeout(() => {
         if (isLoading) {

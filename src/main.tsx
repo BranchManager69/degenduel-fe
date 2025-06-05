@@ -15,6 +15,7 @@ import ReactDOM from "react-dom/client";
 
 import { App } from "./App";
 import { AppErrorBoundary } from "./components/shared/AppErrorBoundary";
+import { UnifiedWebSocketProvider } from "./contexts/UnifiedWebSocketContext";
 import "./index.css";
 
 // Client Log Forwarder
@@ -24,12 +25,14 @@ initializeClientLogForwarder(); // Initialize CLF
 // Stagewise Toolbar (Development only)
 import { initToolbar } from "@stagewise/toolbar";
 
-// Render DegenDuel App
+// Render DegenDuel App with WebSocket provider at the very top level
 ReactDOM.createRoot(document.getElementById("root")!).render(
   //<React.StrictMode> // Disabled to prevent double-mounting which was
   // causing Privy's iframe initialisation race and "cannot dequeue" errors.
     <AppErrorBoundary>
-      <App />
+      <UnifiedWebSocketProvider>
+        <App />
+      </UnifiedWebSocketProvider>
     </AppErrorBoundary>
   //</React.StrictMode>
 );
@@ -37,6 +40,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 // Initialize Stagewise Toolbar in development mode
 function setupStagewise() {
   if (import.meta.env.MODE === 'development' || import.meta.env.DEV) {
+    // Guard against duplicate initialization
+    if (document.querySelector('#stagewise-anchor')) {
+      console.log('🛠️ Stagewise Toolbar already initialized, skipping...');
+      return;
+    }
+
     const stagewiseConfig = {
       plugins: [
         {
@@ -103,10 +112,7 @@ function setupStagewise() {
   }
 }
 
-// Initialize toolbar when DOM is ready
-document.addEventListener('DOMContentLoaded', setupStagewise);
-
-// Also call immediately in case DOM is already loaded
+// Initialize toolbar once when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', setupStagewise);
 } else {

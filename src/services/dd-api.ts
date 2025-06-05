@@ -753,10 +753,33 @@ export const ddApi = {
 
   // Token endpoints
   tokens: {
-    getAll: async (): Promise<Token[]> => {
+    getAll: async (options?: {
+      limit?: number;
+      offset?: number;
+      format?: 'paginated' | 'legacy';
+    }): Promise<Token[] | { tokens: Token[]; pagination: any }> => {
       const api = createApiClient();
-      const response = await api.fetch("/tokens/trending?limit=1000");
+      const params = new URLSearchParams();
+      
+      // Default to 50 for better performance
+      params.append('limit', String(options?.limit || 50));
+      
+      if (options?.offset !== undefined) {
+        params.append('offset', String(options.offset));
+      }
+      
+      // Always use paginated format for better frontend compatibility
+      params.append('format', options?.format || 'paginated');
+      
+      const response = await api.fetch(`/tokens/trending?${params.toString()}`);
       const responseData = await response.json();
+      
+      // If format=paginated, return the full response with tokens + pagination
+      if (options?.format === 'paginated') {
+        return responseData; // Will have { tokens, pagination, data, metadata }
+      }
+      
+      // Legacy format - just return the array
       return responseData.data || responseData;
     },
   },

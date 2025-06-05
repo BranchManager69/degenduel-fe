@@ -797,10 +797,11 @@ export const Terminal = ({
   }, []);
 
   return (
-    <div className={`terminal-container ${getContainerClasses()} ${isKeyboardVisible ? 'keyboard-visible' : ''} w-full mx-auto transition-all duration-300 ease-in-out`}>
-      
-      {/* Dynamic UI Manager */}
+    <>
+      {/* Dynamic UI Manager - Rendered outside terminal container */}
       <DynamicUIManager ref={dynamicUIRef} className="mb-4" />
+      
+      <div className={`terminal-container ${getContainerClasses()} ${isKeyboardVisible ? 'keyboard-visible' : ''} w-full mx-auto transition-all duration-300 ease-in-out fixed top-0 left-0 pointer-events-none`}>
       
       {/* Terminal Container */}
       {!terminalMinimized && (
@@ -952,7 +953,7 @@ export const Terminal = ({
       {terminalMinimized && (
         <motion.div
           key="terminal-minimized"
-          className="fixed z-[99999] cursor-grab active:cursor-grabbing group minimized-terminal-draggable-area overflow-visible"
+          className="fixed z-[99999] cursor-grab active:cursor-grabbing group minimized-terminal-draggable-area overflow-visible pointer-events-auto"
           style={{
             right: '24px',
             top: '20%',
@@ -1410,7 +1411,8 @@ export const Terminal = ({
         </motion.div>
       )}
 
-    </div>
+      </div>
+    </>
   );
 };
 

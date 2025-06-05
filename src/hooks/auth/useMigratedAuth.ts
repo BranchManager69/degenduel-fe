@@ -12,7 +12,7 @@
  * @updated 2025-05-07 // Updated to solely use UnifiedAuth
  */
 
-import React, { useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useAuth as useUnifiedAuth } from "../../contexts/UnifiedAuthContext";
 import { User } from "../../types/user";
 // import { TokenType } from "../../services/authTokenManagerService"; // Old direct import
@@ -52,13 +52,17 @@ interface NormalizedAuthAPI {
 
 // Create a hook that returns a normalized auth API
 export function useMigratedAuth(): NormalizedAuthAPI {
-  // Log which auth system is being used (only on initial mount)
-  React.useEffect(() => {
+  // Use a ref to track if we've already logged the mount message (proper React pattern)
+  const hasLoggedRef = useRef(false);
+
+  // Log which auth system is being used (only once per hook instance)
+  if (!hasLoggedRef.current) {
     console.log(
       `%c[AUTH SYSTEM] Mounting Normalized Auth API (useMigratedAuth.ts).`,
       `color: black; background-color: #4caf50; padding: 4px 8px; border-radius: 4px; font-weight: bold;`
     );
-  }, []);
+    hasLoggedRef.current = true;
+  }
 
   // Always use the Unified Auth system
   const authContextValue = useUnifiedAuth();
@@ -72,8 +76,15 @@ export function useMigratedAuth(): NormalizedAuthAPI {
     return authContextValue.user?.role === 'superadmin' || false;
   }, [authContextValue.user?.role]);
 
-  // Construct the normalized API object based on NormalizedAuthAPI interface
-  return {
+  // Memoize functions to prevent new references on every render
+  const isWalletAuth = useCallback(() => authContextValue.activeMethod === 'wallet', [authContextValue.activeMethod]);
+  const isTwitterAuth = useCallback(() => authContextValue.activeMethod === 'twitter', [authContextValue.activeMethod]);
+  const isTwitterLinked = useCallback(() => authContextValue.isTwitterLinked, [authContextValue.isTwitterLinked]);
+  const isDiscordLinked = useCallback(() => authContextValue.isDiscordLinked, [authContextValue.isDiscordLinked]);
+  const isPasskeyLinked = useCallback(() => authContextValue.isPasskeyLinked, [authContextValue.isPasskeyLinked]);
+
+  // Memoize the entire return object to prevent new object references
+  return useMemo(() => ({
     // Properties
     user: authContextValue.user,
     isLoading: authContextValue.loading,
@@ -87,21 +98,42 @@ export function useMigratedAuth(): NormalizedAuthAPI {
     activeMethod: authContextValue.activeMethod,
     error: authContextValue.error,
 
-    // Methods (pass through directly)
-    isWalletAuth: () => authContextValue.activeMethod === 'wallet',
-    isTwitterAuth: () => authContextValue.activeMethod === 'twitter',
+    // Methods (use memoized functions to prevent new references)
+    isWalletAuth,
+    isTwitterAuth,
     checkAuth: authContextValue.checkAuth,
     getToken: authContextValue.getToken,
     loginWithWallet: authContextValue.loginWithWallet,
     logout: authContextValue.logout,
     getAccessToken: authContextValue.getAccessToken,
     linkTwitter: authContextValue.linkTwitter,
-    isTwitterLinked: () => authContextValue.isTwitterLinked, // Wrap boolean in function
+    isTwitterLinked,
     linkDiscord: authContextValue.linkDiscord,
-    isDiscordLinked: () => authContextValue.isDiscordLinked, // Wrap boolean in function
+    isDiscordLinked,
     linkPasskey: authContextValue.linkPasskey,
-    isPasskeyLinked: () => authContextValue.isPasskeyLinked, // Wrap boolean in function
-  };
+    isPasskeyLinked,
+  }), [
+    authContextValue.user,
+    authContextValue.loading,
+    authContextValue.isAuthenticated,
+    isAdministrator,
+    isSuperAdmin,
+    authContextValue.activeMethod,
+    authContextValue.error,
+    isWalletAuth,
+    isTwitterAuth,
+    authContextValue.checkAuth,
+    authContextValue.getToken,
+    authContextValue.loginWithWallet,
+    authContextValue.logout,
+    authContextValue.getAccessToken,
+    authContextValue.linkTwitter,
+    isTwitterLinked,
+    authContextValue.linkDiscord,
+    isDiscordLinked,
+    authContextValue.linkPasskey,
+    isPasskeyLinked,
+  ]);
 }
 
 /**
