@@ -21,7 +21,6 @@ import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "r
 // Unified Auth Contexts
 import { SolanaConnectionProvider, useSolanaConnection } from './contexts/SolanaConnectionContext';
 import { UnifiedAuthProvider } from "./contexts/UnifiedAuthContext";
-import { UnifiedWebSocketProvider } from "./contexts/UnifiedWebSocketContext";
 
 // @solana/kit related imports
 import { type Rpc, type SolanaRpcApi } from '@solana/rpc'; // Corrected: Use SolanaRpcApi from @solana/rpc
@@ -31,9 +30,7 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
-    PhantomWalletAdapter,
-    SolflareWalletAdapter,
-    TrustWalletAdapter
+  TrustWalletAdapter
 } from "@solana/wallet-adapter-wallets";
 
 // Other providers of dubious quality:
@@ -189,10 +186,6 @@ const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ child
   const wallets: Adapter[] = useMemo(
     () => [
       new TrustWalletAdapter(),
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-      // PhantomWalletAdapter & SolflareWalletAdapter removed - they now use Standard Wallet
-      // Nevermind, I put them back. They disappeared from the list.
     ],
     []
   );
@@ -213,8 +206,8 @@ const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ child
 export const App: React.FC = () => {
   useScrollbarVisibility();
   
-  // Prelaunch Mode uses values from config/config.ts now
-  const searchParams = new URLSearchParams(window.location.search);
+  // Memoize searchParams to prevent infinite re-renders caused by creating new URLSearchParams on every render
+  const searchParams = React.useMemo(() => new URLSearchParams(window.location.search), []);
   
   // EMERGENCY PERFORMANCE MODE RESET - for users stuck on mobile
   React.useEffect(() => {
@@ -236,7 +229,7 @@ export const App: React.FC = () => {
         window.location.reload();
       }, 100);
     }
-  }, []);
+  }, [searchParams]);
   
   /* PRELAUNCH BYPASS */
   // Log the expected bypass key for debugging
@@ -252,19 +245,20 @@ export const App: React.FC = () => {
   //   console.log(`[App.tsx] Prelaunch Mode Active. Expected Key: ${PRELAUNCH_BYPASS_KEY}, Received Key: ${searchParams.get('bypass')}, Bypass active: ${hasAdminBypass}. Showing Coming Soon: ${showComingSoon}`);
   // }
 
-  // Return the app or Coming Soon page based on the bypass status
+  // Move UnifiedAuthProvider above Router to prevent route-change remounts
+  // This stops the cascade of provider remounts that was affecting WebSocket stability
   return (
-    <Router> 
-      {showComingSoon ? (
-        // App access is blocked, so we show Coming Soon
-        <ComingSoonPage />
-      ) : (
-        // App access is granted, so we can wrap the app in the providers and display
-        <UnifiedAuthProvider>
+    <UnifiedAuthProvider>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}> 
+        {showComingSoon ? (
+          // App access is blocked, so we show Coming Soon
+          <ComingSoonPage />
+        ) : (
+          // App access is granted, so we can wrap the app in the providers and display
           <AppProvidersAndContent />
-        </UnifiedAuthProvider>
-      )}
-    </Router>
+        )}
+      </Router>
+    </UnifiedAuthProvider>
   );
 };
 
@@ -292,13 +286,11 @@ const AppProvidersAndContent: React.FC = () => {
       <SolanaConnectionProvider>
         {/* WalletAdapterProviders no longer takes the solanaConnectors prop */}
         <WalletAdapterProviders>
-          <UnifiedWebSocketProvider>
-            <TokenDataProvider>
-              <ToastProvider>
-                <AppContent />
-              </ToastProvider>
-            </TokenDataProvider>
-          </UnifiedWebSocketProvider>
+          <TokenDataProvider>
+            <ToastProvider>
+              <AppContent />
+            </ToastProvider>
+          </TokenDataProvider>
         </WalletAdapterProviders>
       </SolanaConnectionProvider>
     </InviteSystemProvider>

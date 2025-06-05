@@ -9,8 +9,9 @@
  * @updated 2025-06-03 - Initial implementation with advanced metrics
  */
 
+import { useWebSocket } from '@/contexts/UnifiedWebSocketContext';
+import { DDExtendedMessageType } from '@/hooks/websocket';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { API_URL } from '../../config/config';
 
 // Enhanced Token interface with all advanced metrics for whale room
 export interface WhaleRoomToken {
@@ -209,14 +210,16 @@ export interface WhaleRoomDataOptions {
 }
 
 /**
- * Hook for accessing institutional-grade token analytics for the Whale Room
- * Fetches trending tokens with full quantitative analysis from REST API
+ * Hook for accessing institutional-grade token analytics for the Whale Room  
+ * Fetches trending tokens with full quantitative analysis via WebSocket (real-time)
+ * 
+ * Now uses unified WebSocket system for 10-second real-time updates instead of REST API
  */
 export function useWhaleRoomData(options: WhaleRoomDataOptions = {}): UseWhaleRoomDataReturn {
   const {
     limit = 50,
     qualityLevel = 'strict', // Whale room gets highest quality data
-    refreshInterval = 30000, // 30 seconds auto-refresh
+    refreshInterval = 10000, // 10 seconds with WebSocket
     minChange = undefined    // No minimum change filter by default
   } = options;
 
@@ -229,78 +232,93 @@ export function useWhaleRoomData(options: WhaleRoomDataOptions = {}): UseWhaleRo
 
   // Refs
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Fetch whale room data from REST API
-  const fetchWhaleRoomData = useCallback(async () => {
-    try {
-      // Cancel any pending request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+  // WebSocket connection
+  const { isConnected, sendMessage, registerListener } = useWebSocket();
 
-      abortControllerRef.current = new AbortController();
-      const signal = abortControllerRef.current.signal;
-
-      console.log(`[useWhaleRoomData] Fetching ${limit} tokens (quality: ${qualityLevel}) for Whale Room`);
-
-      // Build URL with parameters for whale room: strict quality for institutional data
-      const url = new URL(`${API_URL}/tokens/trending`);
-      url.searchParams.set('quality_level', qualityLevel);
-      url.searchParams.set('limit', String(limit));
-
-      if (minChange !== undefined) {
-        url.searchParams.set('min_change', String(minChange));
-      }
-
-      const response = await fetch(url.toString(), {
-        signal,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data: WhaleRoomResponse = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'API request failed');
-      }
-
-      console.log(`[useWhaleRoomData] Successfully fetched ${data.data.length} whale room tokens with advanced metrics`);
-
-      // Transform and set data
-      setTokens(data.data);
-      setMetadata(data.metadata);
-      setLastUpdate(new Date());
-      setError(null);
-      setIsLoading(false);
-
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        console.log('[useWhaleRoomData] Request aborted');
-        return;
-      }
-
-      console.error('[useWhaleRoomData] Error fetching whale room data:', err);
-      setError(err.message || 'Failed to fetch whale room data');
-      setIsLoading(false);
+  // Request whale room data via WebSocket
+  const requestWhaleRoomData = useCallback(() => {
+    if (!isConnected) {
+      setError('WebSocket not connected');
+      return;
     }
-  }, [limit, qualityLevel, minChange]);
 
-  // Initial load
+    console.log(`[useWhaleRoomData] Requesting ${limit} tokens (quality: ${qualityLevel}) for Whale Room via WebSocket`);
+
+    const requestId = `whale-room-${Date.now()}`;
+
+    // Send WebSocket request
+    sendMessage({
+      type: DDExtendedMessageType.REQUEST,
+      topic: 'market_data',
+      action: 'getWhaleRoomData',
+      requestId,
+      data: {
+        limit,
+        qualityLevel,
+        includeAdvancedMetrics: true,
+        format: 'institutional',
+        minChange
+      }
+    });
+
+    setIsLoading(true);
+    setError(null);
+  }, [isConnected, sendMessage, limit, qualityLevel, minChange]);
+
+  // Handle WebSocket responses
   useEffect(() => {
-    fetchWhaleRoomData();
-  }, [fetchWhaleRoomData]);
+    if (!isConnected) return;
+
+    const handleWhaleRoomData = (message: any) => {
+      if (message.type === DDExtendedMessageType.DATA &&
+        message.topic === 'market_data' &&
+        message.action === 'whaleRoomData') {
+
+        if (message.success) {
+          console.log(`[useWhaleRoomData] Received ${message.tokens?.length || 0} whale room tokens via WebSocket`);
+
+          setTokens(message.tokens || []);
+          setMetadata(message.metadata || null);
+          setLastUpdate(new Date());
+          setError(null);
+        } else {
+          setError(message.error || 'Failed to fetch whale room data');
+        }
+        setIsLoading(false);
+      }
+
+      if (message.type === DDExtendedMessageType.ERROR &&
+        message.topic === 'market_data') {
+        setError(message.error || 'WebSocket error');
+        setIsLoading(false);
+      }
+    };
+
+    // Register listener for whale room data responses
+    const unregister = registerListener(
+      'whale-room-data-listener',
+      [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
+      handleWhaleRoomData,
+      ['market_data']
+    );
+
+    return unregister;
+  }, [isConnected, registerListener]);
+
+  // Initial data request when WebSocket connects
+  useEffect(() => {
+    if (isConnected) {
+      requestWhaleRoomData();
+    }
+  }, [isConnected, requestWhaleRoomData]);
 
   // Auto-refresh mechanism
   useEffect(() => {
-    if (refreshInterval > 0) {
-      refreshIntervalRef.current = setInterval(fetchWhaleRoomData, refreshInterval);
+    if (refreshInterval > 0 && isConnected) {
+      refreshIntervalRef.current = setInterval(() => {
+        requestWhaleRoomData();
+      }, refreshInterval);
 
       return () => {
         if (refreshIntervalRef.current) {
@@ -309,14 +327,11 @@ export function useWhaleRoomData(options: WhaleRoomDataOptions = {}): UseWhaleRo
         }
       };
     }
-  }, [refreshInterval, fetchWhaleRoomData]);
+  }, [refreshInterval, isConnected, requestWhaleRoomData]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current);
         refreshIntervalRef.current = null;
@@ -327,8 +342,8 @@ export function useWhaleRoomData(options: WhaleRoomDataOptions = {}): UseWhaleRo
   // Manual refresh function
   const refresh = useCallback(() => {
     setIsLoading(true);
-    fetchWhaleRoomData();
-  }, [fetchWhaleRoomData]);
+    requestWhaleRoomData();
+  }, [requestWhaleRoomData]);
 
   // Analytics utility functions for whale room insights
   const getTopPerformers = useCallback((count: number = 10): WhaleRoomToken[] => {

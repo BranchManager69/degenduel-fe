@@ -8,11 +8,11 @@
  * @created 2025-04-10
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
-import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
-import { DDExtendedMessageType } from '../types';
 import { TopicType } from '../index';
+import { DDExtendedMessageType } from '../types';
+import { useUnifiedWebSocket } from '../useUnifiedWebSocket';
 
 // Define market data interface based on backend API documentation
 export interface MarketData {
@@ -72,23 +72,23 @@ export function useMarketData() {
   const handleMessage = useCallback((message: Partial<WebSocketMarketMessage>) => {
     try {
       // Check if this is a valid market data message
-      if (message.type === DDExtendedMessageType.DATA && 
-          message.topic === 'market-data' && 
-          message.subtype === 'market' && 
-          message.action === 'update' && 
-          message.data) {
-        
+      if (message.type === DDExtendedMessageType.DATA &&
+        message.topic === 'market-data' &&
+        message.subtype === 'market' &&
+        message.action === 'update' &&
+        message.data) {
+
         // Update market data state
         setMarketData(prevData => ({
           ...prevData,
           ...message.data,
           timestamp: message.timestamp || new Date().toISOString()
         }));
-        
+
         // Update status and timestamp
         setIsLoading(false);
         setLastUpdate(new Date());
-        
+
         // Log event for monitoring
         dispatchWebSocketEvent('market_data_update', {
           socketType: TopicType.MARKET_DATA,
@@ -96,7 +96,7 @@ export function useMarketData() {
           timestamp: new Date().toISOString()
         });
       }
-      
+
       // Mark as not loading once we've processed any valid message
       if (isLoading) {
         setIsLoading(false);
@@ -119,46 +119,60 @@ export function useMarketData() {
     [TopicType.MARKET_DATA, TopicType.SYSTEM]
   );
 
-  // Subscribe to market data when connected
+  // Subscribe to market data when connected (prevent duplicate subscriptions)
+  const hasSubscribedMarketRef = useRef(false);
+
   useEffect(() => {
-    if (ws.isConnected && isLoading) {
+    let timeoutId: NodeJS.Timeout;
+
+    if (ws.isConnected && !hasSubscribedMarketRef.current) {
       // Subscribe to market data topic
       ws.subscribe([TopicType.MARKET_DATA]);
-      
+      hasSubscribedMarketRef.current = true;
+
       // Request initial market data
       ws.request(TopicType.MARKET_DATA, 'GET_MARKET_DATA');
-      
+
       dispatchWebSocketEvent('market_data_subscribe', {
         socketType: TopicType.MARKET_DATA,
         message: 'Subscribing to market data',
         timestamp: new Date().toISOString()
       });
-      
+
       // Set a timeout to reset loading state if we don't get data
-      const timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         if (isLoading) {
           console.warn('[MarketData WebSocket] Timed out waiting for data');
           setIsLoading(false);
         }
       }, 10000);
-      
-      return () => clearTimeout(timeoutId);
+    } else if (!ws.isConnected) {
+      hasSubscribedMarketRef.current = false;
     }
-  }, [ws.isConnected, isLoading, ws.subscribe, ws.request]);
+
+    // Cleanup function
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (hasSubscribedMarketRef.current) {
+        ws.unsubscribe([TopicType.MARKET_DATA]);
+        hasSubscribedMarketRef.current = false;
+      }
+    };
+  }, [ws.isConnected]); // Remove unstable dependencies
 
   // Force refresh function
   const refreshMarketData = useCallback(() => {
     setIsLoading(true);
-    
+
     if (ws.isConnected) {
       ws.request(TopicType.MARKET_DATA, 'GET_MARKET_DATA');
-      
+
       dispatchWebSocketEvent('market_data_refresh', {
         socketType: TopicType.MARKET_DATA,
         message: 'Refreshing market data',
         timestamp: new Date().toISOString()
       });
-      
+
       // Set a timeout to reset loading state if we don't get data
       setTimeout(() => {
         if (isLoading) {

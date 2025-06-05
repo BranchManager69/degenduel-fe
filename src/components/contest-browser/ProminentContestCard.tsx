@@ -2,23 +2,35 @@ import { motion } from "framer-motion";
 import React, { useRef, useState } from "react";
 
 import { getContestImageUrl } from "../../lib/imageUtils";
-import { formatCurrency } from "../../lib/utils";
+import { cn, formatCurrency } from "../../lib/utils";
 import { Contest, ContestStatus } from "../../types/index";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ContestButton } from "../landing/contests-preview/ContestButton";
 import { CountdownTimer } from "../ui/CountdownTimer";
 import { ShareContestButton } from "./ShareContestButton";
 
+// Global cache to prevent repeated 404 warnings for the same URLs
+const warned404URLs = new Set<string>();
+
+// Clear cache on page unload to prevent memory buildup
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    warned404URLs.clear();
+  });
+}
+
 interface ProminentContestCardProps {
   contest: Contest;
   onClick?: () => void;
   featuredLabel?: string;
+  className?: string;
 }
 
 export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
   contest,
   onClick,
-  featuredLabel = "🏆 CONTEST OF THE WEEK"
+  featuredLabel = "🏆 CONTEST OF THE WEEK",
+  className
 }) => {
   // TODO: Component needs cleanup:
   // - Make action buttons (Details, Enter, Share) more uniform in size/style
@@ -84,7 +96,7 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="group relative bg-gradient-to-br from-dark-200/90 via-dark-200/95 to-dark-300/90 backdrop-blur-md border-2 border-brand-400/30 hover:border-brand-400/60 transform transition-all duration-500 hover:scale-[1.02] rounded-xl overflow-hidden w-full max-w-full cursor-pointer"
+      className={cn("group relative bg-gradient-to-br from-dark-200/90 via-dark-200/95 to-dark-300/90 backdrop-blur-md border-2 border-brand-400/30 hover:border-brand-400/60 transform transition-all duration-500 hover:scale-[1.02] rounded-xl overflow-hidden w-full max-w-full cursor-pointer", className)}
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
@@ -175,8 +187,16 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
                   onLoad={() => {
                     setTimeout(() => setImageLoaded(true), 200);
                   }}
-                  onError={() => {
-                    console.error(`Failed to load image: ${getContestImageUrl(contest.image_url)}`);
+                  onError={(e) => {
+                    const url = getContestImageUrl(contest.image_url);
+                    // Only warn once per URL to prevent spam
+                    if (url && !warned404URLs.has(url)) {
+                      console.warn(`Contest image not found: ${url}`);
+                      warned404URLs.add(url);
+                    }
+                    // Set fallback image source
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/images/contests/placeholder.png';
                     setImageError(true);
                   }}
                   initial={{ scale: 1.3, filter: "blur(12px)" }}

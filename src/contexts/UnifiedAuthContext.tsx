@@ -15,7 +15,7 @@
  * @updated 2025-05-06
  */
 
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { AuthEventType, AuthMethod, authService, TokenType } from '../services';
 import { User } from '../types/user';
 
@@ -223,7 +223,7 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
   };
   
   // Create context value
-  const contextValue: UnifiedAuthContextType = {
+  const contextValue: UnifiedAuthContextType = useMemo(() => ({
     // Auth status
     ...status,
     
@@ -309,7 +309,7 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     // Auth refresh
     checkAuth: authService.checkAuth.bind(authService),
     hardReset: authService.hardReset.bind(authService)
-  };
+  }), [status, methodStatuses]);
   
   return (
     <UnifiedAuthContext.Provider value={contextValue}>

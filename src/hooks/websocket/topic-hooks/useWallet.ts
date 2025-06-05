@@ -229,18 +229,20 @@ export function useWallet(walletAddress?: string) {
     }
   }, [ws.registerListener]);
 
-  // Subscribe to wallet data when connected
+  // Subscribe to wallet data when connected (prevent duplicate subscriptions)
+  const hasSubscribedWalletRef = useRef(false);
+
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | undefined;
 
-    if (ws.isConnected && !isSubscribedRef.current) {
+    if (ws.isConnected && !hasSubscribedWalletRef.current) {
       // Subscribe to wallet and wallet-balance topics
       ws.subscribe([TopicType.WALLET, 'wallet-balance']);
+      hasSubscribedWalletRef.current = true;
 
       // Request initial wallet data
       const requestParams = walletAddress ? { walletAddress } : {};
       ws.request(TopicType.WALLET, 'GET_WALLET_DATA', requestParams);
-      isSubscribedRef.current = true;
 
       dispatchWebSocketEvent('wallet_subscribe', {
         socketType: TopicType.WALLET,
@@ -251,25 +253,24 @@ export function useWallet(walletAddress?: string) {
 
       // Set a timeout to reset loading state if we don't get data
       timeoutId = setTimeout(() => {
-        // Only log warning and clear loading if still waiting and connection is stable
-        if (isLoading && ws.isConnected) {
+        if (isLoading) {
           console.warn('[Wallet WebSocket] Timed out waiting for data');
           setIsLoading(false);
         }
-      }, 15000); // Increased timeout to 15 seconds for more stability
+      }, 15000);
     } else if (!ws.isConnected) {
-      isSubscribedRef.current = false;
-      // Clear timeout if connection lost
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = undefined;
-      }
+      hasSubscribedWalletRef.current = false;
     }
 
+    // Cleanup function
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
+      if (hasSubscribedWalletRef.current) {
+        ws.unsubscribe([TopicType.WALLET, 'wallet-balance']);
+        hasSubscribedWalletRef.current = false;
+      }
     };
-  }, [ws.isConnected, ws.subscribe, ws.request, walletAddress, isLoading]);
+  }, [ws.isConnected, walletAddress]); // Remove unstable dependencies
 
   // Cleanup subscription on unmount
   useEffect(() => {
@@ -400,7 +401,7 @@ export function useWallet(walletAddress?: string) {
           setIsLoading(false);
         }
       }, 15000);
-      
+
       // Return cleanup function for the timeout
       return () => clearTimeout(refreshTimeoutId);
     } else {

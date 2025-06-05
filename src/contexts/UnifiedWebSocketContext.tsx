@@ -14,7 +14,6 @@
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { authDebug } from '../config/config';
 import { DDExtendedMessageType } from '../hooks/websocket/types';
 import { setupWebSocketInstance } from '../hooks/websocket/useUnifiedWebSocket';
 import { AuthEventType, authService, TokenType } from '../services';
@@ -36,7 +35,6 @@ interface WebSocketParams {
   protocols?: string | string[];
   options?: {
     reconnectInterval?: number;
-    maxReconnectAttempts?: number;
     heartbeatInterval?: number;
     maxMissedHeartbeats?: number;
   };
@@ -116,14 +114,16 @@ export const UnifiedWebSocketProvider: React.FC<{
   // Subscription tracking to prevent duplicates
   const currentTopicsRef = useRef<Set<string>>(new Set());
   
+  // Pending subscriptions queue to handle calls before socket is ready
+  const pendingSubscriptionsRef = useRef<string[]>([]);
+  
   // Get default configuration
   const defaultUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v69/ws`; // doubt that this is the best practices method but it works for now
   const connectionUrl = params?.url || defaultUrl;
   const options = params?.options || {};
   
   // Set default options
-  const reconnectInterval = options.reconnectInterval || 30000;
-  const maxReconnectAttempts = options.maxReconnectAttempts || 5;
+  const reconnectInterval = options.reconnectInterval || 3000; // 3 seconds base
   const heartbeatInterval = options.heartbeatInterval || 30000;
   const maxMissedHeartbeats = options.maxMissedHeartbeats || 3;
   
@@ -133,11 +133,6 @@ export const UnifiedWebSocketProvider: React.FC<{
       if (event.type === AuthEventType.AUTH_STATE_CHANGED) {
         // If the user logged in or out, update WebSocket connection
         const isAuthenticated = !!event.user;
-        
-        authDebug('WebSocketContext', 'Auth state changed', {
-          isAuthenticated,
-          connectionState
-        });
         
         // If the connection is already established, try to authenticate
         if (isAuthenticated && connectionState === ConnectionState.CONNECTED) {
@@ -155,14 +150,18 @@ export const UnifiedWebSocketProvider: React.FC<{
   }, [connectionState]);
   
   // Connect to WebSocket
-  const connect = async () => {
-    // Don't connect if already connected
-    if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+  const connect = useCallback(async () => {
+    // Only re-create the socket if we don't have one or it's not already connecting/open
+    // This makes the function idempotent for React StrictMode and prevents duplicate connections
+    if (wsRef.current?.readyState === WebSocket.OPEN ||
+        wsRef.current?.readyState === WebSocket.CONNECTING) {
       return;
     }
-    
-    // Clean up existing connection
-    if (wsRef.current) {
+
+    // Clean up existing connection only if it's in a failed state
+    if (wsRef.current && 
+        wsRef.current.readyState !== WebSocket.CONNECTING && 
+        wsRef.current.readyState !== WebSocket.OPEN) {
       try {
         wsRef.current.close();
       } catch (err) {
@@ -170,46 +169,55 @@ export const UnifiedWebSocketProvider: React.FC<{
       }
       wsRef.current = null;
     }
-    
+
     // Clear reconnect timeout
     if (reconnectTimeoutRef.current !== null) {
       window.clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-    
+
     // Update state
     setConnectionState(ConnectionState.CONNECTING);
-    
+
     try {
       // Create new WebSocket connection
       const ws = new WebSocket(connectionUrl);
       wsRef.current = ws;
-      
+
       // Set up event handlers
       ws.onopen = handleOpen;
       ws.onmessage = handleMessage;
       ws.onclose = handleClose;
       ws.onerror = handleError;
-      
-      authDebug('WebSocketContext', 'Connecting to WebSocket', { url: connectionUrl });
+
     } catch (error) {
       setConnectionError(error instanceof Error ? error.message : String(error));
       setConnectionState(ConnectionState.ERROR);
       scheduleReconnect();
     }
-  };
+  }, [connectionUrl]);
   
   // Handle WebSocket open
   const handleOpen = () => {
-    authDebug('WebSocketContext', 'WebSocket connection established');
     setConnectionState(ConnectionState.CONNECTED);
     setConnectionError(null);
     setIsServerDown(false);
     setLastConnectionTime(Date.now());
+    
+    // Reset reconnect attempts on successful connection
     reconnectAttemptsRef.current = 0;
     
     // Start heartbeat
     startHeartbeat();
+    
+    // Process any pending subscriptions
+    if (pendingSubscriptionsRef.current.length > 0) {
+      const pendingTopics = [...pendingSubscriptionsRef.current];
+      pendingSubscriptionsRef.current = []; // Clear the queue
+      
+      // Subscribe to pending topics
+      subscribe(pendingTopics);
+    }
     
     // Authenticate if user is logged in
     if (authService.isAuthenticated()) {
@@ -221,18 +229,25 @@ export const UnifiedWebSocketProvider: React.FC<{
   const handleMessage = (event: MessageEvent) => {
     try {
       const message = JSON.parse(event.data);
-      authDebug('WebSocketContext', 'Raw message received:', message);
 
       // Handle proper pong responses from backend
       if ((message.type === 'RESPONSE' || message.type === 'SYSTEM') && message.action === 'pong') {
         missedHeartbeatsRef.current = 0;
-        authDebug('WebSocketContext', 'Heartbeat pong received from server');
+        // Clear the ping timeout since we got a response
+        if (pingTimeoutRef.current !== null) {
+          window.clearTimeout(pingTimeoutRef.current);
+          pingTimeoutRef.current = null;
+        }
         return;
       }
       // Handle explicit PONG type if backend sends it
       if (message.type === DDExtendedMessageType.PONG) {
         missedHeartbeatsRef.current = 0;
-        authDebug('WebSocketContext', 'PONG message type received');
+        // Clear the ping timeout since we got a response
+        if (pingTimeoutRef.current !== null) {
+          window.clearTimeout(pingTimeoutRef.current);
+          pingTimeoutRef.current = null;
+        }
         return;
       }
       
@@ -241,10 +256,6 @@ export const UnifiedWebSocketProvider: React.FC<{
           message.operation === 'authenticate' && 
           message.status === 'success') {
         setConnectionState(ConnectionState.AUTHENTICATED);
-        authDebug('WebSocketContext', 'WebSocket authentication successful', {
-          user: message.user,
-          timestamp: message.timestamp
-        });
         return;
       }
 
@@ -252,19 +263,11 @@ export const UnifiedWebSocketProvider: React.FC<{
       if (message.type === DDExtendedMessageType.ACKNOWLEDGMENT && 
           message.operation === 'subscribe' && 
           message.status === 'success') {
-        authDebug('WebSocketContext', 'Successfully subscribed to topics:', message.topics);
         return;
       }
 
       // Handle WebSocket Authentication Errors per backend specification
       if (message.type === DDExtendedMessageType.ERROR && message.code === 4401) {
-        authDebug('WebSocketContext', 'WebSocket authentication error', {
-          code: message.code,
-          reason: message.reason,
-          message: message.message,
-          timestamp: message.timestamp
-        });
-
         // Handle different authentication error types
         switch (message.reason) {
           case 'token_required':
@@ -279,7 +282,7 @@ export const UnifiedWebSocketProvider: React.FC<{
             // Trigger global auth check for token renewal
             authService.checkAuth().then(isValidSession => {
               if (!isValidSession) {
-                authDebug('WebSocketContext', 'Global auth check failed after WS token expiry, full logout likely.');
+                console.error('Global auth check failed after WS token expiry, full logout likely.');
               }
             });
             break;
@@ -291,7 +294,7 @@ export const UnifiedWebSocketProvider: React.FC<{
             // Trigger global auth check which may log out the user
             authService.checkAuth().then(isValidSession => {
               if (!isValidSession) {
-                authDebug('WebSocketContext', 'Global auth check failed after invalid token, logout triggered.');
+                console.error('Global auth check failed after invalid token, logout triggered.');
               }
             });
             break;
@@ -358,18 +361,14 @@ export const UnifiedWebSocketProvider: React.FC<{
     // Update server down state
     setIsServerDown(localServerDown);
     
-    authDebug('WebSocketContext', 'WebSocket connection closed', {
-      code: event.code,
-      reason: event.reason || 'No reason provided',
-      message: errorMessage,
-      isServerDown: localServerDown
-    });
-    
     // Stop heartbeat
     stopHeartbeat();
     
     // Clear subscription tracking on disconnect
     currentTopicsRef.current.clear();
+    
+    // Clear pending subscriptions queue on disconnect
+    pendingSubscriptionsRef.current = [];
     
     // Update state
     setConnectionState(ConnectionState.DISCONNECTED);
@@ -380,9 +379,6 @@ export const UnifiedWebSocketProvider: React.FC<{
       // For server down on first attempt, use a shorter delay (5s)
       // This avoids unnecessary rapid reconnects when server is known to be down
       const serverDownDelay = 5000;
-      authDebug('WebSocketContext', 'Server appears to be down, using minimum delay', {
-        delay: serverDownDelay
-      });
       reconnectTimeoutRef.current = window.setTimeout(() => {
         reconnectTimeoutRef.current = null;
         // Try to confirm server status before actual reconnect
@@ -420,23 +416,21 @@ export const UnifiedWebSocketProvider: React.FC<{
       });
       return response.ok;
     } catch (error) {
-      authDebug('WebSocketContext', 'Server status check failed', {
-        error: error instanceof Error ? error.message : String(error)
-      });
       return false;
     }
   };
   
   // Handle WebSocket error
-  const handleError = (event: Event) => {
+  const handleError = () => {
     // WebSocket error events don't provide much information
     // Most errors will be captured by the close event
-    authDebug('WebSocketContext', 'WebSocket error', { event });
+    // Don't tear down the context - just set error state and let close event handle reconnection
+    // This prevents the infinite reconnect spiral where onerror triggers a rebuild
     setConnectionState(ConnectionState.ERROR);
     setConnectionError('WebSocket connection error - server may be down or unreachable');
   };
   
-  // Schedule reconnection with exponential backoff
+  // Schedule reconnection with exponential backoff (no permanent failure)
   const scheduleReconnect = () => {
     // Clear existing timeout
     if (reconnectTimeoutRef.current !== null) {
@@ -444,39 +438,26 @@ export const UnifiedWebSocketProvider: React.FC<{
       reconnectTimeoutRef.current = null;
     }
     
-    // Don't exceed max attempts
-    if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-      authDebug('WebSocketContext', 'Maximum reconnection attempts reached', {
-        attempts: reconnectAttemptsRef.current,
-        max: maxReconnectAttempts
-      });
-      setConnectionState(ConnectionState.ERROR);
-      setConnectionError(`Having trouble connecting...`);
-      //setConnectionError(`Maximum reconnection attempts (${maxReconnectAttempts}) reached`);
-      return;
-    }
-    
     // Increment attempt counter
     reconnectAttemptsRef.current++;
     
-    // Calculate delay with exponential backoff
+         // Calculate delay with exponential backoff, max 15 seconds
     const delay = Math.min(
-      reconnectInterval * Math.pow(2, reconnectAttemptsRef.current - 1),
-      30000 // Max 30 second delay
+      reconnectInterval * Math.pow(2, Math.min(reconnectAttemptsRef.current - 1, 4)), // Cap exponential growth at 2^4
+      15000 // Max 15 second delay
     );
     
-    authDebug('WebSocketContext', 'Scheduling reconnect attempt', {
-      attempt: reconnectAttemptsRef.current,
-      delay
-    });
     setConnectionState(ConnectionState.RECONNECTING);
     
-    // Schedule reconnect
+    // Schedule reconnect - always keep trying
     reconnectTimeoutRef.current = window.setTimeout(() => {
       reconnectTimeoutRef.current = null;
       connect();
     }, delay);
   };
+  
+  // Track ping timeouts to avoid counting slow responses as missed
+  const pingTimeoutRef = useRef<number | null>(null);
   
   // Start heartbeat interval
   const startHeartbeat = () => {
@@ -499,24 +480,25 @@ export const UnifiedWebSocketProvider: React.FC<{
             timestamp: new Date().toISOString()
           };
           
-          authDebug('WebSocketContext', 'Sending heartbeat ping', pingMessage);
           wsRef.current.send(JSON.stringify(pingMessage));
           
-          // Increment missed heartbeats
-          missedHeartbeatsRef.current++;
-          
-          // If we've missed too many, consider the connection dead
-          if (missedHeartbeatsRef.current >= maxMissedHeartbeats) {
-            authDebug('WebSocketContext', 'Missed too many heartbeats, reconnecting', {
-              missed: missedHeartbeatsRef.current,
-              max: maxMissedHeartbeats
-            });
-            
-            // Clean up and reconnect
-            wsRef.current.close();
-            wsRef.current = null;
-            scheduleReconnect();
+          // Clear any existing ping timeout
+          if (pingTimeoutRef.current !== null) {
+            window.clearTimeout(pingTimeoutRef.current);
           }
+          
+          // Set timeout to count as missed only if no response within 10 seconds
+          pingTimeoutRef.current = window.setTimeout(() => {
+            missedHeartbeatsRef.current++;
+            
+            // If we've missed too many, consider the connection dead
+            if (missedHeartbeatsRef.current >= maxMissedHeartbeats) {
+              wsRef.current?.close();
+              wsRef.current = null;
+              scheduleReconnect();
+            }
+          }, 10000); // 10 second timeout for response
+          
         } catch (error) {
           console.error('Error sending heartbeat:', error);
         }
@@ -529,6 +511,11 @@ export const UnifiedWebSocketProvider: React.FC<{
     if (heartbeatIntervalRef.current !== null) {
       window.clearInterval(heartbeatIntervalRef.current);
       heartbeatIntervalRef.current = null;
+    }
+    // Clear any pending ping timeout
+    if (pingTimeoutRef.current !== null) {
+      window.clearTimeout(pingTimeoutRef.current);
+      pingTimeoutRef.current = null;
     }
   };
   
@@ -543,22 +530,12 @@ export const UnifiedWebSocketProvider: React.FC<{
     }
     
     try {
-      authDebug('WebSocketContext', 'Authenticating WebSocket connection');
       setConnectionState(ConnectionState.AUTHENTICATING);
       
       // Get authentication token from auth service
-      console.log('🔍 [DEBUG] Requesting WS_TOKEN...');
       const token = await authService.getToken(TokenType.WS_TOKEN);
       
-      console.log('🔍 [DEBUG] WS_TOKEN result:', {
-        hasToken: !!token,
-        tokenLength: token ? token.length : 0,
-        tokenPreview: token ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` : 'NULL'
-      });
-      
       if (!token) {
-        authDebug('WebSocketContext', 'No WebSocket token available');
-        console.error('🚨 [DEBUG] WebSocket authentication failed: No token available');
         setConnectionState(ConnectionState.CONNECTED);
         return;
       }
@@ -569,23 +546,8 @@ export const UnifiedWebSocketProvider: React.FC<{
         authToken: token
       };
       
-      console.log('🔍 [DEBUG] Sending WebSocket AUTH message:', {
-        messageType: authMessage.type,
-        hasAuthToken: !!authMessage.authToken
-      });
-      
-      // Send authentication message
       wsRef.current.send(JSON.stringify(authMessage));
-      
-      authDebug('WebSocketContext', 'Sent WebSocket AUTH message');
-      
-      // No longer using 15-second timeout fallback as per backend team instructions
-      // Authentication status will be determined by ACKNOWLEDGMENT or ERROR responses
     } catch (error) {
-      console.error('🚨 [DEBUG] WebSocket authentication error:', error);
-      authDebug('WebSocketContext', 'WebSocket authentication failed', {
-        error: error instanceof Error ? error.message : String(error)
-      });
       // Fall back to CONNECTED state on authentication error
       setConnectionState(ConnectionState.CONNECTED);
     }
@@ -629,16 +591,9 @@ export const UnifiedWebSocketProvider: React.FC<{
   ) => {
     listenersRef.current.set(id, { types, topics, callback });
     
-    authDebug('WebSocketContext', 'Registered WebSocket listener', {
-      id,
-      types,
-      topics: topics || 'all topics'
-    });
-    
     // Return unregister function
     return () => {
       listenersRef.current.delete(id);
-      authDebug('WebSocketContext', 'Unregistered WebSocket listener', { id });
     };
   }, []);
   
@@ -659,20 +614,30 @@ export const UnifiedWebSocketProvider: React.FC<{
   
   // Subscribe to topics (stable reference with useCallback + duplicate prevention)
   const subscribe = useCallback((topics: string[]) => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || topics.length === 0) {
-      authDebug('WebSocketContext', 'Subscribe failed - validation check', {
-        hasWebSocket: !!wsRef.current,
-        readyState: wsRef.current?.readyState,
-        topicsLength: topics.length,
-        topics
-      });
+    // If WebSocket isn't ready, queue the subscriptions for later
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      if (topics.length === 0) return false;
+      
+      // Add to pending queue (avoid duplicates)
+      const newPendingTopics = topics.filter(topic => 
+        !pendingSubscriptionsRef.current.includes(topic) && 
+        !currentTopicsRef.current.has(topic)
+      );
+      
+      if (newPendingTopics.length > 0) {
+        pendingSubscriptionsRef.current.push(...newPendingTopics);
+      }
+      
+      return true; // Indicate that the request was accepted (queued)
+    }
+    
+    if (topics.length === 0) {
       return false;
     }
     
     // Filter out already subscribed topics to prevent duplicates
     const newTopics = topics.filter(topic => !currentTopicsRef.current.has(topic));
     if (newTopics.length === 0) {
-      authDebug('WebSocketContext', 'All topics already subscribed', { topics });
       return true; // Already subscribed, return success
     }
     
@@ -687,20 +652,11 @@ export const UnifiedWebSocketProvider: React.FC<{
         message.authToken = authToken;
       }
       
-      authDebug('WebSocketContext', 'Created subscribe message', {
-        type: message.type,
-        topicsLength: message.topics.length,
-        topics: message.topics,
-        hasAuthToken: !!authToken
-      });
-      
       return message;
     };
     
     // Handle authenticated subscription
     if (authService.isAuthenticated()) {
-      authDebug('WebSocketContext', 'Subscribing with authentication', { newTopics });
-      
       authService.getToken(TokenType.WS_TOKEN)
         .then(token => {
           const message = createSubscribeMessage(token || undefined);
@@ -709,14 +665,8 @@ export const UnifiedWebSocketProvider: React.FC<{
             // Mark topics as subscribed
             newTopics.forEach(topic => currentTopicsRef.current.add(topic));
           }
-          authDebug('WebSocketContext', 'Sent authenticated subscribe message', {
-            success,
-            topicsCount: message.topics.length,
-            hasToken: !!token
-          });
         })
-        .catch((error) => {
-          authDebug('WebSocketContext', 'Token retrieval failed, sending without token', { error });
+        .catch(() => {
           // Send without token if token retrieval fails
           const message = createSubscribeMessage();
           const success = sendMessage(message);
@@ -724,16 +674,11 @@ export const UnifiedWebSocketProvider: React.FC<{
             // Mark topics as subscribed
             newTopics.forEach(topic => currentTopicsRef.current.add(topic));
           }
-          authDebug('WebSocketContext', 'Sent unauthenticated subscribe message', {
-            success,
-            topicsCount: message.topics.length
-          });
       });
       return true;
     }
     
     // Send without auth for public topics
-    authDebug('WebSocketContext', 'Subscribing without authentication', { newTopics });
     const message = createSubscribeMessage();
     const success = sendMessage(message);
     if (success) {
@@ -780,12 +725,48 @@ export const UnifiedWebSocketProvider: React.FC<{
     return sendMessage(message);
   }, [sendMessage]);
   
-  // Connect on mount
+  // Connect on mount and handle page visibility
   useEffect(() => {
     connect();
     
+    // Handle page visibility changes - reconnect when user returns to tab
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // User returned to tab
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+          connect();
+        }
+      }
+    };
+    
+    // Handle user interaction while disconnected - immediate reconnect
+    const handleUserInteraction = () => {
+      // Only reconnect if disconnected and not already trying to connect
+      if ((!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) && 
+          connectionState !== ConnectionState.CONNECTING && 
+          connectionState !== ConnectionState.RECONNECTING) {
+        connect();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Add user interaction listeners for immediate reconnect
+    const interactionEvents = ['click', 'scroll', 'keydown', 'touchstart'];
+    interactionEvents.forEach(event => {
+      document.addEventListener(event, handleUserInteraction, { passive: true });
+    });
+    
     // Clean up on unmount
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Clean up user interaction listeners
+      const interactionEvents = ['click', 'scroll', 'keydown', 'touchstart'];
+      interactionEvents.forEach(event => {
+        document.removeEventListener(event, handleUserInteraction);
+      });
+      
       // Stop heartbeat
       stopHeartbeat();
       
@@ -802,7 +783,7 @@ export const UnifiedWebSocketProvider: React.FC<{
         wsRef.current = null;
       }
     };
-  }, []);
+  }, [connect]);
   
   // Derive isConnected and isAuthenticated from connectionState
   const isConnected = connectionState === ConnectionState.CONNECTED || 
@@ -810,14 +791,13 @@ export const UnifiedWebSocketProvider: React.FC<{
   const isAuthenticated = connectionState === ConnectionState.AUTHENTICATED;
   const isReadyForSecureInteraction = isAuthenticated;
   
-  // Setup the singleton instance for useUnifiedWebSocket hook
+  // Setup the singleton instance for useUnifiedWebSocket hook (only log once)
+  const hasLoggedSetup = useRef(false);
   useEffect(() => {
-    console.log('[UnifiedWebSocketContext] Setting up singleton instance:', {
-      connectionState,
-      connectionError,
-      hasRegisterListener: !!registerListener,
-      hasSendMessage: !!sendMessage
-    });
+    if (!hasLoggedSetup.current) {
+      console.log('[UnifiedWebSocketContext] Setting up singleton instance (initial setup)');
+      hasLoggedSetup.current = true;
+    }
     setupWebSocketInstance(
       registerListener,
       sendMessage,
