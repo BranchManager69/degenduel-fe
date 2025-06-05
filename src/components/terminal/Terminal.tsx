@@ -949,7 +949,10 @@ export const Terminal = ({
         </motion.div>
       )}
       
-      {/* Terminal Minimized State - AI Girl (Didi) Trapped in Terminal */}
+
+      </div>
+      
+      {/* Terminal Minimized State - Rendered outside container for proper click handling */}
       {terminalMinimized && (
         <motion.div
           key="terminal-minimized"
@@ -1410,8 +1413,6 @@ export const Terminal = ({
           </motion.div>
         </motion.div>
       )}
-
-      </div>
     </>
   );
 };

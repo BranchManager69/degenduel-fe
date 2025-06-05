@@ -30,6 +30,8 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
   TrustWalletAdapter
 } from "@solana/wallet-adapter-wallets";
 
@@ -185,6 +187,8 @@ const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ child
   // Configure wallet adapters
   const wallets: Adapter[] = useMemo(
     () => [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
       new TrustWalletAdapter(),
     ],
     []
