@@ -12,6 +12,7 @@ import {
 
 import { ddApi } from "../../services/dd-api";
 import { ReferralStats, ReferralHistory } from "../../types/referral.types";
+import { useStore } from "../../store/useStore";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -194,14 +195,45 @@ export const AffiliateDashboard: React.FC = () => {
           ddApi.fetch("/api/referrals/history?limit=10&offset=0"),
         ]);
 
-        const [statsData, codeData, historyData] = await Promise.all([
+        // Check if code response is ok before parsing
+        if (!codeResponse.ok) {
+          console.error('Failed to fetch referral code:', {
+            status: codeResponse.status,
+            statusText: codeResponse.statusText,
+            url: codeResponse.url,
+            headers: Object.fromEntries(codeResponse.headers.entries())
+          });
+          const errorData = await codeResponse.json();
+          console.error('Referral code error response:', errorData);
+          
+          // Log current auth state for debugging
+          const authState = useStore.getState();
+          console.error('Current auth state:', {
+            user: authState.user,
+            walletAddress: authState.user?.wallet_address,
+            isAuthenticated: !!authState.user,
+            cookies: document.cookie
+          });
+          
+          toast.error(`Unable to load referral code: ${errorData.error || 'Unknown error'}`);
+        } else {
+          const codeData = await codeResponse.json();
+          console.log('Referral code response:', codeData);
+          if (codeData.referral_code) {
+            setInviteCode(codeData.referral_code);
+          } else {
+            console.error('No referral code in response:', codeData);
+            toast.error("No referral code found. Please contact support.");
+          }
+        }
+
+        // Parse other responses
+        const [statsData, historyData] = await Promise.all([
           statsResponse.json(),
-          codeResponse.json(),
           historyResponse.json(),
         ]);
 
         setStats(statsData);
-        setInviteCode(codeData.referral_code);
         setHistory(historyData);
       } catch (error) {
         console.error("Error fetching referral data:", error);
@@ -274,10 +306,23 @@ export const AffiliateDashboard: React.FC = () => {
       )}
 
       {/* Invite Link Section */}
-      <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
-        <h3 className="text-xl font-bold text-gray-100 mb-6">Your Invite Link</h3>
-        <InviteLink code={inviteCode} />
-      </div>
+      {inviteCode ? (
+        <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">
+          <h3 className="text-xl font-bold text-gray-100 mb-6">Your Invite Link</h3>
+          <InviteLink code={inviteCode} />
+        </div>
+      ) : (
+        <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-red-400/30 rounded-lg p-6">
+          <h3 className="text-xl font-bold text-gray-100 mb-4">Referral Code Issue</h3>
+          <p className="text-gray-400">Unable to load your referral code. This might happen if:</p>
+          <ul className="list-disc list-inside text-gray-400 mt-2 space-y-1">
+            <li>Your account is not properly set up in our system</li>
+            <li>There's a temporary connection issue</li>
+            <li>Your wallet address format doesn't match our records</li>
+          </ul>
+          <p className="text-gray-400 mt-4">Please contact support if this issue persists.</p>
+        </div>
+      )}
 
       {/* How It Works */}
       <div className="bg-dark-200/80 backdrop-blur-sm border-l-2 border-brand-400/30 rounded-lg p-6">

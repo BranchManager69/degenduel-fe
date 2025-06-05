@@ -130,7 +130,8 @@ const CreateContestPage = lazy(() => import('./pages/authenticated/CreateContest
 const MyContestsPage = lazy(() => import('./pages/authenticated/MyContestsPage'));
 const MyPortfoliosPage = lazy(() => import('./pages/authenticated/MyPortfoliosPage'));
 const NotificationsPage = lazy(() => import('./pages/authenticated/NotificationsPage'));
-const TokenSelection = lazy(() => import('./pages/authenticated/PortfolioTokenSelectionPage').then(module => ({ default: module.TokenSelection })));
+// const TokenSelection = lazy(() => import('./pages/authenticated/PortfolioTokenSelectionPage').then(module => ({ default: module.TokenSelection })));
+const TokenSelection = lazy(() => import('./pages/authenticated/PortfolioTokenSelectionSimplified').then(module => ({ default: module.PortfolioTokenSelectionSimplified })));
 const PrivateProfilePage = lazy(() => import('./pages/authenticated/PrivateProfilePage').then(module => ({ default: module.PrivateProfilePage })));
 const WalletPage = lazy(() => import('./pages/authenticated/WalletPage'));
 
@@ -157,6 +158,7 @@ const BannedIP = lazy(() => import('./pages/public/general/BannedIP').then(modul
 const BannedUser = lazy(() => import('./pages/public/general/BannedUser').then(module => ({ default: module.BannedUser })));
 const BlinksDemo = lazy(() => import('./pages/public/general/BlinksDemo').then(module => ({ default: module.BlinksDemo })));
 const SolanaBlockchainDemo = lazy(() => import('./pages/public/general/SolanaBlockchainDemo'));
+const WebSocketAuthTest = lazy(() => import('./pages/public/general/WebSocketAuthTest'));
 const VirtualAgentPage = lazy(() => import('./pages/public/game/VirtualAgent').then(module => ({ default: module.VirtualAgentPage })));
 const ContestPerformance = lazy(() => import('./pages/public/leaderboards/ContestPerformanceRankings').then(module => ({ default: module.ContestPerformance })));
 const DegenLevelPage = lazy(() => import('./pages/public/leaderboards/DegenLevelPage').then(module => ({ default: module.DegenLevelPage })));
@@ -418,6 +420,7 @@ const AppContent: React.FC = () => {
           <Route path="/privacy" element={<Suspense fallback={<LoadingFallback />}><PrivacyPolicy /></Suspense>} />
           <Route path="/blinks-demo" element={<Suspense fallback={<LoadingFallback />}><BlinksDemo /></Suspense>} />
           <Route path="/solana-demo" element={<Suspense fallback={<LoadingFallback />}><SolanaBlockchainDemo /></Suspense>} />
+          <Route path="/websocket-auth-test" element={<Suspense fallback={<LoadingFallback />}><WebSocketAuthTest /></Suspense>} />
           
           {/* Leaderboard Routes */}
           <Route path="/leaderboards" element={<Suspense fallback={<LoadingFallback />}><LeaderboardLanding /></Suspense>} />

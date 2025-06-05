@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 
-import { API_URL } from "../../config/config";
 import type { User, UserLevel } from "../../services/userService";
-import { userService } from "../../services/userService";
+import { users } from "../../services/api/users";
 import { PublicUserSearch } from "../common/PublicUserSearch";
 import { Card, CardContent, CardHeader } from "../ui/Card";
 
@@ -21,8 +20,13 @@ interface ParticipantsListProps {
 
 interface EnhancedParticipant extends Participant {
   levelData?: UserLevel;
-  profileImageUrl?: string;
+  profileImageUrl?: string | null; // Updated to match API response
   isLoading?: boolean;
+  // New fields from bulk API
+  experiencePoints?: number;
+  totalContests?: number;
+  twitterHandle?: string | null;
+  isBanned?: boolean;
 }
 
 // Format the user's level and XP into a clean progress display
@@ -66,7 +70,7 @@ const ProfilePicture = ({
   isSelected,
   role,
 }: {
-  imageUrl?: string;
+  imageUrl?: string | null;
   nickname: string;
   isSelected: boolean;
   role?: string;
@@ -150,46 +154,84 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
     }));
     setEnhancedParticipants(initialEnhanced);
 
-    // Fetch level data for each participant
-    const fetchLevelData = async () => {
-      const updatedParticipants: EnhancedParticipant[] = [...initialEnhanced];
+    // Fetch bulk profile data - ELIMINATES N+1 QUERY PROBLEM
+    const fetchBulkProfileData = async () => {
+      if (participants.length === 0) return;
 
-      for (let i = 0; i < participants.length; i++) {
-        const participant = participants[i];
-        try {
-          // Fetch level data
-          const levelData = await userService.getUserLevel(participant.address);
+      try {
+        console.log(`[ParticipantsList] Fetching bulk profiles for ${participants.length} participants`);
+        
+        // Extract wallet addresses
+        const walletAddresses = participants.map(p => p.address);
+        
+        // Single bulk API call instead of N individual calls
+        const bulkResponse = await users.getBulkProfiles(walletAddresses);
+        
+        if (bulkResponse.success) {
+          // Map bulk response to enhanced participants
+          const updatedParticipants: EnhancedParticipant[] = participants.map((participant) => {
+            const profileData = bulkResponse.profiles[participant.address];
+            
+            if (profileData) {
+              // Convert bulk API response to our expected format
+              const levelData: UserLevel = {
+                current_level: {
+                  level_number: profileData.level.level_number,
+                  class_name: profileData.level.class_name,
+                  title: profileData.level.title,
+                  icon_url: profileData.level.icon_url,
+                },
+                experience: {
+                  current: profileData.experience_points,
+                  next_level_at: (profileData.level.level_number + 1) * 1000, // Estimate
+                  percentage: Math.min((profileData.experience_points % 1000) / 10, 100),
+                },
+                achievements: {
+                  bronze: { current: 0, required: 1 },
+                  silver: { current: 0, required: 0 },
+                  gold: { current: 0, required: 0 },
+                  platinum: { current: 0, required: 0 },
+                  diamond: { current: 0, required: 0 },
+                },
+              };
 
-          // Generate profile image URL (assuming it follows a pattern)
-          const profileImageUrl = `${API_URL}/users/${participant.address}/profile-image`;
+              return {
+                ...participant,
+                nickname: profileData.nickname, // Use actual nickname from API
+                role: profileData.role,
+                levelData,
+                profileImageUrl: profileData.profile_image_url,
+                experiencePoints: profileData.experience_points,
+                totalContests: profileData.total_contests,
+                twitterHandle: profileData.twitter_handle,
+                isBanned: profileData.is_banned,
+                isLoading: false,
+              };
+            } else {
+              // Profile not found - use fallback
+              return {
+                ...participant,
+                isLoading: false,
+              };
+            }
+          });
 
-          // Update the participant with level data
-          updatedParticipants[i] = {
-            ...updatedParticipants[i],
-            levelData,
-            profileImageUrl,
-            isLoading: false,
-          };
-
-          // Update state incrementally to show progress
-          setEnhancedParticipants([...updatedParticipants]);
-        } catch (error) {
-          console.error(
-            `Failed to fetch level data for ${participant.address}:`,
-            error,
-          );
-          updatedParticipants[i] = {
-            ...updatedParticipants[i],
-            isLoading: false,
-          };
-          setEnhancedParticipants([...updatedParticipants]);
+          setEnhancedParticipants(updatedParticipants);
+          console.log(`[ParticipantsList] Successfully loaded ${updatedParticipants.length} participant profiles`);
         }
+      } catch (error) {
+        console.error('[ParticipantsList] Failed to fetch bulk profile data:', error);
+        
+        // Fallback to showing participants without enhanced data
+        const fallbackParticipants = participants.map(p => ({
+          ...p,
+          isLoading: false,
+        }));
+        setEnhancedParticipants(fallbackParticipants);
       }
     };
 
-    if (participants.length > 0) {
-      fetchLevelData();
-    }
+    fetchBulkProfileData();
   }, [participants]);
 
   const filteredParticipants = useMemo(() => {

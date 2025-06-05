@@ -108,4 +108,52 @@ export const users = {
       return "/images/avatars/default.png";
     }
   },
+
+  // NEW: Bulk profiles endpoint - eliminates N+1 query problem
+  getBulkProfiles: async (walletAddresses: string[]): Promise<{
+    success: boolean;
+    profiles: Record<string, {
+      wallet_address: string;
+      nickname: string;
+      role: string;
+      is_banned: boolean;
+      profile_image_url: string | null;
+      level: {
+        level_number: number;
+        class_name: string;
+        title: string;
+        icon_url: string;
+      };
+      experience_points: number;
+      total_contests: number;
+      created_at: string;
+      last_login: string;
+      twitter_handle: string | null;
+    }>;
+  }> => {
+    try {
+      if (!walletAddresses || walletAddresses.length === 0) {
+        return { success: true, profiles: {} };
+      }
+
+      if (walletAddresses.length > 100) {
+        throw new Error("Maximum 100 wallet addresses allowed per request");
+      }
+
+      const api = createApiClient();
+      const response = await api.fetch("/users/bulk/profiles", {
+        method: "POST",
+        body: JSON.stringify({ wallet_addresses: walletAddresses }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Bulk profiles request failed: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      logError("users.getBulkProfiles", error, { walletAddresses: walletAddresses.length });
+      throw error;
+    }
+  },
 };

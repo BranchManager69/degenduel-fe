@@ -1,3 +1,5 @@
+// src/components/contest-lobby/ShareContestButton.tsx
+
 import { motion } from "framer-motion";
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
@@ -43,7 +45,7 @@ export const ShareContestButton: React.FC<ShareContestButtonProps> = ({
 
   const generateShareText = () => {
     const prizeAmount = formatCurrency(parseFloat(prizePool));
-    return `🔥 Join me in "${contestName}" on @DegenDuelMe!\n\n💰 Prize Pool: ${prizeAmount}\n⚔️ Prove your trading skills in this epic battle\n\n${generateShareLink()}\n\n#DegenDuel #CryptoTrading #Contest`;
+    return `🔥 I joined ${contestName} on @DegenDuelMe to win ${prizeAmount} 💰\n⚔️ Prove your trading skills on DegenDuel $DUEL \n${generateShareLink()}`;
   };
 
   const handleShare = async (platform: string) => {
@@ -64,11 +66,7 @@ export const ShareContestButton: React.FC<ShareContestButtonProps> = ({
       });
     } catch (error) {
       // Graceful fallback - log but don't break functionality
-      if (error instanceof Error && error.message.includes('404')) {
-        console.warn("Referral share tracking endpoint not implemented yet");
-      } else {
-        console.error("Failed to track contest share:", error);
-      }
+      console.error("Failed to track contest share:", error);
     }
 
     let url = "";
@@ -79,7 +77,7 @@ export const ShareContestButton: React.FC<ShareContestButtonProps> = ({
       case "discord":
         // Discord doesn't have a direct share URL, so we copy the text
         await copyToClipboard(`${shareText}\n\n${shareLink}`);
-        toast.success("📋 Contest share text copied! Paste it in Discord");
+        toast.success("📋 Contest share text copied!");
         setIsOpen(false);
         return;
       case "telegram":

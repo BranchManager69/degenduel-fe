@@ -4,6 +4,7 @@ const config: Config.InitialOptions = {
   preset: "ts-jest",
   testEnvironment: "jsdom",
   setupFilesAfterEnv: ["<rootDir>/src/setupTests.ts"],
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
@@ -17,9 +18,11 @@ const config: Config.InitialOptions = {
         isolatedModules: true,
       },
     ],
+    "^.+\\.(js|jsx|mjs)$": ["babel-jest", { presets: [["@babel/preset-env", { "modules": "commonjs" }]] }],
   },
   transformIgnorePatterns: [
-    "/node_modules/(?!(@testing-library|@babel|@jest|@branchmanager69/degenduel-shared)/)",
+    // Nuclear option: Transform ALL node_modules to handle ES modules
+    "^$"
   ],
   testRegex: "(/__tests__/.*|(\\.|/)(test|spec))\\.[jt]sx?$",
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],

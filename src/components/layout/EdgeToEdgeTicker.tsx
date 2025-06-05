@@ -12,12 +12,14 @@
  */
 
 import { motion } from 'framer-motion';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useScrollHeader } from '../../hooks/ui/useScrollHeader';
+import { useContests } from '../../hooks/websocket/topic-hooks/useContests';
 import {
   isContestJoinable,
 } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
+import { useStore } from '../../store/useStore';
 import type { Contest } from '../../types';
 import { UnifiedTicker } from './UnifiedTicker';
 
@@ -52,30 +54,122 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = (props) => {
     ? compactOverrideProp
     : isCompactFromHook;
 
-  // Local state for contests and loading
-  const [joinableContests, setJoinableContests] = useState<Contest[]>(initialContests || []);
-  const [loading, setLoading] = useState(initialLoading);
+  // Get cached contests immediately for instant display
+  const cachedContests = useMemo(() => {
+    return useStore.getState().contests || [];
+  }, []);
 
-  // Fetch contests
+  // **Use WebSocket-based contest data for live updates**
+  const {
+    upcomingContests: wsUpcomingContests,
+    lastUpdate: wsLastUpdate
+  } = useContests();
+
+  // Local state for contests and loading - initialize with cached joinable contests
+  const [joinableContests, setJoinableContests] = useState<Contest[]>(() => {
+    if (initialContests) {
+      return initialContests.filter(isContestJoinable);
+    }
+    return cachedContests.filter(isContestJoinable);
+  });
+  
+  // Smart loading - only show loading if no cached data AND WebSocket is loading
+  const [loading, setLoading] = useState(() => {
+    return initialLoading && cachedContests.length === 0 && joinableContests.length === 0;
+  });
+  
+  const isMountedRef = useRef(true);
+  const lastRestFetchRef = useRef<Date | null>(null);
+
+  // **IMMEDIATE REST API fetch for fresh data**
   useEffect(() => {
-    const fetchContests = async () => {
+    isMountedRef.current = true;
+    
+    const fetchContestsViaRest = async () => {
       try {
+        console.log('[EdgeToEdgeTicker] Fetching fresh contests via REST API');
         const response = await ddApi.contests.getAll();
         const contests = Array.isArray(response) ? response : [];
         
-        // Only show joinable contests
-        setJoinableContests(contests.filter(isContestJoinable) || []);
-      } catch (err) {
-        console.error("EdgeToEdgeTicker: Failed to load contests:", err);
+        if (contests.length > 0 && isMountedRef.current) {
+          // Update store
+          useStore.getState().setContests(contests);
+          
+          // Update local state with fresh joinable contests
+          const joinable = contests.filter(isContestJoinable);
+          setJoinableContests(joinable);
+          lastRestFetchRef.current = new Date();
+          
+          console.log('[EdgeToEdgeTicker] REST API loaded:', {
+            total: contests.length,
+            joinable: joinable.length
+          });
+        }
+      } catch (error) {
+        console.error('[EdgeToEdgeTicker] REST API fetch failed:', error);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchContests();
-    const interval = setInterval(fetchContests, 60000);
-    return () => clearInterval(interval);
-  }, [initialContests]);
+    // Fetch immediately on mount
+    fetchContestsViaRest();
+    
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Update with WebSocket data when available and newer than REST
+  useEffect(() => {
+    if (wsUpcomingContests && wsUpcomingContests.length > 0) {
+      const shouldUpdate = !lastRestFetchRef.current || 
+        (wsLastUpdate && wsLastUpdate > lastRestFetchRef.current);
+      
+      if (shouldUpdate) {
+        console.log('[EdgeToEdgeTicker] Using WebSocket upcoming contests:', wsUpcomingContests.length);
+        
+        // The useContests hook already handles conversion - just use the data
+        // Convert from useContests format back to main Contest format
+        const convertedContests = wsUpcomingContests.map(wsContest => ({
+          id: parseInt((wsContest as any).contest_id || (wsContest as any).id) || 0,
+          name: wsContest.name,
+          description: wsContest.description || '',
+          entry_fee: (wsContest as any).entry_fee?.toString() || '0',
+          prize_pool: wsContest.prize_pool?.toString() || '0',
+          start_time: wsContest.start_time,
+          end_time: wsContest.end_time,
+          allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+          participant_count: (wsContest as any).entry_count || 0,
+          status: wsContest.status === 'registration' ? 'pending' as const : 
+                 wsContest.status === 'active' ? 'active' as const :
+                 wsContest.status === 'ended' ? 'completed' as const : 'cancelled' as const,
+          settings: {
+            difficulty: (wsContest as any).difficulty || 'guppy',
+            maxParticipants: null,
+            minParticipants: 2,
+            tokenTypesAllowed: [],
+            startingPortfolioValue: '1000'
+          },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          min_participants: 2,
+          max_participants: 100,
+          is_participating: (wsContest as any).joined || false,
+          contest_code: (wsContest as any).contest_id || (wsContest as any).id || '',
+          image_url: undefined,
+          participants: []
+        })) as Contest[];
+
+        const joinable = convertedContests.filter(isContestJoinable);
+        setJoinableContests(joinable);
+        
+        // Update store
+        useStore.getState().setContests(convertedContests);
+        setLoading(false);
+      }
+    }
+  }, [wsUpcomingContests, wsLastUpdate]);
 
   // Dynamically adjust top position based on header compact state
   const topPosition = finalIsCompact ? 'top-12 sm:top-14' : 'top-14 sm:top-16';
