@@ -46,7 +46,7 @@ import { Contest } from "../../types";
 
 export const MyContestsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useMigratedAuth();
+  const { user, getToken } = useMigratedAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [isRestLoading, setIsRestLoading] = useState(false);
   const [userParticipations, setUserParticipations] = useState<string[]>([]);
@@ -112,47 +112,114 @@ export const MyContestsPage: React.FC = () => {
   const fetchContestsViaRest = async () => {
     try {
       setIsRestLoading(true);
-      console.log("[MyContestsPage] Fetching contests via REST API");
+      console.log("[MyContestsPage] Fetching user participations via authenticated endpoint");
 
-      // Get all contests efficiently 
-      const allContests = await ddApi.contests.getAll();
-      
-      // Get user participations if we have a wallet
-      if (user?.wallet_address) {
-        try {
-          const participations = await ddApi.contests.getUserParticipations(user.wallet_address);
-          const participationIds = participations.map((p: any) => p.contest_id.toString());
-          setUserParticipations(participationIds);
+      // Use the authenticated endpoint - much cleaner!
+      const token = await getToken();
+      if (!token) {
+        console.warn("[MyContestsPage] No auth token available");
+        setIsRestLoading(false);
+        return;
+      }
+
+      // Get user's participations directly via authenticated endpoint
+      const response = await fetch('/api/contests/user-participations', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch participations: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("[MyContestsPage] Received participations:", data);
+
+      if (data.participations && Array.isArray(data.participations)) {
+        // Extract contest data from participations
+        const userContests = data.participations.map((p: any) => {
+          // If the participation includes full contest data, use it
+          if (p.contest) {
+            return {
+              ...p.contest,
+              id: p.contest.id || p.contest_id,
+              is_participating: true,
+              user_rank: p.rank,
+              user_portfolio_value: p.portfolio_value
+            };
+          }
+          // Otherwise just track the contest ID for filtering
+          return {
+            id: p.contest_id,
+            is_participating: true
+          };
+        }).filter((c: any) => c.id); // Filter out any without IDs
+
+        console.log("[MyContestsPage] Processed", userContests.length, "user contests");
+        
+        // Store contest IDs for filtering
+        const participationIds = userContests.map((c: any) => c.id.toString());
+        setUserParticipations(participationIds);
+
+        // If we got full contest data, update the store
+        const fullContests = userContests.filter((c: any) => c.name);
+        if (fullContests.length > 0) {
+          // Update store with user's contests
+          const currentContests = useStore.getState().contests || [];
+          const updatedContests = [...currentContests];
           
-          // Mark contests as participating
-          const updatedContests = allContests.map(contest => ({
-            ...contest,
-            is_participating: participationIds.includes(contest.id?.toString() || '')
-          }));
+          // Merge user contest data
+          fullContests.forEach((userContest: any) => {
+            const existingIndex = updatedContests.findIndex(c => c.id === userContest.id);
+            if (existingIndex >= 0) {
+              updatedContests[existingIndex] = {
+                ...updatedContests[existingIndex],
+                ...userContest
+              };
+            } else {
+              updatedContests.push(userContest);
+            }
+          });
           
-          // Update Zustand store with all contests 
           useStore.getState().setContests(updatedContests);
-          console.log("[MyContestsPage] REST API loaded", allContests.length, "total contests,", participationIds.length, "user participations");
-        } catch (participationError) {
-          console.warn("[MyContestsPage] Failed to get user participations:", participationError);
-          // Still update store with all contests, user filtering will be empty
-          useStore.getState().setContests(allContests);
         }
       } else {
-        // No user, just update store with all contests
-        useStore.getState().setContests(allContests);
+        console.log('[MyContestsPage] No participations found for user');
+        setUserParticipations([]);
       }
       
     } catch (error) {
-      console.error("Failed to fetch contests via REST:", error);
-      toast.error('Failed to load your contests', {
-        duration: 4000,
-        style: {
-          background: '#1f2937',
-          color: '#f3f4f6',
-          border: '1px solid #374151'
-        }
-      });
+      console.error("Failed to fetch user participations:", error);
+      
+      // Fallback: Try to get all contests if user participations fail
+      try {
+        console.log("[MyContestsPage] Falling back to fetching all contests");
+        const allContests = await ddApi.contests.getAll();
+        useStore.getState().setContests(allContests);
+        
+        // Without participation data, we can't filter properly
+        toast('Could not load your specific contests, showing all contests', {
+          icon: '⚠️',
+          duration: 4000,
+          style: {
+            background: '#1f2937',
+            color: '#f3f4f6',
+            border: '1px solid #374151'
+          }
+        });
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+        toast.error('Failed to load contests', {
+          duration: 4000,
+          style: {
+            background: '#1f2937',
+            color: '#f3f4f6',
+            border: '1px solid #374151'
+          }
+        });
+      }
     } finally {
       setIsRestLoading(false);
     }

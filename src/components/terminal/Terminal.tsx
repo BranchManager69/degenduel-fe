@@ -808,7 +808,7 @@ export const Terminal = ({
         <motion.div
           ref={terminalRef}
           key="terminal"
-          className={`bg-black/95 border border-purple-500/60 font-mono text-sm ${sizeState === 'large' ? 'xl:text-base' : ''} fixed bottom-4 left-4 right-4 p-4 ${sizeState === 'large' ? 'xl:p-5' : ''} rounded-md max-w-full z-[99998] shadow-2xl`}
+          className={`bg-black/95 border border-purple-500/60 font-mono text-sm ${sizeState === 'large' ? 'xl:text-base' : ''} fixed bottom-4 left-4 right-4 p-4 ${sizeState === 'large' ? 'xl:p-5' : ''} rounded-md max-w-full z-[99998] shadow-2xl pointer-events-auto`}
           style={{ 
             perspective: "1000px",
             transformStyle: "preserve-3d",
