@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Authentication Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #0f0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #0f0;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0a0;
+        }
+        .log {
+            background: #000;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #0f0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px;
+        }
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .info { color: #00f; }
+        .warning { color: #fa0; }
+        input {
+            background: #333;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 5px;
+            margin: 5px;
+            width: 300px;
+            font-family: monospace;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 3px;
+        }
+        .connected { background: #0a0; color: #000; }
+        .disconnected { background: #a00; color: #fff; }
+        .authenticated { background: #00a; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 WebSocket Authentication Test</h1>
+        
+        <div class="section">
+            <h2>Connection Status</h2>
+            <span class="status disconnected" id="connectionStatus">Disconnected</span>
+            <span class="status disconnected" id="authStatus">Not Authenticated</span>
+        </div>
+
+        <div class="section">
+            <h2>1. Connection</h2>
+            <button onclick="connectWebSocket()">Connect to WebSocket</button>
+            <button onclick="disconnectWebSocket()">Disconnect</button>
+        </div>
+
+        <div class="section">
+            <h2>2. Authentication</h2>
+            <input type="text" id="authToken" placeholder="JWT Token (optional - uses localStorage if empty)">
+            <br>
+            <button onclick="sendAuthMessage()">Send AUTH Message</button>
+            <button onclick="checkAuthToken()">Check Stored Token</button>
+        </div>
+
+        <div class="section">
+            <h2>3. Topic Subscription</h2>
+            <h3>Public Topics (No Auth Required)</h3>
+            <button onclick="subscribeToTopic(['MARKET_DATA'])">Market Data</button>
+            <button onclick="subscribeToTopic(['SYSTEM'])">System</button>
+            <button onclick="subscribeToTopic(['TERMINAL'])">Terminal</button>
+            
+            <h3>Authenticated Topics</h3>
+            <button onclick="subscribeToTopic(['USER'])">User</button>
+            <button onclick="subscribeToTopic(['PORTFOLIO'])">Portfolio</button>
+            <button onclick="subscribeToTopic(['WALLET'])">Wallet</button>
+            <button onclick="subscribeToTopic(['WALLET_BALANCE'])">Wallet Balance</button>
+            
+            <h3>Admin Topics</h3>
+            <button onclick="subscribeToTopic(['ADMIN'])">Admin</button>
+            
+            <h3>Combined Subscriptions</h3>
+            <button onclick="subscribeToTopic(['USER', 'PORTFOLIO', 'WALLET'])">All User Topics</button>
+            <button onclick="subscribeWithAuth(['PORTFOLIO'], true)">Portfolio with Auth Token</button>
+        </div>
+
+        <div class="section">
+            <h2>4. Unsubscribe</h2>
+            <button onclick="unsubscribeFromTopic(['MARKET_DATA'])">Unsubscribe Market Data</button>
+            <button onclick="unsubscribeFromTopic(['USER', 'PORTFOLIO'])">Unsubscribe User Topics</button>
+        </div>
+
+        <div class="section">
+            <h2>Message Log</h2>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let messageCount = 0;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            messageCount++;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            messageCount = 0;
+        }
+
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            if (connected) {
+                status.textContent = 'Connected';
+                status.className = 'status connected';
+            } else {
+                status.textContent = 'Disconnected';
+                status.className = 'status disconnected';
+            }
+        }
+
+        function updateAuthStatus(authenticated) {
+            const status = document.getElementById('authStatus');
+            if (authenticated) {
+                status.textContent = 'Authenticated';
+                status.className = 'status authenticated';
+            } else {
+                status.textContent = 'Not Authenticated';
+                status.className = 'status disconnected';
+            }
+        }
+
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('Already connected!', 'warning');
+                return;
+            }
+
+            log('Connecting to wss://degenduel.me/api/v69/ws...', 'info');
+            
+            ws = new WebSocket('wss://degenduel.me/api/v69/ws');
+
+            ws.onopen = () => {
+                log('✅ WebSocket connected!', 'success');
+                updateConnectionStatus(true);
+                
+                // Check if we have a cookie-based auth
+                log('Checking for cookie-based authentication...', 'info');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    
+                    // Pretty print the message
+                    log('📥 Received: ' + JSON.stringify(message, null, 2), 'info');
+                    
+                    // Handle specific message types
+                    if (message.type === 'ACKNOWLEDGMENT') {
+                        if (message.operation === 'authenticate' && message.status === 'success') {
+                            log('🔐 Authentication successful!', 'success');
+                            updateAuthStatus(true);
+                            if (message.user) {
+                                log(`User: ${message.user.userId} (${message.user.role})`, 'success');
+                            }
+                        } else if (message.operation === 'subscribe' && message.status === 'success') {
+                            log(`✅ Subscribed to: ${message.topics.join(', ')}`, 'success');
+                        }
+                    } else if (message.type === 'ERROR') {
+                        log(`❌ Error ${message.code}: ${message.error || message.message}`, 'error');
+                        if (message.code === 4401) {
+                            updateAuthStatus(false);
+                        }
+                    } else if (message.type === 'DATA') {
+                        log(`📊 Data from ${message.topic}: ${JSON.stringify(message.data).substring(0, 100)}...`, 'info');
+                    }
+                } catch (e) {
+                    log('Failed to parse message: ' + event.data, 'error');
+                }
+            };
+
+            ws.onerror = (error) => {
+                log('❌ WebSocket error!', 'error');
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = (event) => {
+                log(`WebSocket closed. Code: ${event.code}, Reason: ${event.reason || 'No reason'}`, 'warning');
+                updateConnectionStatus(false);
+                updateAuthStatus(false);
+            };
+        }
+
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+                log('Disconnected WebSocket', 'info');
+            } else {
+                log('Not connected', 'warning');
+            }
+        }
+
+        function sendAuthMessage() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected! Connect first.', 'error');
+                return;
+            }
+
+            const tokenInput = document.getElementById('authToken').value;
+            const token = tokenInput || localStorage.getItem('wsToken') || localStorage.getItem('jwt');
+            
+            if (!token) {
+                log('No token found! Enter a token or log in to the site first.', 'error');
+                return;
+            }
+
+            const authMessage = {
+                type: 'AUTH',
+                authToken: token
+            };
+
+            log('📤 Sending AUTH message...', 'info');
+            ws.send(JSON.stringify(authMessage));
+        }
+
+        function checkAuthToken() {
+            const wsToken = localStorage.getItem('wsToken');
+            const jwtToken = localStorage.getItem('jwt');
+            
+            if (wsToken) {
+                log(`Found wsToken in localStorage: ${wsToken.substring(0, 20)}...`, 'success');
+            }
+            if (jwtToken) {
+                log(`Found jwt in localStorage: ${jwtToken.substring(0, 20)}...`, 'success');
+            }
+            if (!wsToken && !jwtToken) {
+                log('No tokens found in localStorage. You need to log in to the site first.', 'warning');
+            }
+        }
+
+        function subscribeToTopic(topics) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected! Connect first.', 'error');
+                return;
+            }
+
+            const message = {
+                type: 'SUBSCRIBE',
+                topics: topics
+            };
+
+            log(`📤 Subscribing to: ${topics.join(', ')}`, 'info');
+            ws.send(JSON.stringify(message));
+        }
+
+        function subscribeWithAuth(topics, useAuth = false) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected! Connect first.', 'error');
+                return;
+            }
+
+            const message = {
+                type: 'SUBSCRIBE',
+                topics: topics
+            };
+
+            if (useAuth) {
+                const token = document.getElementById('authToken').value || 
+                             localStorage.getItem('wsToken') || 
+                             localStorage.getItem('jwt');
+                if (token) {
+                    message.authToken = token;
+                    log(`📤 Subscribing to ${topics.join(', ')} with auth token`, 'info');
+                } else {
+                    log('No token available for authenticated subscription', 'error');
+                    return;
+                }
+            }
+
+            ws.send(JSON.stringify(message));
+        }
+
+        function unsubscribeFromTopic(topics) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected! Connect first.', 'error');
+                return;
+            }
+
+            const message = {
+                type: 'UNSUBSCRIBE',
+                topics: topics
+            };
+
+            log(`📤 Unsubscribing from: ${topics.join(', ')}`, 'info');
+            ws.send(JSON.stringify(message));
+        }
+
+        // Auto-connect on page load
+        window.onload = () => {
+            log('WebSocket Test Tool Ready. Click "Connect to WebSocket" to begin.', 'info');
+            checkAuthToken();
+        };
+    </script>
+</body>
+</html>

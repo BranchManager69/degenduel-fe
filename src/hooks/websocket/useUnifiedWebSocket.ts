@@ -1,3 +1,5 @@
+// src/hooks/websocket/useUnifiedWebSocket.ts
+
 /**
  * useUnifiedWebSocket Hook
  * 

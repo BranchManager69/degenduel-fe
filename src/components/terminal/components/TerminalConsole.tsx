@@ -442,25 +442,32 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                      : size === 'middle'
                      ? 'h-60'
                      : 'h-80 xl:h-96'}` }
+        onWheel={(e) => {
+          // Enhanced scroll handling for the conversation area
+          const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+          const deltaY = e.deltaY;
+          const isScrollable = scrollHeight > clientHeight;
+          
+          if (isScrollable) {
+            // Check if we're at scroll boundaries
+            const isAtTop = scrollTop === 0 && deltaY < 0;
+            const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1 && deltaY > 0;
+            
+            // Only prevent propagation if we're scrolling within bounds
+            if (!isAtTop && !isAtBottom) {
+              e.stopPropagation();
+            }
+          } else {
+            // If content isn't scrollable, just stop propagation to prevent background scroll
+            // Don't call preventDefault() as it causes passive event listener errors
+            e.stopPropagation();
+          }
+        }}
         style={{
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(157, 78, 221, 1) rgba(13, 13, 13, 0.95)',
           background: 'rgba(0, 0, 0, 0.6)',
           boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.5)',
-        }}
-        onWheel={(e) => {
-          // Prevent scroll propagation to background when scrolling in terminal
-          e.stopPropagation();
-          
-          // Check if we're at the boundaries to prevent background scroll
-          const element = e.currentTarget;
-          const isAtTop = element.scrollTop === 0;
-          const isAtBottom = element.scrollTop + element.clientHeight >= element.scrollHeight;
-          
-          // If scrolling up at the top or down at the bottom, prevent default
-          if ((e.deltaY < 0 && isAtTop) || (e.deltaY > 0 && isAtBottom)) {
-            e.preventDefault();
-          }
         }}
       >
         {messages.length === 0 ? (

@@ -1,3 +1,5 @@
+// src/hooks/websocket/topic-hooks/useTokenData.ts
+
 /**
  * useTokenData Hook - Pro Frontend WebSocket Pagination
  * 
@@ -150,10 +152,20 @@ export function useTokenData(
         // Update pagination state
         setPagination(paginationData);
 
-        // If loading more (offset > 0), append to existing tokens
+        // Smart append with reasonable limit
         if (offset > 0) {
-          setTokens(prev => [...prev, ...filteredTokens]);
+          setTokens(prev => {
+            const MAX_DISPLAY = 200; // Reasonable limit for performance
+            const combined = [...prev, ...filteredTokens];
+            // Only limit if getting too large
+            if (combined.length > MAX_DISPLAY) {
+              console.log(`[useTokenData] Trimming to last ${MAX_DISPLAY} tokens for performance`);
+              return combined.slice(-MAX_DISPLAY);
+            }
+            return combined;
+          });
         } else {
+          // Fresh load - replace everything
           setTokens(filteredTokens);
         }
       } else {
@@ -186,7 +198,23 @@ export function useTokenData(
       });
     } catch (error: any) {
       console.error('[useTokenData] REST API fallback failed:', error);
-      setError('Failed to load token data. Please refresh the page.');
+      
+      // Better error messages based on error type
+      let errorMessage = 'Failed to load token data';
+      
+      if (!navigator.onLine) {
+        errorMessage = 'No internet connection';
+      } else if (error.status === 404) {
+        errorMessage = 'Token service not found';
+      } else if (error.status === 500) {
+        errorMessage = 'Server error - please try again later';
+      } else if (error.status === 429) {
+        errorMessage = 'Too many requests - please wait a moment';
+      } else if (error.message?.includes('NetworkError')) {
+        errorMessage = 'Network error - check your connection';
+      }
+      
+      setError(errorMessage);
       setIsLoading(false);
 
       dispatchWebSocketEvent('token_data_rest_failed', {
@@ -267,10 +295,20 @@ export function useTokenData(
           // Update pagination state
           setPagination(paginationData);
 
-          // If loading more (offset > 0), append to existing tokens
+          // Smart append with reasonable limit (same as REST)
           if (paginationData.offset > 0) {
-            setTokens(prev => [...prev, ...filteredTokens]);
+            setTokens(prev => {
+              const MAX_DISPLAY = 200; // Reasonable limit for performance
+              const combined = [...prev, ...filteredTokens];
+              // Only limit if getting too large
+              if (combined.length > MAX_DISPLAY) {
+                console.log(`[useTokenData] WebSocket: Trimming to last ${MAX_DISPLAY} tokens`);
+                return combined.slice(-MAX_DISPLAY);
+              }
+              return combined;
+            });
           } else {
+            // Fresh load - replace everything
             setTokens(filteredTokens);
           }
 

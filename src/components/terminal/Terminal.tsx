@@ -128,21 +128,7 @@ export const Terminal = ({
   // Mobile keyboard visibility state
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
-  // Prevent body scroll when terminal is expanded
-  useEffect(() => {
-    if (!terminalMinimized) {
-      // Save current body overflow style
-      const originalOverflow = document.body.style.overflow;
-      
-      // Prevent body scroll
-      document.body.style.overflow = 'hidden';
-      
-      // Cleanup function to restore original overflow
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
-  }, [terminalMinimized]);
+  // No body scroll lock - let the browser handle cursor-aware scrolling
   
   // Dynamic UI Manager ref
   const dynamicUIRef = useRef<DynamicUIManagerHandle>(null);
@@ -801,7 +787,7 @@ export const Terminal = ({
       {/* Dynamic UI Manager - Rendered outside terminal container */}
       <DynamicUIManager ref={dynamicUIRef} className="mb-4" />
       
-      <div className={`terminal-container ${getContainerClasses()} ${isKeyboardVisible ? 'keyboard-visible' : ''} w-full mx-auto transition-all duration-300 ease-in-out fixed top-0 left-0 pointer-events-none`}>
+      <div className={`terminal-container ${getContainerClasses()} ${isKeyboardVisible ? 'keyboard-visible' : ''} w-full mx-auto transition-all duration-300 ease-in-out fixed top-0 left-0 z-[99999] pointer-events-none`}>
       
       {/* Terminal Container */}
       {!terminalMinimized && (
@@ -818,8 +804,25 @@ export const Terminal = ({
             textAlign: "left" /* Ensure all text is left-aligned by default */
           }}
           onWheel={(e) => {
-            // Stop any wheel events from bubbling up to the page
-            e.stopPropagation();
+            // Better scroll event handling - only prevent propagation if we can actually scroll
+            const target = e.currentTarget;
+            const { scrollTop, scrollHeight, clientHeight } = target;
+            const isScrollable = scrollHeight > clientHeight;
+            const deltaY = e.deltaY;
+            
+            if (isScrollable) {
+              // Check if we're at scroll boundaries
+              const isAtTop = scrollTop === 0 && deltaY < 0;
+              const isAtBottom = scrollTop + clientHeight >= scrollHeight && deltaY > 0;
+              
+              // Only prevent propagation if we're not at a boundary, or if we're scrolling within bounds
+              if (!isAtTop && !isAtBottom) {
+                e.stopPropagation();
+              }
+            } else {
+              // If not scrollable, just stop propagation - avoid preventDefault() on passive listeners
+              e.stopPropagation();
+            }
           }}
           initial={{ 
             opacity: 0, 
@@ -981,11 +984,17 @@ export const Terminal = ({
           }}
           transition={{ duration: 0.4, type: 'spring' }}
           onClick={(event) => {
+            console.log('[Terminal] Minimized avatar clicked', { isDragging, terminalMinimized });
             event.stopPropagation();
+            event.preventDefault();
             setTimeout(() => {
+              console.log('[Terminal] Click handler timeout fired', { isDragging });
               if (!isDragging) {
+                console.log('[Terminal] Expanding terminal...');
                 setTerminalMinimized(false);
                 setHasUnreadMessages(false);
+              } else {
+                console.log('[Terminal] Not expanding - still dragging');
               }
             }, 100);
           }}

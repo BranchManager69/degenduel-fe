@@ -9,26 +9,17 @@
  * @updated 2025-06-03 - NUCLEAR REPLACEMENT with REST API architecture
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { API_URL } from '../../../config/config';
 import { Token } from '../../../types';
 
-// Enhanced Token interface for DegenDuel Top 30
+// Clean Token interface for DegenDuel Top 30
 export interface DegenDuelToken extends Token {
-  // DegenDuel proprietary data
+  // Backend data
   degenduel_score: number;
-  trend_rank: number;
-  trend_category: '🌅 Early Birds' | '🔥 Heating Up' | '🚀 Moon Mission' | '💎 Hidden Gems';
-  momentum_indicator: '🚀' | '📈' | '⚡' | '💎' | '🔥';
-
-  // Enhanced frontend data
+  
+  // Future backend fields (when available)
   sparkline_1h?: number[];
-  highlight_reason?: string;
-
-  // Contest integration
-  contest_popularity?: number;
-  player_sentiment?: number;
-  degen_factor?: number;
 }
 
 export interface DegenDuelTop30Response {
@@ -102,15 +93,8 @@ const transformDegenDuelToken = (backendToken: any): DegenDuelToken => {
 
   return {
     ...baseToken,
-    degenduel_score: backendToken.degenduel_score || 0,
-    trend_rank: backendToken.trend_rank || 0,
-    trend_category: backendToken.trend_category || '🔥 Heating Up',
-    momentum_indicator: backendToken.momentum_indicator || '📈',
-    sparkline_1h: backendToken.sparkline_1h || [],
-    highlight_reason: backendToken.highlight_reason || '',
-    contest_popularity: backendToken.contest_popularity || 0,
-    player_sentiment: backendToken.player_sentiment || 0,
-    degen_factor: backendToken.degen_factor || 0
+    degenduel_score: Number(backendToken.degenduel_score || 0),
+    sparkline_1h: backendToken.sparkline_1h || []
   };
 };
 
@@ -181,7 +165,9 @@ export function useDegenDuelTop30(options: DegenDuelTop30Options = {}) {
       console.log(`[useDegenDuelTop30] Successfully fetched ${data.data.length} tokens`);
 
       // Transform tokens to frontend format
-      const transformedTokens = data.data.map(transformDegenDuelToken);
+      const transformedTokens = data.data.map((token: any) => 
+        transformDegenDuelToken(token)
+      );
 
       setTokens(transformedTokens);
       setMetadata(data.metadata || null);
@@ -241,15 +227,24 @@ export function useDegenDuelTop30(options: DegenDuelTop30Options = {}) {
     fetchTokens();
   }, [fetchTokens]);
 
-  // Helper functions
-  const getTokensByCategory = useCallback((category: DegenDuelToken['trend_category']) => {
-    return tokens.filter(token => token.trend_category === category);
-  }, [tokens]);
 
-  const getTopScorers = useCallback((count: number = 5) => {
-    return tokens
-      .sort((a, b) => b.degenduel_score - a.degenduel_score)
-      .slice(0, count);
+  // Memoize expensive stats calculation
+  const stats = useMemo(() => {
+    if (tokens.length === 0) {
+      return {
+        totalVolume24h: 0,
+        totalMarketCap: 0,
+        averageScore: 0,
+        topScore: 0
+      };
+    }
+
+    return {
+      totalVolume24h: tokens.reduce((sum, t) => sum + Number(t.volume_24h || 0), 0),
+      totalMarketCap: tokens.reduce((sum, t) => sum + Number(t.market_cap || 0), 0),
+      averageScore: tokens.reduce((sum, token) => sum + token.degenduel_score, 0) / tokens.length,
+      topScore: Math.max(...tokens.map(t => t.degenduel_score))
+    };
   }, [tokens]);
 
   return {
@@ -261,25 +256,10 @@ export function useDegenDuelTop30(options: DegenDuelTop30Options = {}) {
     isConnected,
     error,
 
-    // Helpers
-    getTokensByCategory,
-    getTopScorers,
-
     // Actions
     refresh,
 
     // Stats for UI
-    stats: {
-      totalTokens: tokens.length,
-      averageScore: tokens.length > 0 ?
-        tokens.reduce((sum, token) => sum + token.degenduel_score, 0) / tokens.length : 0,
-      topScore: tokens.length > 0 ? Math.max(...tokens.map(t => t.degenduel_score)) : 0,
-      categories: {
-        earlyBirds: getTokensByCategory('🌅 Early Birds').length,
-        heatingUp: getTokensByCategory('🔥 Heating Up').length,
-        moonMission: getTokensByCategory('🚀 Moon Mission').length,
-        hiddenGems: getTokensByCategory('💎 Hidden Gems').length
-      }
-    }
+    stats
   };
 } 

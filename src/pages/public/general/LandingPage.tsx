@@ -69,9 +69,15 @@ export const LandingPage: React.FC = () => {
   const forceShowFabs = true; // Changed from useState to a const, always true
   
   const isMounted = useRef(true);
+  const lastRestFetchRef = useRef<Date | null>(null);
 
   // Countdown completion state
   const [isCountdownComplete, setIsCountdownComplete] = useState(false);
+
+  // Get cached contests immediately for instant display
+  const cachedContests = useMemo(() => {
+    return useStore.getState().contests || [];
+  }, []);
   
   // const { trackEvent } = useAnalytics(); // If 'trackEvent' error persists, we may need to review useAnalytics hook
   // const { isMobile, isTablet, isDesktop } = useScreenSize(); // Marked for removal if unused
@@ -112,19 +118,29 @@ export const LandingPage: React.FC = () => {
   } = useContests();
 
   // Map WebSocket contest statuses to our local state
-  const [activeContests, setActiveContests] = useState<Contest[]>([]);
-  const [openContests, setOpenContests] = useState<Contest[]>([]);
+  // Initialize with cached data for instant display
+  const [activeContests, setActiveContests] = useState<Contest[]>(() => {
+    return cachedContests.filter(isContestCurrentlyUnderway);
+  });
+  const [openContests, setOpenContests] = useState<Contest[]>(() => {
+    return cachedContests.filter(isContestJoinable);
+  });
 
   // Sync WebSocket data to local state
   useEffect(() => {
-    if (wsActiveContests && wsUpcomingContests) {
-      console.log("[LandingPage] WebSocket contest data received:", {
-        active: wsActiveContests.length,
-        upcoming: wsUpcomingContests.length,
-        total: allContests.length,
-        wsConnected,
-        wsLastUpdate
-      });
+    // Only update from WebSocket if we have data and it's newer than our REST fetch
+    if (wsActiveContests && wsUpcomingContests && wsConnected) {
+      const shouldUpdateFromWs = !lastRestFetchRef.current || 
+        (wsLastUpdate && wsLastUpdate > lastRestFetchRef.current);
+      
+      if (shouldUpdateFromWs) {
+        console.log("[LandingPage] WebSocket contest data received:", {
+          active: wsActiveContests.length,
+          upcoming: wsUpcomingContests.length,
+          total: allContests.length,
+          wsConnected,
+          wsLastUpdate
+        });
       
       // DEBUG: Log raw WebSocket contest names
       console.log('[LandingPage] DEBUG - Raw WebSocket active contests:', wsActiveContests.map(c => ({
@@ -195,51 +211,52 @@ export const LandingPage: React.FC = () => {
         updated_at: new Date().toISOString()
       })) as unknown as Contest[];
 
-      setActiveContests(convertedActiveContests);
-      setOpenContests(convertedUpcomingContests);
-      setLoading(wsLoading);
-      setError(wsError);
+        setActiveContests(convertedActiveContests);
+        setOpenContests(convertedUpcomingContests);
+        setLoading(false); // We have data, so stop loading
 
-      // Update debug info
-      setContestDebugInfo(prev => ({
-        ...prev,
-        wsConnectionStatus: wsConnected ? 'connected' : 'disconnected',
-        wsLastUpdate: wsLastUpdate ? wsLastUpdate.toISOString() : null,
-        lastFetchAttempt: new Date().toISOString(),
-        errorDetails: wsError,
-        contestApiResponse: `WebSocket: ${allContests.length} contests total`
-      }));
+        // Update debug info
+        setContestDebugInfo(prev => ({
+          ...prev,
+          wsConnectionStatus: wsConnected ? 'connected' : 'disconnected',
+          wsLastUpdate: wsLastUpdate ? wsLastUpdate.toISOString() : null,
+          lastFetchAttempt: new Date().toISOString(),
+          errorDetails: wsError,
+          contestApiResponse: `WebSocket: ${allContests.length} contests total`
+        }));
 
-      // Update Zustand store with converted WebSocket contest data
-      if (allContests.length > 0) {
-        const convertedAllContests = allContests.map(contest => ({
-          ...contest,
-          id: (contest as any).contest_id || (contest as any).id || '',
-          allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-          participant_count: (contest as any).entry_count || 0,
-          settings: {
-            difficulty: (contest as any).difficulty || 'guppy',
-            maxParticipants: null,
-            minParticipants: 2,
-            tokenTypesAllowed: [],
-            startingPortfolioValue: '1000'
-          },
-          min_participants: 2,
-          max_participants: 100,
-          is_participating: (contest as any).joined || false,
-          contest_code: (contest as any).contest_id || (contest as any).id || '',
-          image_url: undefined,
-          participants: [],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })) as unknown as Contest[];
-        useStore.getState().setContests(convertedAllContests);
+        // Update Zustand store with converted WebSocket contest data
+        if (allContests.length > 0) {
+          const convertedAllContests = allContests.map(contest => ({
+            ...contest,
+            id: (contest as any).contest_id || (contest as any).id || '',
+            allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+            participant_count: (contest as any).entry_count || 0,
+            settings: {
+              difficulty: (contest as any).difficulty || 'guppy',
+              maxParticipants: null,
+              minParticipants: 2,
+              tokenTypesAllowed: [],
+              startingPortfolioValue: '1000'
+            },
+            min_participants: 2,
+            max_participants: 100,
+            is_participating: (contest as any).joined || false,
+            contest_code: (contest as any).contest_id || (contest as any).id || '',
+            image_url: undefined,
+            participants: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })) as unknown as Contest[];
+          useStore.getState().setContests(convertedAllContests);
+        }
       }
     }
   }, [wsActiveContests, wsUpcomingContests, allContests, wsLoading, wsConnected, wsError, wsLastUpdate]);
 
   const isMaintenanceModeActive = settings?.maintenance_mode?.enabled || false;
   const maintenanceMessageToDisplay = settings?.maintenance_mode?.message || "Contests are temporarily paused for maintenance. Please check back soon!";
+  
   
   useEffect(() => {
     if (websocketContractAddress && websocketContractRevealed) {
@@ -278,6 +295,59 @@ export const LandingPage: React.FC = () => {
   
   // Terminal Data - This is the "AI Chat" websocket connection
   // const terminalData = useTerminalData(); // Commented out as it's not used
+
+  // **CRITICAL: Load data IMMEDIATELY - don't wait for WebSocket!**
+  useEffect(() => {
+    // Step 1: We're already showing cached data from state initialization
+    console.log('[LandingPage] Initial load - using cached contests:', cachedContests.length);
+    
+    // Step 2: ALWAYS fetch fresh data via REST API immediately
+    const fetchContestsViaRest = async () => {
+      try {
+        console.log('[LandingPage] Fetching fresh contests via REST API');
+        const response = await ddApi.contests.getAll();
+        const contests = Array.isArray(response) ? response : [];
+        
+        if (contests.length > 0 && isMounted.current) {
+          // Update store
+          useStore.getState().setContests(contests);
+          
+          // Update local state with fresh data
+          const liveContests = contests.filter(isContestCurrentlyUnderway);
+          const pendingContests = contests.filter(isContestJoinable);
+          
+          setActiveContests(liveContests);
+          setOpenContests(pendingContests);
+          lastRestFetchRef.current = new Date();
+          
+          console.log('[LandingPage] REST API loaded:', {
+            total: contests.length,
+            live: liveContests.length,
+            pending: pendingContests.length
+          });
+        }
+        
+        // Clear any previous errors
+        setError(null);
+      } catch (error) {
+        console.error('[LandingPage] REST API fetch failed:', error);
+        // Only set error if we have no cached data to show
+        if (cachedContests.length === 0) {
+          setError('Failed to load contests');
+        }
+      } finally {
+        // Only set loading false if we're not waiting for WebSocket
+        if (!wsConnected || cachedContests.length > 0) {
+          setLoading(false);
+        }
+      }
+    };
+    
+    // Fetch immediately on mount
+    fetchContestsViaRest();
+    
+    // Step 3: WebSocket will provide live updates when connected
+  }, []); // Only run once on mount
 
   // **FALLBACK: REST API retry function for compatibility**
   const retryContestFetch = useCallback(async (attempt = 1) => {
@@ -354,16 +424,42 @@ export const LandingPage: React.FC = () => {
     retryContestFetch();
   }, [retryContestFetch]);
 
-  // Manual refresh function that prefers WebSocket but falls back to REST API
-  const handleManualRefresh = useCallback(() => {
-    if (wsConnected) {
-      console.log('[LandingPage] Manual refresh via WebSocket');
-      wsRefreshContests();
-    } else {
-      console.log('[LandingPage] Manual refresh via REST API fallback');
-      retryContestFetch();
+  // Manual refresh function that always tries REST first for immediate results
+  const handleManualRefresh = useCallback(async () => {
+    console.log('[LandingPage] Manual refresh - fetching via REST API first');
+    
+    try {
+      // Always fetch via REST first for immediate results
+      const response = await ddApi.contests.getAll();
+      const contests = Array.isArray(response) ? response : [];
+      
+      if (contests.length > 0 && isMounted.current) {
+        // Update store
+        useStore.getState().setContests(contests);
+        
+        // Update local state
+        const liveContests = contests.filter(isContestCurrentlyUnderway);
+        const pendingContests = contests.filter(isContestJoinable);
+        
+        setActiveContests(liveContests);
+        setOpenContests(pendingContests);
+        lastRestFetchRef.current = new Date();
+        setError(null);
+      }
+      
+      // Also trigger WebSocket refresh if connected for future updates
+      if (wsConnected) {
+        console.log('[LandingPage] Also refreshing via WebSocket for live updates');
+        wsRefreshContests();
+      }
+    } catch (error) {
+      console.error('[LandingPage] Manual refresh failed:', error);
+      // If REST fails and WebSocket is connected, try WebSocket as fallback
+      if (wsConnected) {
+        wsRefreshContests();
+      }
     }
-  }, [wsConnected, wsRefreshContests, retryContestFetch]);
+  }, [wsConnected, wsRefreshContests]);
 
   const fallbackDateForTimers = useMemo(() => new Date(FALLBACK_RELEASE_DATE), []);
 
@@ -816,7 +912,7 @@ export const LandingPage: React.FC = () => {
                                 title="Crown Contest"
                                 type={crownContest.status}
                                 contests={[]}
-                                loading={loading}
+                                loading={loading && activeContests.length === 0 && openContests.length === 0}
                                 featuredContest={crownContest}
                                 featuredLabel="👑 CROWN CONTEST"
                                 isFeatureSection={true}
@@ -847,7 +943,7 @@ export const LandingPage: React.FC = () => {
                                     title="Live Duels"
                                     type="active"
                                     contests={filteredActiveContests}
-                                    loading={loading}
+                                    loading={loading && activeContests.length === 0 && openContests.length === 0}
                                   />
                                 )}
 
@@ -856,7 +952,7 @@ export const LandingPage: React.FC = () => {
                                   title="Starting Soon"
                                   type="pending"
                                   contests={filteredOpenContests}
-                                  loading={loading}
+                                  loading={loading && activeContests.length === 0 && openContests.length === 0}
                                 />
                               </>
                             );

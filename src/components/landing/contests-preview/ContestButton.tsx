@@ -23,47 +23,10 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
   const isCancelled = type === "cancelled";
 
   // Special treatment for participating contests
-  const isEntered = isParticipating && !isComplete && !isCancelled;
+  // const isEntered = isParticipating && !isComplete && !isCancelled;
 
-  // Determine gradient based on contest type and participation
-  const gradientClasses = isEntered
-    ? "from-brand-400/20 via-brand-500/20 to-brand-600/20"
-    : isLive
-      ? "from-green-500/20 via-green-600/20 to-green-500/20"  // All green for live
-      : isCancelled
-        ? "from-red-500/20 via-red-600/20 to-red-500/20"  // Red/gray for cancelled
-        : "from-blue-500/20 via-brand-500/20 to-blue-500/20";
-
-  // Determine text color based on contest type and participation
-  const textColorClass = isEntered
-    ? "text-brand-400"
-    : isLive
-      ? "text-green-400"
-      : isUpcoming
-        ? "text-blue-400"
-        : isComplete
-          ? "text-green-400"
-          : "text-red-400";
-
-  // Determine hover color based on contest type and participation
-  const hoverBgClass = isEntered
-    ? "hover:bg-brand-500/20"
-    : isLive
-      ? "hover:bg-green-500/20"
-      : isCancelled
-        ? "hover:bg-red-900/25"  // Darker red on hover for cancelled contests
-        : "hover:bg-blue-500/20";
-
-  // Determine border color based on contest type and participation
-  const borderColorClass = isEntered
-    ? "border-brand-500/30"
-    : isLive
-      ? "border-green-500/30"  // Changed from red to green for consistency
-      : isUpcoming
-        ? "border-blue-500/30"
-        : isComplete
-          ? "border-green-500/30"
-          : "border-red-500/30";
+  // These variables are no longer used with the new styling approach
+  // Keeping the logic here for reference if needed later
 
   // Determine icon color based on contest type
   //const iconColorClass = isLive
@@ -100,27 +63,33 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
   return showDualButtons ? (
     // Dual button layout for upcoming not entered and completed contests
     <div className="grid grid-cols-2 gap-2">
-      {/* Details Button - always the same */}
+      {/* Details Button - now with better styling */}
       <Link to={detailsUrl} className="block">
         <button
           className={`
           w-full relative group overflow-hidden 
-          bg-dark-200/40 backdrop-blur-sm hover:bg-dark-300/40
-          border border-gray-600/30
-          transition-all duration-500 rounded-lg py-2
+          bg-dark-200/40 backdrop-blur-sm hover:bg-dark-200/60
+          border border-dark-300/80 hover:border-gray-400/40
+          transition-all duration-300 rounded-lg py-2
           font-cyber tracking-wide
         `}
         >
-          {/* Animated gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-500/10 via-brand-500/10 to-gray-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          {/* Subtle gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-500/0 via-gray-500/5 to-gray-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           
-          {/* Animated border glow */}
-          <div className="absolute -inset-[1px] rounded-lg blur-sm bg-gradient-to-r from-gray-500/30 via-brand-500/20 to-gray-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          {/* Very subtle border glow */}
+          <div className="absolute -inset-[1px] rounded-lg blur-sm bg-gradient-to-r from-gray-500/0 via-gray-500/20 to-gray-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           
           {/* Badge content */}
-          <div className="relative flex items-center justify-center">
-            <span className="text-xs font-bold text-gray-300 uppercase">Details</span>
+          <div className="relative flex items-center justify-center gap-1.5">
+            <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-300 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-xs font-bold text-gray-400 group-hover:text-gray-300 uppercase transition-colors duration-300">Details</span>
           </div>
+          
+          {/* Subtle shine effect */}
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-all duration-700 ease-out"></div>
         </button>
       </Link>
       
@@ -129,51 +98,54 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
         <button
           className={`
           w-full relative group overflow-hidden 
-          bg-dark-200/40 backdrop-blur-sm 
-          ${isComplete ? 'hover:bg-green-500/20 border border-green-500/30' : 'hover:bg-brand-500/20 border border-brand-500/30'}
-          transition-all duration-500 rounded-lg py-2
+          bg-dark-200/40 backdrop-blur-sm hover:bg-dark-200/60
+          border ${isComplete ? 'border-dark-300/80 hover:border-green-500/40' : 'border-dark-300/80 hover:border-brand-500/40'}
+          transition-all duration-300 rounded-lg py-2
           font-cyber tracking-wide
         `}
         >
-          {/* Animated gradient background */}
+          {/* Subtle gradient background */}
           <div 
             className={`absolute inset-0 bg-gradient-to-r 
               ${isComplete 
-                ? 'from-green-500/20 via-brand-500/20 to-green-500/20' 
-                : 'from-brand-400/20 via-brand-500/20 to-brand-600/20'} 
-              opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                ? 'from-green-500/0 via-green-500/10 to-green-500/0' 
+                : 'from-brand-500/0 via-brand-500/10 to-brand-500/0'} 
+              opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
           ></div>
           
-          {/* Animated border glow */}
+          {/* Very subtle border glow */}
           <div 
             className={`absolute -inset-[1px] rounded-lg blur-sm bg-gradient-to-r 
               ${isComplete 
-                ? 'from-green-500/30 via-brand-500/30 to-green-500/30' 
-                : 'from-brand-400/30 via-brand-500/30 to-brand-600/30'} 
-              opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                ? 'from-green-500/0 via-green-500/30 to-green-500/0' 
+                : 'from-brand-500/0 via-brand-500/30 to-brand-500/0'} 
+              opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
           ></div>
           
           {/* Badge content */}
-          <div className="relative flex items-center justify-center gap-1">
+          <div className="relative flex items-center justify-center gap-1.5">
             {isComplete ? (
               // Results icon
-              <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-green-400 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             ) : (
               // Enter icon
-              <svg className="w-3 h-3 text-brand-400" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-brand-400 transition-colors duration-300" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
               </svg>
             )}
             <span 
-              className={`text-xs font-bold ${isComplete ? 'text-green-400' : 'text-brand-400'} uppercase`}
+              className={`text-xs font-bold text-gray-400 ${isComplete ? 'group-hover:text-green-400' : 'group-hover:text-brand-400'} uppercase transition-colors duration-300`}
             >
               {isComplete 
                 ? (isParticipating ? "My Results" : "Results") 
                 : "Enter"}
             </span>
           </div>
+          
+          {/* Subtle shine effect */}
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-all duration-700 ease-out"></div>
         </button>
       </Link>
     </div>
@@ -183,26 +155,40 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
       <button
         className={`
         w-full relative group overflow-hidden 
-        ${isCancelled ? 'bg-red-900/10' : 'bg-dark-200/40'} backdrop-blur-sm ${hoverBgClass} 
-        border ${borderColorClass}
-        transition-all duration-500 rounded-lg py-2
+        bg-dark-200/40 backdrop-blur-sm hover:bg-dark-200/60
+        border ${isCancelled ? 'border-dark-300/80 hover:border-red-500/40' : isLive ? 'border-dark-300/80 hover:border-green-500/40' : isUpcoming ? 'border-dark-300/80 hover:border-blue-500/40' : 'border-dark-300/80 hover:border-gray-400/40'}
+        transition-all duration-300 rounded-lg py-2
         font-cyber tracking-wide
       `}
       >
-        {/* Animated gradient background */}
+        {/* Subtle gradient background */}
         <div
           className={`
-          absolute inset-0 bg-gradient-to-r ${gradientClasses}
-          opacity-0 group-hover:opacity-100 transition-opacity duration-500
+          absolute inset-0 bg-gradient-to-r 
+          ${isCancelled 
+            ? 'from-red-500/0 via-red-500/10 to-red-500/0' 
+            : isLive 
+              ? 'from-green-500/0 via-green-500/10 to-green-500/0'
+              : isUpcoming
+                ? 'from-blue-500/0 via-blue-500/10 to-blue-500/0'
+                : 'from-gray-500/0 via-gray-500/10 to-gray-500/0'}
+          opacity-0 group-hover:opacity-100 transition-opacity duration-300
         `}
         ></div>
 
-        {/* Animated border glow */}
+        {/* Very subtle border glow */}
         <div
           className={`
           absolute -inset-[1px] rounded-lg blur-sm 
-          bg-gradient-to-r ${gradientClasses}
-          opacity-0 group-hover:opacity-100 transition-opacity duration-500
+          bg-gradient-to-r 
+          ${isCancelled 
+            ? 'from-red-500/0 via-red-500/30 to-red-500/0' 
+            : isLive 
+              ? 'from-green-500/0 via-green-500/30 to-green-500/0'
+              : isUpcoming
+                ? 'from-blue-500/0 via-blue-500/30 to-blue-500/0'
+                : 'from-gray-500/0 via-gray-500/30 to-gray-500/0'}
+          opacity-0 group-hover:opacity-100 transition-opacity duration-300
         `}
         ></div>
 
@@ -213,15 +199,15 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
           {/* Animated 'live' icon for active contests */}
           {isLive && !isParticipating && (
             <span className="relative w-2 h-2">
-              <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75"></span>
-              <span className="relative rounded-full w-2 h-2 bg-green-400"></span>
+              <span className="absolute inset-0 rounded-full bg-gray-400 group-hover:bg-green-400 animate-ping opacity-75 transition-colors duration-300"></span>
+              <span className="relative rounded-full w-2 h-2 bg-gray-400 group-hover:bg-green-400 transition-colors duration-300"></span>
             </span>
           )}
           
           {/* Participating check icon */}
           {isParticipating && (
             <svg 
-              className="w-4 h-4 text-brand-400" 
+              className="w-4 h-4 text-gray-400 group-hover:text-brand-400 transition-colors duration-300" 
               fill="currentColor" 
               viewBox="0 0 20 20"
             >
@@ -230,7 +216,7 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
           )}
 
           <span
-            className={`${textColorClass} font-medium text-[15px] uppercase`}
+            className={`text-gray-400 ${isLive ? 'group-hover:text-green-400' : isUpcoming ? 'group-hover:text-blue-400' : isCancelled ? 'group-hover:text-red-400' : 'group-hover:text-gray-300'} font-medium text-[15px] uppercase transition-colors duration-300`}
           >
             {/* For active contests, we only have single button with clear text */}
             {isLive
@@ -246,7 +232,7 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
           </span>
 
           <svg
-            className={`${textColorClass} w-5 h-5`}
+            className={`text-gray-400 ${isLive ? 'group-hover:text-green-400' : isUpcoming ? 'group-hover:text-blue-400' : isCancelled ? 'group-hover:text-red-400' : 'group-hover:text-gray-300'} w-5 h-5 transition-colors duration-300`}
             viewBox="0 0 24 24"
             stroke="currentColor"
             fill="none"
@@ -258,8 +244,8 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
           </svg>
         </div>
 
-        {/* Shine effect */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-all duration-1000 ease-out"></div>
+        {/* Subtle shine effect */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-all duration-700 ease-out"></div>
       </button>
     </Link>
   );

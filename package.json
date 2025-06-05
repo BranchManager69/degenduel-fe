@@ -30,6 +30,8 @@
     "build-storybook": "storybook build",
     "--------------- TESTING COMMANDS ----------------": "",
     "test": "jest --config jest.config.ts --verbose",
+    "test:markdown": "jest --config jest.config.ts src/components/terminal/components/TerminalConsole.test.tsx --verbose",
+    "test:markdown:real": "jest --config jest.config.ts src/components/terminal/components/TerminalConsole.real.test.tsx --verbose",
     "test:contest-flow": "jest --config jest.config.ts src/tests/contest-flow/ --verbose",
     "test:contest-flow:free": "jest --config jest.config.ts src/tests/contest-flow/free-contest-flow.test.tsx --verbose",
     "test:contest-flow:runner": "tsx src/tests/contest-flow/test-runner.ts",
