@@ -13,7 +13,7 @@
  * @updated 2025-05-24
  */
 
-import console from 'console';
+// Remove invalid console import - console is a global
 import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
 import { SkyDuelState } from "../components/admin/skyduel/types";
