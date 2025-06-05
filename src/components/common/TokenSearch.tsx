@@ -95,14 +95,6 @@ export const TokenSearch: React.FC<TokenSearchProps> = ({
     return `$${num.toFixed(4)}`;
   };
 
-  const formatMarketCap = (marketCap: string | null): string => {
-    if (!marketCap) return 'N/A';
-    const num = parseFloat(marketCap);
-    if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
-    if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
-    if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
-    return `$${num.toFixed(0)}`;
-  };
 
   const formatChange = (change: string | null) => {
     if (!change) return null;
@@ -197,9 +189,6 @@ export const TokenSearch: React.FC<TokenSearchProps> = ({
                         {formatPrice(token.current_price)}
                       </span>
                       {formatChange(token.change_24h)}
-                    </div>
-                    <div className="text-gray-400 mt-1">
-                      MC: {formatMarketCap(token.market_cap)}
                     </div>
                   </div>
                 )}

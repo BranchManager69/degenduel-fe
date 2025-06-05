@@ -2,6 +2,7 @@ import React from "react";
 
 // Import the ContestCard from the contest-browser directory to use the unified card
 import { ContestCard } from "../../contest-browser/ContestCard";
+import { ProminentContestCard } from "../../contest-browser/ProminentContestCard";
 import type { Contest } from "../../../types/index";
 
 interface ContestSectionProps {
@@ -175,7 +176,23 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
                 className="relative"
                 style={{ zIndex: contests.length - index }}
               >
-                <ContestCard contest={contest} />
+                {/* Check if this is a Crown Contest (Numero Uno) */}
+                {(() => {
+                  const upperName = contest.name.toUpperCase();
+                  const isCrownContest = upperName.includes('NUMERO UNO') || 
+                                        upperName.includes('NUMERO  UNO') || // double space
+                                        upperName.includes('NUMERO\tUNO') || // tab
+                                        upperName.includes('NUMEROUNO'); // no space
+                  
+                  return isCrownContest ? (
+                    <ProminentContestCard 
+                      contest={contest} 
+                      featuredLabel="👑 CROWN CONTEST"
+                    />
+                  ) : (
+                    <ContestCard contest={contest} />
+                  );
+                })()}
               </div>
             </div>
           ))}

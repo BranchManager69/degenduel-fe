@@ -7,16 +7,25 @@
  * 
  * @description This page displays a list of contests and allows users to filter and sort them.
  * 
+ * CRITICAL LOADING STRATEGY:
+ * 1. Load cached data immediately (if available) - users see something instantly
+ * 2. Fetch fresh data via REST API immediately on mount - don't wait for WebSocket
+ * 3. WebSocket provides live updates but is NOT the primary data source
+ * 4. Show skeleton loaders only if we have no data to display
+ * 
+ * This ensures users ALWAYS see content quickly instead of waiting 10+ seconds
+ * 
  * @author BranchManager69
  * @version 2.1.1
  * @created 2025-01-01
- * @updated 2025-05-08
+ * @updated 2025-06-04
  */
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChallengeFriendButton } from "../../../components/contest-browser/ChallengeFriendButton";
 import { ContestCard } from "../../../components/contest-browser/ContestCard";
+import { ProminentContestCard } from "../../../components/contest-browser/ProminentContestCard";
 import { ContestSort } from "../../../components/contest-browser/ContestSort";
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
 import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
@@ -41,6 +50,7 @@ export const ContestBrowser: React.FC = () => {
   const [showCancelled, setShowCancelled] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [availableCredits, setAvailableCredits] = useState<number | undefined>(undefined);
+  const [isRestLoading, setIsRestLoading] = useState(false);
 
   // **NEW: Use WebSocket-based contest data instead of REST API**
   const {
@@ -54,9 +64,12 @@ export const ContestBrowser: React.FC = () => {
 
   // **Convert WebSocket contest data to local format if needed**
   const contests = useMemo(() => {
+    // ALWAYS check cached data first for immediate display
+    const cachedContests = useStore.getState().contests || [];
+    
     if (!wsContests || wsContests.length === 0) {
-      // Fallback to cached contests from store
-      return useStore.getState().contests || [];
+      // Use cached contests while loading
+      return cachedContests;
     }
 
     // Convert WebSocket Contest format to main Contest format
@@ -83,9 +96,9 @@ export const ContestBrowser: React.FC = () => {
     })) as unknown as Contest[];
   }, [wsContests]);
 
-  // Use WebSocket loading state
-  const loading = wsLoading;
-  const error = wsError || (!wsConnected && !wsLoading ? "WebSocket connection lost" : null);
+  // Smart loading state - show loading only if we have no data and are actively loading
+  const loading = (wsLoading || isRestLoading) && contests.length === 0;
+  const error = wsError || (!wsConnected && !wsLoading && !isRestLoading && contests.length === 0 ? "Failed to load contests" : null);
 
   // Fetch user credits
   const fetchUserCredits = async () => {
@@ -117,7 +130,8 @@ export const ContestBrowser: React.FC = () => {
   // **FALLBACK: REST API retry function for compatibility**
   const fetchContestsViaRest = async () => {
     try {
-      console.log("[ContestBrowserPage] Using REST API fallback");
+      setIsRestLoading(true);
+      console.log("[ContestBrowserPage] Fetching contests via REST API");
 
       // First check maintenance mode
       const isInMaintenance = await ddApi.admin.checkMaintenanceMode();
@@ -125,6 +139,7 @@ export const ContestBrowser: React.FC = () => {
 
       // If in maintenance mode, don't fetch contests
       if (isInMaintenance) {
+        setIsRestLoading(false);
         return;
       }
 
@@ -135,12 +150,15 @@ export const ContestBrowser: React.FC = () => {
       
       // Update Zustand store with fallback REST API data
       useStore.getState().setContests(data);
+      console.log("[ContestBrowserPage] REST API loaded", data.length, "contests");
     } catch (error) {
       console.error("Failed to fetch contests via REST:", error);
       // Check if the error is a 503 (maintenance mode)
       if (error instanceof Error && error.message.includes("503")) {
         setIsMaintenanceMode(true);
       }
+    } finally {
+      setIsRestLoading(false);
     }
   };
 
@@ -161,18 +179,26 @@ export const ContestBrowser: React.FC = () => {
     return () => clearInterval(maintenanceCheckInterval);
   }, []);
 
-  // **Enhanced contest data loading strategy**
+  // **CRITICAL: Load data IMMEDIATELY - don't wait for WebSocket!**
   useEffect(() => {
-    // If WebSocket fails to connect or provide data within 10 seconds, fall back to REST API
-    const fallbackTimer = setTimeout(() => {
-      if (!wsConnected || contests.length === 0) {
-        console.log('[ContestBrowserPage] WebSocket timeout or no data, using REST API fallback');
-        fetchContestsViaRest();
-      }
-    }, 10000);
-
-    return () => clearTimeout(fallbackTimer);
-  }, [wsConnected, contests.length, sortField, sortDirection]);
+    // Step 1: Show cached data immediately if available
+    const cachedContests = useStore.getState().contests;
+    console.log('[ContestBrowserPage] Initial load - cached contests:', cachedContests?.length || 0);
+    
+    // Step 2: ALWAYS fetch fresh data via REST API immediately
+    // Don't wait 10 seconds! Users are gone by then!
+    fetchContestsViaRest();
+    
+    // Step 3: WebSocket will provide live updates when connected
+    // But we don't depend on it for initial load
+  }, []); // Only run once on mount
+  
+  // Refresh data when sort changes
+  useEffect(() => {
+    if (contests.length > 0) {
+      fetchContestsViaRest();
+    }
+  }, [sortField, sortDirection]);
 
   // Manual refresh function that prefers WebSocket but falls back to REST API
   const handleManualRefresh = () => {
@@ -262,10 +288,18 @@ export const ContestBrowser: React.FC = () => {
     showCancelled,
   ]);
 
-  // Loading state
-  if (loading) {
+  // Show skeleton loaders ONLY if we have no contests to display
+  if (loading && filteredAndSortedContests.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Show header immediately */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-100">
+            Duel Explorer
+          </h1>
+        </div>
+        
+        {/* Show skeleton cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, i) => (
             <div
@@ -273,21 +307,24 @@ export const ContestBrowser: React.FC = () => {
               className="animate-pulse bg-dark-200 rounded-lg h-64 relative overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream" />
+              <div className="p-6 space-y-4">
+                <div className="h-6 bg-dark-300 rounded w-3/4" />
+                <div className="h-4 bg-dark-300 rounded w-1/2" />
+                <div className="space-y-2">
+                  <div className="h-3 bg-dark-300 rounded" />
+                  <div className="h-3 bg-dark-300 rounded w-5/6" />
+                </div>
+              </div>
             </div>
           ))}
         </div>
         
         {/* WebSocket Connection Status */}
         <div className="mt-4 flex justify-center items-center gap-2 text-xs">
-          <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-          <span className={`font-mono ${wsConnected ? 'text-emerald-400' : 'text-red-400'}`}>
-            {wsConnected ? 'LOADING.CONTEST.DATA' : 'CONNECTION.LOST'}
+          <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-yellow-400'}`} />
+          <span className={`font-mono ${wsConnected ? 'text-emerald-400' : 'text-yellow-400'}`}>
+            {isRestLoading ? 'LOADING.VIA.API' : wsConnected ? 'CONNECTING.TO.LIVE.DATA' : 'LOADING.CONTESTS'}
           </span>
-          {wsLastUpdate && (
-            <span className="text-gray-500">
-              Last Update: {wsLastUpdate.toLocaleTimeString()}
-            </span>
-          )}
         </div>
       </div>
     );
@@ -526,17 +563,34 @@ export const ContestBrowser: React.FC = () => {
                 No duels matching these filters
               </div>
             ) : (
-              filteredAndSortedContests.map((contest) => (
-                <div
-                  key={contest.id}
-                  className="transform hover:scale-102 transition-transform duration-300"
-                >
-                  <ContestCard
-                    contest={contest}
-                    onClick={() => navigate(`/contests/${contest.id}`)}
-                  />
-                </div>
-              ))
+              filteredAndSortedContests.map((contest) => {
+                // Check if this is a Crown Contest (Numero Uno)
+                const upperName = contest.name.toUpperCase();
+                const isCrownContest = upperName.includes('NUMERO UNO') || 
+                                      upperName.includes('NUMERO  UNO') || // double space
+                                      upperName.includes('NUMERO\tUNO') || // tab
+                                      upperName.includes('NUMEROUNO'); // no space
+                
+                return (
+                  <div
+                    key={contest.id}
+                    className="transform hover:scale-102 transition-transform duration-300"
+                  >
+                    {isCrownContest ? (
+                      <ProminentContestCard
+                        contest={contest}
+                        onClick={() => navigate(`/contests/${contest.id}`)}
+                        featuredLabel="👑 CROWN CONTEST"
+                      />
+                    ) : (
+                      <ContestCard
+                        contest={contest}
+                        onClick={() => navigate(`/contests/${contest.id}`)}
+                      />
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
 

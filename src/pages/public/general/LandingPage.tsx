@@ -37,7 +37,7 @@ import { ddApi } from "../../../services/dd-api";
 // Date Utilities
 // Release Date Service
 import {
-    FALLBACK_RELEASE_DATE
+  FALLBACK_RELEASE_DATE
 } from '../../../services/releaseDateService';
 // Import PaginatedResponse from types (used for API response typing)
 // import type { PaginatedResponse } from '../../../types';
@@ -114,7 +114,6 @@ export const LandingPage: React.FC = () => {
   // Map WebSocket contest statuses to our local state
   const [activeContests, setActiveContests] = useState<Contest[]>([]);
   const [openContests, setOpenContests] = useState<Contest[]>([]);
-  const [featuredContest, setFeaturedContest] = useState<Contest | null>(null);
 
   // Sync WebSocket data to local state
   useEffect(() => {
@@ -126,6 +125,30 @@ export const LandingPage: React.FC = () => {
         wsConnected,
         wsLastUpdate
       });
+      
+      // DEBUG: Log raw WebSocket contest names
+      console.log('[LandingPage] DEBUG - Raw WebSocket active contests:', wsActiveContests.map(c => ({
+        id: (c as any).contest_id || (c as any).id,
+        name: c.name,
+        status: c.status
+      })));
+      console.log('[LandingPage] DEBUG - Raw WebSocket upcoming contests:', wsUpcomingContests.map(c => ({
+        id: (c as any).contest_id || (c as any).id,
+        name: c.name,
+        status: c.status
+      })));
+
+      // Debug: Log raw contest data
+      console.log("[LandingPage] DEBUG - Raw active contests from WebSocket:", wsActiveContests.map(c => ({
+        id: (c as any).contest_id || (c as any).id,
+        name: (c as any).name,
+        status: (c as any).status
+      })));
+      console.log("[LandingPage] DEBUG - Raw upcoming contests from WebSocket:", wsUpcomingContests.map(c => ({
+        id: (c as any).contest_id || (c as any).id,
+        name: (c as any).name,
+        status: (c as any).status
+      })));
 
       // Convert WebSocket Contest format to main Contest format
       const convertedActiveContests = wsActiveContests.map(contest => ({
@@ -176,31 +199,6 @@ export const LandingPage: React.FC = () => {
       setOpenContests(convertedUpcomingContests);
       setLoading(wsLoading);
       setError(wsError);
-
-      // Determine featured contest - look for CROWN only
-      const allAvailableContests = [...convertedActiveContests, ...convertedUpcomingContests];
-      
-      // Find Crown Contest - ONE METHOD ONLY
-      const crownContests = allAvailableContests.filter(contest => 
-        contest.name.toUpperCase().includes('CROWN')
-      );
-      
-      if (crownContests.length > 0) {
-        // If multiple crown contests, pick the one starting soonest
-        const featured = crownContests.sort((a, b) => {
-          const aStart = new Date(a.start_time).getTime();
-          const bStart = new Date(b.start_time).getTime();
-          return aStart - bStart;
-        })[0];
-        
-        setFeaturedContest(featured);
-        
-        if (crownContests.length > 1) {
-          console.warn(`[LandingPage] Multiple Crown Contests found (${crownContests.length}). Showing the one starting soonest:`, featured.name);
-        }
-      } else {
-        setFeaturedContest(null);
-      }
 
       // Update debug info
       setContestDebugInfo(prev => ({
@@ -337,7 +335,7 @@ export const LandingPage: React.FC = () => {
     }
   }, [wsConnected]);
 
-  // Enhanced contest data loading strategy
+  // Enhanced contest data loading strategy - FIXED: No more 10-second delays!
   useEffect(() => {
     // First, try to use cached contests from store
     const cachedContests = useStore.getState().contests;
@@ -350,17 +348,11 @@ export const LandingPage: React.FC = () => {
       setLoading(false);
     }
 
-    // WebSocket will handle live updates automatically via useContests hook
-    // If WebSocket fails to connect or provide data within 10 seconds, fall back to REST API
-    const fallbackTimer = setTimeout(() => {
-      if (!wsConnected || (wsActiveContests.length === 0 && wsUpcomingContests.length === 0)) {
-        console.log('[LandingPage] WebSocket timeout or no data, using REST API fallback');
-        retryContestFetch();
-      }
-    }, 10000);
-
-    return () => clearTimeout(fallbackTimer);
-  }, [wsConnected, wsActiveContests.length, wsUpcomingContests.length, retryContestFetch]);
+    // FIXED: Load REST API immediately for instant display instead of waiting
+    // WebSocket will provide live updates automatically via useContests hook
+    console.log('[LandingPage] Loading contests via REST API immediately (no waiting!)');
+    retryContestFetch();
+  }, [retryContestFetch]);
 
   // Manual refresh function that prefers WebSocket but falls back to REST API
   const handleManualRefresh = useCallback(() => {
@@ -669,7 +661,6 @@ export const LandingPage: React.FC = () => {
 
                 </motion.div>
 
-
                 {/* CTAs - Now using the CtaSection component */}
                 <CtaSection user={user} animationPhase={animationPhase} />
 
@@ -809,22 +800,44 @@ export const LandingPage: React.FC = () => {
                         {/* Contest sections container */}
                         <div className="mb-8">
                           {/* Featured Contest Section - Show CROWN CONTEST only */}
-                          {featuredContest && (
-                            <EnhancedContestSection
-                              title="Crown Contest"
-                              type={featuredContest.status}
-                              contests={[]}
-                              loading={loading}
-                              featuredContest={featuredContest}
-                              featuredLabel="👑 CROWN CONTEST"
-                              isFeatureSection={true}
-                            />
-                          )}
+                          {(() => {
+                            // Inline Crown Contest detection (same as contest browser)
+                            const allAvailableContests = [...activeContests, ...openContests];
+                            const crownContest = allAvailableContests.find(contest => {
+                              const upperName = contest.name.toUpperCase();
+                              return upperName.includes('NUMERO UNO') || 
+                                     upperName.includes('NUMERO  UNO') || // double space
+                                     upperName.includes('NUMERO\tUNO') || // tab
+                                     upperName.includes('NUMEROUNO'); // no space
+                            });
+
+                            return crownContest ? (
+                              <EnhancedContestSection
+                                title="Crown Contest"
+                                type={crownContest.status}
+                                contests={[]}
+                                loading={loading}
+                                featuredContest={crownContest}
+                                featuredLabel="👑 CROWN CONTEST"
+                                isFeatureSection={true}
+                              />
+                            ) : null;
+                          })()}
 
                           {/* Filter out featured contest from regular sections */}
                           {(() => {
-                            const filteredActiveContests = activeContests.filter(c => c.id !== featuredContest?.id);
-                            const filteredOpenContests = openContests.filter(c => c.id !== featuredContest?.id);
+                            // Find crown contest again for filtering
+                            const allAvailableContests = [...activeContests, ...openContests];
+                            const crownContest = allAvailableContests.find(contest => {
+                              const upperName = contest.name.toUpperCase();
+                              return upperName.includes('NUMERO UNO') || 
+                                     upperName.includes('NUMERO  UNO') || 
+                                     upperName.includes('NUMERO\tUNO') || 
+                                     upperName.includes('NUMEROUNO');
+                            });
+                            
+                            const filteredActiveContests = activeContests.filter(c => c.id !== crownContest?.id);
+                            const filteredOpenContests = openContests.filter(c => c.id !== crownContest?.id);
                             
                             return (
                               <>
@@ -850,10 +863,22 @@ export const LandingPage: React.FC = () => {
                           })()}
 
                           {/* No duels available */}
-                          {activeContests.length === 0 &&
-                            openContests.length === 0 &&
-                            !featuredContest &&
-                            !loading && (
+                          {(() => {
+                            // Check if there are any crown contests for the condition
+                            const allAvailableContests = [...activeContests, ...openContests];
+                            const hasCrownContest = allAvailableContests.some(contest => {
+                              const upperName = contest.name.toUpperCase();
+                              return upperName.includes('NUMERO UNO') || 
+                                     upperName.includes('NUMERO  UNO') || 
+                                     upperName.includes('NUMERO\tUNO') || 
+                                     upperName.includes('NUMEROUNO');
+                            });
+                            
+                            return activeContests.length === 0 &&
+                                   openContests.length === 0 &&
+                                   !hasCrownContest &&
+                                   !loading;
+                          })() && (
                               <div className="text-center py-16">
                                 
                                 {/* No duels available title */}

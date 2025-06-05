@@ -1,10 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import React, { useRef, useCallback, useMemo, useState, useEffect } from "react";
 import { IconType } from "react-icons";
 import { FaCoins, FaDiscord, FaTelegram, FaTwitter } from "react-icons/fa";
 
 import { TokenListItem } from "./TokenListItem";
-import { TokenSparkline } from "./TokenSparkline";
-import { formatCurrency, formatMarketCap } from "../../lib/utils";
 import { Token } from "../../types/index";
 import { Card, CardContent, CardHeader } from "../ui/Card";
 
@@ -38,7 +36,7 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
   searchQuery = '',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
+  const [visibleCount, setVisibleCount] = useState(100); // Start with 100 for immediate clicking
   // Removed isMobile state as it's not used in this component
   // Memoized filtered tokens with search and market cap filtering
   const filteredTokens = useMemo(() => {
@@ -72,58 +70,35 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
     });
   }, [tokens, searchQuery, marketCapFilter]);
 
-  // Setup intersection observer for virtual scrolling
+  // Progressive loading with infinity scroll - but start with 100 for immediate clicking
   useEffect(() => {
-    // Skip setup if we have few tokens
-    if (filteredTokens.length <= 50) return;
-    
-    const options = {
-      root: null,
-      rootMargin: '600px', // Load tokens that are approaching the viewport
-      threshold: 0.1
-    };
-
-    const handleIntersection = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting && containerRef.current) {
-          // Calculate visible range based on scroll position
-          const scrollTop = window.scrollY;
-          const viewportHeight = window.innerHeight;
-          
-          // Expand the range as user scrolls
-          const startIndex = Math.max(0, Math.floor((scrollTop - 600) / 100));
-          const endIndex = Math.min(filteredTokens.length, Math.ceil((scrollTop + viewportHeight + 800) / 100));
-          
-          setVisibleRange({ 
-            start: startIndex, 
-            end: endIndex 
-          });
-        }
-      });
-    };
-
-    const observer = new IntersectionObserver(handleIntersection, options);
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
+    const handleScroll = () => {
+      // Check if user scrolled near bottom
+      const scrollTop = window.pageYOffset;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = window.innerHeight;
+      
+      // Load 50 more tokens when within 1000px of bottom
+      if (scrollTop + clientHeight >= scrollHeight - 1000 && visibleCount < filteredTokens.length) {
+        setVisibleCount(prev => Math.min(filteredTokens.length, prev + 50));
       }
     };
-  }, [filteredTokens.length]);
 
-  // Determine visible tokens (either all tokens or just the visible range)
-  const visibleTokens = filteredTokens.length <= 50 
-    ? filteredTokens 
-    : filteredTokens.slice(visibleRange.start, visibleRange.end);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [filteredTokens.length, visibleCount]);
+
+  // Show visible tokens with infinity scroll
+  const visibleTokens = filteredTokens.slice(0, visibleCount);
 
   // Memoized handlers for better performance
   const handleCardClick = useCallback((token: Token) => {
+    console.log("🔍 TokenGrid: Card clicked for token:", token.symbol, token.contractAddress);
     if (selectedTokens.has(token.contractAddress)) {
+      console.log("🔍 TokenGrid: Removing token from selection");
       onTokenSelect(token.contractAddress, 0); // Remove token
     } else {
+      console.log("🔍 TokenGrid: Adding token to selection with 50% weight");
       onTokenSelect(token.contractAddress, 50); // Add token with default weight
     }
   }, [selectedTokens, onTokenSelect]);
@@ -153,34 +128,8 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
             hover:shadow-xl hover:shadow-brand-500/10 hover:-translate-y-0.5 text-xs sm:text-sm
             `}
         >
-          {/* Background Pattern + Animated Logo */}
-          <div className="absolute inset-0 bg-gradient-to-br from-dark-400/20 via-transparent to-transparent" />
-          {token.images && (
-            <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute inset-[-10%] flex items-center justify-center">
-                <div className="relative w-64 h-64 opacity-[0.06] hover:opacity-[0.09] transition-opacity duration-700">
-                  {/* Blur gradient behind the logo */}
-                  <div className="absolute inset-[-20%] blur-3xl bg-gradient-to-br from-dark-300/40 via-transparent to-dark-300/40" />
-
-                  {/* Animated logo */}
-                  <div className="animate-float">
-                    <img
-                      src={
-                        token.images.imageUrl ||
-                        token.images.headerImage ||
-                        token.images.openGraphImage
-                      }
-                      alt={token.name}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-
-                  {/* Overlay gradient for smoother edges */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-dark-200/80 via-transparent to-dark-200/80" />
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Simple background pattern - no images to avoid loading delays */}
+          <div className="absolute inset-0 bg-gradient-to-br from-dark-400/20 via-transparent to-transparent pointer-events-none" />
 
           {/* Content */}
           <div className="relative z-10">
@@ -230,14 +179,17 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                 )}
               </div>
 
-              {/* 24h Change - Moved below name */}
+              {/* 24h Change - Simple display without sparkline to avoid backend errors */}
               <div className="mt-2">
-                <TokenSparkline
-                  tokenAddress={token.contractAddress}
-                  change24h={
-                    token.change24h != null ? Number(token.change24h) : null
-                  }
-                />
+                <div className={`text-sm font-medium ${
+                  (Number(token.change24h) || 0) >= 0
+                    ? "text-green-400"
+                    : "text-red-400"
+                }`}>
+                  {token.change24h != null
+                    ? `${Number(token.change24h).toFixed(1)}%`
+                    : "N/A"} 24h
+                </div>
               </div>
             </CardHeader>
 
@@ -263,53 +215,12 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
                     }`}
                   >
                     {token.change24h != null
-                      ? `${(Number(token.change24h) * 100).toFixed(1)}%`
+                      ? `${Number(token.change24h).toFixed(1)}%`
                       : "N/A"}
                   </div>
                 </div>
 
-                {/* Market Cap */}
-                <div>
-                  <span className="text-gray-400">Market Cap</span>
-                  <div className="font-medium text-gray-200 truncate">
-                    {token.marketCap
-                      ? formatMarketCap(Number(token.marketCap))
-                      : "N/A"}
-                  </div>
-                </div>
 
-                {/* Liquidity */}
-                <div>
-                  <span className="text-gray-400">Liquidity</span>
-                  <div className="font-medium text-gray-200 truncate">
-                    {token.liquidity
-                      ? formatCurrency(token.liquidity)
-                      : "N/A"}
-                  </div>
-                </div>
-
-                {/* 24h Volume */}
-                <div>
-                  <span className="text-gray-400">24h Volume</span>
-                  <div className="font-medium text-gray-200 truncate">
-                    {token.volume24h
-                      ? formatCurrency(Number(token.volume24h))
-                      : "N/A"}
-                  </div>
-                </div>
-
-                {/* 24h Trades */}
-                <div>
-                  <span className="text-gray-400">24h Trades</span>
-                  <div className="font-medium text-gray-200 truncate">
-                    {token.transactions?.["24h"]
-                      ? `${(
-                          token.transactions["24h"].buys +
-                          token.transactions["24h"].sells
-                        ).toLocaleString()}`
-                      : "N/A"}
-                  </div>
-                </div>
               </div>
 
               {/* Enhanced Sword Slider */}
@@ -382,10 +293,15 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
         ))}
       </div>
       
-      {/* Virtual loading placeholder for better UX when progressively loading */}
-      {filteredTokens.length > 50 && visibleRange.end < filteredTokens.length && (
+      {/* Infinity scroll loading indicator */}
+      {visibleCount < filteredTokens.length && (
         <div className="h-20 flex items-center justify-center mt-4">
-          <div className="w-6 h-6 border-2 border-emerald-500/50 border-t-transparent rounded-full animate-spin"></div>
+          <div className="text-center">
+            <div className="w-6 h-6 border-2 border-emerald-500/50 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+            <div className="text-xs text-gray-400 font-mono">
+              Showing {visibleCount}/{filteredTokens.length} tokens • Scroll for more
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -407,10 +323,15 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
         ))}
       </div>
       
-      {/* Virtual loading placeholder for list view */}
-      {filteredTokens.length > 50 && visibleRange.end < filteredTokens.length && (
+      {/* Infinity scroll loading indicator for list view */}
+      {visibleCount < filteredTokens.length && (
         <div className="h-20 flex items-center justify-center mt-4">
-          <div className="w-6 h-6 border-2 border-emerald-500/50 border-t-transparent rounded-full animate-spin"></div>
+          <div className="text-center">
+            <div className="w-6 h-6 border-2 border-emerald-500/50 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+            <div className="text-xs text-gray-400 font-mono">
+              Showing {visibleCount}/{filteredTokens.length} tokens • Scroll for more
+            </div>
+          </div>
         </div>
       )}
     </div>

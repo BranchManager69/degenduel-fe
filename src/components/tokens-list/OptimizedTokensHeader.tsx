@@ -45,9 +45,8 @@ export const OptimizedTokensHeader: React.FC<OptimizedTokensHeaderProps> = React
         {/* Enhanced cyberpunk title with adaptive elements */}
         <div className="relative">
           <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold relative z-10 text-center xs:text-left">
-            <span className="text-transparent bg-gradient-to-r from-brand-400 via-white to-cyan-500 bg-clip-text relative">
-              {isMobile ? 'DD Tokens' : 'DegenDuel Tokens'}
-              <span className="absolute -right-3 -top-1 text-xs font-mono text-cyan-500/70 hidden xs:inline">v2.0</span>
+            <span className="text-transparent bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text relative">
+              DEGEN TRENDING
             </span>
           </h1>
           
@@ -69,14 +68,14 @@ export const OptimizedTokensHeader: React.FC<OptimizedTokensHeaderProps> = React
         </div>
         
         {/* Cyberpunk subtitle - adaptive for mobile */}
-        <div className="text-xs xs:text-sm text-gray-400 mt-1 font-mono relative pl-0 xs:pl-2 text-center xs:text-left">
+        <div className="text-xs xs:text-sm text-gray-300 mt-1 font-medium relative pl-0 xs:pl-2 text-center xs:text-left">
           <span className="relative inline-block overflow-hidden">
             <span className="relative z-10">
-              {isMobile ? 'Live market data' : 'Live crypto market data'}
+              {isMobile ? 'The most explosive tokens right now' : 'The most explosive tokens right now • Live market momentum • Updated every 30s'}
             </span>
             {/* Reduce animation on mobile */}
             {!isMobile && (
-              <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-brand-500/10 to-transparent animate-pulse"></span>
+              <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-yellow-500/10 to-transparent animate-pulse"></span>
             )}
           </span>
           

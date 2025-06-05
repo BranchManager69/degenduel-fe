@@ -11,10 +11,17 @@ export const Card: React.FC<CardProps> = ({
   className = "",
   onClick,
 }) => {
+  const handleClick = (e: React.MouseEvent) => {
+    console.log("🔍 Card: Click received", e.target);
+    if (onClick) {
+      onClick();
+    }
+  };
+
   return (
     <div
       className={`rounded-lg border bg-dark-200/70 text-gray-100 shadow-sm ${className}`}
-      onClick={onClick}
+      onClick={handleClick}
     >
       {children}
     </div>
