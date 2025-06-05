@@ -755,7 +755,7 @@ export const ddApi = {
   tokens: {
     getAll: async (): Promise<Token[]> => {
       const api = createApiClient();
-      const response = await api.fetch("/dd-serv/tokens");
+      const response = await api.fetch("/tokens/trending?limit=1000");
       const responseData = await response.json();
       return responseData.data || responseData;
     },

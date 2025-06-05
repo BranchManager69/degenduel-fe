@@ -31,6 +31,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { Token } from '../../../types';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
+import { ddApi } from '../../../services/dd-api';
 
 // Transform backend token data to frontend Token format
 const transformBackendTokenData = (backendToken: any): Token => {
@@ -107,6 +108,50 @@ export function useTokenData(
   // Connect to WebSocket
   const ws = useWebSocket();
 
+  // REST API fallback function for immediate token loading
+  const fetchTokensViaRest = useCallback(async () => {
+    try {
+      console.log('[useTokenData] Loading tokens via REST API for immediate display');
+      
+      const tokensData = await ddApi.tokens.getAll();
+      
+      if (tokensData && tokensData.length > 0) {
+        console.log(`[useTokenData] REST API loaded ${tokensData.length} tokens successfully`);
+        
+        // Apply client-side filters if any
+        let filteredTokens = tokensData;
+        if (filters?.minMarketCap) {
+          filteredTokens = filteredTokens.filter((t: Token) => t.market_cap >= filters.minMarketCap!);
+        }
+        if (filters?.minVolume) {
+          filteredTokens = filteredTokens.filter((t: Token) => t.volume_24h >= filters.minVolume!);
+        }
+        
+        setTokens(filteredTokens);
+        setLastUpdate(new Date());
+        setIsLoading(false);
+        setHasInitialData(true);
+        setError(null);
+        
+        dispatchWebSocketEvent('token_data_rest_loaded', {
+          socketType: 'rest-api-fallback',
+          message: `Loaded ${filteredTokens.length} tokens via REST API`,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error: any) {
+      console.error('[useTokenData] REST API fallback failed:', error);
+      setError('Failed to load token data. Please refresh the page.');
+      setIsLoading(false);
+      
+      dispatchWebSocketEvent('token_data_rest_failed', {
+        socketType: 'rest-api-fallback',
+        message: `REST API failed: ${error.message}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [filters]);
+
   // WebSocket handler for ALL token data (initial + updates)
   const handleMarketData = useCallback((message: any) => {
     try {
@@ -169,58 +214,13 @@ export function useTokenData(
     }
   }, [ws.isConnected, ws.subscribe]);
 
-  // Enhanced retry logic for initial data loading
+  // FIXED: Load token data immediately via REST API instead of waiting for WebSocket
   useEffect(() => {
-    if (ws.isConnected && !hasInitialData) {
-      let retryCount = 0;
-      const maxRetries = 5;
-      let retryTimer: NodeJS.Timeout;
-      
-      const attemptDataLoad = () => {
-        console.log(`[useTokenData] Attempt ${retryCount + 1}/${maxRetries} to get initial data`);
-        
-        // Re-subscribe to ensure we get data (using proven refresh pattern)
-        ws.unsubscribe(['market-data']);
-        setTimeout(() => {
-          ws.subscribe(['market-data']);
-          
-          dispatchWebSocketEvent('token_data_retry_attempt', {
-            socketType: 'market-data',
-            message: `Retry attempt ${retryCount + 1}/${maxRetries} for initial data`,
-            timestamp: new Date().toISOString()
-          });
-        }, 100);
-        
-        // Calculate timeout with exponential backoff (2s, 3s, 4.5s, 6.75s, 10s max)
-        const timeout = Math.min(2000 * Math.pow(1.5, retryCount), 10000);
-        
-        retryTimer = setTimeout(() => {
-          if (!hasInitialData && retryCount < maxRetries - 1) {
-            retryCount++;
-            attemptDataLoad(); // Retry
-          } else {
-            console.log('[useTokenData] Max retries reached or timed out');
-            setIsLoading(false);
-            if (!hasInitialData) {
-              setError(`Failed to load token data after ${maxRetries} attempts. Try refreshing the page.`);
-              
-              dispatchWebSocketEvent('token_data_retry_failed', {
-                socketType: 'market-data',
-                message: `Failed to get initial data after ${maxRetries} attempts`,
-                timestamp: new Date().toISOString()
-              });
-            }
-          }
-        }, timeout);
-      };
-      
-      attemptDataLoad();
-      
-      return () => {
-        if (retryTimer) clearTimeout(retryTimer);
-      };
+    if (!hasInitialData) {
+      console.log('[useTokenData] Loading initial token data immediately via REST API');
+      fetchTokensViaRest();
     }
-  }, [ws.isConnected, hasInitialData, ws.subscribe, ws.unsubscribe]);
+  }, [hasInitialData, fetchTokensViaRest]);
 
   // Handle reconnection events - retry getting data when WebSocket reconnects
   useEffect(() => {
@@ -236,17 +236,21 @@ export function useTokenData(
     console.log('[useTokenData] Load more not needed - WebSocket provides all filtered tokens');
   }, []);
 
-  // Refresh just re-subscribes to get latest data
+  // Enhanced refresh that uses REST API if WebSocket is unavailable
   const refresh = useCallback(() => {
-    console.log('[useTokenData] Refreshing by re-subscribing to market-data');
+    console.log('[useTokenData] Refreshing token data');
     if (ws.isConnected) {
+      console.log('[useTokenData] Refreshing via WebSocket re-subscription');
       // Unsubscribe and resubscribe to trigger fresh data
       ws.unsubscribe(['market-data']);
       setTimeout(() => {
         ws.subscribe(['market-data']);
       }, 100);
+    } else {
+      console.log('[useTokenData] WebSocket disconnected, refreshing via REST API');
+      fetchTokensViaRest();
     }
-  }, [ws]);
+  }, [ws, fetchTokensViaRest]);
 
   // Return the token data and helper functions
   return {

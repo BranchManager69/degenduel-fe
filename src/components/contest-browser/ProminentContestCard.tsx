@@ -20,6 +20,10 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
   onClick,
   featuredLabel = "🏆 CONTEST OF THE WEEK"
 }) => {
+  // TODO: Component needs cleanup:
+  // - Make action buttons (Details, Enter, Share) more uniform in size/style
+  // - Further reduce height to better match regular cards
+  // - Consider responsive adjustments for mobile
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [imageBlurhash, setImageBlurhash] = useState(false);
@@ -239,7 +243,7 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
       </div>
 
       {/* Enhanced Status Indicator */}
-      <div className="absolute top-16 right-4 z-30">
+      <div className="absolute top-14 right-4 z-30">
         {displayStatus === "active" && (
           <motion.div 
             className="relative overflow-hidden backdrop-blur-md rounded-lg border border-green-400/50 bg-dark-200/60"
@@ -281,18 +285,18 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </motion.svg>
-              <span className="text-sm font-bold text-blue-300 uppercase tracking-wide">STARTING SOON</span>
+              <span className="text-sm font-bold text-blue-300 uppercase tracking-wide">SOON</span>
             </div>
           </motion.div>
         )}
       </div>
 
       {/* Main Content Area */}
-      <div className="relative p-8 pt-20 space-y-6 z-20">
+      <div className="relative p-6 pt-16 space-y-4 z-20">
         {/* Title and Timer Section */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <motion.h2
-            className="text-4xl md:text-5xl font-black text-white leading-tight"
+            className="text-3xl md:text-4xl font-black text-white leading-tight"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
@@ -304,23 +308,21 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
           </motion.h2>
           
           <motion.div
-            className="flex items-center gap-3"
+            className="flex items-center gap-2 text-lg"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <div className="bg-dark-300/60 backdrop-blur-sm rounded-lg px-4 py-3 border border-brand-400/30">
-              <div className="text-sm font-medium text-brand-300 mb-1">
-                {hasEnded ? "Contest Ended" : hasStarted ? "Ends in" : "Starts in"}
-              </div>
-              <div className="text-xl font-bold text-white">
-                <CountdownTimer
-                  targetDate={hasStarted ? contest.end_time : contest.start_time}
-                  onComplete={() => console.log("Prominent timer completed")}
-                  showSeconds={true}
-                />
-              </div>
-            </div>
+            <span className="text-gray-400">
+              {hasEnded ? "Contest Ended" : hasStarted ? "Ends in" : "Starts in"}
+            </span>
+            <span className="text-xl font-bold text-white">
+              <CountdownTimer
+                targetDate={hasStarted ? contest.end_time : contest.start_time}
+                onComplete={() => console.log("Prominent timer completed")}
+                showSeconds={true}
+              />
+            </span>
           </motion.div>
         </div>
 
@@ -336,30 +338,30 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
           </p>
         </motion.div>
 
-        {/* Enhanced Stats Grid */}
+        {/* Compact Stats Row */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          className="flex flex-wrap gap-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
         >
           {/* Entry Fee */}
-          <div className="bg-dark-300/40 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative overflow-hidden group">
+          <div className="flex-1 min-w-[150px] bg-dark-300/40 backdrop-blur-sm rounded-lg px-4 py-3 border border-blue-500/20 relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="relative z-10">
-              <div className="text-sm font-medium text-blue-300 mb-1 uppercase tracking-wide">Entry Fee</div>
-              <div className="text-2xl font-bold text-white">{formatCurrency(Number(contest.entry_fee))}</div>
+            <div className="relative z-10 flex items-center justify-between">
+              <span className="text-xs font-medium text-blue-300 uppercase tracking-wide">Entry</span>
+              <span className="text-xl font-bold text-white">{formatCurrency(Number(contest.entry_fee))}</span>
             </div>
           </div>
 
           {/* Prize Pool */}
-          <div className="bg-dark-300/40 backdrop-blur-sm rounded-lg p-4 border border-brand-400/30 relative overflow-hidden group">
+          <div className="flex-1 min-w-[200px] bg-dark-300/40 backdrop-blur-sm rounded-lg px-4 py-3 border border-brand-400/30 relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-r from-brand-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="relative z-10">
-              <div className="text-sm font-medium text-brand-300 mb-1 uppercase tracking-wide">Total Prize Pool</div>
-              <div className="text-3xl font-bold text-brand-300">
-                {formatCurrency(Number(contest.max_participants) * Number(contest.entry_fee) * 0.9)}
-              </div>
+            <div className="relative z-10 flex items-center justify-between">
+              <span className="text-xs font-medium text-brand-300 uppercase tracking-wide">Prize</span>
+              <span className="text-2xl font-bold text-brand-300">
+                {formatCurrency(Number(contest.total_prize_pool || contest.prize_pool || "0"))}
+              </span>
             </div>
             
             {/* Prize pool shine effect */}
@@ -377,13 +379,15 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
           </div>
 
           {/* Players */}
-          <div className="bg-dark-300/40 backdrop-blur-sm rounded-lg p-4 border border-green-500/20 relative overflow-hidden">
+          <div className="flex-1 min-w-[150px] bg-dark-300/40 backdrop-blur-sm rounded-lg px-4 py-3 border border-green-500/20 relative overflow-hidden">
             <div className="relative z-10">
-              <div className="text-sm font-medium text-green-300 mb-1 uppercase tracking-wide">Players</div>
-              <div className="text-2xl font-bold text-white mb-2">
-                {contest.participant_count}/{contest.max_participants}
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-green-300 uppercase tracking-wide">Players</span>
+                <span className="text-lg font-bold text-white">
+                  {contest.participant_count}/{contest.max_participants}
+                </span>
               </div>
-              <div className="w-full bg-dark-400 rounded-full h-2 overflow-hidden">
+              <div className="w-full bg-dark-400 rounded-full h-1.5 overflow-hidden">
                 <motion.div
                   className="h-full bg-gradient-to-r from-green-400 to-brand-500 rounded-full"
                   initial={{ width: 0 }}

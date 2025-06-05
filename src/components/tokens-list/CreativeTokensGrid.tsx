@@ -313,40 +313,6 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
         {/* ENHANCED HOTTEST TOKENS SECTION */}
         {trendingTokens.length > 0 && (
           <div className="mb-16">
-            {/* SPECTACULAR HEADER */}
-            <div className="relative mb-8">
-              <div className="absolute inset-0 -z-10">
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 via-orange-500/5 to-red-500/5 rounded-3xl blur-3xl" />
-                <div className="absolute inset-0 bg-gradient-to-br from-yellow-900/10 via-transparent to-orange-900/10" />
-              </div>
-              
-              <div className="relative z-10 text-center py-8">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="h-px w-16 bg-gradient-to-r from-transparent to-yellow-500/60" />
-                  <div className="mx-4 px-6 py-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-full border border-yellow-400/30 backdrop-blur-sm">
-                    <span className="text-yellow-300 text-sm font-bold uppercase tracking-widest animate-pulse">🔥 TRENDING NOW 🔥</span>
-                  </div>
-                  <div className="h-px w-16 bg-gradient-to-l from-transparent to-yellow-500/60" />
-                </div>
-                
-                <h2 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 drop-shadow-2xl mb-2">
-                  HOTTEST TOKENS
-                </h2>
-                
-                <p className="text-gray-300 text-lg font-medium mb-6">
-                  The most explosive tokens right now • Real-time market momentum
-                </p>
-                
-                {/* ANIMATED SEPARATORS */}
-                <div className="flex items-center justify-center gap-4">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" />
-                  <div className="w-20 h-px bg-gradient-to-r from-yellow-500/60 via-orange-500/60 to-red-500/60" />
-                  <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse delay-300" />
-                  <div className="w-20 h-px bg-gradient-to-r from-red-500/60 via-orange-500/60 to-yellow-500/60" />
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce delay-700" />
-                </div>
-              </div>
-            </div>
             
             {/* PREMIUM GRID LAYOUT */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -367,7 +333,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
               
               <div className="text-center mt-4">
                 <p className="text-gray-500 text-sm font-medium">
-                  Updated every 30 seconds • Powered by real-time market data
+                  🚀 Powered by DegenDuel's proprietary scoring algorithm • Real-time market intelligence
                 </p>
               </div>
             </div>

@@ -1,6 +1,6 @@
 // src/pages/authenticated/MyContestsPage.tsx
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   FaBan,
   FaCalendarAlt,
@@ -9,6 +9,7 @@ import {
   FaTrophy,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import { ContestCard } from "../../components/contest-browser/ContestCard";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
@@ -20,66 +21,90 @@ import {
   TabsTrigger,
 } from "../../components/ui/Tabs";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
-import { useUserContests } from "../../hooks/data/legacy/useUserContests";
-import { UserContest } from "../../services/contestService";
-import { Contest, ContestSettings, ContestStatus } from "../../types";
+import { ddApi } from "../../services/dd-api";
+import { useStore } from "../../store/useStore";
+import { Contest } from "../../types";
 
 export const MyContestsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { contests, loading, error, refetch } = useUserContests();
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // We're already inside an AuthenticatedRoute, no need for additional checks
   const { user } = useMigratedAuth();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [contests, setContests] = useState<Contest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // This check is redundant since the AuthenticatedRoute already handles redirection
-  // Keeping a simplified version just to be safe
+  // FIXED: Load user's contests immediately via REST API
+  const fetchMyContests = useCallback(async () => {
+    if (!user?.wallet_address) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('[MyContests] Fetching user participations via REST API immediately');
+      
+      // Use the existing ddApi method to get user's participations
+      const participations = await ddApi.contests.getUserParticipations(user.wallet_address);
+      
+      if (participations && participations.length > 0) {
+        // Convert participations to full contest objects
+        const contestPromises = participations.map(async (participation: any) => {
+          try {
+            // Get full contest details for each participation
+            const fullContest = await ddApi.contests.getById(participation.contest_id.toString());
+            return {
+              ...fullContest,
+              is_participating: true, // Always true since this is "My Contests"
+            };
+          } catch (err) {
+            console.warn(`Failed to get details for contest ${participation.contest_id}:`, err);
+            return null;
+          }
+        });
+        
+        const fullContests = (await Promise.all(contestPromises)).filter(Boolean) as Contest[];
+        
+        console.log(`[MyContests] Loaded ${fullContests.length} contests for user`);
+        setContests(fullContests);
+        
+        // Update store with user's contests
+        useStore.getState().setContests(fullContests);
+        
+      } else {
+        console.log('[MyContests] No participations found for user');
+        setContests([]);
+      }
+      
+    } catch (err: any) {
+      console.error('[MyContests] Failed to load user contests:', err);
+      setError('Failed to load your contests. Please try again.');
+      setContests([]);
+      
+      toast.error('Failed to load your contests', {
+        duration: 4000,
+        style: {
+          background: '#1f2937',
+          color: '#f3f4f6',
+          border: '1px solid #374151'
+        }
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.wallet_address]);
+
+  // Load contests immediately on mount
   useEffect(() => {
-    if (!user) {
+    if (user?.wallet_address) {
+      console.log('[MyContests] User authenticated, loading contests immediately');
+      fetchMyContests();
+    } else if (!user) {
       navigate("/login");
     }
-  }, [user, navigate]);
-
-  const transformToContestFormat = (userContest: UserContest): Contest => {
-    const now = new Date().toISOString();
-    
-    // Define default settings based on the new ContestSettings type
-    const defaultSettingsData: ContestSettings = {
-      difficulty: "guppy", // Default difficulty
-      maxParticipants: 100,   // Default max participants for settings
-      minParticipants: 2,     // Default min participants for settings
-      tokenTypesAllowed: ["all"], // Default allowed token types
-      startingPortfolioValue: "1000", // Default starting portfolio value
-    };
-
-    return {
-      id: parseInt(userContest.contestId) || Date.now(),
-      name: userContest.name || "Contest Name Unavailable",
-      description: "View contest details for more information.", // Default description
-      entry_fee: "0", // Default entry fee (UserContest lacks this)
-      prize_pool: "0", // Default prize pool (UserContest lacks this)
-      current_prize_pool: "0", // Default
-      start_time: userContest.startTime || now,
-      end_time: userContest.endTime || now,
-      entry_deadline: now, // Default entry deadline (UserContest lacks this)
-      allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Default buckets
-      participant_count: userContest.participantCount || 0,
-      last_entry_time: undefined, // Default (UserContest lacks this)
-      status: (userContest.status === "upcoming" ? "pending" : userContest.status) as ContestStatus || "pending",
-      cancelled_at: undefined, // Default
-      cancellation_reason: undefined, // Default
-      settings: defaultSettingsData, // Use the structured default settings
-      created_at: now, // Default
-      updated_at: now, // Default
-      // Top-level min/max participants required by Contest type
-      min_participants: defaultSettingsData.minParticipants, 
-      max_participants: defaultSettingsData.maxParticipants === null ? 0 : defaultSettingsData.maxParticipants,
-      is_participating: true, // Explicitly true for "My Contests"
-      contest_code: `MYCON-${parseInt(userContest.contestId) || Date.now()}`,
-      image_url: undefined, // Default
-      participants: [], // Default to empty array (UserContest lacks this)
-    };
-  };
+  }, [user, fetchMyContests, navigate]);
 
   // Group contests by status and filter by search term
   const groupedContests = useMemo(() => {
@@ -91,29 +116,28 @@ export const MyContestsPage: React.FC = () => {
     // Calculate actual status based on timestamps to ensure accuracy
     contests.forEach((contest) => {
       const now = new Date();
-      const startTime = new Date(contest.startTime);
-      const endTime = new Date(contest.endTime);
+      const startTime = new Date(contest.start_time);
+      const endTime = new Date(contest.end_time);
 
       const hasStarted = now >= startTime;
       const hasEnded = now >= endTime;
-
-      const transformed = transformToContestFormat(contest);
       
-      // Apply search filter
+      // Apply search filter first
       const matchesSearch = 
         searchTerm === "" || 
-        transformed.name.toLowerCase().includes(searchTerm.toLowerCase());
+        contest.name.toLowerCase().includes(searchTerm.toLowerCase());
       
       if (!matchesSearch) return;
 
-      if (transformed.status === "cancelled") {
-        cancelled.push(transformed);
+      // Group by actual timing, not just status field
+      if (contest.status === "cancelled") {
+        cancelled.push(contest);
       } else if (hasEnded) {
-        completed.push(transformed);
+        completed.push(contest);
       } else if (hasStarted) {
-        active.push(transformed);
+        active.push(contest);
       } else {
-        upcoming.push(transformed);
+        upcoming.push(contest);
       }
     });
 
@@ -228,7 +252,7 @@ export const MyContestsPage: React.FC = () => {
               <CardContent className="p-6">
                 <p className="text-red-400">{error}</p>
                 <Button
-                  onClick={() => refetch()}
+                  onClick={fetchMyContests}
                   variant="outline"
                   className="mt-4 bg-red-500/20 border-red-500/20 text-red-400 hover:bg-red-500/30"
                 >

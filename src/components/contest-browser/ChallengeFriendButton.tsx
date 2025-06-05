@@ -9,8 +9,10 @@
  */
 
 import React from "react";
+import { toast } from "react-hot-toast";
 import { Button } from "../ui/Button";
 import { ChallengeCreationModal } from "./ChallengeCreationModal";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
 interface ChallengeFriendButtonProps {
   onChallengeCreated?: () => void;
@@ -26,8 +28,20 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
   size = "md",
 }) => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const { isAdministrator } = useMigratedAuth();
 
   const handleOpenModal = () => {
+    if (!isAdministrator) {
+      toast.error("🚧 Coming Soon! Friend challenges are under development.", {
+        duration: 3000,
+        style: {
+          background: '#1f2937',
+          color: '#f3f4f6',
+          border: '1px solid #374151'
+        }
+      });
+      return;
+    }
     setIsModalOpen(true);
   };
 
@@ -46,7 +60,8 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
         onClick={handleOpenModal}
         variant={variant}
         size={size}
-        className={`flex items-center gap-2 ${className}`}
+        disabled={!isAdministrator}
+        className={`flex items-center gap-2 ${className} ${!isAdministrator ? 'opacity-60 cursor-not-allowed' : ''}`}
       >
         <span>⚔️</span>
         <span>Challenge Friend</span>

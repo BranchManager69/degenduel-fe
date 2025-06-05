@@ -137,7 +137,7 @@ const TokenCard: React.FC<{
         {/* DegenDuel Score */}
         <div className="text-right">
           <div className="text-lg font-bold bg-gradient-to-r from-brand-400 to-cyber-400 bg-clip-text text-transparent">
-            {token.degenduel_score.toFixed(1)}
+            {Number(token.degenduel_score || 0).toFixed(1)}
           </div>
           <div className="text-xs text-gray-400">DD Score™</div>
         </div>

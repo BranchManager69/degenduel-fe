@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import { AuthDebugPanel } from "../../../components/debug";
 import { TokenSearch } from "../../../components/common/TokenSearch";
 import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
@@ -15,6 +16,78 @@ import { useStore } from "../../../store/useStore";
 import { Token, TokenResponseMetadata, SearchToken } from "../../../types";
 import { resetToDefaultMeta } from "../../../utils/ogImageUtils";
 import { DegenDuelTop30 } from "@/components/trending/DegenDuelTop30";
+
+// DUEL Token Card Component
+const DuelTokenCard: React.FC = () => {
+  const [duelData, setDuelData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchDuelData = async () => {
+      try {
+        const response = await fetch('/api/tokens/search?search=F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX&limit=1');
+        const data = await response.json();
+        if (data.tokens && data.tokens.length > 0) {
+          setDuelData(data.tokens[0]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch DUEL token data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDuelData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="bg-dark-200/80 backdrop-blur-sm border border-yellow-500/30 rounded-lg p-3 shadow-xl min-w-[120px]">
+        <div className="text-xs text-gray-400 text-center font-mono">
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  if (!duelData) {
+    return (
+      <div className="bg-dark-200/80 backdrop-blur-sm border border-yellow-500/30 rounded-lg p-3 shadow-xl min-w-[120px]">
+        <div className="text-xs text-gray-400 text-center font-mono">
+          DUEL N/A
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-dark-200/80 backdrop-blur-sm border border-yellow-500/30 rounded-lg p-3 shadow-xl hover:shadow-yellow-500/20 transition-all duration-300 min-w-[120px] cursor-pointer group"
+         onClick={() => navigate(`/tokens/${duelData.symbol}`)}>
+      <div className="flex items-center gap-2 mb-2">
+        {duelData.image_url ? (
+          <img src={duelData.image_url} alt={duelData.symbol} className="w-6 h-6 rounded-full" />
+        ) : (
+          <div className="w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-xs font-bold text-black">
+            {duelData.symbol?.charAt(0) || 'D'}
+          </div>
+        )}
+        <div>
+          <div className="text-white font-bold text-sm">{duelData.symbol}</div>
+          <div className="text-xs text-gray-400">{duelData.name}</div>
+        </div>
+      </div>
+      <div className="text-center">
+        <div className="text-yellow-400 font-mono text-sm font-bold">
+          ${Number(duelData.current_price).toFixed(6)}
+        </div>
+      </div>
+      <div className="text-[10px] text-yellow-400 text-center mt-1 group-hover:animate-pulse">
+        ⭐ Featured Token
+      </div>
+    </div>
+  );
+};
 
 /**
  * TokensPage - Production version using the UnifiedWebSocket system
@@ -337,8 +410,8 @@ export const TokensPage: React.FC = () => {
           metadata={metadata}
         />
         
-        {/* View Toggle */}
-        <div className="mt-6 flex items-center justify-center">
+        {/* View Toggle with Mini Token Card */}
+        <div className="mt-6 flex items-center justify-center relative">
           <div className="bg-gray-800/50 p-1 rounded-lg border border-gray-600/30">
             <button
               onClick={() => setActiveView('tokens')}
@@ -351,15 +424,26 @@ export const TokensPage: React.FC = () => {
               All Tokens
             </button>
             <button
-              onClick={() => setActiveView('degenduel')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                activeView === 'degenduel'
-                  ? 'bg-gradient-to-r from-brand-600 to-cyber-600 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-white'
-              }`}
+              onClick={() => {
+                toast.error("🚧 Coming Soon! DegenDuel Top 30 is under development.", {
+                  duration: 3000,
+                  style: {
+                    background: '#1f2937',
+                    color: '#f3f4f6',
+                    border: '1px solid #374151'
+                  }
+                });
+              }}
+              disabled={true}
+              className="px-4 py-2 rounded-md text-sm font-medium transition-all text-gray-500 cursor-not-allowed opacity-60"
             >
               🏆 DegenDuel Top 30
             </button>
+          </div>
+          
+          {/* Mini Floating DUEL Token Card - Fetches Real Data */}
+          <div className="absolute -right-20 lg:-right-24 xl:-right-32 top-1/2 -translate-y-1/2 hidden md:block">
+            <DuelTokenCard />
           </div>
         </div>
         

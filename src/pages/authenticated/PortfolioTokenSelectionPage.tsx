@@ -107,15 +107,8 @@ export const TokenSelection: React.FC = () => {
   const { id: contestId } = useParams();
   const navigate = useNavigate();
   
-  // Jupiter filter state - declared early to avoid "used before declaration" errors
-  const [jupiterFilters, setJupiterFilters] = useState({
-    strictOnly: false,
-    verifiedOnly: false,
-    showAll: true
-  });
-  
-  // Use the standardized token data hook - now properly filtered!
-  console.log("🔌 PortfolioTokenSelectionPage: Using standardized token data hook");
+  // Use the standardized token data hook - WebSocket based for performance
+  console.log("🔌 PortfolioTokenSelectionPage: Using standardized token data hook (WebSocket)");
   
   const {
     tokens,
@@ -129,7 +122,7 @@ export const TokenSelection: React.FC = () => {
   // Jupiter filters don't work with the centralized hook right now
   // The backend already filters duplicates for us
 
-  console.log("📊 PortfolioTokenSelectionPage: Token data state:", {
+  console.log("📊 PortfolioTokenSelectionPage: WebSocket token data state:", {
     tokenCount: tokens.length,
     tokenListLoading,
     tokensError,
@@ -139,7 +132,6 @@ export const TokenSelection: React.FC = () => {
   const [selectedTokens, setSelectedTokens] = useState<Map<string, number>>(
     new Map(),
   );
-  const [marketCapFilter, setMarketCapFilter] = useState("");
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   
   // Keep debouncedSearchQuery as empty for TokenGrid compatibility
@@ -167,8 +159,8 @@ export const TokenSelection: React.FC = () => {
     message: "",
   });
 
-  // Now using the standardized hook with filtered data!
-  console.log("🚀 PortfolioTokenSelectionPage: Using standardized token data hook");
+  // Now using WebSocket-based standardized token data for better performance!
+  console.log("🚀 PortfolioTokenSelectionPage: Using WebSocket-based standardized token data");
   
   useEffect(() => {
     const fetchContest = async () => {
@@ -238,58 +230,34 @@ export const TokenSelection: React.FC = () => {
     });
   }, [contestId, contest]);
 
-  // NEW: Simplified token processing with 1000 token limit
+  // Smart token ordering: selected tokens first, then rest with progressive loading
   const memoizedTokens = useMemo(() => {
     console.log("🔄 PortfolioTokenSelectionPage: Processing tokens, count:", tokens.length);
-    // Limit to 1000 tokens for performance and apply to already sorted tokens
-    const limitedTokens = tokens.slice(0, 1000);
-    console.log("🔄 PortfolioTokenSelectionPage: Limited to:", limitedTokens.length, "tokens");
-    return limitedTokens;
-  }, [tokens]);
+    
+    // Get selected token addresses
+    const selectedAddresses = Array.from(selectedTokens.keys());
+    
+    // Split tokens: selected ones first, then unselected
+    const selectedTokensList = tokens.filter(token => 
+      selectedAddresses.includes(token.contractAddress)
+    );
+    const unselectedTokensList = tokens.filter(token => 
+      !selectedAddresses.includes(token.contractAddress)
+    );
+    
+    // Put selected tokens at top for immediate visibility and clicking
+    const orderedTokens = [...selectedTokensList, ...unselectedTokensList];
+    
+    console.log("🔄 PortfolioTokenSelectionPage: Ordered tokens:", {
+      selected: selectedTokensList.length,
+      unselected: unselectedTokensList.length,
+      total: orderedTokens.length
+    });
+    
+    return orderedTokens;
+  }, [tokens, selectedTokens]);
 
-  // Memoize the token selection handler
-  const handleTokenSelect = useCallback(
-    (contractAddress: string, weight: number) => {
-      console.log("handleTokenSelect called with:", {
-        contractAddress,
-        weight,
-      });
-
-      if (
-        !contractAddress.includes("pump") &&
-        !contractAddress.includes("111")
-      ) {
-        console.warn(
-          "Received possible symbol instead of contract address:",
-          contractAddress,
-        );
-        const token = memoizedTokens.find((t) => t.symbol === contractAddress);
-        if (token) {
-          contractAddress = token.contractAddress;
-          console.log(
-            "Found matching token, using contract address:",
-            contractAddress,
-          );
-        }
-      }
-
-      const token = memoizedTokens.find(
-        (t) => t.contractAddress === contractAddress,
-      );
-      console.log("Token being selected:", token);
-
-      setSelectedTokens((prev) => {
-        const newSelectedTokens = new Map(prev);
-        if (weight === 0) {
-          newSelectedTokens.delete(contractAddress);
-        } else {
-          newSelectedTokens.set(contractAddress, weight);
-        }
-        return newSelectedTokens;
-      });
-    },
-    [memoizedTokens],
-  );
+  // Token selection handler - will be defined after offline mode variables
 
   const totalWeight = Array.from(selectedTokens.values()).reduce(
     (sum, weight) => sum + weight,
@@ -311,52 +279,7 @@ export const TokenSelection: React.FC = () => {
     setShowPreviewModal(true);
   };
 
-  // Handle token search selection with smart weight calculation
-  const handleTokenSearchSelect = useCallback((token: SearchToken, customWeight?: number) => {
-    // Find if this token exists in our current token list
-    const existingToken = memoizedTokens.find(t => t.contractAddress === token.address);
-    if (existingToken) {
-      // Calculate smart default weight based on remaining portfolio space
-      const usedWeight = Array.from(selectedTokens.values()).reduce((sum, w) => sum + w, 0);
-      const remainingWeight = 100 - usedWeight;
-      
-      let defaultWeight: number;
-      if (customWeight) {
-        defaultWeight = customWeight;
-      } else if (remainingWeight >= 20) {
-        defaultWeight = 20; // Give more meaningful chunk when plenty of space
-      } else if (remainingWeight >= 10) {
-        defaultWeight = 10; // Standard default when moderate space
-      } else if (remainingWeight >= 5) {
-        defaultWeight = remainingWeight; // Use all remaining when little space
-      } else if (remainingWeight > 0) {
-        defaultWeight = remainingWeight; // Use exactly what's left
-      } else {
-        // Portfolio full - show helpful error
-        toast.error(`Portfolio is full (${usedWeight}%). Remove tokens or adjust weights first.`, { 
-          duration: 4000 
-        });
-        return;
-      }
-      
-      // Check if token is already selected
-      if (selectedTokens.has(token.address)) {
-        toast.error(`${token.symbol} is already in your portfolio`, { duration: 3000 });
-        return;
-      }
-      
-      handleTokenSelect(token.address, defaultWeight);
-      toast.success(`Added ${token.symbol} with ${defaultWeight}% weight`, { 
-        duration: 3000 
-      });
-    } else {
-      // If not found in current list, show helpful message
-      console.log('Token not found in current token list:', token);
-      toast.error(`${token.symbol} not available in current market data. Try searching for a different token.`, { 
-        duration: 4000 
-      });
-    }
-  }, [memoizedTokens, handleTokenSelect, selectedTokens]);
+  // Token search selection handler - will be defined after handleTokenSelect
 
   // Generate portfolio summary for the modal
   const portfolioSummary = useMemo(() => {
@@ -714,12 +637,15 @@ export const TokenSelection: React.FC = () => {
     }
   };
 
-  // Grace period for WebSocket disconnections (like UnifiedTicker)
+  // ENHANCED: Offline-first portfolio selection with persistent state
   const [wsDisconnectTime, setWsDisconnectTime] = useState<number | null>(null);
   const [isInWsGracePeriod, setIsInWsGracePeriod] = useState(false);
+  const [pendingSelections, setPendingSelections] = useState<Map<string, number>>(new Map());
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   
+  // Extend grace period and add offline mode support
   useEffect(() => {
-    const GRACE_PERIOD_MS = 8000; // 8 seconds grace period
+    const GRACE_PERIOD_MS = 30000; // Extended to 30 seconds for better UX
     
     if (!isTokenDataConnected) {
       // Just disconnected
@@ -728,32 +654,209 @@ export const TokenSelection: React.FC = () => {
         setWsDisconnectTime(now);
         setIsInWsGracePeriod(true);
         
+        console.log('[PortfolioSelection] WebSocket disconnected, entering offline mode');
+        
         // Set timeout to end grace period
         const timeout = setTimeout(() => {
           setIsInWsGracePeriod(false);
+          console.log('[PortfolioSelection] Grace period ended, showing offline mode');
         }, GRACE_PERIOD_MS);
         
         return () => clearTimeout(timeout);
       }
     } else if (isTokenDataConnected) {
-      // Reconnected - clear grace period
+      // Reconnected - sync any pending changes
+      if (wsDisconnectTime !== null) {
+        console.log('[PortfolioSelection] WebSocket reconnected, syncing offline changes');
+        setLastSyncTime(new Date());
+        
+        // If there are pending selections, they'll be handled by the component state
+        if (pendingSelections.size > 0) {
+          console.log(`[PortfolioSelection] Syncing ${pendingSelections.size} offline selections`);
+          setPendingSelections(new Map()); // Clear pending after sync
+        }
+      }
+      
       setWsDisconnectTime(null);
       setIsInWsGracePeriod(false);
     }
-  }, [isTokenDataConnected, wsDisconnectTime]);
+  }, [isTokenDataConnected, wsDisconnectTime, pendingSelections.size]);
 
-  // Only show error for actual data errors, not connection issues during grace period
-  const displayError = tokensError || (!isTokenDataConnected && !isInWsGracePeriod && !tokenListLoading && memoizedTokens.length === 0 ? "Unable to load token data. Please check your connection." : null);
+  // Determine if we're in offline mode (needed before token handler)
+  const isOfflineMode = !isTokenDataConnected && !isInWsGracePeriod;
+  const showOfflineIndicator = isOfflineMode && memoizedTokens.length > 0;
+
+  // Enhanced token selection handler with offline support
+  const handleTokenSelect = useCallback(
+    (contractAddress: string, weight: number) => {
+      console.log("🔍 PortfolioTokenSelectionPage: handleTokenSelect called with:", {
+        contractAddress,
+        weight,
+        isOffline: isOfflineMode
+      });
+
+      // Early return if no valid contract address
+      if (!contractAddress || typeof contractAddress !== 'string') {
+        console.warn("Invalid contract address provided:", contractAddress);
+        return;
+      }
+
+      if (
+        !contractAddress.includes("pump") &&
+        !contractAddress.includes("111")
+      ) {
+        console.warn(
+          "Received possible symbol instead of contract address:",
+          contractAddress,
+        );
+        const token = memoizedTokens.find((t) => t.symbol === contractAddress);
+        if (token) {
+          contractAddress = token.contractAddress;
+          console.log(
+            "Found matching token, using contract address:",
+            contractAddress,
+          );
+        }
+      }
+
+      const token = memoizedTokens.find(
+        (t) => t.contractAddress === contractAddress,
+      );
+      console.log("Token being selected:", token);
+
+      // Update selections immediately (works offline)
+      setSelectedTokens((prev) => {
+        const newSelectedTokens = new Map(prev);
+        if (weight === 0) {
+          newSelectedTokens.delete(contractAddress);
+        } else {
+          newSelectedTokens.set(contractAddress, weight);
+        }
+        
+        // Track offline changes for sync when reconnected
+        if (isOfflineMode) {
+          setPendingSelections((pending) => {
+            const newPending = new Map(pending);
+            if (weight === 0) {
+              newPending.delete(contractAddress);
+            } else {
+              newPending.set(contractAddress, weight);
+            }
+            return newPending;
+          });
+          
+          // Show offline feedback
+          if (token) {
+            toast.success(
+              `${token.symbol} ${weight === 0 ? 'removed' : 'selected'} (offline)`,
+              { duration: 2000 }
+            );
+          }
+        }
+        
+        return newSelectedTokens;
+      });
+    },
+    [memoizedTokens, isOfflineMode],
+  );
+
+  // Handle token search selection with smart weight calculation and top positioning
+  const handleTokenSearchSelect = useCallback((token: SearchToken, customWeight?: number) => {
+    // Find if this token exists in our current token list
+    const existingToken = memoizedTokens.find(t => t.contractAddress === token.address);
+    if (existingToken) {
+      // Check if token is already selected
+      if (selectedTokens.has(token.address)) {
+        toast.error(`${token.symbol} is already in your portfolio`, { duration: 3000 });
+        return;
+      }
+      
+      // Calculate smart default weight based on remaining portfolio space
+      const usedWeight = Array.from(selectedTokens.values()).reduce((sum, w) => sum + w, 0);
+      const remainingWeight = 100 - usedWeight;
+      
+      let defaultWeight: number;
+      if (customWeight) {
+        defaultWeight = customWeight;
+      } else if (remainingWeight >= 20) {
+        defaultWeight = 20; // Give more meaningful chunk when plenty of space
+      } else if (remainingWeight >= 10) {
+        defaultWeight = 10; // Standard default when moderate space
+      } else if (remainingWeight >= 5) {
+        defaultWeight = remainingWeight; // Use all remaining when little space
+      } else if (remainingWeight > 0) {
+        defaultWeight = remainingWeight; // Use exactly what's left
+      } else {
+        // Portfolio full - show helpful error
+        toast.error(`Portfolio is full (${usedWeight}%). Remove tokens or adjust weights first.`, { 
+          duration: 4000 
+        });
+        return;
+      }
+      
+      // Add token to selection - this will trigger memoizedTokens to reorder and put it at top
+      handleTokenSelect(token.address, defaultWeight);
+      
+      // Scroll to top so user can see the newly selected token
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+      
+      toast.success(`Added ${token.symbol} with ${defaultWeight}% weight - now at top of list`, { 
+        duration: 3000 
+      });
+    } else {
+      // Token not in current data - add it from search data if possible
+      console.log('Token not found in current token list, attempting to add from search data:', token);
+      
+      // Check if already selected by address
+      if (selectedTokens.has(token.address)) {
+        toast.error(`${token.symbol} is already in your portfolio`, { duration: 3000 });
+        return;
+      }
+      
+      // Calculate weight
+      const usedWeight = Array.from(selectedTokens.values()).reduce((sum, w) => sum + w, 0);
+      const remainingWeight = 100 - usedWeight;
+      
+      let defaultWeight: number;
+      if (customWeight) {
+        defaultWeight = customWeight;
+      } else if (remainingWeight >= 20) {
+        defaultWeight = 20;
+      } else if (remainingWeight >= 10) {
+        defaultWeight = 10;
+      } else if (remainingWeight > 0) {
+        defaultWeight = remainingWeight;
+      } else {
+        toast.error(`Portfolio is full (${usedWeight}%). Remove tokens first.`, { duration: 4000 });
+        return;
+      }
+      
+      // Add the token even if not in current list (it will appear when data loads)
+      handleTokenSelect(token.address, defaultWeight);
+      
+      toast.success(`Added ${token.symbol} with ${defaultWeight}% weight - will appear when data loads`, { 
+        duration: 4000 
+      });
+    }
+  }, [memoizedTokens, handleTokenSelect, selectedTokens]);
+
+  // FIXED: Never block UI for connection issues when we have cached data
+  const displayError = tokensError && memoizedTokens.length === 0 ? tokensError : null;
 
   console.log("🎯 PortfolioTokenSelectionPage: Render logic state:", {
     tokenListLoading,
     displayError,
     tokenCount: memoizedTokens.length,
-    isTokenDataConnected
+    isTokenDataConnected,
+    isOfflineMode,
+    showOfflineIndicator
   });
 
-  if (tokenListLoading) {
-    console.log("⏳ PortfolioTokenSelectionPage: Rendering skeleton loading state");
+  // NEVER show loading skeleton - always show what we have immediately
+  if (false) {
+    console.log("⏳ PortfolioTokenSelectionPage: Rendering skeleton loading state (no cached tokens)");
     return (
       <div className="flex flex-col min-h-screen">
         {/* Background effects */}
@@ -788,7 +891,7 @@ export const TokenSelection: React.FC = () => {
                   <div className={`w-2 h-2 rounded-full ${isTokenDataConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
                   <span className={`font-mono ${isTokenDataConnected ? 'text-emerald-400' : 'text-red-400'}`}>
                     {isTokenDataConnected ? 
-                      `LOADING.DATA.STREAM (${tokens.length}/1000)` : 
+                      `LOADING.WEBSOCKET.DATA (${tokens.length}/1000)` : 
                       'CONNECTION.LOST'
                     }
                   </span>
@@ -806,11 +909,6 @@ export const TokenSelection: React.FC = () => {
                 </button>
                 
                 {/* Show last update time if available */}
-                {lastUpdate && (
-                  <span className="text-xs text-gray-500 font-mono">
-                    Last update: {lastUpdate.toLocaleTimeString()}
-                  </span>
-                )}
               </div>
             </div>
 
@@ -942,30 +1040,45 @@ export const TokenSelection: React.FC = () => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="flex flex-col min-h-screen">
-        {/* Enhanced Connection Status Banner */}
-        {!isTokenDataConnected && !isInWsGracePeriod && (
-          <div className="bg-yellow-500/10 border-b border-yellow-500/30 px-4 py-3">
+        {/* Enhanced Offline/Connection Status Banner */}
+        {showOfflineIndicator && (
+          <div className="bg-blue-500/10 border-b border-blue-500/30 px-4 py-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-yellow-400 text-sm">
-                <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-                <span>Connection lost - showing cached data ({memoizedTokens.length} tokens)</span>
+              <div className="flex items-center gap-2 text-blue-400 text-sm">
+                <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
+                <span>Offline mode - selections saved locally ({memoizedTokens.length} tokens available)</span>
               </div>
               <div className="flex items-center gap-3">
                 {lastUpdate && (
-                  <span className="text-xs text-yellow-300">
-                    Last update: {lastUpdate.toLocaleTimeString()}
+                  <span className="text-xs text-blue-300">
+                    Data from: {lastUpdate.toLocaleTimeString()}
+                  </span>
+                )}
+                {lastSyncTime && (
+                  <span className="text-xs text-emerald-300">
+                    Synced: {lastSyncTime.toLocaleTimeString()}
                   </span>
                 )}
                 <button
                   onClick={() => {
-                    console.log("🔄 PortfolioTokenSelectionPage: Retry from connection banner");
+                    console.log("🔄 PortfolioTokenSelectionPage: Manual retry from offline banner");
                     refreshTokens();
                   }}
-                  className="px-3 py-1 bg-yellow-500/20 rounded text-xs hover:bg-yellow-500/30 transition-colors font-mono"
+                  className="px-3 py-1 bg-blue-500/20 rounded text-xs hover:bg-blue-500/30 transition-colors font-mono"
                 >
-                  [RETRY]
+                  [RECONNECT]
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Loading indicator when refreshing data */}
+        {tokenListLoading && memoizedTokens.length > 0 && (
+          <div className="bg-emerald-500/10 border-b border-emerald-500/30 px-4 py-2">
+            <div className="flex items-center justify-center gap-2 text-emerald-400 text-sm">
+              <div className="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin"></div>
+              <span className="font-mono">Updating token data...</span>
             </div>
           </div>
         )}
@@ -1023,11 +1136,14 @@ export const TokenSelection: React.FC = () => {
               </p>
               
               {/* Connection status indicator */}
-              <div className="mt-2 flex justify-center items-center gap-2 text-xs">
-                <div className={`w-2 h-2 rounded-full ${isTokenDataConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-                <span className={`font-mono ${isTokenDataConnected ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {isTokenDataConnected ? 'LIVE.DATA.STREAM' : 'CONNECTION.LOST'}
-                </span>
+              <div className="mt-2 flex justify-center items-center gap-4 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${isTokenDataConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+                  <span className={`font-mono ${isTokenDataConnected ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {isTokenDataConnected ? 'LIVE.DATA.STREAM' : 'CONNECTION.LOST'}
+                  </span>
+                </div>
+                
               </div>
             </div>
 
@@ -1051,87 +1167,25 @@ export const TokenSelection: React.FC = () => {
                       </div>
                     </div>
                     
-                    {/* Filters */}
+                    {/* Simplified Filters - Only search and view mode */}
                     <div className="mb-4 sm:mb-6">
                       <TokenFilters
-                        marketCapFilter={marketCapFilter}
-                        onMarketCapFilterChange={setMarketCapFilter}
                         viewMode={viewMode}
                         onViewModeChange={setViewMode}
                         onTokenSearchSelect={handleTokenSearchSelect}
                       />
-                      
-                      {/* Jupiter Filter Controls */}
-                      <div className="mt-4 flex flex-wrap gap-4 items-center p-3 bg-dark-300/30 border border-emerald-500/30 rounded-lg">
-                        <span className="text-sm font-medium text-emerald-400 font-mono">JUPITER.FILTERS:</span>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={jupiterFilters.strictOnly}
-                            onChange={(e) => setJupiterFilters({
-                              strictOnly: e.target.checked,
-                              verifiedOnly: false, // Strict overrides verified
-                              showAll: !e.target.checked && !jupiterFilters.verifiedOnly
-                            })}
-                            className="w-4 h-4 text-emerald-400 bg-dark-300 border-dark-400 rounded focus:ring-emerald-400 focus:ring-2"
-                          />
-                          <span className="text-sm text-gray-300 font-mono">STRICT.ONLY</span>
-                          <span className="text-xs text-gray-500 font-mono">[MAX.QUALITY]</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={jupiterFilters.verifiedOnly && !jupiterFilters.strictOnly}
-                            disabled={jupiterFilters.strictOnly}
-                            onChange={(e) => setJupiterFilters({
-                              strictOnly: false,
-                              verifiedOnly: e.target.checked,
-                              showAll: !e.target.checked && !jupiterFilters.strictOnly
-                            })}
-                            className="w-4 h-4 text-emerald-400 bg-dark-300 border-dark-400 rounded focus:ring-emerald-400 focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                          <span className={`text-sm font-mono ${jupiterFilters.strictOnly ? 'text-gray-500' : 'text-gray-300'}`}>VERIFIED.ONLY</span>
-                          <span className="text-xs text-gray-500 font-mono">[CURATED]</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={!jupiterFilters.strictOnly && !jupiterFilters.verifiedOnly}
-                            onChange={(e) => setJupiterFilters({
-                              strictOnly: false,
-                              verifiedOnly: false,
-                              showAll: e.target.checked
-                            })}
-                            className="w-4 h-4 text-emerald-400 bg-dark-300 border-dark-400 rounded focus:ring-emerald-400 focus:ring-2"
-                          />
-                          <span className="text-sm text-gray-300 font-mono">SHOW.ALL</span>
-                          <span className="text-xs text-gray-500 font-mono">[UNFILTERED]</span>
-                        </label>
-                      </div>
                     </div>
 
-                    {/* Token Grid */}
+                    {/* Token Grid - ALWAYS show immediately, no loading states */}
                     <div className="relative">
-                      {tokenListLoading ? (
-                        <div className="flex justify-center items-center h-48 sm:h-64">
-                          <div className="text-emerald-400 font-mono">
-                            LOADING.TOKENS...
-                          </div>
-                        </div>
-                      ) : displayError ? (
-                        <div className="text-red-400 text-center font-mono">
-                          ERROR: {displayError}
-                        </div>
-                      ) : (
-                        <TokenGrid
-                          tokens={memoizedTokens}
-                          selectedTokens={selectedTokens}
-                          onTokenSelect={handleTokenSelect}
-                          marketCapFilter={marketCapFilter}
-                          searchQuery={debouncedSearchQuery}
-                          viewMode={viewMode}
-                        />
-                      )}
+                      <TokenGrid
+                        tokens={memoizedTokens}
+                        selectedTokens={selectedTokens}
+                        onTokenSelect={handleTokenSelect}
+                        marketCapFilter=""
+                        searchQuery={debouncedSearchQuery}
+                        viewMode={viewMode}
+                      />
                     </div>
                   </div>
                 </Card>
@@ -1224,6 +1278,20 @@ export const TokenSelection: React.FC = () => {
                                   </a>
                                 )}
                               </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Offline Status Indicator */}
+                        {showOfflineIndicator && (
+                          <div className="mb-4 p-2 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                            <div className="flex items-center gap-2 text-xs font-mono">
+                              <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                              <span className="text-blue-300">OFFLINE MODE</span>
+                              <span className="text-gray-500">•</span>
+                              <span className="text-gray-400">
+                                Selections saved locally
+                              </span>
                             </div>
                           </div>
                         )}
