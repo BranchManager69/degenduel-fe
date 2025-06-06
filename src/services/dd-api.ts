@@ -378,8 +378,9 @@ const createApiClient = () => {
           // Log as info instead of error for expected unauthorized responses
           if (DDAPI_DEBUG_MODE === "true") {
             console.info(
-              `[DD-API Info] Expected unauthorized access to ${endpoint}`,
+              "[DD-API Info] Expected unauthorized access to endpoint",
               {
+                endpoint,
                 status: response.status,
                 statusText: response.statusText,
               },
@@ -400,7 +401,8 @@ const createApiClient = () => {
         );
 
         // Log actual errors
-        console.error(`[API Error] ${endpoint}:`, {
+        console.error("[API Error] Request failed:", {
+          endpoint,
           status: response.status,
           statusText: response.statusText,
           headers: Object.fromEntries(response.headers.entries()),
@@ -426,7 +428,8 @@ const logError = (
   error: any,
   context?: Record<string, any>,
 ) => {
-  console.error(`[DD-API Error] ${endpoint}:`, {
+  console.error("[DD-API Error] Request failed:", {
+    endpoint,
     message: error?.message,
     status: error?.status,
     context,
@@ -501,8 +504,11 @@ const checkContestParticipation = async (
       try {
         const errorText = await response.text();
         console.warn(
-          `[DD-API] Participation check failed for contest ${numericId}, wallet ${userWallet}: HTTP ${response.status}`,
+          "[DD-API] Participation check failed:",
           {
+            contestId: numericId,
+            wallet: userWallet,
+            status: response.status,
             endpoint: `/contests/${numericId}/check-participation`,
             statusText: response.statusText,
             errorText: errorText.substring(0, 200), // Limit long responses
@@ -510,7 +516,8 @@ const checkContestParticipation = async (
         );
       } catch (e) {
         console.warn(
-          `[DD-API] Participation check failed: HTTP ${response.status}`,
+          "[DD-API] Participation check failed:",
+          { status: response.status }
         );
       }
 
@@ -523,8 +530,8 @@ const checkContestParticipation = async (
     // Validate response format
     if (data.is_participating === undefined) {
       console.warn(
-        `[DD-API] Invalid participation check response format for contest ${contestId}:`,
-        data,
+        "[DD-API] Invalid participation check response format:",
+        { contestId, data },
       );
       participationCache.set(cacheKey, { result: false, timestamp: now });
       return false;
@@ -540,8 +547,10 @@ const checkContestParticipation = async (
     // Don't log timeout errors
     if (error instanceof Error && error.name !== "AbortError") {
       console.error(
-        `[DD-API] Error checking participation for contest ${contestId}, wallet ${userWallet}:`,
+        "[DD-API] Error checking participation:",
         {
+          contestId,
+          wallet: userWallet,
           error,
           errorType:
             error instanceof Error ? error.constructor.name : "Unknown",

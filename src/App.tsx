@@ -159,6 +159,7 @@ const BannedUser = lazy(() => import('./pages/public/general/BannedUser').then(m
 const BlinksDemo = lazy(() => import('./pages/public/general/BlinksDemo').then(module => ({ default: module.BlinksDemo })));
 const SolanaBlockchainDemo = lazy(() => import('./pages/public/general/SolanaBlockchainDemo'));
 const WebSocketAuthTest = lazy(() => import('./pages/public/general/WebSocketAuthTest'));
+const ImportantUpdate = lazy(() => import('./pages/public/general/ImportantUpdate').then(module => ({ default: module.ImportantUpdate })));
 const VirtualAgentPage = lazy(() => import('./pages/public/game/VirtualAgent').then(module => ({ default: module.VirtualAgentPage })));
 const ContestPerformance = lazy(() => import('./pages/public/leaderboards/ContestPerformanceRankings').then(module => ({ default: module.ContestPerformance })));
 const DegenLevelPage = lazy(() => import('./pages/public/leaderboards/DegenLevelPage').then(module => ({ default: module.DegenLevelPage })));
@@ -418,6 +419,7 @@ const AppContent: React.FC = () => {
           <Route path="/contact" element={<Suspense fallback={<LoadingFallback />}><Contact /></Suspense>} />
           <Route path="/terms" element={<Suspense fallback={<LoadingFallback />}><TermsOfService /></Suspense>} />
           <Route path="/privacy" element={<Suspense fallback={<LoadingFallback />}><PrivacyPolicy /></Suspense>} />
+          <Route path="/important-update" element={<Suspense fallback={<LoadingFallback />}><ImportantUpdate /></Suspense>} />
           <Route path="/blinks-demo" element={<Suspense fallback={<LoadingFallback />}><BlinksDemo /></Suspense>} />
           <Route path="/solana-demo" element={<Suspense fallback={<LoadingFallback />}><SolanaBlockchainDemo /></Suspense>} />
           <Route path="/websocket-auth-test" element={<Suspense fallback={<LoadingFallback />}><WebSocketAuthTest /></Suspense>} />
