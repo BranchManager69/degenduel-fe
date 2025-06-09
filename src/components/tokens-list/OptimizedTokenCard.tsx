@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Token } from "../../types";
+import { Token, TokenHelpers } from "../../types";
 import { formatNumber, formatTokenPrice, formatPercentage } from "../../utils/format";
 import { CopyToClipboard } from "../common/CopyToClipboard";
 import { DeleteTokenModal } from "./DeleteTokenModal";
@@ -68,13 +68,14 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
   
   // Calculate intelligent metrics from new data
   const metrics = useMemo(() => {
-    const change5m = token.priceChanges?.["5m"] || 0;
-    const change1h = token.priceChanges?.["1h"] || 0;
-    const change24h = token.change_24h || Number(token.change24h) || 0;
+    const change5m = token.priceChanges?.["m5"] || 0;
+    const change1h = token.priceChanges?.["h1"] || 0;
+    const change24h = TokenHelpers.getPriceChange(token);
     // const volume5m = token.volumes?.["5m"] || 0;
     // const volume1h = token.volumes?.["1h"] || 0;
-    const buys5m = token.transactions?.["5m"]?.buys || 0;
-    const sells5m = token.transactions?.["5m"]?.sells || 0;
+    const tx5m = token.transactions?.["m5"];
+    const buys5m = typeof tx5m === 'object' ? tx5m.buys : 0;
+    const sells5m = typeof tx5m === 'object' ? tx5m.sells : 0;
     const priorityScore = token.priority_score || token.priorityScore || 0;
     
     return {
@@ -82,7 +83,8 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
       velocity: Math.abs(change5m) + Math.abs(change1h),
       activity: buys5m + sells5m,
       priority: priorityScore,
-      trend: change24h >= 0 ? 'up' : 'down'
+      trend: change24h >= 0 ? 'up' : 'down',
+      change24h
     };
   }, [token]);
 
@@ -189,21 +191,21 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
                 <div className="space-y-1">
                   {/* Price with trend arrow */}
                   <div className="flex items-center justify-between">
-                    <div className="text-lg font-bold text-white">{formatTokenPrice(token.price)}</div>
+                    <div className="text-lg font-bold text-white">{formatTokenPrice(TokenHelpers.getPrice(token))}</div>
                     <div className={`flex items-center ${metrics.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                      <div className={`text-sm font-mono ${(token.change_24h || Number(token.change24h) || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {(token.change_24h || Number(token.change24h) || 0) >= 0 ? '↗' : '↘'} {formatPercentage(token.change_24h || token.change24h, false)}
+                      <div className={`text-sm font-mono ${metrics.change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {metrics.change24h >= 0 ? '↗' : '↘'} {formatPercentage(metrics.change24h, false)}
                       </div>
                     </div>
                   </div>
                   
                   {/* Market Cap with size indicator */}
                   <div className="flex items-center justify-between">
-                    <div className="text-xs text-gray-300">${formatNumber(token.market_cap || token.marketCap, 'short')}</div>
+                    <div className="text-xs text-gray-300">${formatNumber(TokenHelpers.getMarketCap(token), 'short')}</div>
                     <div className="flex items-center space-x-1">
                       {/* Size dots based on market cap */}
-                      {(token.market_cap || Number(token.marketCap) || 0) > 1000000000 && <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>}
-                      {(token.market_cap || Number(token.marketCap) || 0) > 100000000 && <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>}
+                      {TokenHelpers.getMarketCap(token) > 1000000000 && <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>}
+                      {TokenHelpers.getMarketCap(token) > 100000000 && <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>}
                       <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
                     </div>
                   </div>
@@ -215,38 +217,38 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
                       <div className="w-8 h-1 bg-dark-400 rounded-full overflow-hidden">
                         <div 
                           className={`h-full transition-all duration-500 ${
-                            (token.volume_24h || Number(token.volume24h) || 0) > 10000000 ? 'bg-red-500' :
-                            (token.volume_24h || Number(token.volume24h) || 0) > 1000000 ? 'bg-orange-500' :
-                            (token.volume_24h || Number(token.volume24h) || 0) > 100000 ? 'bg-yellow-500' : 'bg-gray-500'
+                            TokenHelpers.getVolume(token) > 10000000 ? 'bg-red-500' :
+                            TokenHelpers.getVolume(token) > 1000000 ? 'bg-orange-500' :
+                            TokenHelpers.getVolume(token) > 100000 ? 'bg-yellow-500' : 'bg-gray-500'
                           }`}
-                          style={{ width: `${Math.min(100, Math.log10(Math.max(1, token.volume_24h || Number(token.volume24h) || 1)) * 10)}%` }}
+                          style={{ width: `${Math.min(100, Math.log10(Math.max(1, TokenHelpers.getVolume(token))) * 10)}%` }}
                         />
                       </div>
-                      {(token.volume_24h || Number(token.volume24h) || 0) > 10000000 && <div className="text-red-400 text-xs">🔥</div>}
+                      {TokenHelpers.getVolume(token) > 10000000 && <div className="text-red-400 text-xs">🔥</div>}
                     </div>
                     
                     {/* Buy/Sell pressure */}
-                    {token.transactions?.["5m"] && (
+                    {token.transactions?.["m5"] && typeof token.transactions["m5"] === 'object' && (
                       <div className="flex items-center space-x-1">
                         <div className={`w-1 h-3 rounded-full ${
-                          token.transactions["5m"].buys > token.transactions["5m"].sells ? 'bg-green-400' : 'bg-gray-600'
+                          token.transactions["m5"].buys > token.transactions["m5"].sells ? 'bg-green-400' : 'bg-gray-600'
                         }`}></div>
                         <div className={`w-1 h-3 rounded-full ${
-                          token.transactions["5m"].sells > token.transactions["5m"].buys ? 'bg-red-400' : 'bg-gray-600'
+                          token.transactions["m5"].sells > token.transactions["m5"].buys ? 'bg-red-400' : 'bg-gray-600'
                         }`}></div>
                       </div>
                     )}
                     
                     {/* Momentum arrows for multiple timeframes */}
                     <div className="flex space-x-0.5">
-                      {token.priceChanges?.["5m"] !== undefined && (
-                        <div className={`text-xs ${token.priceChanges["5m"] >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {token.priceChanges["5m"] >= 0 ? '▲' : '▼'}
+                      {token.priceChanges?.["m5"] !== undefined && (
+                        <div className={`text-xs ${token.priceChanges["m5"] >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {token.priceChanges["m5"] >= 0 ? '▲' : '▼'}
                         </div>
                       )}
-                      {token.priceChanges?.["1h"] !== undefined && (
-                        <div className={`text-xs ${token.priceChanges["1h"] >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {token.priceChanges["1h"] >= 0 ? '▲' : '▼'}
+                      {token.priceChanges?.["h1"] !== undefined && (
+                        <div className={`text-xs ${token.priceChanges["h1"] >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {token.priceChanges["h1"] >= 0 ? '▲' : '▼'}
                         </div>
                       )}
                     </div>
@@ -259,7 +261,7 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
                     {/* Volume activity indicator */}
                     <div 
                       className="h-full bg-gradient-to-r from-brand-500/50 to-cyan-500/50"
-                      style={{ width: `${Math.min(((token.volumes?.["1h"] || 0) / 1000000) * 100, 100)}%` }}
+                      style={{ width: `${Math.min(((token.volumes?.["h1"] || 0) / 1000000) * 100, 100)}%` }}
                     />
                   </div>
                 )}
@@ -285,9 +287,9 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
                 <div className="bg-dark-300/60 rounded p-2">
                   <div className="text-xs text-gray-400">5m</div>
                   <div className={`text-sm font-bold ${
-                    (token.priceChanges?.["5m"] || 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                    (token.priceChanges?.["m5"] || 0) >= 0 ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {formatPercentage(token.priceChanges?.["5m"])}
+                    {formatPercentage(token.priceChanges?.["m5"])}
                   </div>
                 </div>
                 
@@ -295,9 +297,9 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
                 <div className="bg-dark-300/60 rounded p-2">
                   <div className="text-xs text-gray-400">1h</div>
                   <div className={`text-sm font-bold ${
-                    (token.priceChanges?.["1h"] || 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                    (token.priceChanges?.["h1"] || 0) >= 0 ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {formatPercentage(token.priceChanges?.["1h"])}
+                    {formatPercentage(token.priceChanges?.["h1"])}
                   </div>
                 </div>
                 
@@ -326,13 +328,13 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
                     <div className="bg-green-500/20 rounded p-2 text-center">
                       <div className="text-xs text-green-400">Buys</div>
                       <div className="text-sm font-bold text-green-300">
-                        {token.transactions["5m"]?.buys || 0}
+                        {typeof token.transactions?.["m5"] === 'object' ? token.transactions["m5"].buys : 0}
                       </div>
                     </div>
                     <div className="bg-red-500/20 rounded p-2 text-center">
                       <div className="text-xs text-red-400">Sells</div>
                       <div className="text-sm font-bold text-red-300">
-                        {token.transactions["5m"]?.sells || 0}
+                        {typeof token.transactions?.["m5"] === 'object' ? token.transactions["m5"].sells : 0}
                       </div>
                     </div>
                   </div>
@@ -341,11 +343,11 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
               
               {/* AGE & DISCOVERY */}
               <div className="grid grid-cols-2 gap-2 mb-3">
-                {token.firstSeenAt && (
+                {token.first_seen_on_jupiter_at && (
                   <div className="bg-dark-300/60 rounded p-2">
                     <div className="text-xs text-gray-400">Listed</div>
                     <div className="text-xs text-white">
-                      {new Date(token.firstSeenAt).toLocaleDateString()}
+                      {new Date(token.first_seen_on_jupiter_at).toLocaleDateString()}
                     </div>
                   </div>
                 )}
@@ -362,14 +364,17 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
 
               {/* CONTRACT + SOCIALS */}
               <div className="space-y-2">
-                <CopyToClipboard text={token.contractAddress}>
+                <CopyToClipboard text={TokenHelpers.getAddress(token)}>
                   <div className="bg-dark-300/60 rounded p-2 cursor-pointer hover:bg-dark-300/80 transition-colors">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-400">Contract</span>
                       <span className="text-white/30">📋</span>
                     </div>
                     <p className="font-mono text-xs text-white/70 truncate">
-                      {`${token.contractAddress.slice(0, 8)}...${token.contractAddress.slice(-6)}`}
+                      {(() => {
+                        const address = TokenHelpers.getAddress(token);
+                        return address ? `${address.slice(0, 8)}...${address.slice(-6)}` : 'N/A';
+                      })()}
                     </p>
                   </div>
                 </CopyToClipboard>
@@ -419,7 +424,7 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
       <DeleteTokenModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        tokenAddress={token.contractAddress}
+        tokenAddress={TokenHelpers.getAddress(token) || ''}
         tokenSymbol={token.symbol}
       />
     </>

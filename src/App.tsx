@@ -66,6 +66,7 @@ import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
 import { MaintenanceGuard } from "./components/routes/MaintenanceGuard";
 import { SuperAdminRoute } from "./components/routes/SuperAdminRoute";
 import LoadingFallback from "./components/shared/LoadingFallback";
+import ScrollToTop from "./components/shared/ScrollToTop";
 import { Terminal } from "./components/terminal/Terminal";
 // import { useNotifications } from './hooks/websocket/topic-hooks/useNotifications';
 // import { useSystemSettings } from './hooks/websocket/topic-hooks/useSystemSettings';
@@ -160,13 +161,14 @@ const BlinksDemo = lazy(() => import('./pages/public/general/BlinksDemo').then(m
 const SolanaBlockchainDemo = lazy(() => import('./pages/public/general/SolanaBlockchainDemo'));
 const WebSocketAuthTest = lazy(() => import('./pages/public/general/WebSocketAuthTest'));
 const ImportantUpdate = lazy(() => import('./pages/public/general/ImportantUpdate').then(module => ({ default: module.ImportantUpdate })));
+const DeveloperUpdates = lazy(() => import('./pages/public/general/DeveloperUpdates').then(module => ({ default: module.DeveloperUpdates })));
 const VirtualAgentPage = lazy(() => import('./pages/public/game/VirtualAgent').then(module => ({ default: module.VirtualAgentPage })));
 const ContestPerformance = lazy(() => import('./pages/public/leaderboards/ContestPerformanceRankings').then(module => ({ default: module.ContestPerformance })));
 const DegenLevelPage = lazy(() => import('./pages/public/leaderboards/DegenLevelPage').then(module => ({ default: module.DegenLevelPage })));
 const GlobalRankings = lazy(() => import('./pages/public/leaderboards/GlobalRankings').then(module => ({ default: module.GlobalRankings })));
 const LeaderboardLanding = lazy(() => import('./pages/public/leaderboards/LeaderboardLanding').then(module => ({ default: module.LeaderboardLanding })));
 const TokensPage = lazy(() => import('./pages/public/tokens/TokensPage').then(module => ({ default: module.TokensPage })));
-const TokenDetailPage = lazy(() => import('./pages/public/tokens/TokenDetailPage').then(module => ({ default: module.default })));
+const TokenDetailPage = lazy(() => import('./pages/public/tokens/TokenDetailPageNew'));
 const WebSocketAPIPage = lazy(() => import('./pages/public/WebSocketAPIPage'));
 const WhaleRoomPage = lazy(() => import('./pages/public/whaleroom/WhaleRoomPage').then(module => ({ default: module.default })));
 
@@ -353,6 +355,9 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full flex flex-col relative">
+      {/* Scroll to top on navigation */}
+      <ScrollToTop />
+      
       {/* Toast Listener */}
       <ToastListener />
       
@@ -396,7 +401,7 @@ const AppContent: React.FC = () => {
           
           {/* Token Routes */}
           <Route path="/tokens" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><TokensPage /></Suspense></MaintenanceGuard>} />
-          <Route path="/tokens/:symbol" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><TokenDetailPage /></Suspense></MaintenanceGuard>} />
+          <Route path="/tokens/:address" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><TokenDetailPage /></Suspense></MaintenanceGuard>} />
           
           {/* Whale Room - Institutional Analytics Dashboard */}
           <Route path="/whale-room" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><WhaleRoomPage /></Suspense></MaintenanceGuard>} />
@@ -420,6 +425,7 @@ const AppContent: React.FC = () => {
           <Route path="/terms" element={<Suspense fallback={<LoadingFallback />}><TermsOfService /></Suspense>} />
           <Route path="/privacy" element={<Suspense fallback={<LoadingFallback />}><PrivacyPolicy /></Suspense>} />
           <Route path="/important-update" element={<Suspense fallback={<LoadingFallback />}><ImportantUpdate /></Suspense>} />
+          <Route path="/developer-updates" element={<Suspense fallback={<LoadingFallback />}><DeveloperUpdates /></Suspense>} />
           <Route path="/blinks-demo" element={<Suspense fallback={<LoadingFallback />}><BlinksDemo /></Suspense>} />
           <Route path="/solana-demo" element={<Suspense fallback={<LoadingFallback />}><SolanaBlockchainDemo /></Suspense>} />
           <Route path="/websocket-auth-test" element={<Suspense fallback={<LoadingFallback />}><WebSocketAuthTest /></Suspense>} />
@@ -471,7 +477,7 @@ const AppContent: React.FC = () => {
           />
           <Route
             path="/contests/:id/select-tokens"
-            element={<AuthenticatedRoute><MaintenanceGuard><Suspense fallback={<LoadingFallback />}><TokenSelection /></Suspense></MaintenanceGuard></AuthenticatedRoute>}
+            element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><TokenSelection /></Suspense></MaintenanceGuard>}
           />
           
           {/* Admin Dashboard Routes */}

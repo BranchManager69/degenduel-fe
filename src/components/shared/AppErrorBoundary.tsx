@@ -115,7 +115,7 @@ export class AppErrorBoundary extends React.Component<
 
             {/* Title */}
             <h1 className="text-xl sm:text-2xl font-semibold text-red-400">
-              This Page Got <b>Rugged</b>...
+              The website got <b>rugged</b>!
             </h1>
 
             {/* Description */}
@@ -133,15 +133,15 @@ export class AppErrorBoundary extends React.Component<
                   rel="noopener noreferrer" 
                   className="text-brand-400 hover:text-brand-300 transition-colors font-medium"
                 >
-                  Check DegenDuel API Status
+                  DegenDuel server status
                 </a>
               </div>
 
               {/* Contact links */}
               <div>
 
-                {/* If issues persist, contact support via */}
-                <span>If issues persist, contact support via </span>
+                {/* If issues persist, contact support on */}
+                <span>If this persists, contact support on </span>
 
                 {/* Discord link */}
                 <a 
@@ -166,16 +166,6 @@ export class AppErrorBoundary extends React.Component<
                   X (@DegenDuelMe)
                 </a> 
 
-                {/* Link to the developer's account */}
-                <a 
-                  href="https://x.com/BranchManager69" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-brand-400 hover:text-brand-300 transition-colors font-medium"
-                >
-                  X (@BranchManager69)
-                </a>
-
               </div>
             </div>
 
@@ -189,7 +179,7 @@ export class AppErrorBoundary extends React.Component<
                 rel="noopener noreferrer" 
                 className="text-brand-400 hover:text-brand-300 transition-colors font-medium"
               >
-                Documentation
+                Docs (Under Construction)
               </a>
 
               {/* Link to frontend GitHub repo */}
@@ -199,7 +189,7 @@ export class AppErrorBoundary extends React.Component<
                 rel="noopener noreferrer" 
                 className="text-brand-400 hover:text-brand-300 transition-colors font-medium"
               >
-                GitHub
+                Site GitHub
               </a>
 
             </div>

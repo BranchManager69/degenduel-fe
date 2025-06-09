@@ -16,7 +16,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom';
 import useSound from 'use-sound';
 import { useStandardizedTokenData } from '../../../hooks/data/useStandardizedTokenData';
-import { Token } from '../../../types';
+import { Token, TokenHelpers } from '../../../types';
 import { formatNumber } from '../../../utils/format';
 
 // Props for the MarketTickerGrid component
@@ -41,7 +41,7 @@ const TokenRow: React.FC<{
 }> = ({ token, index, isSelected, onSelect, onUpdate, lastPrices }) => {
   const controls = useAnimation();
   const rowRef = useRef<HTMLDivElement>(null);
-  const currentPrice = Number(token.price);
+  const currentPrice = TokenHelpers.getPrice(token);
   const lastPrice = lastPrices[token.symbol] || currentPrice;
   
   // Determine price change state: 1 = up, -1 = down, 0 = unchanged
@@ -51,7 +51,7 @@ const TokenRow: React.FC<{
   }, [currentPrice, lastPrice]);
   
   // Determine if 24h change is positive or negative
-  const is24hPositive = Number(token.change24h) >= 0;
+  const is24hPositive = TokenHelpers.getPriceChange(token) >= 0;
   
   // Flash animation on update
   useEffect(() => {
@@ -119,7 +119,7 @@ const TokenRow: React.FC<{
         'text-white'
       }`}>
         <div className="flex items-center">
-          <span>${formatNumber(token.price, Number(token.price) < 0.01 ? 8 : 6)}</span>
+          <span>${formatNumber(TokenHelpers.getPrice(token), TokenHelpers.getPrice(token) < 0.01 ? 8 : 6)}</span>
           
           {/* Price change indicator arrow */}
           {priceChangeState !== 0 && (
@@ -143,13 +143,13 @@ const TokenRow: React.FC<{
         <div className={`px-2 py-0.5 rounded font-mono text-xs ${
           is24hPositive ? 'bg-green-500/10' : 'bg-red-500/10'
         }`}>
-          {is24hPositive ? '+' : ''}{formatNumber(token.change24h)}%
+          {is24hPositive ? '+' : ''}{formatNumber(TokenHelpers.getPriceChange(token))}%
         </div>
       </div>
       
       {/* Volume - hidden on small screens */}
       <div className="col-span-2 hidden sm:flex items-center justify-end font-mono text-gray-300">
-        ${formatNumber(token.volume24h)}
+        ${formatNumber(TokenHelpers.getVolume(token))}
       </div>
     </motion.div>
   );
@@ -159,7 +159,7 @@ const TokenRow: React.FC<{
 const TokenBillboard: React.FC<{ token: Token | null }> = ({ token }) => {
   if (!token) return null;
   
-  const is24hPositive = Number(token.change24h) >= 0;
+  const is24hPositive = TokenHelpers.getPriceChange(token) >= 0;
   
   return (
     <motion.div 
@@ -212,11 +212,11 @@ const TokenBillboard: React.FC<{ token: Token | null }> = ({ token }) => {
             </div>
             
             <div className="flex items-baseline gap-3 mt-1">
-              <div className="text-xl font-mono font-bold text-white">${formatNumber(token.price)}</div>
+              <div className="text-xl font-mono font-bold text-white">${formatNumber(TokenHelpers.getPrice(token))}</div>
               <div className={`px-2 py-1 rounded ${
                 is24hPositive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
               }`}>
-                {is24hPositive ? '+' : ''}{formatNumber(token.change24h)}%
+                {is24hPositive ? '+' : ''}{formatNumber(TokenHelpers.getPriceChange(token))}%
               </div>
             </div>
           </div>
@@ -227,13 +227,13 @@ const TokenBillboard: React.FC<{ token: Token | null }> = ({ token }) => {
           {/* Market Cap */}
           <div className="bg-gray-800/40 rounded p-3">
             <div className="text-xs text-gray-400 mb-1">Market Cap</div>
-            <div className="text-base font-mono text-white">${formatNumber(token.marketCap)}</div>
+            <div className="text-base font-mono text-white">${formatNumber(TokenHelpers.getMarketCap(token))}</div>
           </div>
           
           {/* 24h Volume */}
           <div className="bg-gray-800/40 rounded p-3">
             <div className="text-xs text-gray-400 mb-1">24h Volume</div>
-            <div className="text-base font-mono text-white">${formatNumber(token.volume24h)}</div>
+            <div className="text-base font-mono text-white">${formatNumber(TokenHelpers.getVolume(token))}</div>
           </div>
           
           {/* Holders / Social Status */}
@@ -243,9 +243,9 @@ const TokenBillboard: React.FC<{ token: Token | null }> = ({ token }) => {
               <div className="flex items-center">
                 <div className="w-full bg-gray-700/50 rounded-full h-1.5">
                   <div className={`h-1.5 rounded-full ${is24hPositive ? 'bg-green-500' : 'bg-red-500'}`} 
-                    style={{ width: `${Math.min(Math.abs(Number(token.change24h) * 2), 100)}%` }}></div>
+                    style={{ width: `${Math.min(Math.abs(TokenHelpers.getPriceChange(token) * 2), 100)}%` }}></div>
                 </div>
-                <span className="ml-2">{Math.min(Math.abs(Math.round(Number(token.change24h) * 2)), 100)}</span>
+                <span className="ml-2">{Math.min(Math.abs(Math.round(TokenHelpers.getPriceChange(token) * 2)), 100)}</span>
               </div>
             </div>
           </div>
@@ -317,7 +317,7 @@ export const MarketTickerGrid: React.FC<MarketTickerGridProps> = ({
           // Find this token in the current state to compare
           const currentToken = tokens.find(t => t.symbol === token.symbol);
           if (currentToken) {
-            newLastPrices[token.symbol] = Number(currentToken.price);
+            newLastPrices[token.symbol] = TokenHelpers.getPrice(currentToken);
           }
         }
       });
@@ -530,7 +530,7 @@ export const MarketTickerGrid: React.FC<MarketTickerGridProps> = ({
               index={index}
               isSelected={selectedToken?.symbol === token.symbol}
               onSelect={() => setSelectedToken(token === selectedToken ? null : token)}
-              onUpdate={() => handleTokenUpdate(Number(token.price) > (lastPrices[token.symbol] || 0))}
+              onUpdate={() => handleTokenUpdate(TokenHelpers.getPrice(token) > (lastPrices[token.symbol] || 0))}
               lastPrices={lastPrices}
             />
           ))}

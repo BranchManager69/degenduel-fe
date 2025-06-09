@@ -13,7 +13,7 @@
 
 import { useDegenDuelTop30 } from "@/hooks/websocket/topic-hooks/useDegenDuelTop30";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Loader2, TrendingUp, WifiOff } from "lucide-react";
+import { AlertTriangle, Loader2, WifiOff } from "lucide-react";
 import React, { ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
@@ -21,6 +21,7 @@ import { useLaunchEvent } from "../../hooks/websocket/topic-hooks/useLaunchEvent
 import { getContestImageUrl } from "../../lib/imageUtils";
 import { useStore } from "../../store/useStore";
 import type { Contest, Token } from "../../types";
+import { TokenHelpers } from "../../types";
 
 interface Props {
   contests: Contest[];
@@ -47,6 +48,8 @@ export const UnifiedTicker: React.FC<Props> = ({
   // Get launch event data for DUEL token state
   const { contractAddress: duelContractAddress, revealTime } = useLaunchEvent();
   const isRevealed = Boolean(duelContractAddress && revealTime);
+  
+  // We'll add the debug effect later after originalTickerItems is defined
   
   // OPTIMIZED: Only run the hook we actually need to prevent data conflicts!
   const standardTokenData = useStandardizedTokenData("all", "marketCap", {}, 5, maxTokens);
@@ -87,6 +90,7 @@ export const UnifiedTicker: React.FC<Props> = ({
   const [viewportWidth, setViewportWidth] = useState<number>(0);
   const [tabsWidth, setTabsWidth] = useState(160);
   const [measurementNonce, setMeasurementNonce] = useState(0);
+  const [contentOverflows, setContentOverflows] = useState(false);
 
   // Refs
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -96,12 +100,16 @@ export const UnifiedTicker: React.FC<Props> = ({
   const animationFrameIdRef = useRef<number | null>(null);
   const isInteractingRef = useRef<boolean>(false);
   const isHoverPausedRef = useRef<boolean>(false);
+  const dragVelocityRef = useRef<number>(0);
+  const lastDragTimeRef = useRef<number>(0);
+  const lastDragPositionRef = useRef<number>(0);
   const resumeTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
   const hoverPauseTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
   const dragStartXRef = useRef<number>(0);
   const scrollStartTranslateXRef = useRef<number>(0);
   const lastTimestampRef = useRef<number>(0);
   const actualContentWidthRef = useRef<number>(0);
+  const originalContentWidthRef = useRef<number>(0); // Width of original items only
 
   // Simple loading state
   const isOverallLoading = contestsLoadingProp || finalTokensLoading;
@@ -160,6 +168,13 @@ export const UnifiedTicker: React.FC<Props> = ({
     }
   }, [isRevealed, duelContractAddress]);
 
+  // Initialize transform on mount
+  useEffect(() => {
+    if (scrollableContentRef.current) {
+      scrollableContentRef.current.style.transform = `translate3d(0, 0, 0)`;
+    }
+  }, []);
+
   // Viewport width detection
   useEffect(() => {
     const updateWidth = () => {
@@ -180,7 +195,7 @@ export const UnifiedTicker: React.FC<Props> = ({
     return () => observer.disconnect();
   }, [viewportWidth]);
 
-  // Scroll animation
+  // Scroll animation with proper modulo math
   const animateScroll = useCallback((timestamp: number) => {
     if (!scrollableContentRef.current || isInteractingRef.current || isHoverPausedRef.current) {
       animationFrameIdRef.current = null; 
@@ -196,21 +211,29 @@ export const UnifiedTicker: React.FC<Props> = ({
     const scrollSpeed = 0.03;
     let newTranslateX = translateXRef.current - scrollSpeed * deltaTime;
 
-    if (actualContentWidthRef.current > 0 && Math.abs(newTranslateX) >= actualContentWidthRef.current) {
-      newTranslateX += actualContentWidthRef.current; 
+    // Use modulo for perfect infinite scroll based on original content width
+    if (originalContentWidthRef.current > 0) {
+      // Normalize to always be in the range [0, -originalContentWidth)
+      newTranslateX = newTranslateX % originalContentWidthRef.current;
+      if (newTranslateX > 0) {
+        newTranslateX -= originalContentWidthRef.current;
+      }
     }
     
     translateXRef.current = newTranslateX;
-    scrollableContentRef.current.style.transform = `translateX(${newTranslateX}px)`;
+    scrollableContentRef.current.style.transform = `translate3d(${newTranslateX}px, 0, 0)`;
     animationFrameIdRef.current = requestAnimationFrame(animateScroll);
   }, []);
 
   // Start animation when content overflows
   useEffect(() => {
-    if (actualContentWidthRef.current > viewportWidth && 
+    console.log(`[UnifiedTicker] Animation check - overflows: ${contentOverflows}, animating: ${!!animationFrameIdRef.current}`);
+    
+    if (contentOverflows && 
         !isInteractingRef.current && 
         !isHoverPausedRef.current && 
         !animationFrameIdRef.current) {
+      console.log('[UnifiedTicker] Starting animation from effect');
       lastTimestampRef.current = 0;
       animationFrameIdRef.current = requestAnimationFrame(animateScroll);
     }
@@ -221,7 +244,7 @@ export const UnifiedTicker: React.FC<Props> = ({
         animationFrameIdRef.current = null;
       }
     };
-  }, [actualContentWidthRef.current, viewportWidth, animateScroll]);
+  }, [contentOverflows, animateScroll]);
 
   // Measure tabs width
   useEffect(() => {
@@ -252,41 +275,69 @@ export const UnifiedTicker: React.FC<Props> = ({
           <div
             key={contestKey}
             onClick={() => contest.id && navigate(`/contests/${contest.id}`)}
-            className="inline-flex items-center px-3 py-1 mx-1.5 rounded-md bg-brand-500/10 cursor-pointer hover:bg-brand-500/20 transition-colors whitespace-nowrap"
+            className={`relative inline-flex items-center rounded-full cursor-pointer hover:bg-brand-500/20 transition-transform duration-300 ease-out whitespace-nowrap overflow-hidden bg-brand-500/10 ${
+              isCompact ? 'px-2 py-0.5 mx-2 h-6' : 'px-3 py-0.5 mx-3 h-7'
+            }`}
+            style={{
+              willChange: "transform",
+              transform: "translate3d(0, 0, 0)",
+              ...(contestImageUrl && {
+                backgroundImage: `url(${contestImageUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+              })
+            }}
           >
-            {contestImageUrl ? (
-              <img 
-                src={contestImageUrl} 
-                alt={contest.name} 
-                className="w-3.5 h-3.5 mr-1.5 rounded-full object-cover flex-shrink-0" 
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-            ) : null}
-            <TrendingUp className={`w-3 h-3 mr-1.5 text-brand-400 flex-shrink-0 ${contestImageUrl ? 'hidden' : ''}`} />
-            <span className="text-xs font-medium text-brand-300 truncate max-w-[120px]">
-              {contest.name}
-            </span>
-            <span className="text-xs text-gray-400 ml-1.5 flex-shrink-0">
-              | {formatTimeUntilStart(contest.start_time)}
-            </span>
+            {/* Content with higher z-index */}
+            <div className="relative z-10 flex items-center justify-between w-full h-full">
+              <div className="flex items-center flex-shrink-0">
+                <span 
+                  className={`font-medium text-white flex-shrink-0 ${
+                    isCompact ? 'text-[10px]' : 'text-sm'
+                  }`}
+                  style={{
+                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
+                    WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
+                    paintOrder: 'stroke fill'
+                  }}
+                >
+                  {contest.name}
+                </span>
+              </div>
+              <div className="flex items-center flex-shrink-0">
+                <span 
+                  className={`flex-shrink-0 font-medium text-white ${
+                    isCompact ? 'text-[9px] ml-1' : 'text-sm ml-2'
+                  }`}
+                  style={{
+                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
+                    WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
+                    paintOrder: 'stroke fill'
+                  }}
+                >
+                  {isCompact ? 
+                    formatTimeUntilStart(contest.start_time).replace('Starts in ', '').replace('Starting ', '') :
+                    formatTimeUntilStart(contest.start_time)
+                  }
+                </span>
+              </div>
+            </div>
           </div>
         );
       }) : [];
 
     const tokenItems = (activeTab === "all" || activeTab === "tokens") ?
       displayTokens.map((token: Token, index: number) => {
-        const tokenKey = token.contractAddress || `token-${index}`;
-        const logoUrl = token.images?.imageUrl || `https://via.placeholder.com/24?text=${token.symbol.substring(0,1)}`;
+        const tokenKey = TokenHelpers.getAddress(token) || `token-${index}`;
+        const logoUrl = token.image_url || token.header_image_url || `https://via.placeholder.com/24?text=${token.symbol.substring(0,1)}`;
         
-        // Format percentage change with proper color coding
-        const change24h = token.change_24h || parseFloat(token.change24h || '0');
+        // Format percentage change with proper color coding using helper function
+        const change24h = TokenHelpers.getPriceChange(token);
         const formatPercentageChange = (change: number): { text: string; colorClass: string } => {
           const absChange = Math.abs(change);
           const sign = change >= 0 ? '+' : '';
-          const text = `${sign}${absChange.toFixed(1)}%`;
+          const text = `${sign}${absChange.toFixed(0)}%`; // No decimals for crypto percentages
           
           if (change > 10) return { text, colorClass: 'text-emerald-400 font-bold' };
           if (change > 5) return { text, colorClass: 'text-emerald-300' };
@@ -305,32 +356,106 @@ export const UnifiedTicker: React.FC<Props> = ({
         return (
           <div
             key={tokenKey}
-            onClick={() => token.contractAddress && navigate(`/tokens?address=${token.contractAddress}`)}
-            className={`inline-flex items-center px-3 py-1 mx-1.5 rounded-md cursor-pointer hover:bg-cyber-500/20 transition-colors whitespace-nowrap ${
+            onClick={() => {
+              const address = TokenHelpers.getAddress(token);
+              if (address) navigate(`/tokens/${address}`);
+            }}
+            className={`relative inline-flex items-center rounded-full cursor-pointer hover:bg-cyber-500/20 transition-transform duration-300 ease-out whitespace-nowrap ${
               isDegenDuelToken ? 'bg-gradient-to-r from-brand-500/10 to-cyber-500/10 border border-brand-400/20' : 'bg-cyber-500/10'
+            } ${
+              isCompact ? 'px-2 py-0.5 mx-2 h-6 min-w-[60px]' : 'px-3 py-0.5 mx-3 h-7 min-w-[100px]'
             }`}
+            style={{
+              willChange: "transform",
+              transform: "translate3d(0, 0, 0)",
+              ...(token.header_image_url && {
+                backgroundImage: `url(${token.header_image_url})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+              })
+            }}
           >
-            <img src={logoUrl} alt={token.symbol} className="w-3.5 h-3.5 mr-1.5 rounded-full object-cover flex-shrink-0" />
-            <span className="text-xs font-medium text-cyber-300 truncate max-w-[60px] flex-shrink-0">
-              {token.symbol}
-            </span>
-            {isDegenDuelToken && degenToken ? (
-              <>
-                <span className="text-xs ml-1.5 text-brand-400 font-bold flex-shrink-0">
-                  #{degenToken.trend_rank}
+            {/* Content with higher z-index */}
+            <div className="relative z-10 flex items-center justify-between w-full h-full">
+              <div className="flex items-center flex-shrink-0">
+                <img src={logoUrl} alt={token.symbol} className={`rounded-full object-cover flex-shrink-0 ring-1 ring-white/20 ${
+                  isCompact ? 'w-3 h-3 mr-1' : 'w-5 h-5 mr-2'
+                }`} />
+                <span 
+                  className={`font-medium text-white flex-shrink-0 ${
+                    isCompact ? 'text-[10px]' : 'text-sm'
+                  }`}
+                  style={{
+                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
+                    WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
+                    paintOrder: 'stroke fill'
+                  }}
+                >
+                  {token.symbol}
                 </span>
-                <span className="text-xs ml-1 text-yellow-400 flex-shrink-0">
-                  {degenToken.momentum_indicator}
-                </span>
-                <span className="text-xs ml-1.5 text-gray-400 flex-shrink-0">
-                  {degenToken.degenduel_score.toFixed(0)}
-                </span>
-              </>
-            ) : (
-              <span className={`text-xs ml-1.5 flex-shrink-0 ${changeData.colorClass}`}>
-                {changeData.text}
-              </span>
-            )}
+              </div>
+              <div className="flex items-center flex-shrink-0">
+                {isDegenDuelToken && degenToken ? (
+                  <>
+                    <span 
+                      className={`text-brand-400 font-bold flex-shrink-0 ${
+                        isCompact ? 'text-[9px] ml-1' : 'text-xs ml-1.5'
+                      }`}
+                      style={{
+                        textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
+                        WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
+                        paintOrder: 'stroke fill'
+                      }}
+                    >
+                      #{degenToken.trend_rank}
+                    </span>
+                    <span 
+                      className={`text-yellow-400 flex-shrink-0 ${
+                        isCompact ? 'text-[9px] ml-0.5' : 'text-sm ml-1'
+                      }`}
+                      style={{
+                        textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
+                        WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
+                        paintOrder: 'stroke fill'
+                      }}
+                    >
+                      {degenToken.momentum_indicator}
+                    </span>
+                    {!isCompact && (
+                      <span 
+                        className={`text-gray-200 flex-shrink-0 ${
+                          isCompact ? 'text-[9px] ml-1' : 'text-xs ml-1.5'
+                        }`}
+                        style={{
+                          textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
+                          WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
+                          paintOrder: 'stroke fill'
+                        }}
+                      >
+                        {degenToken.degenduel_score.toFixed(0)}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span 
+                    className={`flex-shrink-0 font-medium ${changeData.colorClass} ${
+                      isCompact ? 'text-[9px] ml-1' : 'text-xs ml-1.5'
+                    }`}
+                    style={{
+                      textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
+                      WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
+                      paintOrder: 'stroke fill'
+                    }}
+                  >
+                    {isCompact ? 
+                      changeData.text.replace('.0', '') : // Remove .0 decimals in compact mode
+                      changeData.text
+                    }
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         );
       }) : [];
@@ -372,29 +497,94 @@ export const UnifiedTicker: React.FC<Props> = ({
     return items;
   }, [activeTab, sortedContests, displayTokens, isOverallLoading, finalDataConnected, duelAnnouncementItem, navigate]);
 
-  // Content width measurement
+  // DEBUG: Measure actual element heights and computed styles
+  useEffect(() => {
+    const measureHeights = () => {
+      if (scrollableContentRef.current) {
+        const items = scrollableContentRef.current.querySelectorAll('[class*="inline-flex"]');
+        if (items.length > 0) {
+          const firstItem = items[0] as HTMLElement;
+          const computed = window.getComputedStyle(firstItem);
+          const heights = Array.from(items).slice(0, 3).map(item => 
+            item.getBoundingClientRect().height
+          );
+          
+          // Check for any transforms on parents
+          // let transformScale = 1;
+          let element = scrollableContentRef.current as HTMLElement;
+          while (element && element !== document.body) {
+            const transform = window.getComputedStyle(element).transform;
+            if (transform && transform !== 'none') {
+              console.log(`[UnifiedTicker] Found transform on parent:`, transform);
+            }
+            element = element.parentElement as HTMLElement;
+          }
+          
+          console.log(`[UnifiedTicker] Page: ${window.location.pathname}`);
+          console.log(`  isCompact prop: ${isCompact}`);
+          console.log(`  Item heights: ${heights.join(', ')}px`);
+          console.log(`  Font size: ${computed.fontSize}`);
+          console.log(`  Line height: ${computed.lineHeight}`);
+          console.log(`  Padding: ${computed.padding}`);
+          console.log(`  HTML font-size: ${window.getComputedStyle(document.documentElement).fontSize}`);
+        }
+      }
+    };
+    
+    // Delay measurement to ensure DOM is rendered
+    setTimeout(measureHeights, 100);
+  }, [isCompact, originalTickerItems]);
+
+  // Content width measurement - measure ONLY original items
   useLayoutEffect(() => {
     if (!isOverallLoading && scrollableContentRef.current && viewportWidth > 0) {
       if (originalTickerItems.length > 0) {
-        const originalTransform = scrollableContentRef.current.style.transform;
-        scrollableContentRef.current.style.transform = 'translateX(0px)';
-        const newWidth = scrollableContentRef.current.scrollWidth;
-        scrollableContentRef.current.style.transform = originalTransform;
-        
-        if (newWidth > 0 && actualContentWidthRef.current !== newWidth) {
-          actualContentWidthRef.current = newWidth;
-          setMeasurementNonce(prev => prev + 1);
-        }
+        // Measure the actual rendered content width
+        requestAnimationFrame(() => {
+          if (!scrollableContentRef.current) return;
+          
+          // Get all the actual rendered items in the scrollable container
+          const items = scrollableContentRef.current.querySelectorAll('[class*="inline-flex"]');
+          let totalWidth = 0;
+          
+          // Sum up the width of original items only (not clones)
+          const itemCount = Math.min(items.length, originalTickerItems.length);
+          for (let i = 0; i < itemCount; i++) {
+            const item = items[i] as HTMLElement;
+            const rect = item.getBoundingClientRect();
+            totalWidth += rect.width;
+          }
+          
+          console.log(`[UnifiedTicker] Measured content width: ${totalWidth}px, viewport: ${viewportWidth}px, items: ${itemCount}`);
+          
+          if (totalWidth > 0 && originalContentWidthRef.current !== totalWidth) {
+            originalContentWidthRef.current = totalWidth;
+            actualContentWidthRef.current = totalWidth;
+            setMeasurementNonce(prev => prev + 1);
+            
+            // Update overflow state
+            const overflows = totalWidth > viewportWidth;
+            setContentOverflows(overflows);
+            
+            // Start animation if content overflows
+            if (overflows && !animationFrameIdRef.current && !isInteractingRef.current && !isHoverPausedRef.current) {
+              console.log('[UnifiedTicker] Starting animation - content overflows viewport');
+              lastTimestampRef.current = 0;
+              animationFrameIdRef.current = requestAnimationFrame(animateScroll);
+            }
+          }
+        });
       } else {
-        if (actualContentWidthRef.current !== 0) {
+        if (originalContentWidthRef.current !== 0) {
+          originalContentWidthRef.current = 0;
           actualContentWidthRef.current = 0;
           setMeasurementNonce(prev => prev + 1);
         }
       }
     }
-  }, [originalTickerItems, viewportWidth, isOverallLoading]);
+  }, [originalTickerItems, viewportWidth, isOverallLoading, animateScroll]);
 
-  // Clone items for continuous scroll
+  // Smart virtual scrolling - only render what's needed
   const clonedItems = useMemo(() => {
     if (!originalTickerItems.length || viewportWidth === 0) return originalTickerItems;
     
@@ -402,19 +592,29 @@ export const UnifiedTicker: React.FC<Props> = ({
       return originalTickerItems;
     }
     
-    if (actualContentWidthRef.current === 0) return originalTickerItems;
+    if (originalContentWidthRef.current === 0) return originalTickerItems;
     
-    const itemsToRender = [originalTickerItems];
+    // Calculate how many full sets we need to ensure smooth scrolling
+    // We need enough content to fill viewport + one full set for seamless loop
+    const setsNeeded = Math.ceil((viewportWidth + originalContentWidthRef.current) / originalContentWidthRef.current);
     
-    if (actualContentWidthRef.current < viewportWidth * 1.5) {
-      // Need to clone for continuous scroll
-      itemsToRender.push(originalTickerItems.map((item: ReactElement, index: number) => {
-        const originalKey = item.key || `orig-idx-${index}`;
-        return React.cloneElement(item, { key: `clone-${originalKey}` });
-      }));
+    // But cap it at 3 sets maximum for performance
+    const setsToRender = Math.min(setsNeeded, 3);
+    
+    const itemsToRender: ReactElement[] = [];
+    
+    // Render the calculated number of sets
+    for (let setIndex = 0; setIndex < setsToRender; setIndex++) {
+      originalTickerItems.forEach((item: ReactElement, itemIndex: number) => {
+        const originalKey = item.key || `orig-idx-${itemIndex}`;
+        const clonedItem = setIndex === 0 ? item : React.cloneElement(item, { 
+          key: `clone-${setIndex - 1}-${originalKey}` 
+        });
+        itemsToRender.push(clonedItem);
+      });
     }
     
-    return itemsToRender.flat();
+    return itemsToRender;
   }, [originalTickerItems, viewportWidth, measurementNonce]);
 
   // Interaction handlers
@@ -425,29 +625,90 @@ export const UnifiedTicker: React.FC<Props> = ({
     isInteractingRef.current = true;
     dragStartXRef.current = clientX;
     scrollStartTranslateXRef.current = translateXRef.current;
+    
+    // Initialize velocity tracking
+    dragVelocityRef.current = 0;
+    lastDragTimeRef.current = Date.now();
+    lastDragPositionRef.current = clientX;
+    
     if (animationFrameIdRef.current) cancelAnimationFrame(animationFrameIdRef.current);
     animationFrameIdRef.current = null;
   }, []);
 
   const handleInteractionMove = useCallback((clientX: number) => {
     if (!isInteractingRef.current || !scrollableContentRef.current) return;
+    
+    // Calculate velocity for momentum
+    const currentTime = Date.now();
+    const timeDelta = currentTime - lastDragTimeRef.current;
+    const positionDelta = clientX - lastDragPositionRef.current;
+    
+    if (timeDelta > 0) {
+      dragVelocityRef.current = positionDelta / timeDelta * 16; // Convert to pixels per frame (60fps)
+    }
+    
+    lastDragTimeRef.current = currentTime;
+    lastDragPositionRef.current = clientX;
+    
     const deltaX = clientX - dragStartXRef.current;
     const newTranslateX = scrollStartTranslateXRef.current + deltaX;
     translateXRef.current = newTranslateX;
-    scrollableContentRef.current.style.transform = `translateX(${newTranslateX}px)`;
+    scrollableContentRef.current.style.transform = `translate3d(${newTranslateX}px, 0, 0)`;
   }, []);
 
   const handleInteractionEnd = useCallback(() => {
     if (!isInteractingRef.current) return;
+    
+    // Apply momentum based on final velocity
+    const momentum = Math.abs(dragVelocityRef.current) > 2 ? dragVelocityRef.current * 0.7 : 0;
+    
     isInteractingRef.current = false;
     if (resumeTimeoutIdRef.current) clearTimeout(resumeTimeoutIdRef.current);
-    resumeTimeoutIdRef.current = setTimeout(() => {
-      lastTimestampRef.current = 0;
-      if (!animationFrameIdRef.current && !isHoverPausedRef.current && 
-          scrollableContentRef.current && actualContentWidthRef.current > viewportWidth) {
-        animationFrameIdRef.current = requestAnimationFrame(animateScroll);
-      }
-    }, INTERACTION_RESUME_DELAY_MS);
+    
+    // Apply momentum decay if there's significant velocity
+    if (Math.abs(momentum) > 1) {
+      let currentMomentum = momentum;
+      const momentumDecay = () => {
+        if (!scrollableContentRef.current || isInteractingRef.current) return;
+        
+        currentMomentum *= 0.92; // 8% decay per frame for smooth coast
+        translateXRef.current += currentMomentum;
+        
+        // Handle infinite scroll wrap-around during momentum with modulo
+        if (originalContentWidthRef.current > 0) {
+          translateXRef.current = translateXRef.current % originalContentWidthRef.current;
+          if (translateXRef.current > 0) {
+            translateXRef.current -= originalContentWidthRef.current;
+          }
+        }
+        
+        scrollableContentRef.current.style.transform = `translate3d(${translateXRef.current}px, 0, 0)`;
+        
+        // Continue until momentum is negligible
+        if (Math.abs(currentMomentum) > 0.2) {
+          requestAnimationFrame(momentumDecay);
+        } else {
+          // Resume auto-scroll after momentum ends
+          resumeTimeoutIdRef.current = setTimeout(() => {
+            lastTimestampRef.current = 0;
+            if (!animationFrameIdRef.current && !isHoverPausedRef.current && 
+                scrollableContentRef.current && originalContentWidthRef.current > viewportWidth) {
+              animationFrameIdRef.current = requestAnimationFrame(animateScroll);
+            }
+          }, INTERACTION_RESUME_DELAY_MS);
+        }
+      };
+      requestAnimationFrame(momentumDecay);
+    } else {
+      // No momentum, resume normally
+      resumeTimeoutIdRef.current = setTimeout(() => {
+        lastTimestampRef.current = 0;
+        if (!animationFrameIdRef.current && !isHoverPausedRef.current && 
+            scrollableContentRef.current && originalContentWidthRef.current > viewportWidth) {
+          animationFrameIdRef.current = requestAnimationFrame(animateScroll);
+        }
+      }, INTERACTION_RESUME_DELAY_MS);
+    }
   }, [animateScroll, viewportWidth]);
 
   const handleMouseEnter = useCallback(() => {
@@ -468,7 +729,7 @@ export const UnifiedTicker: React.FC<Props> = ({
       isHoverPausedRef.current = false;
       lastTimestampRef.current = 0;
       if (!animationFrameIdRef.current && scrollableContentRef.current && 
-          actualContentWidthRef.current > viewportWidth) {
+          originalContentWidthRef.current > viewportWidth) {
         animationFrameIdRef.current = requestAnimationFrame(animateScroll);
       }
     }
@@ -517,29 +778,35 @@ export const UnifiedTicker: React.FC<Props> = ({
     return (
       <div
         ref={viewportRef}
-        className={`h-full w-full overflow-hidden ${actualContentWidthRef.current > viewportWidth ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+        className={`h-full w-full overflow-hidden ${contentOverflows ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
         style={{ 
           paddingLeft: `${tabsWidth}px`,
           maskImage: `linear-gradient(to right, transparent 0px, transparent ${tabsWidth - 10}px, black ${tabsWidth}px, black 100%)`,
           WebkitMaskImage: `linear-gradient(to right, transparent 0px, transparent ${tabsWidth - 10}px, black ${tabsWidth}px, black 100%)`
         }}
-        onMouseDown={actualContentWidthRef.current > viewportWidth ? (e) => handleInteractionStart(e.clientX) : undefined}
-        onMouseMove={actualContentWidthRef.current > viewportWidth ? (e) => handleInteractionMove(e.clientX) : undefined}
-        onMouseUp={actualContentWidthRef.current > viewportWidth ? handleInteractionEnd : undefined}
+        onMouseDown={contentOverflows ? (e) => handleInteractionStart(e.clientX) : undefined}
+        onMouseMove={contentOverflows ? (e) => handleInteractionMove(e.clientX) : undefined}
+        onMouseUp={contentOverflows ? handleInteractionEnd : undefined}
         onMouseLeave={() => { 
-          if(actualContentWidthRef.current > viewportWidth) handleInteractionEnd(); 
+          if(contentOverflows) handleInteractionEnd(); 
           handleMouseLeave(); 
         }}
-        onTouchStart={actualContentWidthRef.current > viewportWidth ? (e) => handleInteractionStart(e.touches[0].clientX) : undefined}
-        onTouchEnd={actualContentWidthRef.current > viewportWidth ? handleInteractionEnd : undefined}
-        onMouseEnter={actualContentWidthRef.current > viewportWidth ? handleMouseEnter : undefined}
+        onTouchStart={contentOverflows ? (e) => handleInteractionStart(e.touches[0].clientX) : undefined}
+        onTouchEnd={contentOverflows ? handleInteractionEnd : undefined}
+        onMouseEnter={contentOverflows ? handleMouseEnter : undefined}
       >
         <div
           ref={scrollableContentRef}
           className={`inline-flex items-center h-full flex-nowrap ${isCompact ? "text-xs" : "text-sm"}`}
-          style={{ willChange: "transform", transform: `translateX(${translateXRef.current}px)` }}
+          style={{ 
+            willChange: "transform", 
+            transform: `translate3d(${translateXRef.current}px, 0, 0)`,
+            backfaceVisibility: "hidden",
+            perspective: 1000,
+            whiteSpace: 'nowrap'
+          }}
         >
-          {clonedItems.map((item: ReactElement) => item)}
+          {clonedItems}
         </div>
       </div>
     );

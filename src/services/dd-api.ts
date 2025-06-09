@@ -580,9 +580,21 @@ const checkMaintenanceMode = async () => {
     const userRole = store.user?.role?.toLowerCase();
     const isAdmin = userRole === "admin" || userRole === "superadmin";
 
+    // Log detailed debugging information
+    console.log("[Maintenance Check] Starting maintenance mode check", {
+      isAdmin,
+      userRole,
+      apiUrl: API_URL,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      currentUrl: window.location.href
+    });
+
     // If user is administrator, try administrator endpoint
     if (isAdmin) {
       try {
+        console.log("[Maintenance Check] Attempting admin endpoint:", `${API_URL}/admin/maintenance`);
+
         const adminResponse = await fetch(`${API_URL}/admin/maintenance`, {
           method: "GET",
           credentials: "include",
@@ -590,63 +602,148 @@ const checkMaintenanceMode = async () => {
             "Content-Type": "application/json",
             Accept: "application/json",
           },
+          signal: AbortSignal.timeout(10000), // 10 second timeout
+        });
+
+        console.log("[Maintenance Check] Admin response:", {
+          status: adminResponse.status,
+          statusText: adminResponse.statusText,
+          ok: adminResponse.ok,
+          headers: Object.fromEntries(adminResponse.headers.entries())
         });
 
         if (adminResponse.ok) {
           const data = await adminResponse.json();
+          console.log("[Maintenance Check] Admin data:", data);
           return data.enabled;
         }
       } catch (err) {
         console.warn(
-          `Admin maintenance check failed. Falling back to public endpoint...`,
+          `[Maintenance Check] Admin maintenance check failed:`,
+          {
+            error: err,
+            message: err instanceof Error ? err.message : String(err),
+            name: err instanceof Error ? err.name : 'Unknown',
+            stack: err instanceof Error ? err.stack : undefined
+          }
         );
+        console.warn(`Falling back to public endpoint...`);
       }
     }
 
     // For non-administrators and/or if administrator maintenance check fails, use the public status endpoint instead
+    console.log("[Maintenance Check] Attempting public endpoint:", `${API_URL}/status`);
+
     const statusCheckResponse = await fetch(`${API_URL}/status`, {
       method: "GET",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        "Cache-Control": "no-cache",
+        "X-Requested-With": "XMLHttpRequest",
       },
+      signal: AbortSignal.timeout(10000), // 10 second timeout
+    });
+
+    console.log("[Maintenance Check] Status response:", {
+      status: statusCheckResponse.status,
+      statusText: statusCheckResponse.statusText,
+      ok: statusCheckResponse.ok,
+      headers: Object.fromEntries(statusCheckResponse.headers.entries()),
+      url: statusCheckResponse.url
     });
 
     // If we get a 503, that is how we currently indicate that Maintenance Mode is active
     if (statusCheckResponse.status === 503) {
+      console.log("[Maintenance Check] Maintenance mode is ACTIVE (503)");
       return true;
     }
 
     // If we get a successful response, check its maintenance flag just in case
     if (statusCheckResponse.ok) {
       const data = await statusCheckResponse.json();
-      return data.maintenance || false;
+      console.log("[Maintenance Check] Status data:", data);
+      const maintenanceActive = data.maintenance || false;
+      console.log("[Maintenance Check] Maintenance mode:", maintenanceActive ? "ACTIVE" : "INACTIVE");
+      return maintenanceActive;
     }
-
-    //// If we get a 401, that means we're not authorized to check maintenance mode
-    //if (response.status === 401) {
-    //  return false;
-    //}
 
     // Not in maintenance mode if we get a 200 (or 404)
     if (
       statusCheckResponse.status === 200 ||
       statusCheckResponse.status === 404
     ) {
+      console.log("[Maintenance Check] Maintenance mode is INACTIVE (200/404)");
       return false;
     }
 
     // If we get a 500, that means there was an error checking maintenance mode, in which case we've got bigger problems
     if (statusCheckResponse.status === 500) {
       console.error(
-        `DegenDuel servers are down, cannot check maintenance mode.`,
-        statusCheckResponse.statusText
+        `[Maintenance Check] DegenDuel servers are down, cannot check maintenance mode.`,
+        {
+          status: statusCheckResponse.status,
+          statusText: statusCheckResponse.statusText,
+          url: statusCheckResponse.url
+        }
       );
       return false;
     }
+
+    // Unknown status code
+    console.warn("[Maintenance Check] Unknown status code:", statusCheckResponse.status);
+    return false;
+
   } catch (error) {
-    console.error("Failed to check maintenance mode:", error);
+    // Enhanced error logging with more context
+    const errorDetails = {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined,
+      apiUrl: API_URL,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      networkOnline: navigator.onLine,
+      connection: (navigator as any).connection ? {
+        effectiveType: (navigator as any).connection.effectiveType,
+        downlink: (navigator as any).connection.downlink,
+        rtt: (navigator as any).connection.rtt
+      } : 'Not available'
+    };
+
+    console.error("Failed to check maintenance mode:", errorDetails);
+
+    // Try to provide more specific error information
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.error("[Maintenance Check] Network fetch failed - possible causes:", [
+        "1. API server is down or unreachable",
+        "2. DNS resolution failure",
+        "3. CORS configuration issue",
+        "4. SSL/TLS certificate problem",
+        "5. Network connectivity issue",
+        `6. API endpoint ${API_URL}/status may not exist`
+      ]);
+
+      // Run quick connectivity diagnostics
+      console.log("[Maintenance Check] Running quick connectivity diagnostics...");
+
+      // Test basic network connectivity
+      Promise.all([
+        fetch('https://google.com', { method: 'HEAD', mode: 'no-cors', signal: AbortSignal.timeout(3000) })
+          .then(() => console.log("✅ Basic internet connectivity: OK"))
+          .catch(() => console.error("❌ Basic internet connectivity: FAILED")),
+
+        fetch('https://degenduel.me', { method: 'HEAD', mode: 'no-cors', signal: AbortSignal.timeout(5000) })
+          .then(() => console.log("✅ DegenDuel domain reachable: OK"))
+          .catch(() => console.error("❌ DegenDuel domain reachable: FAILED")),
+
+        fetch(API_URL, { method: 'HEAD', signal: AbortSignal.timeout(5000) })
+          .then((response) => console.log(`🔍 API root response: ${response.status} ${response.statusText}`))
+          .catch((err) => console.error(`❌ API root unreachable: ${err.message}`))
+      ]);
+    }
+
     // Default to false on error - better to let users try to access than to block them incorrectly
     return false;
   }
@@ -769,25 +866,25 @@ export const ddApi = {
     }): Promise<Token[] | { tokens: Token[]; pagination: any }> => {
       const api = createApiClient();
       const params = new URLSearchParams();
-      
+
       // Default to 50 for better performance
       params.append('limit', String(options?.limit || 50));
-      
+
       if (options?.offset !== undefined) {
         params.append('offset', String(options.offset));
       }
-      
+
       // Always use paginated format for better frontend compatibility
       params.append('format', options?.format || 'paginated');
-      
+
       const response = await api.fetch(`/tokens/trending?${params.toString()}`);
       const responseData = await response.json();
-      
+
       // If format=paginated, return the full response with tokens + pagination
       if (options?.format === 'paginated') {
         return responseData; // Will have { tokens, pagination, data, metadata }
       }
-      
+
       // Legacy format - just return the array
       return responseData.data || responseData;
     },
@@ -1758,14 +1855,14 @@ export const ddApi = {
         return await response.json();
       } catch (error) {
         console.error("[enterContestWithPortfolio] Error:", error);
-        
+
         // Handle analytics tracking errors gracefully
         if (error instanceof Error && error.message.includes("participationLogger.analytics.trackEvent is not a function")) {
           console.warn("Backend analytics error detected (non-critical) - contest entry may have succeeded");
           // Re-throw with a more user-friendly message that the frontend can handle
           throw new Error("Contest entry completed successfully (analytics tracking temporarily unavailable)");
         }
-        
+
         throw error;
       }
     },
@@ -1819,14 +1916,14 @@ export const ddApi = {
         return await response.json();
       } catch (error) {
         console.error("[enterFreeContestWithPortfolio] Error:", error);
-        
+
         // Handle analytics tracking errors gracefully
         if (error instanceof Error && error.message.includes("participationLogger.analytics.trackEvent is not a function")) {
           console.warn("Backend analytics error detected (non-critical) - contest entry may have succeeded");
           // Re-throw with a more user-friendly message that the frontend can handle
           throw new Error("Contest entry completed successfully (analytics tracking temporarily unavailable)");
         }
-        
+
         throw error;
       }
     },

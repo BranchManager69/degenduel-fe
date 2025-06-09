@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { ReactNode } from 'react';
+import { UnifiedWebSocketProvider } from '../contexts/UnifiedWebSocketContext';
 // import { AuthContextType } from '../contexts/AuthContext'; // Deleted context, commenting out import
 
 // Define type instead of importing to avoid import errors
@@ -165,6 +166,15 @@ export const createMockUseStore = () => {
   }
 };
 
+// Use the real WebSocket Provider - it will fallback to REST API when WS fails
+const MockWebSocketProvider = ({ children }: { children: ReactNode }) => {
+  return (
+    <UnifiedWebSocketProvider>
+      {children}
+    </UnifiedWebSocketProvider>
+  );
+};
+
 // Combined provider for stories
 export const AllProviders = ({ children }: { children: ReactNode }) => {
   // Setup the mocks
@@ -208,12 +218,14 @@ export const AllProviders = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <MockAuthProvider>
-      <MockPrivyAuthProvider>
-        <MockTwitterAuthProvider>
-          {children}
-        </MockTwitterAuthProvider>
-      </MockPrivyAuthProvider>
-    </MockAuthProvider>
+    <MockWebSocketProvider>
+      <MockAuthProvider>
+        <MockPrivyAuthProvider>
+          <MockTwitterAuthProvider>
+            {children}
+          </MockTwitterAuthProvider>
+        </MockPrivyAuthProvider>
+      </MockAuthProvider>
+    </MockWebSocketProvider>
   );
 };

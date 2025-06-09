@@ -42,6 +42,8 @@ interface NormalizedAuthAPI {
   isTwitterLinked: () => boolean;
   linkDiscord: () => Promise<string>;
   isDiscordLinked: () => boolean;
+  linkTelegram: () => Promise<string>;
+  isTelegramLinked: () => boolean;
   linkPasskey: () => Promise<void>;
   isPasskeyLinked: () => boolean;
 
@@ -81,6 +83,7 @@ export function useMigratedAuth(): NormalizedAuthAPI {
   const isTwitterAuth = useCallback(() => authContextValue.activeMethod === 'twitter', [authContextValue.activeMethod]);
   const isTwitterLinked = useCallback(() => authContextValue.isTwitterLinked, [authContextValue.isTwitterLinked]);
   const isDiscordLinked = useCallback(() => authContextValue.isDiscordLinked, [authContextValue.isDiscordLinked]);
+  const isTelegramLinked = useCallback(() => authContextValue.isTelegramLinked, [authContextValue.isTelegramLinked]);
   const isPasskeyLinked = useCallback(() => authContextValue.isPasskeyLinked, [authContextValue.isPasskeyLinked]);
 
   // Memoize the entire return object to prevent new object references
@@ -110,6 +113,8 @@ export function useMigratedAuth(): NormalizedAuthAPI {
     isTwitterLinked,
     linkDiscord: authContextValue.linkDiscord,
     isDiscordLinked,
+    linkTelegram: authContextValue.linkTelegram,
+    isTelegramLinked,
     linkPasskey: authContextValue.linkPasskey,
     isPasskeyLinked,
   }), [
@@ -131,6 +136,8 @@ export function useMigratedAuth(): NormalizedAuthAPI {
     isTwitterLinked,
     authContextValue.linkDiscord,
     isDiscordLinked,
+    authContextValue.linkTelegram,
+    isTelegramLinked,
     authContextValue.linkPasskey,
     isPasskeyLinked,
   ]);

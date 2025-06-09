@@ -1,4 +1,9 @@
-import { createApiClient } from "./utils";
+import {
+  ClientError,
+  ClientErrorFilters,
+  ClientErrorListResponse,
+  ClientErrorStats,
+} from "../../types/clientErrors";
 import {
   Activity,
   Contest,
@@ -18,12 +23,7 @@ import {
   VanityWalletListParams,
   VanityWalletListResponse,
 } from "../../types/index";
-import {
-  ClientError,
-  ClientErrorFilters,
-  ClientErrorListResponse,
-  ClientErrorStats,
-} from "../../types/clientErrors";
+import { createApiClient } from "./utils";
 
 // Art style interface for contest image generation
 interface ArtStyle {
@@ -144,18 +144,18 @@ export const admin = {
       try {
         const api = createApiClient();
         const response = await api.fetch(`/admin/token-liquidation/token-info/${tokenAddress}`);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch token info: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to get token info:", error);
         throw error;
       }
     },
-    
+
     // Run a single simulation
     simulate: async (params: {
       totalSupply: number;
@@ -173,18 +173,18 @@ export const admin = {
           method: "POST",
           body: JSON.stringify(params)
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to run simulation: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to run simulation:", error);
         throw error;
       }
     },
-    
+
     // Run a grid simulation with multiple parameters
     simulateGrid: async (params: {
       totalSupply: number;
@@ -200,18 +200,18 @@ export const admin = {
           method: "POST",
           body: JSON.stringify(params)
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to run grid simulation: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to run grid simulation:", error);
         throw error;
       }
     },
-    
+
     // Save simulation results
     saveSimulation: async (data: {
       tokenInfo: any;
@@ -227,18 +227,18 @@ export const admin = {
           method: "POST",
           body: JSON.stringify(data)
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to save simulation: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to save simulation:", error);
         throw error;
       }
     },
-    
+
     // Get saved simulations list
     getSavedSimulations: async (filters?: {
       tokenAddress?: string;
@@ -248,7 +248,7 @@ export const admin = {
     }): Promise<any> => {
       try {
         const api = createApiClient();
-        
+
         // Build query params
         const queryParams = new URLSearchParams();
         if (filters) {
@@ -257,38 +257,38 @@ export const admin = {
           if (filters.page) queryParams.append('page', filters.page.toString());
           if (filters.limit) queryParams.append('limit', filters.limit.toString());
         }
-        
+
         const url = `/admin/token-liquidation/saved${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
         const response = await api.fetch(url);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch saved simulations: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to fetch saved simulations:", error);
         throw error;
       }
     },
-    
+
     // Get a specific saved simulation by ID
     getSavedSimulation: async (id: string): Promise<any> => {
       try {
         const api = createApiClient();
         const response = await api.fetch(`/admin/token-liquidation/saved/${id}`);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch saved simulation: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error(`Failed to fetch saved simulation with ID ${id}:`, error);
         throw error;
       }
     },
-    
+
     // Delete a saved simulation
     deleteSavedSimulation: async (id: string): Promise<any> => {
       try {
@@ -296,18 +296,18 @@ export const admin = {
         const response = await api.fetch(`/admin/token-liquidation/saved/${id}`, {
           method: "DELETE"
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to delete saved simulation: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error(`Failed to delete saved simulation with ID ${id}:`, error);
         throw error;
       }
     },
-    
+
     // Generate PDF report for a simulation
     generateReport: async (data: {
       simulationId?: string;
@@ -322,11 +322,11 @@ export const admin = {
           method: "POST",
           body: JSON.stringify(data)
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to generate report: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to generate report:", error);
@@ -334,7 +334,7 @@ export const admin = {
       }
     }
   },
-  
+
   // Contest Scheduler API
   contestScheduler: {
     // Get the current status of the contest scheduler service
@@ -342,18 +342,18 @@ export const admin = {
       try {
         const api = createApiClient();
         const response = await api.fetch("/admin/contest-scheduler/status");
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch contest scheduler status: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to get contest scheduler status:", error);
         throw error;
       }
     },
-    
+
     // Control the contest scheduler service state (start, stop, restart, status)
     control: async (action: 'start' | 'stop' | 'restart' | 'status'): Promise<ContestSchedulerControlResponse> => {
       try {
@@ -361,35 +361,35 @@ export const admin = {
         const response = await api.fetch(`/admin/contest-scheduler/control/${action}`, {
           method: "POST"
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to control contest scheduler: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error(`Failed to ${action} contest scheduler:`, error);
         throw error;
       }
     },
-    
+
     // Get the raw configuration from the config file
     getConfigFile: async (): Promise<{ success: boolean; data: { configFile: ContestSchedulerConfig } }> => {
       try {
         const api = createApiClient();
         const response = await api.fetch("/admin/contest-scheduler/config-file");
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch contest scheduler config file: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to get contest scheduler config file:", error);
         throw error;
       }
     },
-    
+
     // Update the contest scheduler configuration
     updateConfig: async (configuration: ContestSchedulerConfig): Promise<{ success: boolean; message: string; data: { config: ContestSchedulerConfig } }> => {
       try {
@@ -398,18 +398,18 @@ export const admin = {
           method: "PUT",
           body: JSON.stringify({ configuration })
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to update contest scheduler config: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to update contest scheduler config:", error);
         throw error;
       }
     },
-    
+
     // Create a contest immediately based on a named schedule from config
     createContestFromConfig: async (scheduleName: string): Promise<CreateContestResponse> => {
       try {
@@ -418,52 +418,52 @@ export const admin = {
           method: "POST",
           body: JSON.stringify({ scheduleName })
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to create contest from config: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to create contest from config:", error);
         throw error;
       }
     },
-    
+
     // Get all schedules from the database
     getAllDbSchedules: async (): Promise<{ success: boolean; data: ContestSchedule[] }> => {
       try {
         const api = createApiClient();
         const response = await api.fetch("/admin/contest-scheduler/db-schedules");
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch database schedules: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to get database schedules:", error);
         throw error;
       }
     },
-    
+
     // Get a single schedule by ID
     getDbScheduleById: async (id: number): Promise<{ success: boolean; data: ContestSchedule }> => {
       try {
         const api = createApiClient();
         const response = await api.fetch(`/admin/contest-scheduler/db-schedules/${id}`);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch database schedule: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error(`Failed to get database schedule with ID ${id}:`, error);
         throw error;
       }
     },
-    
+
     // Create a new schedule in the database
     createDbSchedule: async (schedule: Omit<ContestSchedule, 'id'>): Promise<{ success: boolean; message: string; data: ContestSchedule }> => {
       try {
@@ -472,18 +472,18 @@ export const admin = {
           method: "POST",
           body: JSON.stringify(schedule)
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to create database schedule: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to create database schedule:", error);
         throw error;
       }
     },
-    
+
     // Update an existing schedule in the database
     updateDbSchedule: async (id: number, schedule: Partial<ContestSchedule>): Promise<{ success: boolean; message: string; data: ContestSchedule }> => {
       try {
@@ -492,18 +492,18 @@ export const admin = {
           method: "PUT",
           body: JSON.stringify(schedule)
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to update database schedule: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error(`Failed to update database schedule with ID ${id}:`, error);
         throw error;
       }
     },
-    
+
     // Delete a schedule from the database
     deleteDbSchedule: async (id: number): Promise<{ success: boolean; message: string }> => {
       try {
@@ -511,35 +511,35 @@ export const admin = {
         const response = await api.fetch(`/admin/contest-scheduler/db-schedules/${id}`, {
           method: "DELETE"
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to delete database schedule: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error(`Failed to delete database schedule with ID ${id}:`, error);
         throw error;
       }
     },
-    
+
     // Get all available contest templates
     getTemplates: async (): Promise<{ success: boolean; data: ContestTemplate[] }> => {
       try {
         const api = createApiClient();
         const response = await api.fetch("/admin/contest-scheduler/templates");
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch contest templates: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to get contest templates:", error);
         throw error;
       }
     },
-    
+
     // Create a contest immediately based on a database schedule
     createContestFromDb: async (scheduleId: number): Promise<CreateContestResponse> => {
       try {
@@ -548,18 +548,18 @@ export const admin = {
           method: "POST",
           body: JSON.stringify({ scheduleId })
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to create contest from database: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to create contest from database:", error);
         throw error;
       }
     },
-    
+
     // Migrate configuration-based schedules to the database
     migrateConfig: async (): Promise<{ success: boolean; message: string; data: { schedules: ContestSchedule[] } }> => {
       try {
@@ -567,11 +567,11 @@ export const admin = {
         const response = await api.fetch("/admin/contest-scheduler/migrate-config", {
           method: "POST"
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to migrate config schedules: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to migrate config schedules:", error);
@@ -579,53 +579,87 @@ export const admin = {
       }
     }
   },
-  
+
   // Vanity Wallet Management
   vanityWallets: {
+    // Get comprehensive dashboard analytics (based on API guide)
+    getDashboard: async (): Promise<any> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/vanity-dashboard");
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch vanity dashboard: ${response.status} ${response.statusText}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to get vanity dashboard:", error);
+        throw error;
+      }
+    },
+
+    // Get generator status with enhanced metrics
+    getGeneratorStatus: async (): Promise<any> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch("/admin/vanity-wallets/status/generator");
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch generator status: ${response.status} ${response.statusText}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to get generator status:", error);
+        throw error;
+      }
+    },
+
     // List all vanity wallets with filters
     list: async (params: VanityWalletListParams = {}): Promise<VanityWalletListResponse> => {
       try {
         const api = createApiClient();
         const queryParams = new URLSearchParams();
-        
+
         // Add filter parameters to query string
         if (params.status) queryParams.append("status", params.status);
         if (params.isUsed !== undefined) queryParams.append("isUsed", params.isUsed.toString());
         if (params.pattern) queryParams.append("pattern", params.pattern);
         if (params.limit) queryParams.append("limit", params.limit.toString());
         if (params.offset) queryParams.append("offset", params.offset.toString());
-        
+
         const url = `/admin/vanity-wallets${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
         const response = await api.fetch(url);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch vanity wallets: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to list vanity wallets:", error);
         throw error;
       }
     },
-    
+
     // Get a specific vanity wallet by ID
     get: async (id: number): Promise<VanityWallet> => {
       try {
         const api = createApiClient();
         const response = await api.fetch(`/admin/vanity-wallets/${id}`);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch vanity wallet: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error(`Failed to get vanity wallet details for ID ${id}:`, error);
         throw error;
       }
     },
-    
+
     // Create a new vanity wallet request
     create: async (data: VanityWalletCreateParams): Promise<VanityWalletCreateResponse> => {
       try {
@@ -634,18 +668,18 @@ export const admin = {
           method: "POST",
           body: JSON.stringify(data),
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to create vanity wallet: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to create vanity wallet:", error);
         throw error;
       }
     },
-    
+
     // Cancel a vanity wallet job
     cancel: async (id: number): Promise<VanityWalletCancelResponse> => {
       try {
@@ -653,18 +687,18 @@ export const admin = {
         const response = await api.fetch(`/admin/vanity-wallets/${id}/cancel`, {
           method: "POST",
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to cancel vanity wallet job: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error(`Failed to cancel vanity wallet job with ID ${id}:`, error);
         throw error;
       }
     },
-    
+
     // Create multiple vanity wallet requests (batch)
     batchCreate: async (data: VanityWalletBatchCreateParams): Promise<VanityWalletBatchCreateResponse> => {
       try {
@@ -673,18 +707,18 @@ export const admin = {
           method: "POST",
           body: JSON.stringify(data),
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to create batch of vanity wallets: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to create batch of vanity wallets:", error);
         throw error;
       }
     },
-    
+
     // Get pool statistics
     pool: {
       // Get overall pool statistics
@@ -692,45 +726,45 @@ export const admin = {
         try {
           const api = createApiClient();
           const response = await api.fetch("/admin/vanity-wallets/pool/stats");
-          
+
           if (!response.ok) {
             throw new Error(`Failed to fetch pool stats: ${response.status} ${response.statusText}`);
           }
-          
+
           return await response.json();
         } catch (error) {
           console.error("Failed to get vanity wallet pool stats:", error);
           throw error;
         }
       },
-      
+
       // Get pool alerts (low stock, etc.)
       getAlerts: async (): Promise<any> => {
         try {
           const api = createApiClient();
           const response = await api.fetch("/admin/vanity-wallets/pool/alerts");
-          
+
           if (!response.ok) {
             throw new Error(`Failed to fetch pool alerts: ${response.status} ${response.statusText}`);
           }
-          
+
           return await response.json();
         } catch (error) {
           console.error("Failed to get vanity wallet pool alerts:", error);
           throw error;
         }
       },
-      
+
       // Get pool patterns distribution
       getPatterns: async (): Promise<any> => {
         try {
           const api = createApiClient();
           const response = await api.fetch("/admin/vanity-wallets/pool/patterns");
-          
+
           if (!response.ok) {
             throw new Error(`Failed to fetch pool patterns: ${response.status} ${response.statusText}`);
           }
-          
+
           return await response.json();
         } catch (error) {
           console.error("Failed to get vanity wallet pool patterns:", error);
@@ -739,7 +773,7 @@ export const admin = {
       }
     }
   },
-  
+
   // Client Error Management
   clientErrors: {
     // List client errors with filtering
@@ -747,7 +781,7 @@ export const admin = {
       try {
         const api = createApiClient();
         const queryParams = new URLSearchParams();
-        
+
         // Add all parameters to query string
         if (filters.page) queryParams.append("page", filters.page.toString());
         if (filters.limit) queryParams.append("limit", filters.limit.toString());
@@ -756,16 +790,16 @@ export const admin = {
         if (filters.status && filters.status !== 'all') queryParams.append("status", filters.status);
         if (filters.critical !== undefined) queryParams.append("critical", filters.critical.toString());
         if (filters.search) queryParams.append("search", filters.search);
-        
+
         const url = `/admin/client-errors${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
         const response = await api.fetch(url);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch client errors: ${response.status} ${response.statusText}`);
         }
-        
+
         const result = await response.json();
-        
+
         // Handle both API response formats
         return {
           errors: result.errors || [],
@@ -780,94 +814,94 @@ export const admin = {
         throw error;
       }
     },
-    
+
     // Get error statistics
     getStats: async (): Promise<ClientErrorStats> => {
       try {
         const api = createApiClient();
         const response = await api.fetch("/admin/client-errors/stats");
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch error statistics: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to get error statistics:", error);
         throw error;
       }
     },
-    
+
     // Get details for a specific error
     get: async (id: number): Promise<ClientError> => {
       try {
         const api = createApiClient();
         const response = await api.fetch(`/admin/client-errors/${id}`);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch error details: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error(`Failed to get error details for ID ${id}:`, error);
         throw error;
       }
     },
-    
+
     // Mark an error as resolved
-    resolve: async (id: number, note?: string): Promise<{success: boolean}> => {
+    resolve: async (id: number, note?: string): Promise<{ success: boolean }> => {
       try {
         const api = createApiClient();
         const response = await api.fetch(`/admin/client-errors/${id}/resolve`, {
           method: "POST",
           body: note ? JSON.stringify({ note }) : undefined
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to resolve error: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error(`Failed to resolve error with ID ${id}:`, error);
         throw error;
       }
     },
-    
+
     // Mark error as critical or non-critical
-    setCritical: async (id: number, isCritical: boolean): Promise<{success: boolean}> => {
+    setCritical: async (id: number, isCritical: boolean): Promise<{ success: boolean }> => {
       try {
         const api = createApiClient();
         const response = await api.fetch(`/admin/client-errors/${id}/critical`, {
           method: "POST",
           body: JSON.stringify({ critical: isCritical })
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to update critical status: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error(`Failed to update critical status for error ID ${id}:`, error);
         throw error;
       }
     },
-    
+
     // Batch resolve multiple errors
-    batchResolve: async (ids: number[], note?: string): Promise<{success: boolean, resolved_count: number}> => {
+    batchResolve: async (ids: number[], note?: string): Promise<{ success: boolean, resolved_count: number }> => {
       try {
         const api = createApiClient();
         const response = await api.fetch("/admin/client-errors/batch/resolve", {
           method: "POST",
           body: JSON.stringify({ ids, note })
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to resolve errors in batch: ${response.status} ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
         console.error("Failed to batch resolve errors:", error);
@@ -878,7 +912,7 @@ export const admin = {
   // Contest Image Management
   contestImages: {
     // Regenerate contest image
-    regenerate: async (contestId: number, artStyle?: string, customPrompt?: string): Promise<{success: boolean, data: {contest_id: number, image_url: string}}> => {
+    regenerate: async (contestId: number, artStyle?: string, customPrompt?: string): Promise<{ success: boolean, data: { contest_id: number, image_url: string } }> => {
       try {
         const api = createApiClient();
         const response = await api.fetch(`/admin/contest-management/regenerate-image/${contestId}`, {
@@ -898,7 +932,7 @@ export const admin = {
     },
 
     // Get available art styles
-    getArtStyles: async (): Promise<{styles: ArtStyle[]}> => {
+    getArtStyles: async (): Promise<{ styles: ArtStyle[] }> => {
       try {
         const api = createApiClient();
         const response = await api.fetch("/admin/contest-management/art-styles");

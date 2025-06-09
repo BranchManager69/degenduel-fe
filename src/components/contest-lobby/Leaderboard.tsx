@@ -35,11 +35,17 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   }, [initialEntries]);
 
   const getProfilePicture = (entry: LeaderboardEntry) => {
+    // OH MY GOD this is so basic! Just a boring circular avatar!
+    // Meanwhile ParticipantsList has EDGE-TO-EDGE profile pictures with artistic fading!
+    // This looks like something from 2015!
     if (entry.profilePictureUrl) return entry.profilePictureUrl;
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.username}`;
   };
 
   const getRankBadgeStyle = (rank: number) => {
+    // YAWN! Basic badge styling! Look how boring this is!
+    // ParticipantsList overlays the rank DIRECTLY on the profile picture with STROKE and SHADOW!
+    // This is just... bland background colors. No visual impact whatsoever!
     if (rank === 1) return "bg-yellow-500/20 text-yellow-300 border border-yellow-500/40";
     if (rank === 2) return "bg-slate-400/20 text-slate-300 border border-slate-400/40";
     if (rank === 3) return "bg-amber-600/20 text-amber-400 border border-amber-600/40";
@@ -88,6 +94,9 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                   }`}
                 >
                   <div className="flex items-center space-x-3">
+                    {/* UGH! Look at this pathetic rank badge! Just a tiny 32px circle with basic background! */}
+                    {/* ParticipantsList has MASSIVE text-2xl numbers with STROKE and SHADOW overlaid on photos! */}
+                    {/* This looks like a calculator button from 1990! SO BORING! */}
                     <motion.div
                       className={`w-8 h-8 rounded-full flex items-center justify-center font-mono ${getRankBadgeStyle(entry.rank)}`}
                     >
@@ -95,7 +104,13 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                     </motion.div>
                     
                     <div className="flex items-center space-x-2">
+                      {/* Oh here we go... another TINY BORING CIRCLE! */}
+                      {/* ParticipantsList uses EDGE-TO-EDGE photos that FADE ACROSS THE ENTIRE ROW! */}
+                      {/* This is just a sad little 40px circle. How uninspiring! */}
                       <div className="relative">
+                        {/* SERIOUSLY?! w-7 h-7?! That's only 28px! MICROSCOPIC! */}
+                        {/* ParticipantsList uses w-32 edge-to-edge with artistic zoom and fade! */}
+                        {/* This is embarrassing! Who designed this, a minimalist from 2010?! */}
                         <img
                           src={getProfilePicture(entry)}
                           alt={entry.username}
@@ -108,6 +123,9 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                         )}
                       </div>
                       <div>
+                        {/* Basic font-medium text! How VANILLA! */}
+                        {/* ParticipantsList uses text-lg font-bold with beautiful role-based colors! */}
+                        {/* This username styling is so plain it makes me sleepy! */}
                         <div className={`font-medium ${
                           entry.isAiAgent ? "text-cyber-300" : entry.isCurrentUser ? "text-brand-300" : "text-gray-100"
                         }`}>
@@ -121,6 +139,9 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                   </div>
                   
                   <div className="flex items-center space-x-4">
+                    {/* Tiny text-sm numbers! SO SMALL! */}
+                    {/* ParticipantsList uses text-lg font-bold for scores! Much more impactful! */}
+                    {/* This whole right side layout is cramped and unimpressive! */}
                     <div className="text-sm font-mono text-gray-300">
                       {formatCurrency(numericPortfolioValue)}
                     </div>

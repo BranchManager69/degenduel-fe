@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import { OptimizedTokenCard } from "./OptimizedTokenCard";
-import { Token } from "../../types";
+import { Token, TokenHelpers } from "../../types";
 import { formatNumber, formatTokenPrice, formatPercentage } from "../../utils/format";
 
 interface CreativeTokensGridProps {
@@ -96,10 +96,10 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
       >
         {/* STUNNING BANNER BACKGROUND */}
         <div className="absolute inset-0 overflow-hidden">
-          {(token.header_image_url || token.image_url) ? (
+          {(token.header_image_url) ? (
             <>
               <img 
-                src={token.header_image_url || token.image_url} 
+                src={token.header_image_url || ''} 
                 alt={token.symbol}
                 className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
               />
@@ -185,7 +185,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
             {/* ENHANCED PRICE DISPLAY */}
             <div className="mb-3">
               <div className="text-lg font-bold text-white font-mono drop-shadow-md">
-                {formatTokenPrice(token.price)}
+                {formatTokenPrice(TokenHelpers.getPrice(token))}
               </div>
               <div className="flex items-center gap-2 mt-1">
                 <div className={`px-2 py-1 rounded-lg font-bold text-sm shadow-lg
@@ -194,7 +194,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
                     'bg-red-500/30 text-red-200 border border-red-400/30'
                   }
                 `}>
-                  {changeNum >= 0 ? '↗' : '↘'} {formatPercentage(token.change_24h || token.change24h)}
+                  {changeNum >= 0 ? '↗' : '↘'} {formatPercentage(TokenHelpers.getPriceChange(token))}
                 </div>
                 <div className="text-xs text-yellow-300 font-bold bg-yellow-500/10 px-2 py-1 rounded border border-yellow-400/20">
                   🔥 {hotnessScore.toFixed(0)}
@@ -209,15 +209,15 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
             <div className="grid grid-cols-3 gap-1 text-xs">
               <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
                 <div className="text-gray-400 mb-0.5">MCap</div>
-                <div className="text-white font-bold">${formatNumber(token.market_cap || token.marketCap, 'short')}</div>
+                <div className="text-white font-bold">${formatNumber(TokenHelpers.getMarketCap(token), 'short')}</div>
               </div>
               <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
                 <div className="text-gray-400 mb-0.5">FDV</div>
-                <div className="text-white font-bold">${formatNumber(token.fdv, 'short')}</div>
+                <div className="text-white font-bold">${formatNumber(TokenHelpers.getFDV(token), 'short')}</div>
               </div>
               <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
                 <div className="text-gray-400 mb-0.5">Liq</div>
-                <div className="text-white font-bold">${formatNumber(token.liquidity, 'short')}</div>
+                <div className="text-white font-bold">${formatNumber(TokenHelpers.getLiquidity(token), 'short')}</div>
               </div>
             </div>
             
@@ -226,19 +226,19 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
               <div className="flex items-center justify-between px-1">
                 <div className="flex gap-1">
                   <div className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    (token.priceChanges["5m"] || 0) >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                    (token.priceChanges.m5 || 0) >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
                   }`}>
-                    5m: {formatPercentage(token.priceChanges["5m"], false)}
+                    5m: {formatPercentage(token.priceChanges.m5, false)}
                   </div>
                   <div className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    (token.priceChanges["1h"] || 0) >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                    (token.priceChanges.h1 || 0) >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
                   }`}>
-                    1h: {formatPercentage(token.priceChanges["1h"], false)}
+                    1h: {formatPercentage(token.priceChanges.h1, false)}
                   </div>
                 </div>
                 {/* Volume indicator */}
                 <div className="text-[10px] text-gray-400">
-                  Vol: ${formatNumber(token.volume_24h || token.volume24h, 'short')}
+                  Vol: ${formatNumber(TokenHelpers.getVolume(token), 'short')}
                 </div>
               </div>
             )}

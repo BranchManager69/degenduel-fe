@@ -1,10 +1,10 @@
-import React from "react";
 import { motion } from "framer-motion";
+import React from "react";
 
 // Import both card types
+import type { Contest } from "../../../types/index";
 import { ContestCard } from "../../contest-browser/ContestCard";
 import { ProminentContestCard } from "../../contest-browser/ProminentContestCard";
-import type { Contest } from "../../../types/index";
 
 interface EnhancedContestSectionProps {
   title: string;
@@ -96,19 +96,8 @@ export const EnhancedContestSection: React.FC<EnhancedContestSectionProps> = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h2
-                className="text-4xl md:text-5xl font-black font-cyber tracking-wide bg-gradient-to-r from-brand-400 via-purple-400 to-brand-500 text-transparent bg-clip-text relative group"
-                style={{
-                  textShadow: "0 0 30px rgba(153, 51, 255, 0.5)"
-                }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/30 to-transparent blur-2xl animate-pulse-slow" />
+              <h2 className="text-4xl md:text-5xl font-black font-cyber tracking-wide bg-gradient-to-r from-brand-400 via-purple-400 to-brand-500 text-transparent bg-clip-text">
                 {title}
-                <span
-                  className="absolute -left-[1px] top-[1px] text-4xl md:text-5xl font-black font-cyber text-purple-600/20 select-none"
-                >
-                  {title}
-                </span>
               </h2>
               <p className="text-lg text-gray-300 font-medium">
                 The most anticipated trading competition of the week

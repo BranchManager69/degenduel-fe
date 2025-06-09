@@ -53,6 +53,11 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = (props) => {
   const finalIsCompact = typeof compactOverrideProp === 'boolean'
     ? compactOverrideProp
     : isCompactFromHook;
+    
+  // DEBUG: Log compact state per page
+  useEffect(() => {
+    console.log(`[EdgeToEdgeTicker] Page: ${window.location.pathname}, isCompact: ${finalIsCompact}, compactOverrideProp: ${compactOverrideProp}, isCompactFromHook: ${isCompactFromHook}`);
+  }, [finalIsCompact, compactOverrideProp, isCompactFromHook]);
 
   // Get cached contests immediately for instant display
   const cachedContests = useMemo(() => {

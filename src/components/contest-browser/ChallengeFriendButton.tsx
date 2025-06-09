@@ -1,38 +1,23 @@
-/**
- * ChallengeFriendButton.tsx
- * 
- * @description Button component to trigger challenge creation modal
- * 
- * @author BranchManager69
- * @version 1.0.0
- * @created 2025-01-29
- */
-
 import React from "react";
 import { toast } from "react-hot-toast";
-import { Button } from "../ui/Button";
 import { ChallengeCreationModal } from "./ChallengeCreationModal";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
 interface ChallengeFriendButtonProps {
   onChallengeCreated?: () => void;
   className?: string;
-  variant?: "outline" | "gradient" | "primary" | "secondary" | "danger" | "ghost";
-  size?: "sm" | "md" | "lg";
 }
 
 export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
   onChallengeCreated,
   className = "",
-  variant = "outline",
-  size = "md",
 }) => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const { isAdministrator } = useMigratedAuth();
 
   const handleOpenModal = () => {
     if (!isAdministrator) {
-      toast.error("🚧 Coming Soon! Friend challenges are under development.", {
+      toast.error("Friend challenges are coming soon", {
         duration: 3000,
         style: {
           background: '#1f2937',
@@ -56,16 +41,30 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
 
   return (
     <>
-      <Button
+      <button
         onClick={handleOpenModal}
-        variant={variant}
-        size={size}
         disabled={!isAdministrator}
-        className={`flex items-center gap-2 ${className} ${!isAdministrator ? 'opacity-60 cursor-not-allowed' : ''}`}
+        className={`group relative px-6 py-2.5 overflow-hidden rounded-lg bg-dark-300 border border-dark-200 hover:bg-dark-200 hover:border-dark-100 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
       >
-        <span>⚔️</span>
-        <span>Challenge Friend</span>
-      </Button>
+        {/* Subtle shimmer effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+        
+        {/* Content */}
+        <div className="relative flex items-center gap-2.5">
+          <svg 
+            className="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+          <span className="font-semibold text-gray-300 group-hover:text-white transition-colors">
+            Challenge Friend
+          </span>
+        </div>
+      </button>
 
       <ChallengeCreationModal
         isOpen={isModalOpen}
@@ -74,4 +73,4 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
       />
     </>
   );
-}; 
+};

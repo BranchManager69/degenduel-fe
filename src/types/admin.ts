@@ -53,6 +53,11 @@ export interface VanityWallet {
   private_key: string | null;
   created_at: string;
   completed_at: string | null;
+  // Performance metrics (as per API guide)
+  attempts?: number;
+  duration_ms?: number;
+  attempts_per_second?: number;
+  is_used?: boolean;
 }
 
 export type VanityWalletStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';

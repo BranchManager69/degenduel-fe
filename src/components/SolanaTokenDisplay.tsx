@@ -50,25 +50,42 @@ export const SolanaTokenDisplay: React.FC<SolanaTokenDisplayProps> = ({
 
   // Compact display for headers and menus
   if (compact) {
+    const handleClick = () => {
+      // Navigate to wallet page or show token details
+      if (typeof window !== 'undefined') {
+        window.location.href = '/wallet';
+      }
+    };
+
     return (
-      <div className="token-balance-compact">
+      <button 
+        onClick={handleClick}
+        className="token-balance-compact cursor-pointer hover:bg-purple-800/50 rounded px-1 py-0.5 transition-colors"
+        title="Click to view wallet details"
+      >
         {isLoading ? (
-          <span className="loading">...</span>
+          <span className="loading text-gray-400 font-sans">... <span className="text-purple-300">DUEL</span></span>
         ) : error ? (
-          <span className="disconnected">--</span>
+          <span className="disconnected text-gray-500 font-sans">-- <span className="text-purple-300">DUEL</span></span>
         ) : tokenData ? (
-          <span className="balance">
+          <span className="balance text-white font-sans">
             {tokenData.userBalance !== undefined 
-              ? <AnimatedNumber 
-                  value={parseFloat(tokenData.userBalance.toString())} 
-                  decimals={0}
-                />
-              : (tokenData.symbol || 'Token')}
+              ? <>
+                  <span className="font-medium">
+                    <AnimatedNumber 
+                      value={parseFloat(tokenData.userBalance.toString())} 
+                      decimals={0}
+                      showChangeColor={true}
+                    />
+                  </span>
+                  <span className="text-purple-200 ml-1">DUEL</span>
+                </>
+              : <><span className="font-medium">0</span><span className="text-purple-200 ml-1">DUEL</span></>}
           </span>
         ) : (
-          <span className="disconnected">--</span>
+          <span className="disconnected text-gray-500 font-sans">-- <span className="text-purple-300">DUEL</span></span>
         )}
-      </div>
+      </button>
     );
   }
 

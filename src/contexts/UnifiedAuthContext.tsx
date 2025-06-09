@@ -41,6 +41,7 @@ export interface UnifiedAuthContextType extends AuthStatus {
   // Account linking
   linkTwitter: () => Promise<string>;
   linkDiscord: () => Promise<string>;
+  linkTelegram: () => Promise<string>;
   linkPasskey: () => Promise<void>;
   
   // Auth method status - use direct property checks
@@ -49,6 +50,8 @@ export interface UnifiedAuthContextType extends AuthStatus {
   isTwitterLinked: boolean;
   isDiscordAuth: boolean;
   isDiscordLinked: boolean;
+  isTelegramAuth: boolean;
+  isTelegramLinked: boolean;
   isPasskeyAuth: boolean;
   isPasskeyLinked: boolean;
   
@@ -83,6 +86,8 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     twitterLinked: boolean;
     discord: boolean;
     discordLinked: boolean;
+    telegram: boolean;
+    telegramLinked: boolean;
     passkey: boolean;
     passkeyLinked: boolean;
   }>({
@@ -91,6 +96,8 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     twitterLinked: false,
     discord: false,
     discordLinked: false,
+    telegram: false,
+    telegramLinked: false,
     passkey: false,
     passkeyLinked: false
   });
@@ -187,6 +194,7 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     if (user.wallet_address) return 'wallet';
     if (user.twitter_id) return 'twitter';
     if (user.discord_id) return 'discord';
+    if (user.telegram_id) return 'telegram';
     if (user.passkey_id) return 'passkey';
     
     // Default to session if no other indicators
@@ -202,6 +210,8 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
         twitterLinked: false,
         discord: false,
         discordLinked: false,
+        telegram: false,
+        telegramLinked: false,
         passkey: false,
         passkeyLinked: false
       });
@@ -214,10 +224,12 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
       wallet: activeMethod === 'wallet',
       twitter: activeMethod === 'twitter',
       discord: activeMethod === 'discord',
+      telegram: activeMethod === 'telegram',
       passkey: activeMethod === 'passkey',
       // For linking status, check for IDs regardless of active method
       twitterLinked: !!user.twitter_id,
       discordLinked: !!user.discord_id,
+      telegramLinked: !!user.telegram_id,
       passkeyLinked: !!user.passkey_id
     });
   };
@@ -240,6 +252,12 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     linkTwitter: authService.linkTwitter.bind(authService),
     linkDiscord: async () => {
       window.location.href = '/api/auth/discord/link';
+      return 'redirect_initiated';
+    },
+    linkTelegram: async () => {
+      // For now, redirect to the Telegram login endpoint
+      // This can be enhanced later with token generation
+      window.location.href = '/api/auth/telegram/login';
       return 'redirect_initiated';
     },
     linkPasskey: async () => {
@@ -303,6 +321,8 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     isTwitterLinked: methodStatuses.twitterLinked,
     isDiscordAuth: methodStatuses.discord,
     isDiscordLinked: methodStatuses.discordLinked,
+    isTelegramAuth: methodStatuses.telegram,
+    isTelegramLinked: methodStatuses.telegramLinked,
     isPasskeyAuth: methodStatuses.passkey,
     isPasskeyLinked: methodStatuses.passkeyLinked || false,
     

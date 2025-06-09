@@ -6,19 +6,36 @@
  * 
  * @author DegenDuel Team
  * @created 2025-01-01
+ * @updated 2025-01-20
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { API_URL } from '../../config/config';
+
+export interface WhaleTier {
+  key: string;
+  name: string;
+  min: number;
+  max: number;
+}
 
 export interface WhaleStatusData {
   is_whale: boolean;
   current_balance: number;
   required_balance: number;
   balance_percentage: number;
-  whale_tier?: string;
+  whale_tier: string;
+  tier_name: string;
   last_updated: string;
   next_refresh?: string;
+  refresh_triggered?: boolean; // For POST responses
+}
+
+export interface WhaleStatusMetadata {
+  threshold: number;
+  refresh_interval: number;
+  data_source: string;
+  tiers: WhaleTier[];
 }
 
 export interface WhaleStatusResponse {
@@ -26,10 +43,7 @@ export interface WhaleStatusResponse {
   data?: WhaleStatusData;
   error?: string;
   message?: string;
-  metadata?: {
-    threshold: number;
-    refresh_interval: number;
-  };
+  metadata?: WhaleStatusMetadata;
 }
 
 export interface UseWhaleStatusReturn {

@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
-import { Token } from "../../../types";
+import { Token, TokenHelpers } from "../../../types";
 import { formatNumber } from "../../../utils/format";
 
 interface TokensPreviewSectionProps {
@@ -105,24 +105,24 @@ export const TokensPreviewSection: React.FC<TokensPreviewSectionProps> = ({
             
             {/* 24h change */}
             <div className={`px-2 py-1 rounded-full text-xs font-medium ${isPositive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-              {formatNumber(token.change24h)}%
+              {formatNumber(TokenHelpers.getPriceChange(token))}%
             </div>
           </div>
           
           {/* Price information */}
           <div className="mb-2">
-            <div className="text-lg font-mono text-white font-bold">${formatNumber(token.price)}</div>
+            <div className="text-lg font-mono text-white font-bold">${formatNumber(TokenHelpers.getPrice(token))}</div>
           </div>
           
           {/* Additional metrics */}
           <div className="grid grid-cols-2 gap-2 mt-3">
             <div className="bg-dark-300/40 p-2 rounded-lg">
               <div className="text-xs text-gray-500 uppercase">Market Cap</div>
-              <div className="text-sm text-white font-mono">${formatNumber(token.marketCap)}</div>
+              <div className="text-sm text-white font-mono">${formatNumber(TokenHelpers.getMarketCap(token))}</div>
             </div>
             <div className="bg-dark-300/40 p-2 rounded-lg">
               <div className="text-xs text-gray-500 uppercase">24h Vol</div>
-              <div className="text-sm text-white font-mono">${formatNumber(token.volume24h)}</div>
+              <div className="text-sm text-white font-mono">${formatNumber(TokenHelpers.getVolume(token))}</div>
             </div>
           </div>
         </div>

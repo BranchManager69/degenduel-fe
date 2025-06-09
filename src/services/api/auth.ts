@@ -435,11 +435,13 @@ export const linkPrivyAccount = async (token: string, userId: string) => {
 
 /**
  * Initiates Twitter authentication flow
+ * @param {boolean} jsonMode - Whether to request JSON responses in callback
  * @returns {Promise<string>} - The URL to redirect to for Twitter auth
  */
-export const getTwitterAuthUrl = async (): Promise<string> => {
-  // Return directly to the Twitter login endpoint as confirmed by backend
-  return `${API_URL}/auth/twitter/login`;
+export const getTwitterAuthUrl = async (jsonMode: boolean = false): Promise<string> => {
+  // Return to the Twitter login endpoint with optional JSON response mode
+  const baseUrl = `${API_URL}/auth/twitter/login`;
+  return jsonMode ? `${baseUrl}?response_mode=json` : baseUrl;
 };
 
 /**
@@ -495,6 +497,203 @@ export const checkTwitterLinkStatus = async (): Promise<{
   } catch (error) {
     console.error("[Auth] Failed to check Twitter link status:", error);
     return { linked: false };
+  }
+};
+
+/**
+ * Checks if a specific Twitter account is already linked to any wallet
+ * @param {string} twitterId - The Twitter ID to check
+ * @returns {Promise<{linked: boolean, walletAddress?: string}>} - Link status and wallet if linked
+ */
+export const checkTwitterAccountLinkStatus = async (twitterId: string): Promise<{
+  linked: boolean,
+  walletAddress?: string
+}> => {
+  try {
+    const response = await axios.get(`${API_URL}/auth/twitter/check/${twitterId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      withCredentials: true,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error("[Auth] Failed to check Twitter account link status:", error);
+    return { linked: false };
+  }
+};
+
+/**
+ * Gets current user's Twitter linking status
+ * @returns {Promise<{hasTwitterLinked: boolean, twitterUsername?: string}>} - User's Twitter status
+ */
+export const getTwitterStatus = async (): Promise<{
+  hasTwitterLinked: boolean,
+  twitterUsername?: string
+}> => {
+  try {
+    const response = await axios.get(`${API_URL}/auth/twitter/status`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      withCredentials: true,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error("[Auth] Failed to get Twitter status:", error);
+    return { hasTwitterLinked: false };
+  }
+};
+
+/**
+ * Completes pending Twitter linking after wallet connection
+ * @returns {Promise<{success: boolean, message: string, twitter_username?: string}>} - Completion result
+ */
+export const completeTwitterPendingLink = async (): Promise<{
+  success: boolean,
+  message: string,
+  twitter_username?: string
+}> => {
+  try {
+    const response = await axios.post(`${API_URL}/auth/twitter/complete-pending`, {}, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      withCredentials: true,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error("[Auth] Failed to complete pending Twitter link:", error);
+    return { 
+      success: false, 
+      message: error?.response?.data?.message || "Failed to complete Twitter linking"
+    };
+  }
+};
+
+/**
+ * Telegram Authentication API Endpoints
+ */
+
+/**
+ * Checks if a specific Telegram account is already linked to any wallet
+ * @param {string} telegramUserId - The Telegram user ID to check
+ * @returns {Promise<{linked: boolean, walletAddress?: string}>} - Link status and wallet if linked
+ */
+export const checkTelegramAccountLinkStatus = async (telegramUserId: string): Promise<{
+  linked: boolean,
+  walletAddress?: string
+}> => {
+  try {
+    const response = await axios.get(`${API_URL}/auth/telegram/check/${telegramUserId}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      withCredentials: true,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error("[Auth] Failed to check Telegram account link status:", error);
+    return { linked: false };
+  }
+};
+
+/**
+ * Gets current user's Telegram linking status
+ * @returns {Promise<{hasTelegramLinked: boolean, telegramUsername?: string, telegramUserId?: string, telegramDisplayName?: string}>} - User's Telegram status
+ */
+export const getTelegramStatus = async (): Promise<{
+  hasTelegramLinked: boolean,
+  telegramUsername?: string,
+  telegramUserId?: string,
+  telegramDisplayName?: string
+}> => {
+  try {
+    const response = await axios.get(`${API_URL}/auth/telegram/status`, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      withCredentials: true,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error("[Auth] Failed to get Telegram status:", error);
+    return { hasTelegramLinked: false };
+  }
+};
+
+/**
+ * Generates a secure linking token for Telegram authentication
+ * @param {string} telegramUserId - The Telegram user ID to generate token for
+ * @returns {Promise<{success: boolean, token?: string, expiresAt?: string, linkingUrl?: string, message?: string}>} - Token generation result
+ */
+export const generateTelegramLinkingToken = async (telegramUserId: string): Promise<{
+  success: boolean,
+  token?: string,
+  expiresAt?: string,
+  linkingUrl?: string,
+  message?: string
+}> => {
+  try {
+    const response = await axios.post(`${API_URL}/auth/telegram/generate-token`, {
+      telegramUserId
+    }, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      withCredentials: true,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error("[Auth] Failed to generate Telegram linking token:", error);
+    return { 
+      success: false, 
+      message: error?.response?.data?.message || "Failed to generate linking token"
+    };
+  }
+};
+
+/**
+ * Verifies a Telegram linking token
+ * @param {string} token - The token to verify
+ * @returns {Promise<{valid: boolean, telegramUserId?: string, expiresAt?: string, message?: string}>} - Token verification result
+ */
+export const verifyTelegramLinkingToken = async (token: string): Promise<{
+  valid: boolean,
+  telegramUserId?: string,
+  expiresAt?: string,
+  message?: string
+}> => {
+  try {
+    const response = await axios.post(`${API_URL}/auth/telegram/verify-token`, {
+      token
+    }, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      withCredentials: true,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error("[Auth] Failed to verify Telegram linking token:", error);
+    return { 
+      valid: false, 
+      message: error?.response?.data?.message || "Failed to verify token"
+    };
   }
 };
 

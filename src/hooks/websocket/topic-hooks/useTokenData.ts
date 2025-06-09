@@ -38,7 +38,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { ddApi } from '../../../services/dd-api';
-import { Token } from '../../../types';
+import { Token, TokenHelpers } from '../../../types';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 
 // Transform backend token data to frontend Token format
@@ -104,7 +104,8 @@ interface TokenDataFilters {
 
 export function useTokenData(
   _tokensToSubscribe: string[] | "all" = "all", // Now unused - kept for interface compatibility
-  filters?: TokenDataFilters
+  filters?: TokenDataFilters,
+  limit: number = 50 // Default to 50 for proper pagination
 ) {
   // State for token data
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -127,9 +128,9 @@ export function useTokenData(
     try {
       console.log('[useTokenData] Loading tokens via REST API for immediate display');
 
-      // Use paginated format for better infinity scroll support
+      // Use paginated format - but we can handle all 3500 tokens at once!
       const response = await ddApi.tokens.getAll({
-        limit: 100,
+        limit, // Use the limit parameter for proper pagination
         offset,
         format: 'paginated'
       });
@@ -143,10 +144,10 @@ export function useTokenData(
         // Apply client-side filters if any
         let filteredTokens = tokensData;
         if (filters?.minMarketCap) {
-          filteredTokens = filteredTokens.filter((t: Token) => t.market_cap >= filters.minMarketCap!);
+          filteredTokens = filteredTokens.filter((t: Token) => TokenHelpers.getMarketCap(t) >= filters.minMarketCap!);
         }
         if (filters?.minVolume) {
-          filteredTokens = filteredTokens.filter((t: Token) => t.volume_24h >= filters.minVolume!);
+          filteredTokens = filteredTokens.filter((t: Token) => TokenHelpers.getVolume(t) >= filters.minVolume!);
         }
 
         // Update pagination state
@@ -176,10 +177,10 @@ export function useTokenData(
         // Apply client-side filters if any
         let filteredTokens = tokensData;
         if (filters?.minMarketCap) {
-          filteredTokens = filteredTokens.filter((t: Token) => t.market_cap >= filters.minMarketCap!);
+          filteredTokens = filteredTokens.filter((t: Token) => TokenHelpers.getMarketCap(t) >= filters.minMarketCap!);
         }
         if (filters?.minVolume) {
-          filteredTokens = filteredTokens.filter((t: Token) => t.volume_24h >= filters.minVolume!);
+          filteredTokens = filteredTokens.filter((t: Token) => TokenHelpers.getVolume(t) >= filters.minVolume!);
         }
 
         setTokens(filteredTokens);
@@ -245,7 +246,7 @@ export function useTokenData(
         action: 'getDegenDuelRanked',
         requestId,
         data: {
-          limit: 100,
+          limit, // Use the limit parameter for proper pagination
           offset,
           format: 'paginated'
         }
@@ -286,10 +287,10 @@ export function useTokenData(
           // Apply client-side filters if any
           let filteredTokens = transformedTokens;
           if (filters?.minMarketCap) {
-            filteredTokens = filteredTokens.filter((t: Token) => t.market_cap >= filters.minMarketCap!);
+            filteredTokens = filteredTokens.filter((t: Token) => TokenHelpers.getMarketCap(t) >= filters.minMarketCap!);
           }
           if (filters?.minVolume) {
-            filteredTokens = filteredTokens.filter((t: Token) => t.volume_24h >= filters.minVolume!);
+            filteredTokens = filteredTokens.filter((t: Token) => TokenHelpers.getVolume(t) >= filters.minVolume!);
           }
 
           // Update pagination state
@@ -337,10 +338,10 @@ export function useTokenData(
           // Apply client-side filters if any
           let filteredTokens = transformedTokens;
           if (filters?.minMarketCap) {
-            filteredTokens = filteredTokens.filter((t: Token) => t.market_cap >= filters.minMarketCap!);
+            filteredTokens = filteredTokens.filter((t: Token) => TokenHelpers.getMarketCap(t) >= filters.minMarketCap!);
           }
           if (filters?.minVolume) {
-            filteredTokens = filteredTokens.filter((t: Token) => t.volume_24h >= filters.minVolume!);
+            filteredTokens = filteredTokens.filter((t: Token) => TokenHelpers.getVolume(t) >= filters.minVolume!);
           }
 
           setTokens(filteredTokens);

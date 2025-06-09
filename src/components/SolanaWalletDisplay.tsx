@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import React, { useState } from 'react';
 import { useSolanaWalletData } from '../hooks/data/useSolanaWalletData';
 import { AnimatedNumber } from './ui/AnimatedNumber';
+import { SolanaLogo } from './icons/SolanaLogo';
 
 interface SolanaWalletDisplayProps {
   walletAddress?: string;
@@ -51,27 +52,51 @@ export const SolanaWalletDisplay: React.FC<SolanaWalletDisplayProps> = ({
   // Compact display for headers and menus
   if (compact) {
     if (!walletAddress) {
-      return <div className="solana-balance-compact"><span className="disconnected">--</span></div>;
+      return (
+        <div className="solana-balance-compact">
+          <span className="disconnected text-gray-500">-- SOL</span>
+        </div>
+      );
     }
     
+    const handleClick = () => {
+      // Navigate to wallet page or show balance details
+      if (typeof window !== 'undefined') {
+        window.location.href = '/wallet';
+      }
+    };
+    
     return (
-      <div className="solana-balance-compact">
+      <button 
+        onClick={handleClick}
+        className="solana-balance-compact cursor-pointer hover:bg-gray-800/50 rounded px-1 py-0.5 transition-colors"
+        title="Click to view wallet details"
+      >
         {isLoading ? (
-          <span className="loading">...</span>
+          <span className="loading text-gray-400 font-sans flex items-center gap-1">
+            ... <SolanaLogo className="opacity-50" width={14} height={12} />
+          </span>
         ) : error ? (
-          <span className="disconnected">--</span>
+          <span className="disconnected text-gray-500 font-sans flex items-center gap-1">
+            -- <SolanaLogo className="opacity-50" width={14} height={12} />
+          </span>
         ) : walletData ? (
-          <span className="balance">
-            <AnimatedNumber 
-              value={walletData.balance} 
-              decimals={4} 
-              suffix=" SOL"
-            />
+          <span className="balance text-white font-sans flex items-center gap-1.5">
+            <span className="font-medium">
+              <AnimatedNumber 
+                value={walletData.balance} 
+                decimals={4}
+                showChangeColor={true}
+              />
+            </span>
+            <SolanaLogo width={14} height={12} />
           </span>
         ) : (
-          <span className="disconnected">--</span>
+          <span className="disconnected text-gray-500 font-sans flex items-center gap-1">
+            -- <SolanaLogo className="opacity-50" width={14} height={12} />
+          </span>
         )}
-      </div>
+      </button>
     );
   }
 

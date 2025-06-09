@@ -12,8 +12,8 @@
  */
 
 import { motion } from "framer-motion";
-import React from "react";
-
+import React, { useEffect, useMemo, useState } from "react";
+import { FEATURE_FLAGS } from "../../../config/config";
 import { FeatureCard } from "./FeatureCard";
 
 // Feature animations
@@ -392,48 +392,92 @@ const upcomingFeatures = [
 
 ];
 
-// Combine current and upcoming features for rendering
-const allFeatures = [...currentFeatures, ...upcomingFeatures];
+// Hook for reduced motion preference
+const useReducedMotion = () => {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    
+    const handleChange = (e: MediaQueryListEvent) => {
+      setPrefersReducedMotion(e.matches);
+    };
+    
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+  
+  return prefersReducedMotion;
+};
 
-// Feature list JSX
 export const FeatureList: React.FC = () => {
-  // Container animation variants
+  const prefersReducedMotion = useReducedMotion();
+
+  // Memoize the combined features array for better performance
+  const allFeatures = useMemo(() => [
+    ...currentFeatures,
+    ...upcomingFeatures
+  ], []);
+
+  // Animation variants for staggered entrance - only when motion is allowed
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
-      }
-    }
+        staggerChildren: prefersReducedMotion ? 0 : 0.1,
+        delayChildren: prefersReducedMotion ? 0 : 0.2,
+      },
+    },
   };
-  
-  // Item animation variants
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
+
+  const cardVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: prefersReducedMotion ? 0 : 30,
+      scale: prefersReducedMotion ? 1 : 0.95
+    },
     visible: {
-      y: 0,
       opacity: 1,
+      y: 0,
+      scale: 1,
       transition: {
-        type: "spring",
-        stiffness: 260,
-        damping: 20
-      }
-    }
+        duration: prefersReducedMotion ? 0 : 0.6,
+        ease: "easeOut",
+      },
+    },
   };
 
   return (
-    <motion.div 
-      className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
+    <motion.div
+      className="w-full max-w-7xl mx-auto"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      {allFeatures.map((feature) => (
-        <motion.div key={feature.title} variants={itemVariants}>
-          <FeatureCard {...feature} />
-        </motion.div>
-      ))}
+      {/* Features grid with responsive layout */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+        {allFeatures.map((feature) => (
+          <motion.div
+            key={feature.title}
+            variants={cardVariants}
+            className="h-full"
+          >
+            <FeatureCard
+              title={feature.title}
+              description={feature.description}
+              extendedDescription={feature.extendedDescription}
+              icon={feature.icon}
+              animation={FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS ? feature.animation : undefined}
+              isUpcoming={feature.isUpcoming}
+              className="h-full"
+            />
+          </motion.div>
+        ))}
+      </div>
+
+
     </motion.div>
   );
 };

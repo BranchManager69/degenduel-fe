@@ -18,7 +18,7 @@
 
 import React from "react";
 import { formatCurrency } from "../../lib/utils";
-import { Token } from "../../types";
+import { Token, TokenHelpers } from "../../types";
 import { Card } from "../ui/Card";
 
 interface TokenData {
@@ -75,26 +75,25 @@ export const LivePriceUpdates: React.FC<LivePriceUpdatesProps> = ({
 
             {/* Token Price */}
             <div className="text-lg font-bold text-gray-100">
-              {formatCurrency(token.price)}
+              {formatCurrency(TokenHelpers.getPrice(token))}
             </div>
 
             {/* Token Market Cap */}
             <div className="text-sm text-gray-400">
-              {formatCurrency(token.marketCap)}
+              {formatCurrency(TokenHelpers.getMarketCap(token))}
             </div>
 
             {/* Token Change24h */}
             <div
-              className={`text-sm ${Number(token.change24h) >= 0 ? "text-green-400" : "text-red-400"}`}
+              className={`text-sm ${TokenHelpers.getPriceChange(token) >= 0 ? "text-green-400" : "text-red-400"}`}
             >
-              {/* Change24h is (stupidly) a string, so we need to convert it to a number */}
-              {Number(token.change24h) >= 0 ? "+" : ""}
-              {Number(token.change24h).toFixed(2)}%
+              {TokenHelpers.getPriceChange(token) >= 0 ? "+" : ""}
+              {TokenHelpers.getPriceChange(token).toFixed(2)}%
             </div>
 
             {/* Token Volume24h */}
             <div className="text-sm text-gray-400">
-              {formatCurrency(token.volume24h)}
+              {formatCurrency(TokenHelpers.getVolume(token))}
             </div>
             
           </div>

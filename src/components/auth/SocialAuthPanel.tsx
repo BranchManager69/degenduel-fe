@@ -2,6 +2,7 @@ import React from 'react';
 import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
 import BiometricAuthButton from './BiometricAuthButton';
 import DiscordLoginButton from './DiscordLoginButton';
+import TelegramLoginButton from './TelegramLoginButton';
 import TwitterLoginButton from './TwitterLoginButton';
 
 interface SocialAuthPanelProps {
@@ -17,7 +18,7 @@ export const SocialAuthPanel: React.FC<SocialAuthPanelProps> = ({
   onComplete,
   layout = 'horizontal'
 }) => {
-  const { isAuthenticated, isTwitterLinked } = useMigratedAuth();
+  const { isAuthenticated, isTwitterLinked, isTelegramLinked } = useMigratedAuth();
   
   // Determine if we should show buttons based on mode and auth status
   const shouldShow = mode === 'login' ? !isAuthenticated : isAuthenticated;
@@ -27,7 +28,7 @@ export const SocialAuthPanel: React.FC<SocialAuthPanelProps> = ({
   const layoutClasses = {
     horizontal: 'flex flex-row gap-3',
     vertical: 'flex flex-col gap-3',
-    grid: 'grid grid-cols-3 gap-3'
+    grid: 'grid grid-cols-4 gap-3'
   };
 
   const buttonSize = layout === 'grid' ? 'w-full aspect-square' : 'px-4 py-2';
@@ -53,6 +54,18 @@ export const SocialAuthPanel: React.FC<SocialAuthPanelProps> = ({
           className={`${buttonSize} bg-[#5865F2] hover:bg-[#4752c4] text-white border-0 transition-all duration-200 hover:scale-105 flex items-center justify-center gap-2`}
           onClick={() => onComplete?.()}
         />
+      </div>
+
+      {/* Telegram */}
+      <div className="relative">
+        <TelegramLoginButton
+          linkMode={mode === 'link'}
+          className={`${buttonSize} bg-[#0088cc] hover:bg-[#006ba3] text-white border-0 transition-all duration-200 hover:scale-105 flex items-center justify-center gap-2`}
+          onSuccess={() => onComplete?.()}
+        />
+        {mode === 'link' && isTelegramLinked() && (
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+        )}
       </div>
 
       {/* Passkey */}

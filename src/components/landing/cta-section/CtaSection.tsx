@@ -2,44 +2,65 @@
 
 /**
  * CTA Section Component
- * @description This component renders the main call-to-action buttons for the landing page,
- *              including primary action, secondary links, and a conditional whale room button.
+ * @description This component renders the secondary call-to-action buttons for the landing page,
+ *              including secondary links and a conditional whale room button.
+ *              Primary DUEL NOW action is handled by FloatingDuelNowButton.
  *
  * @author BranchManager69
- * @version 2.0.0
+ * @version 2.1.0
  * @created 2025-05-05
- * @updated 2025-05-05
+ * @updated 2025-01-20
  */
 
 import { motion } from 'framer-motion';
 import React from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 // Hooks and Types
+import { useWhaleStatus } from '../../../hooks/data/useWhaleStatus';
 import { User } from '../../../types';
 
 // Define WhaleRoomButton component (encapsulated within CtaSection)
-const WhaleRoomButton = () => {
-  // Use server-side whale status verification (same as whale room page)
-  // TODO: Import useWhaleStatus hook properly when it exists
-  // import { useWhaleStatus } from '../../../hooks/data/useWhaleStatus';
-  // const { isWhale, isLoading: whaleStatusLoading } = useWhaleStatus();
-  
-  // Temporarily disable whale room button until hook is implemented
-  const isWhale = false;
-  const whaleStatusLoading = false;
-  
-  // Only show whale room button if user is verified whale on server-side
-  if (whaleStatusLoading || !isWhale) return null;
+const WhaleRoomButton: React.FC<{ user: User | null }> = ({ user }) => {
+  // Use server-side whale status verification
+  const { 
+    isWhale, 
+    isLoading, 
+    error, 
+    whaleStatus,
+    currentBalance,
+    progressPercentage 
+  } = useWhaleStatus();
+
+  // Don't show if user is not authenticated
+  if (!user?.wallet_address) {
+    return null;
+  }
+
+  // Don't show if still loading whale status
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-md flex justify-center py-3">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400"></div>
+      </div>
+    );
+  }
+
+  // Don't show if there's an error or user is not a whale
+  if (error || !isWhale) {
+    return null;
+  }
+
   return (
     <div className="w-full max-w-md">
       
-      {/* Conditional WHALE ROOM button - only shown to users with significant token/SOL balances */}
+      {/* Conditional WHALE ROOM button - only shown to verified whales */}
       <RouterLink to="/whale-room" className="w-full">
         
         {/* Button */}
         <button 
           className="w-full relative group overflow-hidden"
-          aria-label="Access the exclusive Whale Room"
+          aria-label={`Access the exclusive Whale Room - ${whaleStatus?.tier_name} tier`}
+          title={`Balance: ${currentBalance.toLocaleString()} DUEL (${progressPercentage.toFixed(1)}%)`}
         >
           {/* Gradient background */}
           <div className="relative clip-edges bg-gradient-to-r from-purple-500 to-indigo-600 p-[1px] transition-all duration-300 group-hover:from-purple-400 group-hover:to-indigo-500 shadow-md shadow-purple-900/20">
@@ -47,23 +68,28 @@ const WhaleRoomButton = () => {
             {/* Button Content */}
             <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-5 py-3">
               
-              {/* Gradient background */}
+              {/* Shimmer effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
 
               {/* Button Content */}
               <div className="relative flex items-center justify-between space-x-3 text-lg font-cyber">
                 
-                {/* Whale Room Button */}
+                {/* Whale Room Button with tier info */}
                 <span className="bg-gradient-to-r from-purple-300 to-indigo-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-purple-200 flex items-center">
                   
-                  {/* Icon */}
-                  <span className="mr-2">
-                    💎
+                  {/* Professional tier indicator */}
+                  <span className="mr-3 text-purple-400 group-hover:text-white">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
                   </span>
 
-                  {/* Button Text */}
-                  <span>
-                    WHALE ROOM
+                  {/* Button Text with tier */}
+                  <span className="flex flex-col items-start">
+                    <span className="text-lg font-bold">WHALE ROOM</span>
+                    <span className="text-xs text-purple-300/80 font-medium uppercase tracking-wider">
+                      {whaleStatus?.tier_name}
+                    </span>
                   </span>
 
                 </span>
@@ -111,7 +137,7 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
   // You might need other state or logic here depending on complexity
   return (
     <motion.div
-      className="mt-8 mb-10 flex flex-col items-center justify-center gap-6 px-4 sm:px-0 max-w-full"
+      className="mt-4 mb-6 md:mt-8 md:mb-10 flex flex-col items-center justify-center gap-3 md:gap-6 px-4 sm:px-0 max-w-full"
       initial={{ opacity: 0, y: 20 }}
       animate={{
         opacity: animationPhase > 0 ? 1 : 0,
@@ -122,109 +148,6 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
         },
       }}
     >
-      {/* Primary action button - larger and with pulse animation */}
-      {user ? (
-        <RouterLink to="/contests" className="w-full max-w-md">
-          <button 
-            className="w-full relative group overflow-hidden"
-            aria-label="Find a duel to join"
-          >
-            <div className="relative clip-edges bg-gradient-to-r from-emerald-500 to-teal-600 p-[2px] transition-all duration-300 group-hover:from-emerald-400 group-hover:to-teal-500 shadow-lg shadow-emerald-900/20 animate-pulse-subtle">
-              <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-10 py-5">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                <div className="relative flex items-center justify-between space-x-6 text-2xl font-cyber">
-                  <span className="bg-gradient-to-r from-emerald-300 to-teal-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-emerald-200">
-                    FIND DUEL
-                  </span>
-                  <svg
-                    className="w-7 h-7 text-emerald-400 group-hover:text-white transform group-hover:translate-x-2 transition-all"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14 5l7 7m0 0l-7 7m7-7H3"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </button>
-        </RouterLink>
-      ) : (
-        <RouterLink to="/contests" className="w-full max-w-md">
-          <button 
-            className="w-full relative group overflow-hidden"
-            aria-label="Connect your wallet to start"
-          >
-            <div className="relative clip-edges bg-gradient-to-r from-brand-500 to-brand-600 p-[2px] transition-all duration-300 group-hover:from-brand-400 group-hover:to-brand-500 shadow-lg shadow-brand-900/20 animate-pulse-subtle">
-              <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-10 py-5">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                <div className="relative flex items-center justify-between space-x-6 text-2xl font-cyber">
-                  <span className="bg-gradient-to-r from-brand-300 to-brand-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-brand-200">
-                    DUEL NOW
-                  </span>
-                  <svg
-                    className="w-7 h-7 text-brand-400 group-hover:text-white transform group-hover:translate-x-2 transition-all"
-                    fill="none" 
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14 5l7 7m0 0l-7 7m7-7H3"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </button>
-        </RouterLink>
-      )}
-
-      {/* Follow us on X section - prominent social call-to-action */}
-      <div className="w-full max-w-md mb-4">
-        <a
-          href="https://x.com/degenduelme"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full block"
-          aria-label="Follow DegenDuel on X (Twitter)"
-        >
-          <button className="w-full relative group overflow-hidden">
-            <div className="relative clip-edges bg-gradient-to-r from-blue-400 to-cyan-500 p-[1px] transition-all duration-300 group-hover:from-blue-300 group-hover:to-cyan-400 shadow-md shadow-blue-900/20">
-              <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-6 py-3">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                <div className="relative flex items-center justify-center space-x-3 text-lg font-cyber">
-                  <span className="text-xl">𝕏</span>
-                  <span className="bg-gradient-to-r from-blue-300 to-cyan-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-blue-200">
-                    FOLLOW US ON X
-                  </span>
-                  <svg
-                    className="w-5 h-5 text-blue-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </button>
-        </a>
-      </div>
-
       {/* Secondary buttons row - two buttons side by side */}
       <div className="flex flex-row w-full max-w-md gap-4 justify-between">
         {/* GAMEPLAY button */}
@@ -292,10 +215,8 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
         </RouterLink>
       </div>
 
-              {/* Conditional WHALE ROOM button - only for authenticated users */}
-        {user?.wallet_address && (
-          <WhaleRoomButton />
-        )}
+      {/* Conditional WHALE ROOM button - properly implemented with hook */}
+      <WhaleRoomButton user={user} />
 
     </motion.div>
   );

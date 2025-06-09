@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Token } from '../../types';
+import { Token, TokenHelpers } from '../../types';
 import { formatNumber } from '../../utils/format';
 import { CopyToClipboard } from '../common/CopyToClipboard';
 
@@ -197,7 +197,7 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-scan-fast"></div>
                     <div className="flex items-center gap-2">
                       <div className="font-mono text-xs uppercase">Price</div>
-                      <div className="font-numbers text-xl font-bold">${formatNumber(token.price)}</div>
+                      <div className="font-numbers text-xl font-bold">${formatNumber(TokenHelpers.getPrice(token))}</div>
                     </div>
                     
                     <div className="flex items-center gap-1 mt-1">
@@ -271,7 +271,7 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
                         MCAP
                       </span>
                       <p className="font-numbers text-xl font-bold text-white/90 mt-1 transition-colors duration-300">
-                        ${formatNumber(token.marketCap)}
+                        ${formatNumber(TokenHelpers.getMarketCap(token))}
                       </p>
                     </div>
                   </div>
@@ -290,7 +290,7 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
                         VOLUME
                       </span>
                       <p className="font-numbers text-xl font-bold text-white/90 mt-1 transition-colors duration-300">
-                        ${formatNumber(token.volume24h)}
+                        ${formatNumber(TokenHelpers.getVolume(token))}
                       </p>
                     </div>
                   </div>
@@ -321,7 +321,7 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
                     CONTRACT
                   </div>
                   
-                  <CopyToClipboard text={token.contractAddress}>
+                  <CopyToClipboard text={TokenHelpers.getAddress(token)}>
                     <div 
                       className="relative bg-dark-200/80 backdrop-blur-sm rounded-sm p-4 border border-dark-300 hover:border-brand-400/30 transition-all duration-300 group cursor-pointer overflow-hidden pt-5"
                     >

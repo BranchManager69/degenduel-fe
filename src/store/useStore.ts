@@ -559,31 +559,76 @@ const persistConfig: StorePersist = {
 
       try {
         if (typeof window !== 'undefined') {
-          // console.log("[STORE REHYDRATE] Fetching maintenance. Current window.location.origin:", window.location.origin, "API_URL used:", API_URL);
+          console.log("[STORE REHYDRATE] Starting maintenance check", {
+            origin: window.location.origin,
+            apiUrl: API_URL,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent
+          });
         }
 
         const response = await fetch(`${API_URL}/status`, {
           credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "Cache-Control": "no-cache",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          signal: AbortSignal.timeout(10000), // 10 second timeout
+        });
+
+        console.log("[STORE REHYDRATE] Maintenance response:", {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          url: response.url,
+          headers: Object.fromEntries(response.headers.entries())
         });
 
         if (response.status === 503) {
+          console.log("[STORE REHYDRATE] Setting maintenance mode to TRUE (503)");
           state.setMaintenanceMode(true);
         } else if (response.ok) {
           const data = await response.json();
+          console.log("[STORE REHYDRATE] Response data:", data);
+
           if (
             state.setMaintenanceMode &&
             typeof state.setMaintenanceMode === "function"
           ) {
             if (data.maintenance !== state.maintenanceMode) {
+              console.log("[STORE REHYDRATE] Updating maintenance mode:", {
+                from: state.maintenanceMode,
+                to: Boolean(data.maintenance)
+              });
               state.setMaintenanceMode(Boolean(data.maintenance));
             }
           }
+        } else {
+          console.warn("[STORE REHYDRATE] Unexpected response status:", response.status);
         }
       } catch (error) {
-        // const errorMessage = error instanceof Error ? error.message : String(error);
-        // console.log(`[STORE REHYDRATE ERROR] Failed to verify maintenance mode on init: ${errorMessage}`, error); 
-        // SILENCE THIS CATCH BLOCK FOR NOW to avoid issues with console object being unavailable/broken by clientLogForwarder
-        // The error (e.g. CORS, server down) will still be visible in the network tab or as a general fetch failure if not caught elsewhere.
+        const errorDetails = {
+          message: error instanceof Error ? error.message : String(error),
+          name: error instanceof Error ? error.name : 'Unknown',
+          stack: error instanceof Error ? error.stack : undefined,
+          apiUrl: API_URL,
+          timestamp: new Date().toISOString(),
+          networkOnline: typeof navigator !== 'undefined' ? navigator.onLine : 'Unknown'
+        };
+
+        console.error("[STORE REHYDRATE ERROR] Failed to verify maintenance mode on init:", errorDetails);
+
+        // Provide specific guidance for network errors
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          console.error("[STORE REHYDRATE] Network error detected. Check:", [
+            "1. Backend server status",
+            "2. API endpoint availability",
+            "3. Network connectivity",
+            "4. CORS configuration"
+          ]);
+        }
       }
     };
   }

@@ -15,9 +15,9 @@
 import { motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ConnectWalletButton } from "../../../components/auth/ConnectWalletButton";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
+import { AllowedTokensGrid } from "../../../components/contest-detail/AllowedTokensGrid";
 import { ChallengeBadge } from "../../../components/contest-detail/ChallengeBadge";
 import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
 import { PrizeStructure } from "../../../components/contest-detail/PrizeStructure";
@@ -28,11 +28,12 @@ import { CountdownTimer } from "../../../components/ui/CountdownTimer";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestLifecycle } from "../../../hooks/websocket/topic-hooks/useContestLifecycle";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
+import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/useContestParticipants";
 import { getContestImageUrl } from "../../../lib/imageUtils";
 import {
-    formatCurrency,
-    isContestCurrentlyUnderway,
-    mapContestStatus,
+  formatCurrency,
+  isContestCurrentlyUnderway,
+  mapContestStatus,
 } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import type { Contest as BaseContest, ContestViewData } from "../../../types/index";
@@ -64,16 +65,27 @@ interface ContestParticipant {
   };
 }
 
-// TODO: move elsewhere
-interface Participant {
+// Legacy Participant interface - will be replaced by unified API
+interface LegacyParticipant {
   address: string;
   nickname: string;
   score?: number;
 }
 
+// Transform legacy participant to new format
+const transformLegacyParticipant = (participant: LegacyParticipant): any => ({
+  wallet_address: participant.address,
+  nickname: participant.nickname,
+  profile_image_url: null,
+  performance_percentage: participant.score?.toString(),
+  is_current_user: false,
+  is_ai_agent: false,
+  is_banned: false
+});
+
 // TODO: move elsewhere
 type Contest = Omit<BaseContest, "participants"> & {
-  participants?: Participant[];
+  participants?: LegacyParticipant[];
   max_prize_pool: number;
 };
 
@@ -87,7 +99,6 @@ export const ContestDetails: React.FC = () => {
   const { user, isAuthenticated } = useMigratedAuth();
   const [isParticipating, setIsParticipating] = useState<boolean>(false);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
-  const [showWalletConnect, setShowWalletConnect] = useState(false);
   
   // Image loading states
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -100,10 +111,6 @@ export const ContestDetails: React.FC = () => {
   // Ref to the header element for tracking relative mouse position
   const headerRef = useRef<HTMLDivElement>(null);
 
-  // Add a computed state for wallet connection
-  const isWalletConnected = React.useMemo(() => {
-    return isAuthenticated && !!user?.wallet_address;
-  }, [isAuthenticated, user]);
 
   // Determine contestDisplayStatus - Similar to what ContestCard does
   const getDisplayStatus = React.useMemo(() => {
@@ -190,6 +197,13 @@ export const ContestDetails: React.FC = () => {
     }
   }, [wsError]);
 
+  // Real-time participants updates using new unified API
+  const {
+    participants: realtimeParticipants
+  } = useContestParticipants(
+    id ? parseInt(id) : null
+  );
+
   useEffect(() => {
     console.log("Wallet State:", {
       isConnected: isAuthenticated,
@@ -233,6 +247,19 @@ export const ContestDetails: React.FC = () => {
         raw_data: data,
       });
 
+      // Try to fetch enhanced participant data from the new unified endpoint
+      let enhancedParticipants = [];
+      try {
+        const participantsResponse = await fetch(`/api/contests/${id}/participants`);
+        if (participantsResponse.ok) {
+          const participantsData = await participantsResponse.json();
+          enhancedParticipants = participantsData.participants || [];
+          console.log("Enhanced participants from unified API:", enhancedParticipants);
+        }
+      } catch (participantsError) {
+        console.log("Enhanced participants API not available, using legacy data:", participantsError);
+      }
+
       // Ensure settings are properly initialized
       const sanitizedContest = {
         ...data,
@@ -257,7 +284,7 @@ export const ContestDetails: React.FC = () => {
         },
         participants: Array.isArray(data.contest_participants)
           ? data.contest_participants.map(
-              (p: ContestParticipant): Participant => {
+              (p: ContestParticipant): LegacyParticipant => {
                 // Extract address from participant and users object  
                 const address = p.wallet_address || "";
                 // Extract nickname from nested users object (API structure: contest_participants[].users)
@@ -328,12 +355,6 @@ export const ContestDetails: React.FC = () => {
     };
   }, [id, user]);
 
-  // Hide wallet connect modal when user becomes authenticated
-  useEffect(() => {
-    if (isAuthenticated && showWalletConnect) {
-      setShowWalletConnect(false);
-    }
-  }, [isAuthenticated, showWalletConnect]);
 
   // Setup OG meta tags when contest data is loaded
   useEffect(() => {
@@ -382,9 +403,8 @@ export const ContestDetails: React.FC = () => {
   };
 
   const handleJoinContest = () => {
-    console.log("Duel Action Button Clicked - Initial State:", {
-      isWalletConnected,
-      isConnected: isAuthenticated,
+    console.log("Contest Action Button Clicked - Initial State:", {
+      isAuthenticated,
       walletAddress: user?.wallet_address,
       isParticipating,
       contestId: contest?.id,
@@ -392,7 +412,7 @@ export const ContestDetails: React.FC = () => {
     });
 
     if (!contest) {
-      console.log("No data available on this duel. Please try again later.");
+      console.log("No contest data available. Please try again later.");
       return;
     }
 
@@ -406,14 +426,6 @@ export const ContestDetails: React.FC = () => {
 
     // Get contest status for logic branching
     const contestStatus = hasEnded ? "ended" : hasStarted ? "live" : "upcoming";
-
-    // Not connected to wallet - trigger wallet connection flow
-    if (!isAuthenticated) {
-      console.log("User not authenticated, showing wallet connection options");
-      setShowWalletConnect(true);
-      setError(null); // Clear any previous errors
-      return;
-    }
 
     // User is already participating - determine where to navigate based on contest status
     if (isParticipating) {
@@ -429,9 +441,7 @@ export const ContestDetails: React.FC = () => {
         return;
       } else {
         // For upcoming contests, allow portfolio modification
-        console.log(
-          "Navigating to portfolio token selection page for modification",
-        );
+        console.log("Navigating to portfolio token selection page for modification");
         navigate(`/contests/${contest.id}/select-tokens`);
         return;
       }
@@ -444,15 +454,12 @@ export const ContestDetails: React.FC = () => {
       return;
     } else if (contestStatus === "live") {
       // Contest is in progress, can't join
-      setError(
-        "This contest is already in progress and not accepting new entries.",
-      );
+      setError("This contest is already in progress and not accepting new entries.");
       return;
     } else {
-      // Contest is upcoming, allow joining
-      console.log("Navigating to portfolio token selection page:", {
+      // Contest is upcoming - DIRECT NAVIGATION to portfolio selection (no auth required!)
+      console.log("Navigating directly to portfolio selection page:", {
         contestId: contest.id,
-        userAddress: user?.wallet_address,
         timestamp: new Date().toISOString(),
       });
       navigate(`/contests/${contest.id}/select-tokens`);
@@ -460,16 +467,11 @@ export const ContestDetails: React.FC = () => {
     }
   };
 
-  // Button label based on wallet connection and contest status
+  // Button label based on contest status and participation
   const getButtonLabel = () => {
     const displayStatus = getDisplayStatus;
-    
-    // Not connected - always show connect wallet
-    if (!isWalletConnected) {
-      return "Connect Wallet to Enter";
-    }
 
-    // Connected and participating
+    // User is participating
     if (isParticipating) {
       if (displayStatus === "completed") {
         return "View Results";
@@ -482,13 +484,13 @@ export const ContestDetails: React.FC = () => {
       }
     }
 
-    // Connected but not participating
+    // User is not participating
     if (displayStatus === "completed" || displayStatus === "active") {
       return displayStatus === "completed" ? "Contest Ended" : "Contest in Progress";
     } else if (displayStatus === "cancelled") {
       return "View Details";
     } else {
-      return "Select Your Portfolio";
+      return "Enter Contest";
     }
   };
 
@@ -574,6 +576,20 @@ export const ContestDetails: React.FC = () => {
     );
   }
 
+  // Double-check contest exists before rendering
+  if (!contest) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            <span className="relative z-10">Contest not found</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Variable for the display status (pending, active, completed, cancelled)
   const displayStatus = getDisplayStatus;
 
@@ -603,11 +619,11 @@ export const ContestDetails: React.FC = () => {
             onMouseMove={handleMouseMove}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            className="relative overflow-hidden rounded-lg mb-8"
+            className="relative rounded-lg mb-8"
           >
             {/* Contest Image with Parallax Effect */}
             {getContestImageUrl(contest.image_url) && (
-              <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute inset-0 overflow-hidden rounded-lg">
                 {/* Loading state */}
                 {!imageLoaded && !imageError && (
                   <div className="absolute inset-0 flex items-center justify-center bg-dark-300/70 z-10">
@@ -627,7 +643,7 @@ export const ContestDetails: React.FC = () => {
                       width: "100%",
                       height: "100%",
                       transform: isHovering ? 
-                        `scale(1.05) translateX(${mousePosition.x * 5}px) translateY(${mousePosition.y * 5}px)` : 
+                        `scale(1.08) translateX(${mousePosition.x * 15}px) translateY(${mousePosition.y * 10}px)` : 
                         "scale(1.02)",
                       transition: "transform 0.3s ease-out"
                     }}
@@ -653,7 +669,7 @@ export const ContestDetails: React.FC = () => {
             )}
             
             {/* Banner Content */}
-            <div className="relative z-10 p-4 sm:p-6 md:p-8 min-h-[280px] flex flex-col justify-end">
+            <div className="relative z-20 p-4 sm:p-6 md:p-8 min-h-[280px] flex flex-col justify-end">
               {/* Status Badge - Top Right */}
               <div className="absolute top-4 right-4">
                 {/* Different badge styles based on contest status */}
@@ -711,134 +727,88 @@ export const ContestDetails: React.FC = () => {
                 )}
               </div>
               
-              {/* Contest Title and Description - Enhanced */}
-              <div className="space-y-4 max-w-4xl">
-                <div className="relative">
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 animate-gradient-x leading-tight">
-                    {contest.name}
-                  </h1>
-                  {/* Subtle glow effect */}
-                  <div className="absolute inset-0 text-3xl sm:text-4xl lg:text-5xl font-bold text-brand-400/20 blur-sm -z-10">
-                    {contest.name}
-                  </div>
-                </div>
-                <p className="text-base sm:text-lg text-gray-200 leading-relaxed backdrop-blur-sm bg-dark-200/20 rounded-lg p-4 border-l-4 border-brand-400/30">
-                  {contest.description}
-                </p>
-                
-                {/* Enhanced Countdown Timer with status indicator */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-6">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${
-                      displayStatus === "active" ? "bg-green-400 animate-pulse" :
-                      displayStatus === "pending" ? "bg-blue-400 animate-pulse" :
-                      displayStatus === "cancelled" ? "bg-red-400" : "bg-gray-400"
-                    }`} />
-                    <span className="text-sm font-medium text-gray-300">
-                      {displayStatus === "active" ? "Ends in:" : 
-                      displayStatus === "pending" ? "Starts in:" : 
-                      displayStatus === "cancelled" ? "Cancelled:" : "Ended:"}
-                    </span>
+              {/* Contest Header Content - Better Layout */}
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 max-w-full">
+                {/* Left Section - Title, Description, Timer */}
+                <div className="flex-1 space-y-4">
+                  {/* Title and Description */}
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-100 mb-2">
+                      {contest.name}
+                    </h1>
+                    <p className="text-gray-400 max-w-2xl">
+                      {contest.description}
+                    </p>
                   </div>
                   
-                  <div className="bg-dark-200/40 backdrop-blur-sm rounded-xl px-4 py-3 border border-brand-400/20">
-                    {displayStatus === "cancelled" ? (
-                      <span className="line-through text-red-400 text-lg font-medium italic">
-                        {new Date(contest.end_time).toLocaleDateString()}
-                      </span>
-                    ) : displayStatus !== "completed" ? (
-                      <div className="text-2xl sm:text-xl font-bold text-brand-400">
-                        <CountdownTimer
-                          targetDate={displayStatus === "active" ? contest.end_time : contest.start_time}
-                          onComplete={handleCountdownComplete}
-                          showSeconds={true}
-                        />
+                  {/* Timer Section - More prominent */}
+                  <div className="bg-dark-300/30 backdrop-blur-sm rounded-lg p-4 inline-block border border-dark-200">
+                    <div className="flex items-center gap-4">
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                          {displayStatus === "active" ? "Ends in" : 
+                          displayStatus === "pending" ? "Starts in" : 
+                          displayStatus === "cancelled" ? "Cancelled" : "Ended"}
+                        </div>
+                        {displayStatus === "cancelled" ? (
+                          <span className="line-through text-red-400 text-xl font-semibold">
+                            {new Date(contest.end_time).toLocaleDateString()}
+                          </span>
+                        ) : displayStatus !== "completed" ? (
+                          <div className="text-2xl font-bold text-gray-100">
+                            <CountdownTimer
+                              targetDate={displayStatus === "active" ? contest.end_time : contest.start_time}
+                              onComplete={handleCountdownComplete}
+                              showSeconds={false}
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-xl font-semibold text-gray-400">
+                            {new Date(contest.end_time).toLocaleDateString()}
+                          </span>
+                        )}
                       </div>
-                    ) : (
-                      <span className="text-xl font-bold text-gray-500">
-                        {new Date(contest.end_time).toLocaleDateString()}
-                      </span>
-                    )}
+                    </div>
                   </div>
                 </div>
                 
-                {/* Contest Action Button - Moved here for better UX */}
-                <div className="mt-6">
-                  <div className="max-w-md">
+                {/* Right Section - Actions */}
+                <div className="flex flex-col items-start lg:items-end gap-3">
+                  {/* Action buttons grouped together */}
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                     <button
                       onClick={handleJoinContest}
-                      disabled={isWalletConnected && (displayStatus !== "pending" && !isParticipating)}
-                      className={`w-full relative group overflow-hidden text-lg py-4 px-6 shadow-xl transition-all duration-300 rounded-xl ${
-                        isWalletConnected && (displayStatus !== "pending" && !isParticipating)
-                          ? "bg-gradient-to-r from-gray-600/40 to-gray-700/40 border-2 border-gray-500/30 text-gray-400 cursor-not-allowed"
-                          : !isWalletConnected
-                          ? "bg-gradient-to-r from-blue-500 to-blue-600 border-2 border-blue-400/50 text-white hover:from-blue-400 hover:to-blue-500 hover:border-blue-300 hover:shadow-blue-500/30"
-                          : displayStatus === "pending" && !isParticipating
-                          ? "bg-gradient-to-r from-brand-500 to-brand-600 border-2 border-brand-400/50 text-white hover:from-brand-400 hover:to-brand-500 hover:border-brand-300 hover:shadow-brand-500/30"
-                          : "bg-gradient-to-r from-emerald-500 to-emerald-600 border-2 border-emerald-400/50 text-white hover:from-emerald-400 hover:to-emerald-500 hover:border-emerald-300"
+                      disabled={displayStatus === "completed" || displayStatus === "cancelled"}
+                      className={`px-8 py-3 font-medium rounded-lg transition-all text-center ${
+                        displayStatus === "completed" || displayStatus === "cancelled"
+                          ? "bg-dark-400 text-gray-500 cursor-not-allowed"
+                          : isParticipating
+                          ? "bg-dark-300 hover:bg-dark-200 text-brand-400"
+                          : "bg-brand-500 hover:bg-brand-600 text-white"
                       }`}
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/8 via-white/4 to-white/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <span className="relative flex items-center justify-center gap-3">
-                        <span className="font-semibold">{getButtonLabel()}</span>
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                      </span>
+                      {getButtonLabel()}
                     </button>
                     
-                    {error && (
-                      <div className="mt-3 text-sm text-red-400 text-center animate-glitch bg-dark-100/90 rounded-lg py-2 px-3 border border-red-500/30 backdrop-blur-sm">
-                        {error}
-                      </div>
-                    )}
-                    
-                    {/* Wallet Connection Modal */}
-                    {showWalletConnect && (
-                      <div className="mt-4 p-4 bg-dark-200/90 backdrop-blur-sm border border-brand-400/30 rounded-lg">
-                        <div className="text-center mb-3">
-                          <h3 className="text-lg font-semibold text-brand-400 mb-1">Connect Your Wallet</h3>
-                          <p className="text-sm text-gray-400">Choose a wallet to connect and join the contest</p>
-                        </div>
-                        
-                        <ConnectWalletButton
-                          className="w-full mb-3"
-                          onSuccess={() => {
-                            setShowWalletConnect(false);
-                            // After successful connection, user can join the contest
-                            setTimeout(() => {
-                              handleJoinContest();
-                            }, 500);
-                          }}
-                          onError={(error) => {
-                            setError(error.message);
-                            setShowWalletConnect(false);
-                          }}
+                    {/* Share Contest Button - Inline with Enter button */}
+                    {displayStatus !== "cancelled" && displayStatus !== "completed" && (contest as any)?.contest_type !== "CHALLENGE" && contest && (
+                      <SilentErrorBoundary>
+                        <ShareContestButton
+                          contestId={contest.id.toString()}
+                          contestName={contest.name}
+                          prizePool={contest.total_prize_pool || contest.prize_pool || "0"}
                         />
-                        
-                        <button
-                          onClick={() => setShowWalletConnect(false)}
-                          className="w-full text-sm text-gray-400 hover:text-gray-300 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+                      </SilentErrorBoundary>
                     )}
                   </div>
+                  
+                  {/* Error message if any */}
+                  {error && (
+                    <div className="text-sm text-red-400 text-center animate-glitch bg-dark-100/90 rounded-lg py-2 px-3 border border-red-500/30 backdrop-blur-sm max-w-xs">
+                      {error}
+                    </div>
+                  )}
                 </div>
-                
-                {/* Share Contest Button - Desktop Only - Hide for cancelled/completed/challenge contests */}
-                {displayStatus !== "cancelled" && displayStatus !== "completed" && (contest as any)?.contest_type !== "CHALLENGE" && (
-                  <div className="hidden md:flex mt-4">
-                    <SilentErrorBoundary>
-                      <ShareContestButton
-                        contestId={contest.id.toString()}
-                        contestName={contest.name}
-                        prizePool={contest.total_prize_pool || contest.prize_pool || "0"}
-                      />
-                    </SilentErrorBoundary>
-                  </div>
-                )}
               </div>
               
               {/* Cancellation Overlay */}
@@ -905,169 +875,189 @@ export const ContestDetails: React.FC = () => {
             </div>
           )}
 
-          {/* Contest Stats - Consolidated */}
+          {/* Contest Stats - Enhanced Design */}
           <div className="mb-8">
-            <div className={`group relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30 hover:border-brand-400/50"} transition-all duration-300 overflow-hidden`}>
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="p-6 relative">
-                <h3 className="text-xl font-bold text-gray-100 mb-6">Contest Details</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Entry Fee */}
-                  <div className="text-center md:text-left">
-                    <span className={`block text-sm font-medium ${displayStatus === "cancelled" ? "text-gray-500" : "text-gray-400"} mb-2`}>
-                      Entry Fee
-                    </span>
-                    <div className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600"}`}>
+            {/* Main Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* Entry Fee Card */}
+              <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-dark-200/90 to-dark-300/90 backdrop-blur-sm border border-dark-100/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 bg-green-500/20 rounded-lg">
+                      <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <span className="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">Entry</span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-400 uppercase tracking-wide">Entry Fee</p>
+                    <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-white"}`}>
                       {formatCurrency(Number(contest.entry_fee))}
-                    </div>
-                    <div className="mt-1 text-xs text-gray-500">
-                      per participant
-                    </div>
+                    </p>
+                    <p className="text-xs text-gray-500">Per participant</p>
                   </div>
-                  
-                  {/* Prize Pool */}
-                  <div className="text-center md:text-left">
-                    <span className={`block text-sm font-medium ${displayStatus === "cancelled" ? "text-gray-500" : "text-gray-400"} mb-2`}>
-                      Current Prize Pool
-                    </span>
-                    <div className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600"}`}>
+                </div>
+              </div>
+
+              {/* Prize Pool Card */}
+              <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-dark-200/90 to-dark-300/90 backdrop-blur-sm border border-dark-100/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 bg-brand-500/20 rounded-lg">
+                      <svg className="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                      </svg>
+                    </div>
+                    <span className="text-xs text-brand-400 bg-brand-400/10 px-2 py-1 rounded-full">Prize</span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-400 uppercase tracking-wide">Total Prize Pool</p>
+                    <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent"}`}>
                       {formatCurrency(Number(contest.total_prize_pool || contest.prize_pool || "0"))}
-                    </div>
-                    <div className="mt-1 text-xs text-gray-500">
-                      grows with participation
-                    </div>
+                    </p>
+                    <p className="text-xs text-gray-500">Grows with entries</p>
                   </div>
-                  
-                  {/* Participants */}
-                  <div className="text-center md:text-left">
-                    <span className={`block text-sm font-medium ${displayStatus === "cancelled" ? "text-gray-500" : "text-gray-400"} mb-2`}>
-                      Participants
-                    </span>
-                    <div className="flex items-center justify-center md:justify-start gap-3">
-                      <div className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600"}`}>
+                </div>
+              </div>
+
+              {/* Participants Card */}
+              <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-dark-200/90 to-dark-300/90 backdrop-blur-sm border border-dark-100/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative p-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2 bg-purple-500/20 rounded-lg">
+                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <span className="text-xs text-purple-400 bg-purple-400/10 px-2 py-1 rounded-full">Live</span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-400 uppercase tracking-wide">Participants</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-white"}`}>
                         {contest.participant_count}
-                      </div>
-                      <div className="flex flex-col items-start">
-                        <div className="w-16 h-1.5 bg-dark-300 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full ${displayStatus === "cancelled" ? "bg-gray-500/50" : "bg-gradient-to-r from-brand-400 to-brand-600"} transition-all duration-300`}
-                            style={{
-                              width: `${Math.min((contest.participant_count / contest.max_participants) * 100, 100)}%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-500 mt-0.5">
-                          of {contest.max_participants}
-                        </span>
-                      </div>
+                      </p>
+                      <p className="text-sm text-gray-500">/ {contest.max_participants}</p>
                     </div>
+                    {/* Progress Bar */}
+                    <div className="mt-2 w-full h-2 bg-dark-400 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${displayStatus === "cancelled" ? "bg-gray-500/50" : "bg-gradient-to-r from-purple-400 to-purple-600"} transition-all duration-500`}
+                        style={{
+                          width: `${Math.min((contest.participant_count / contest.max_participants) * 100, 100)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Contest Info Bar */}
+            <div className="bg-dark-300/30 backdrop-blur-sm rounded-lg border border-dark-200/50 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-6 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">Duration:</span>
+                    <span className="text-gray-300 font-medium">
+                      {Math.round((new Date(contest.end_time).getTime() - new Date(contest.start_time).getTime()) / (1000 * 60 * 60))} hours
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">Format:</span>
+                    <span className="text-gray-300 font-medium">
+                      {(contest as any)?.contest_type === "CHALLENGE" ? "1v1 Challenge" : "Public Contest"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">Winners:</span>
+                    <span className="text-gray-300 font-medium">Top 3 Players</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Rules & Tokens Section - Mobile Only */}
-          <div className="mb-8 lg:hidden">
-            <div className={`group relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6`}>
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <h3 className="text-xl font-bold text-gray-100 mb-4">Contest Rules & Tokens</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <span className="text-sm font-medium text-brand-400 block mb-2">Rules:</span>
-                  <p className="text-gray-400">Standard DegenDuel trading rules apply</p>
-                </div>
-                
-                <div>
-                  <span className="text-sm font-medium text-brand-400 block mb-2">Allowed Tokens:</span>
-                  {contest?.settings?.tokenTypesAllowed && contest.settings.tokenTypesAllowed.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {contest.settings.tokenTypesAllowed.map((token: string) => (
-                        <span
-                          key={token}
-                          className="px-3 py-1.5 bg-dark-300/50 text-sm text-gray-300 border border-brand-400/30 rounded-md"
-                        >
-                          {token}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400">All tokens available for selection</p>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            {/* Mobile share button - Hide for cancelled/completed/challenge contests */}
-            {displayStatus !== "cancelled" && displayStatus !== "completed" && (contest as any)?.contest_type !== "CHALLENGE" && (
-              <div className="mb-8 md:hidden">
-                <SilentErrorBoundary>
-                  <ShareContestButton
-                    contestId={contest.id.toString()}
-                    contestName={contest.name}
-                    prizePool={contest.total_prize_pool || contest.prize_pool || "0"}
-                    className="w-full"
-                  />
-                </SilentErrorBoundary>
-              </div>
-            )}
-          </div>
 
-          {/* Content Grid - Simplified */}
+          {/* Content Grid - Better Balanced Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Rules and Tokens */}
+            {/* Left Column - Participants & Rules */}
             <div className="space-y-8">
-              {/* Rules Section */}
-              <div className={`group relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6`}>
-                <div className="absolute inset-0 bg-gradient-to-br from-brand-400/5 via-transparent to-brand-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-100">
-                    Rules & Token Whitelist
-                  </h3>
-                  <span className="text-xs text-gray-400 bg-dark-300/50 px-2 py-1 rounded">
-                    Contest Parameters
-                  </span>
+              {/* Participants Section - Moved to Left */}
+              {(realtimeParticipants.length > 0 || (Array.isArray(contest.participants) && contest.participants.length > 0)) ? (
+                <div className="group relative">
+                  <SilentErrorBoundary>
+                    <ParticipantsList
+                      participants={realtimeParticipants.length > 0 
+                        ? realtimeParticipants 
+                        : (contest.participants || []).map(transformLegacyParticipant)
+                      }
+                      contestStatus={mapContestStatus(contest.status)}
+                    />
+                  </SilentErrorBoundary>
                 </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <span className="text-sm font-medium text-brand-400 block mb-2">Rules:</span>
-                    <p className="text-gray-400">Standard DegenDuel trading rules apply</p>
-                  </div>
-                  
-                  <div>
-                    <span className="text-sm font-medium text-brand-400 block mb-2">Allowed Tokens:</span>
-                    {contest?.settings?.tokenTypesAllowed && contest.settings.tokenTypesAllowed.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {contest.settings.tokenTypesAllowed.map((token: string) => (
-                          <span
-                            key={token}
-                            className="px-3 py-1.5 bg-dark-300/50 text-sm text-gray-300 border border-brand-400/30 rounded-md"
-                          >
-                            {token}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-400">All tokens available for selection</p>
-                    )}
+              ) : Number(contest.participant_count) > 0 ? (
+                <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-dark-200/90 to-dark-300/90 backdrop-blur-sm border border-dark-100/20">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative p-6">
+                    <h3 className="text-xl font-bold text-gray-100 mb-4">Participants ({contest.participant_count})</h3>
+                    <p className="text-gray-400">
+                      {isParticipating 
+                        ? "You and other participants are competing in this contest." 
+                        : `${contest.participant_count} ${contest.participant_count === 1 ? 'dueler has' : 'duelers have'} entered this contest.`}
+                    </p>
+                    <p className="text-gray-500 text-sm mt-2">
+                      Participant details will be visible once the contest starts.
+                    </p>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Right Column - Prize Distribution & Participants */}
-            <div className="space-y-8">
-              {/* Referral Progress Card - Only show for pending public contests */}
-              {displayStatus === "pending" && (contest as any)?.contest_type !== "CHALLENGE" && (
-                <SilentErrorBoundary>
-                  <ReferralProgressCard />
-                </SilentErrorBoundary>
+              ) : (
+                <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-dark-200/90 to-dark-300/90 backdrop-blur-sm border border-dark-100/20">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative p-6">
+                    <h3 className="text-xl font-bold text-gray-100 mb-4">Participants</h3>
+                    <p className="text-gray-400">No participants yet. Be the first to join!</p>
+                  </div>
+                </div>
               )}
               
+              {/* Rules Section - Updated Style */}
+              <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-dark-200/90 to-dark-300/90 backdrop-blur-sm border border-dark-100/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-gray-100">
+                      Rules & Token Whitelist
+                    </h3>
+                    <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded-full">
+                      Contest Parameters
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-sm font-medium text-blue-400 block mb-2">Rules:</span>
+                      <p className="text-gray-400">Standard DegenDuel trading rules apply</p>
+                    </div>
+                    
+                    <div>
+                      <span className="text-sm font-medium text-blue-400 block mb-3">Allowed Tokens:</span>
+                      <AllowedTokensGrid
+                        maxInitialDisplay={8}
+                        className="mb-2"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Prize & Referral */}
+            <div className="space-y-8">
               {/* Prize Distribution */}
               <div className="group relative">
                 <SilentErrorBoundary>
@@ -1076,37 +1066,20 @@ export const ContestDetails: React.FC = () => {
                     entryFee={Number(contest?.entry_fee || 0)}
                     maxParticipants={Number(contest?.max_participants || 0)}
                     currentParticipants={Number(contest?.participant_count || 0)}
-                    platformFeePercentage={5}
+                    contestType={(contest as any)?.contest_type}
                   />
                 </SilentErrorBoundary>
               </div>
-
-              {/* Participants List */}
-              {Array.isArray(contest.participants) && contest.participants.length > 0 ? (
-                <div className="group relative">
-                  <SilentErrorBoundary>
-                    <ParticipantsList
-                      participants={contest.participants}
-                      contestStatus={mapContestStatus(contest.status)}
-                    />
-                  </SilentErrorBoundary>
-                </div>
-              ) : Number(contest.participant_count) > 0 ? (
-                <div className={`relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6`}>
-                  <h3 className="text-xl font-bold text-gray-100 mb-4">Participants ({contest.participant_count})</h3>
-                  <p className="text-gray-400">
-                    {isParticipating 
-                      ? "You and other participants are competing in this contest." 
-                      : `${contest.participant_count} ${contest.participant_count === 1 ? 'dueler has' : 'duelers have'} entered this contest.`}
-                  </p>
-                  <p className="text-gray-500 text-sm mt-2">
-                    Participant details will be visible once the contest starts.
-                  </p>
-                </div>
-              ) : (
-                <div className={`relative bg-dark-200/80 backdrop-blur-sm border-l-2 ${displayStatus === "cancelled" ? "border-red-500/30" : "border-brand-400/30"} p-6`}>
-                  <h3 className="text-xl font-bold text-gray-100 mb-4">Participants</h3>
-                  <p className="text-gray-400">No participants yet. Be the first to join!</p>
+              
+              {/* Referral Progress Card - Updated Style */}
+              {displayStatus === "pending" && (contest as any)?.contest_type !== "CHALLENGE" && (
+                <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-dark-200/90 to-dark-300/90 backdrop-blur-sm border border-dark-100/20">
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative">
+                    <SilentErrorBoundary>
+                      <ReferralProgressCard className="!bg-transparent !border-0 !p-6" />
+                    </SilentErrorBoundary>
+                  </div>
                 </div>
               )}
             </div>

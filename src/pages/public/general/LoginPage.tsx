@@ -13,7 +13,7 @@ import { motion } from "framer-motion";
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { SimpleWalletButton, SocialAuthPanel } from "../../../components/auth";
+import { SimpleWalletButton, TwitterLoginButton, DiscordLoginButton, TelegramLoginButton, BiometricAuthButton } from "../../../components/auth";
 import Logo from "../../../components/ui/Logo";
 import { authDebug } from "../../../config/config";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
@@ -158,32 +158,76 @@ const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Alternative Methods - Elegant Secondary Treatment */}
+          {/* Alternative Login Methods */}
           <div className="relative">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-500/10 to-gray-500/10 rounded-xl opacity-50"></div>
             <div className="relative bg-gray-800/50 backdrop-blur-xl border border-gray-600/30 rounded-xl p-6 shadow-xl">
               <div className="text-center mb-6">
-                <h4 className="text-lg font-medium text-gray-200 mb-2">Alternative Login Methods</h4>
-                <p className="text-gray-500 text-sm">Quick access with social accounts or passkeys</p>
+                <h3 className="text-lg font-semibold text-white mb-2">Alternative Login Methods</h3>
+                <p className="text-gray-400 text-sm">Connect using your preferred social platform</p>
               </div>
               
-              {/* Enhanced social auth panel */}
-              <div className="space-y-1">
-                <SocialAuthPanel 
-                  mode="login" 
-                  layout="vertical"
-                  className="[&>div]:relative [&>div>button]:w-full [&>div>button]:py-4 [&>div>button]:rounded-lg [&>div>button]:font-medium [&>div>button]:transition-all [&>div>button]:duration-300 [&>div>button]:border [&>div>button]:border-transparent [&>div>button]:shadow-lg [&>div>button]:hover:scale-[1.02] [&>div>button]:hover:shadow-xl
-                  
-                  [&>div:nth-child(1)>button]:bg-[#1DA1F2] [&>div:nth-child(1)>button]:hover:bg-[#1a8cd8] [&>div:nth-child(1)>button]:hover:shadow-blue-500/25 [&>div:nth-child(1)>button]:text-white
-                  
-                  [&>div:nth-child(2)>button]:bg-[#5865F2] [&>div:nth-child(2)>button]:hover:bg-[#4752c4] [&>div:nth-child(2)>button]:hover:shadow-indigo-500/25 [&>div:nth-child(2)>button]:text-white
-                  
-                  [&>div:nth-child(3)>button]:bg-gradient-to-r [&>div:nth-child(3)>button]:from-emerald-600 [&>div:nth-child(3)>button]:to-teal-600 [&>div:nth-child(3)>button]:hover:from-emerald-500 [&>div:nth-child(3)>button]:hover:to-teal-500 [&>div:nth-child(3)>button]:hover:shadow-emerald-500/25 [&>div:nth-child(3)>button]:text-white"
-                  onComplete={() => {
-                    const storedPath = localStorage.getItem("auth_redirect_path");
-                    navigate(storedPath || "/");
-                  }}
-                />
+              {/* Login Methods Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Twitter/X Login */}
+                <div className="relative group">
+                  <div className="w-full aspect-square rounded-lg bg-gray-800/60 border border-gray-600/40 hover:bg-gray-700/60 hover:border-gray-500/50 transition-all duration-200 overflow-hidden">
+                    <TwitterLoginButton 
+                      linkMode={false}
+                      className="w-full h-full p-0 bg-transparent hover:bg-transparent border-transparent flex flex-col items-center justify-center gap-2 [&>svg]:w-6 [&>svg]:h-6"
+                    />
+                  </div>
+                  <div className="text-center mt-2">
+                    <span className="text-xs text-gray-400">X (Twitter)</span>
+                  </div>
+                </div>
+
+                {/* Discord Login */}
+                <div className="relative group">
+                  <div className="w-full aspect-square rounded-lg bg-[#5865F2]/10 border border-[#5865F2]/20 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/40 transition-all duration-200 overflow-hidden">
+                    <DiscordLoginButton 
+                      linkMode={false}
+                      className="w-full h-full p-0 bg-transparent hover:bg-transparent border-transparent flex flex-col items-center justify-center gap-2 [&>svg]:w-6 [&>svg]:h-6"
+                    />
+                  </div>
+                  <div className="text-center mt-2">
+                    <span className="text-xs text-gray-400">Discord</span>
+                  </div>
+                </div>
+
+                {/* Telegram Login */}
+                <div className="relative group">
+                  <div className="w-full aspect-square rounded-lg bg-[#0088cc]/10 border border-[#0088cc]/20 hover:bg-[#0088cc]/20 hover:border-[#0088cc]/40 transition-all duration-200 overflow-hidden">
+                    <TelegramLoginButton 
+                      linkMode={false}
+                      className="w-full h-full p-0 bg-transparent hover:bg-transparent border-transparent flex flex-col items-center justify-center gap-2 [&>svg]:w-6 [&>svg]:h-6"
+                    />
+                  </div>
+                  <div className="text-center mt-2">
+                    <span className="text-xs text-gray-400">Telegram</span>
+                  </div>
+                </div>
+
+                {/* Passkey Login */}
+                <div className="relative group">
+                  <div className="w-full aspect-square rounded-lg bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 hover:border-purple-500/40 transition-all duration-200 overflow-hidden">
+                    <BiometricAuthButton 
+                      mode="authenticate"
+                      buttonStyle="icon-only"
+                      className="w-full h-full p-0 bg-transparent hover:bg-transparent border-transparent flex flex-col items-center justify-center gap-2 [&>svg]:w-6 [&>svg]:h-6"
+                    />
+                  </div>
+                  <div className="text-center mt-2">
+                    <span className="text-xs text-gray-400">Passkey</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Note about wallet linking */}
+              <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <p className="text-xs text-blue-200 text-center">
+                  💡 After social login, you'll need to connect a wallet for full trading features
+                </p>
               </div>
             </div>
           </div>

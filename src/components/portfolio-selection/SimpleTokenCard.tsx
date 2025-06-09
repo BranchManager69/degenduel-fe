@@ -1,5 +1,5 @@
 import React from "react";
-import { Token } from "../../types";
+import { Token, TokenHelpers } from "../../types";
 import { formatNumber, formatTokenPrice } from "../../utils/format";
 
 interface SimpleTokenCardProps {
@@ -86,7 +86,7 @@ export const SimpleTokenCard: React.FC<SimpleTokenCardProps> = ({
           {/* Right: Price and change */}
           <div className="text-right flex-shrink-0">
             <div className="text-white font-medium">
-              {formatTokenPrice(token.price)}
+              {formatTokenPrice(TokenHelpers.getPrice(token))}
             </div>
             <div className={`text-sm ${changeColor} flex items-center justify-end gap-1`}>
               <span>{changeIcon}</span>
@@ -100,13 +100,13 @@ export const SimpleTokenCard: React.FC<SimpleTokenCardProps> = ({
           <div>
             <div className="text-xs text-gray-500">Market Cap</div>
             <div className="text-sm text-gray-300">
-              ${formatNumber(token.market_cap || token.marketCap, 'short')}
+              ${formatNumber(TokenHelpers.getMarketCap(token), 'short')}
             </div>
           </div>
           <div>
             <div className="text-xs text-gray-500">24h Volume</div>
             <div className="text-sm text-gray-300">
-              ${formatNumber(token.volume_24h || token.volume24h, 'short')}
+              ${formatNumber(TokenHelpers.getVolume(token), 'short')}
             </div>
           </div>
         </div>

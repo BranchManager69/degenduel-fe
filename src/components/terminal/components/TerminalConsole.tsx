@@ -29,15 +29,15 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
       <ReactMarkdown
         components={{
           // Style markdown elements for terminal
-          p: ({ children }) => <span className="block mb-2">{children}</span>,
+          p: ({ children }) => <span className="block">{children}</span>,
           strong: ({ children }) => <span className="text-purple-300 font-bold">{children}</span>,
           em: ({ children }) => <span className="text-cyan-300 italic">{children}</span>,
           h1: ({ children }) => <span className="text-mauve text-lg font-bold block mb-2">{children}</span>,
           h2: ({ children }) => <span className="text-mauve-light text-base font-bold block mb-1">{children}</span>,
           h3: ({ children }) => <span className="text-purple-300 font-semibold block mb-1">{children}</span>,
-          ul: ({ children }) => <div className="ml-2 mb-2">{children}</div>,
-          ol: ({ children }) => <div className="ml-2 mb-2">{children}</div>,
-          li: ({ children }) => <div className="text-gray-300 mb-1">• {children}</div>,
+          ul: ({ children }) => <div className="ml-2">{children}</div>,
+          ol: ({ children }) => <div className="ml-2">{children}</div>,
+          li: ({ children }) => <div className="text-gray-300">• {children}</div>,
           a: ({ children, href }) => (
             <a 
               href={href} 
@@ -67,8 +67,127 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
 };
 
 /**
- * TypeWriter - Creates a typewriter effect for text
+ * TypeWriterMarkdown - Creates a typewriter effect for markdown text
  */
+interface TypeWriterMarkdownProps {
+  text: string;
+  speed?: number;
+  className?: string;
+  onComplete?: () => void;
+}
+
+const TypeWriterMarkdown: React.FC<TypeWriterMarkdownProps> = ({ 
+  text, 
+  speed = 35,
+  className = "",
+  onComplete
+}) => {
+  const [displayText, setDisplayText] = useState("");
+  const [isComplete, setIsComplete] = useState(false);
+  const timeoutsRef = useRef<number[]>([]);
+  const isMountedRef = useRef(true);
+  const lastTypedMessageRef = useRef("");
+
+  // Clear all timeouts on unmount or text change
+  const clearAllTimeouts = () => {
+    timeoutsRef.current.forEach(id => window.clearTimeout(id));
+    timeoutsRef.current = [];
+  };
+
+  useEffect(() => {
+    // If we've already typed this exact message, just set it directly without animation
+    if (lastTypedMessageRef.current === text) {
+      setDisplayText(text);
+      setIsComplete(true);
+      if (onComplete) onComplete();
+      return;
+    }
+    
+    // This is a new message, update our reference
+    lastTypedMessageRef.current = text;
+    
+    // Reset component mount state
+    isMountedRef.current = true;
+    
+    // Reset state when text changes
+    setIsComplete(false);
+    
+    // Clean up previous animation
+    clearAllTimeouts();
+    
+    // Parse for Didi prefix
+    const hasDidiPrefix = text.startsWith('[Didi] ');
+    const prefix = hasDidiPrefix ? '[Didi] ' : '';
+    const contentToType = hasDidiPrefix ? text.substring(7) : text;
+    
+    // Immediately set the prefix without animation
+    setDisplayText(prefix);
+    
+    // Setup typing sequence
+    let index = 0;
+    
+    // Calculate a varying delay
+    const getTypeDelay = (char: string) => {
+      if ('.!?'.includes(char)) return speed * 5;
+      if (',;:'.includes(char)) return speed * 3;
+      if (' '.includes(char)) return speed * 0.8;
+      return speed;
+    };
+    
+    // Type text gradually
+    const typeNextChar = () => {
+      if (!isMountedRef.current) return;
+      
+      if (index < contentToType.length) {
+        setDisplayText(prefix + contentToType.substring(0, index + 1));
+        index++;
+        
+        const nextChar = contentToType[index] || '';
+        const delay = getTypeDelay(nextChar);
+        
+        const timeoutId = window.setTimeout(typeNextChar, delay);
+        timeoutsRef.current.push(timeoutId);
+      } else {
+        setDisplayText(prefix + contentToType);
+        setIsComplete(true);
+        if (onComplete && isMountedRef.current) onComplete();
+      }
+    };
+    
+    // Start typing with initial delay
+    const initialTimeoutId = window.setTimeout(() => {
+      if (isMountedRef.current) {
+        typeNextChar();
+      }
+    }, 150);
+    
+    timeoutsRef.current.push(initialTimeoutId);
+    
+    return () => {
+      isMountedRef.current = false;
+      clearAllTimeouts();
+    };
+  }, [text, speed, onComplete]);
+  
+  return (
+    <span className={className}>
+      <MarkdownRenderer content={displayText} className={className} />
+      {!isComplete && (
+        <motion.span
+          animate={{ opacity: [1, 0, 1] }}
+          transition={{ duration: 0.8, repeat: Infinity }}
+          className="inline-block h-4 w-2 ml-0.5 bg-cyan-300"
+        />
+      )}
+    </span>
+  );
+};
+
+/**
+ * TypeWriter - Creates a typewriter effect for text
+ * @deprecated Use TypeWriterMarkdown instead for proper markdown support
+ */
+/*
 interface TypeWriterProps {
   text: string;
   speed?: number;
@@ -198,6 +317,7 @@ const TypeWriter: React.FC<TypeWriterProps> = ({
     </span>
   );
 };
+*/
 
 /**
  * TerminalConsole - Displays terminal output and handles scrolling behavior
@@ -570,7 +690,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                 transition={{ duration: 0.3, ease: "easeOut" }}
                 className={message.role === 'system' ? "mb-1 whitespace-pre-wrap text-center" : "pl-1 mb-1 whitespace-pre-wrap"}
               >
-                {/* Render user profile picture or fallback, and Didi styled name */}
+                {/* Render user profile picture or robot emoji for Didi */}
                 {message.role === 'user' ? (
                   user ? (
                     <div className="inline-block mr-2 align-top mt-0.5">
@@ -586,34 +706,53 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                     <span className="text-mauve mr-1">$ </span>
                   )
                 ) : message.role === 'assistant' ? (
-                  <>
-                    <span className={`${content.startsWith('ERROR:') ? 'text-red-400' : 'text-purple-400 bg-gradient-to-r from-purple-400 to-cyan-300 bg-clip-text'} font-semibold`}>
-                      Didi
-                    </span>
-                    <span className="text-mauve-light/70 mx-1">•</span>
-                  </>
+                  <span className="text-lg mr-2 align-top inline-block">🤖</span>
                 ) : (
                   prefix
                 )}
-                {/* Use TypeWriter only for the last assistant message, otherwise render content directly */}
-                {useTypingEffect ? (
-                  <TypeWriter 
-                    text={content.startsWith('ERROR:') ? content.substring(6) : content}
-                    speed={15}
-                    className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}
-                    onComplete={handleTypingComplete}
-                  />
+                {/* Show thinking indicator for empty assistant messages */}
+                {message.role === 'assistant' && !content && useTypingEffect ? (
+                  <span className="inline-flex items-center gap-1 text-purple-400">
+                    <span className="text-sm">Thinking</span>
+                    <motion.span
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                      className="inline-flex gap-0.5"
+                    >
+                      <span className="w-1 h-1 bg-purple-400 rounded-full" />
+                      <motion.span 
+                        animate={{ opacity: [0.3, 1, 0.3] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+                        className="w-1 h-1 bg-purple-400 rounded-full" 
+                      />
+                      <motion.span 
+                        animate={{ opacity: [0.3, 1, 0.3] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
+                        className="w-1 h-1 bg-purple-400 rounded-full" 
+                      />
+                    </motion.span>
+                  </span>
                 ) : (
-                  // Render markdown for AI responses, plain text for others
-                  message.role === 'assistant' ? (
-                    <MarkdownRenderer 
-                      content={content.startsWith('ERROR:') ? content.substring(6) : content}
+                  /* Use TypeWriter only for the last assistant message, otherwise render content directly */
+                  useTypingEffect ? (
+                    <TypeWriterMarkdown 
+                      text={content.startsWith('ERROR:') ? content.substring(6) : content}
+                      speed={15}
                       className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}
+                      onComplete={handleTypingComplete}
                     />
                   ) : (
-                    <span className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}>
-                      {content.startsWith('ERROR:') ? content.substring(6) : content}
-                    </span>
+                    // Render markdown for AI responses, plain text for others
+                    message.role === 'assistant' ? (
+                      <MarkdownRenderer 
+                        content={content.startsWith('ERROR:') ? content.substring(6) : content}
+                        className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}
+                      />
+                    ) : (
+                      <span className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}>
+                        {content.startsWith('ERROR:') ? content.substring(6) : content}
+                      </span>
+                    )
                   )
                 )}
               </motion.div>

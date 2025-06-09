@@ -40,23 +40,25 @@ export const ImportantNotice: React.FC<ImportantNoticeProps> = ({
                 </motion.div>
                 
                 {/* Compact message content */}
-                <div className="text-center">
-                  <Link 
-                    to="/important-update"
-                    className="group inline-flex items-center space-x-2 text-amber-200 hover:text-amber-100 transition-colors duration-200"
-                  >
-                    <span className="text-xs sm:text-sm font-medium">
-                      Important Update: A message from the DegenDuel team
-                    </span>
-                    <svg 
-                      className="w-3 h-3 sm:w-4 sm:h-4 transform group-hover:translate-x-1 transition-transform duration-200" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor"
+                <div className="text-center flex-1">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+                    <Link 
+                      to="/developer-updates"
+                      className="group inline-flex items-center space-x-1 text-amber-200 hover:text-amber-100 transition-colors duration-200"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </Link>
+                      <span className="text-xs sm:text-sm font-medium">
+                        New updates available
+                      </span>
+                      <svg 
+                        className="w-3 h-3 sm:w-4 sm:h-4 transform group-hover:translate-x-1 transition-transform duration-200" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </Link>
+                  </div>
                 </div>
                 
                 {/* Optional dismiss button - smaller */}
