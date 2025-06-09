@@ -50,7 +50,7 @@ export const TimeUnit: React.FC<TimeUnitProps> = ({
   return (
     <div className="flex flex-col items-center w-12 sm:w-14 md:w-16 lg:w-20">
       <motion.div 
-        className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-mono tabular-nums w-full text-center bg-black/50 px-1 py-1 rounded border border-opacity-30"
+        className="text-xl sm:text-2xl md:text-3xl lg:text-4xl tabular-nums w-full text-center bg-black/50 px-1 py-1 rounded border border-opacity-30"
         style={{
           borderColor: getTextColor(),
           color: getTextColor(),

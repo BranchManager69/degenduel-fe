@@ -30,7 +30,6 @@ import { isContestCurrentlyUnderway, isContestJoinable } from "../../../lib/util
 import { Contest } from "../../../types";
 // Hooks
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
-import { useLaunchEvent } from "../../../hooks/websocket/topic-hooks/useLaunchEvent";
 import { useSystemSettings } from "../../../hooks/websocket/topic-hooks/useSystemSettings";
 // DD API
 import { ddApi } from "../../../services/dd-api";
@@ -103,9 +102,9 @@ export const LandingPage: React.FC = () => {
   
   // Removed console.log referencing deleted state
 
-  // Contract address reveal is handled by dedicated launch event service
-  const { contractAddress: websocketContractAddress } = useLaunchEvent();
-  const websocketContractRevealed = !!websocketContractAddress; // Contract is revealed if address exists
+  // Contract address reveal disabled for performance - using static config
+  const websocketContractAddress = config.CONTRACT_ADDRESS;
+  const websocketContractRevealed = true; // Always revealed for performance
   
   const { settings } = useSystemSettings();
 
@@ -262,11 +261,7 @@ export const LandingPage: React.FC = () => {
   const maintenanceMessageToDisplay = settings?.maintenance_mode?.message || "Contests are temporarily paused for maintenance. Please check back soon!";
   
   
-  useEffect(() => {
-    if (websocketContractAddress && websocketContractRevealed) {
-      console.log(`[LandingPage] WebSocket contract address update received: ${websocketContractAddress}, Revealed: ${websocketContractRevealed}`);
-    }
-  }, [websocketContractAddress, websocketContractRevealed]);
+  // Removed WebSocket contract address logging for performance
 
   useEffect(() => {
     isMounted.current = true;
@@ -739,6 +734,45 @@ export const LandingPage: React.FC = () => {
                 {/* CTAs - Now using the CtaSection component */}
                 <CtaSection user={user} animationPhase={animationPhase} />
 
+                {/* DUEL NOW Button - positioned between CTA and Crown Contest */}
+                <FloatingDuelNowButton
+                  enabled={true}
+                />
+
+                {/* Crown Contest Section - Extracted from contests */}
+                {!isMaintenanceModeActive && !error && (
+                  (() => {
+                    // Inline Crown Contest detection (same as contest browser)
+                    const allAvailableContests = [...activeContests, ...openContests];
+                    const crownContest = allAvailableContests.find(contest => {
+                      const upperName = contest.name.toUpperCase();
+                      return upperName.includes('NUMERO UNO') || 
+                             upperName.includes('NUMERO  UNO') || // double space
+                             upperName.includes('NUMERO\tUNO') || // tab
+                             upperName.includes('NUMEROUNO'); // no space
+                    });
+
+                    return crownContest ? (
+                      <motion.div
+                        className="relative w-full mt-6 md:mt-12 mb-6 md:mb-12"
+                        variants={secondaryVariants}
+                      >
+                        <div className="w-full max-w-none sm:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-4">
+                          <EnhancedContestSection
+                            title="Crown Contest"
+                            type={crownContest.status}
+                            contests={[]}
+                            loading={loading && activeContests.length === 0 && openContests.length === 0}
+                            featuredContest={crownContest}
+                            featuredLabel="CROWN CONTEST"
+                            isFeatureSection={true}
+                          />
+                        </div>
+                      </motion.div>
+                    ) : null;
+                  })()
+                )}
+
                 {/* Enhanced Features section - shown to all users */}
                 {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (
                   <motion.div
@@ -875,30 +909,7 @@ export const LandingPage: React.FC = () => {
                         
                         {/* Contest sections container */}
                         <div className="mb-4 md:mb-8">
-                          {/* Featured Contest Section - Show CROWN CONTEST only */}
-                          {(() => {
-                            // Inline Crown Contest detection (same as contest browser)
-                            const allAvailableContests = [...activeContests, ...openContests];
-                            const crownContest = allAvailableContests.find(contest => {
-                              const upperName = contest.name.toUpperCase();
-                              return upperName.includes('NUMERO UNO') || 
-                                     upperName.includes('NUMERO  UNO') || // double space
-                                     upperName.includes('NUMERO\tUNO') || // tab
-                                     upperName.includes('NUMEROUNO'); // no space
-                            });
-
-                            return crownContest ? (
-                              <EnhancedContestSection
-                                title="Crown Contest"
-                                type={crownContest.status}
-                                contests={[]}
-                                loading={loading && activeContests.length === 0 && openContests.length === 0}
-                                featuredContest={crownContest}
-                                featuredLabel="👑 CROWN CONTEST"
-                                isFeatureSection={true}
-                              />
-                            ) : null;
-                          })()}
+                          {/* Crown Contest moved above Features section */}
 
                           {/* Filter out featured contest from regular sections */}
                           {(() => {
@@ -999,16 +1010,12 @@ export const LandingPage: React.FC = () => {
 
       {/* Enhanced Floating Action Buttons Stack */}
       <FloatingButtonStack
-        tokenAddress={websocketContractAddress || FALLBACK_CA_FOR_BUTTONS}
+        tokenAddress={websocketContractAddress.REAL || FALLBACK_CA_FOR_BUTTONS}
         tokenSymbol={"DUEL"}
         enabled={forceShowFabs || (websocketContractRevealed && websocketContractAddress)}
         isCountdownComplete={isCountdownComplete}
       />
 
-      {/* Floating DUEL NOW Button - positioned above footer */}
-      <FloatingDuelNowButton
-        enabled={true}
-      />
     </>
   );
 };

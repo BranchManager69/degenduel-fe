@@ -25,11 +25,11 @@ interface MarkdownRendererProps {
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className }) => {
   return (
-    <div className={className}>
+    <span className={className}>
       <ReactMarkdown
         components={{
           // Style markdown elements for terminal
-          p: ({ children }) => <span className="block">{children}</span>,
+          p: ({ children }) => <span className="inline">{children}</span>,
           strong: ({ children }) => <span className="text-purple-300 font-bold">{children}</span>,
           em: ({ children }) => <span className="text-cyan-300 italic">{children}</span>,
           h1: ({ children }) => <span className="text-mauve text-lg font-bold block mb-2">{children}</span>,
@@ -49,7 +49,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
             </a>
           ),
           code: ({ children }) => (
-            <span className="bg-gray-800 text-green-400 px-1 rounded font-mono text-sm">
+            <span className="bg-gray-800 text-green-400 px-1 rounded text-sm">
               {children}
             </span>
           ),
@@ -62,7 +62,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
       >
         {content}
       </ReactMarkdown>
-    </div>
+    </span>
   );
 };
 
@@ -558,7 +558,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
         ref={consoleOutputRef}
         className={`text-gray-300 overflow-y-auto overflow-x-hidden py-2 px-3 text-left custom-scrollbar console-output relative z-10 w-full
                    ${size === 'contracted'
-                     ? 'h-40'
+                     ? 'h-24'
                      : size === 'middle'
                      ? 'h-60'
                      : 'h-80 xl:h-96'}` }
@@ -593,7 +593,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
         {messages.length === 0 ? (
           // Initial State - Show welcome message
           <div className="text-mauve-light/90 text-xs py-1">
-            <div className="relative font-mono text-[10px] sm:text-xs leading-tight mt-1 mb-4 text-center overflow-hidden">
+            <div className="relative text-[10px] sm:text-xs leading-tight mt-1 mb-4 text-center overflow-hidden">
               <pre className="text-mauve bg-black/30 py-2 px-1 rounded border border-mauve/20 inline-block mx-auto max-w-full overflow-x-auto">
 {window.innerWidth < 400 ? 
 `  ██████╗ ██╗   ██╗███████╗██╗     
@@ -629,7 +629,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
               />
               
               <motion.div 
-                className="absolute right-4 top-0 font-mono text-[8px] bg-mauve/20 px-1 rounded"
+                className="absolute right-4 top-0 text-[8px] bg-mauve/20 px-1 rounded"
                 animate={{ 
                   color: ["rgba(157, 78, 221, 0.7)", "rgba(255, 255, 255, 0.9)", "rgba(157, 78, 221, 0.7)"] 
                 }}
@@ -688,7 +688,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className={message.role === 'system' ? "mb-1 whitespace-pre-wrap text-center" : "pl-1 mb-1 whitespace-pre-wrap"}
+                className={message.role === 'system' ? "whitespace-pre-wrap text-center" : "pl-1 whitespace-pre-wrap"}
               >
                 {/* Render user profile picture or robot emoji for Didi */}
                 {message.role === 'user' ? (
@@ -705,9 +705,9 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                   ) : (
                     <span className="text-mauve mr-1">$ </span>
                   )
-                ) : message.role === 'assistant' ? (
+                ) : message.role === 'assistant' && !content.startsWith('🤖') ? (
                   <span className="text-lg mr-2 align-top inline-block">🤖</span>
-                ) : (
+                ) : message.role === 'assistant' ? null : (
                   prefix
                 )}
                 {/* Show thinking indicator for empty assistant messages */}

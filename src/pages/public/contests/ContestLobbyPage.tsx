@@ -31,20 +31,20 @@ import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/useContestParticipants";
 import { formatCurrency } from "../../../lib/utils";
-import { ContestViewData, LeaderboardEntry } from "../../../types";
+import { ContestViewData } from "../../../types";
 import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
 
 // Helper function to transform LeaderboardEntry to Participant format
-const transformLeaderboardToParticipant = (entry: LeaderboardEntry): any => ({
-  wallet_address: entry.userId,
-  nickname: entry.username,
-  profile_image_url: entry.profilePictureUrl,
+const transformLeaderboardToParticipant = (entry: any): any => ({
+  wallet_address: entry.wallet_address || entry.userId,
+  nickname: entry.nickname || entry.username,
+  profile_image_url: entry.profile_image_url || entry.profilePictureUrl,
   rank: entry.rank,
-  portfolio_value: entry.portfolioValue,
-  performance_percentage: entry.performancePercentage,
-  prize_awarded: entry.prizeAwarded,
-  is_current_user: entry.isCurrentUser,
-  is_ai_agent: entry.isAiAgent,
+  portfolio_value: entry.portfolio_value || entry.portfolioValue,
+  performance_percentage: entry.performance_percentage || entry.performancePercentage,
+  prize_awarded: entry.prize_awarded || entry.prizeAwarded,
+  is_current_user: entry.is_current_user || entry.isCurrentUser,
+  is_ai_agent: entry.is_ai_agent || entry.isAiAgent,
   is_banned: false
 });
 
@@ -75,18 +75,23 @@ export const ContestLobby: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Backend team confirmed: use /contests/:id/leaderboard endpoint
-        const response = await fetch(`/api/contests/${contestId}/leaderboard`);
+        // Use participants endpoint for richer data (includes user levels, experience, etc.)
+        const response = await fetch(`/api/contests/${contestId}/participants`);
         if (!response.ok) {
           throw new Error(`Failed to fetch contest data: ${response.status}`);
         }
         const data = await response.json();
         
-        // Transform the leaderboard response to match expected ContestViewData structure
+        // Get contest info from a separate call since participants endpoint doesn't include contest details
+        const contestResponse = await fetch(`/api/contests/${contestId}`);
+        const contestData = contestResponse.ok ? await contestResponse.json() : null;
+        
+        // Transform the participants response to match expected ContestViewData structure
+        const participants = data.contest_participants || data.participants || [];
         const viewData: ContestViewData = {
-          contest: data.contest,
-          leaderboard: data.leaderboard || data.participants || [],
-          currentUserPerformance: (data.leaderboard || data.participants || []).find((entry: any) => entry.is_current_user) || null
+          contest: contestData || { id: contestId, name: "Contest", status: "pending", participant_count: participants.length },
+          leaderboard: participants,
+          currentUserPerformance: participants.find((entry: any) => entry.is_current_user) || null
         };
         
         setContestViewData(viewData);

@@ -39,7 +39,7 @@ export const FloatingBelieveButtonEnhanced: React.FC<FloatingBelieveButtonEnhanc
     }
   };
 
-  const buttonTitle = tokenAddress 
+  const buttonTitle = tokenAddress && typeof tokenAddress === 'string' && tokenAddress.length > 8
     ? `View ${tokenSymbol || 'token'} (${tokenAddress.substring(0,4)}...${tokenAddress.substring(tokenAddress.length - 4)}) on Believe` 
     : "Believe Aggregator";
 

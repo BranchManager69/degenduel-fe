@@ -73,15 +73,32 @@ interface LegacyParticipant {
 }
 
 // Transform legacy participant to new format
-const transformLegacyParticipant = (participant: LegacyParticipant): any => ({
-  wallet_address: participant.address,
-  nickname: participant.nickname,
-  profile_image_url: null,
-  performance_percentage: participant.score?.toString(),
-  is_current_user: false,
-  is_ai_agent: false,
-  is_banned: false
-});
+const transformLegacyParticipant = (participant: any): any => {
+  // Handle both old LegacyParticipant format and new ContestParticipant format
+  const walletAddress = participant.address || participant.wallet_address;
+  const nickname = participant.nickname || participant.users?.nickname;
+  
+  // Try to construct profile image URL if we have wallet address
+  const profileImageUrl = walletAddress ? 
+    `${window.location.origin}/api/users/${walletAddress}/profile-image` : null;
+  
+  console.log("[ContestDetailPage] Transforming participant:", {
+    originalData: participant,
+    walletAddress,
+    nickname,
+    profileImageUrl
+  });
+  
+  return {
+    wallet_address: walletAddress,
+    nickname: nickname,
+    profile_image_url: profileImageUrl,
+    performance_percentage: participant.score?.toString(),
+    is_current_user: false,
+    is_ai_agent: false,
+    is_banned: false
+  };
+};
 
 // TODO: move elsewhere
 type Contest = Omit<BaseContest, "participants"> & {
@@ -99,6 +116,7 @@ export const ContestDetails: React.FC = () => {
   const { user, isAuthenticated } = useMigratedAuth();
   const [isParticipating, setIsParticipating] = useState<boolean>(false);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+  const [enhancedParticipants, setEnhancedParticipants] = useState<any[]>([]);
   
   // Image loading states
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -203,6 +221,18 @@ export const ContestDetails: React.FC = () => {
   } = useContestParticipants(
     id ? parseInt(id) : null
   );
+  
+  // Debug WebSocket participants vs REST API participants
+  useEffect(() => {
+    console.log("[ContestDetailPage] Participant data comparison:", {
+      contestId: id,
+      websocketParticipants: realtimeParticipants.length,
+      restApiParticipants: contest?.participants?.length || 0,
+      participantCount: contest?.participant_count || 0,
+      websocketData: realtimeParticipants.slice(0, 2), // Show first 2 for debugging
+      restApiData: contest?.participants?.slice(0, 2) || [] // Show first 2 for debugging
+    });
+  }, [id, realtimeParticipants, contest?.participants, contest?.participant_count]);
 
   useEffect(() => {
     console.log("Wallet State:", {
@@ -248,13 +278,22 @@ export const ContestDetails: React.FC = () => {
       });
 
       // Try to fetch enhanced participant data from the new unified endpoint
-      let enhancedParticipants = [];
       try {
         const participantsResponse = await fetch(`/api/contests/${id}/participants`);
         if (participantsResponse.ok) {
           const participantsData = await participantsResponse.json();
-          enhancedParticipants = participantsData.participants || [];
-          console.log("Enhanced participants from unified API:", enhancedParticipants);
+          const fetchedParticipants = participantsData.contest_participants || participantsData.participants || [];
+          setEnhancedParticipants(fetchedParticipants);
+          console.log("Enhanced participants from unified API:", fetchedParticipants);
+          
+          // Debug: Check profile image URLs
+          console.log("[ContestDetailPage] Profile image URLs from API:", 
+            fetchedParticipants.map((p: any) => ({
+              nickname: p.nickname,
+              profile_image_url: p.profile_image_url,
+              has_image: !!p.profile_image_url
+            }))
+          );
         }
       } catch (participantsError) {
         console.log("Enhanced participants API not available, using legacy data:", participantsError);
@@ -992,9 +1031,12 @@ export const ContestDetails: React.FC = () => {
                 <div className="group relative">
                   <SilentErrorBoundary>
                     <ParticipantsList
-                      participants={realtimeParticipants.length > 0 
-                        ? realtimeParticipants 
-                        : (contest.participants || []).map(transformLegacyParticipant)
+                      participants={
+                        realtimeParticipants.length > 0 
+                          ? realtimeParticipants 
+                          : enhancedParticipants.length > 0
+                            ? enhancedParticipants
+                            : (contest.participants || []).map(transformLegacyParticipant)
                       }
                       contestStatus={mapContestStatus(contest.status)}
                     />

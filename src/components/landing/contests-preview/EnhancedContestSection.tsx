@@ -88,25 +88,8 @@ export const EnhancedContestSection: React.FC<EnhancedContestSectionProps> = ({
         </div>
 
         <div className="relative">
-          {/* Enhanced Section Header for featured */}
-          <div className="flex items-center justify-center mb-12">
-            <motion.div
-              className="space-y-2 text-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="text-4xl md:text-5xl font-black font-cyber tracking-wide bg-gradient-to-r from-brand-400 via-purple-400 to-brand-500 text-transparent bg-clip-text">
-                {title}
-              </h2>
-              <p className="text-lg text-gray-300 font-medium">
-                The most anticipated trading competition of the week
-              </p>
-            </motion.div>
-          </div>
-
           {/* Featured Contest Card */}
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <ProminentContestCard 
               contest={featuredContest} 
               featuredLabel={featuredLabel}

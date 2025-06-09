@@ -11,12 +11,12 @@
  * @updated 2025-01-15 - Simplified and cleaned up
  */
 
-import { useDegenDuelTop30 } from "@/hooks/websocket/topic-hooks/useDegenDuelTop30";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Loader2, WifiOff } from "lucide-react";
 import React, { ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
+import { useDegenDuelTop30 } from "../../hooks/websocket/topic-hooks/useDegenDuelTop30";
 import { useLaunchEvent } from "../../hooks/websocket/topic-hooks/useLaunchEvent";
 import { getContestImageUrl } from "../../lib/imageUtils";
 import { useStore } from "../../store/useStore";
@@ -52,7 +52,7 @@ export const UnifiedTicker: React.FC<Props> = ({
   // We'll add the debug effect later after originalTickerItems is defined
   
   // OPTIMIZED: Only run the hook we actually need to prevent data conflicts!
-  const standardTokenData = useStandardizedTokenData("all", "marketCap", {}, 5, maxTokens);
+  const standardTokenData = useStandardizedTokenData("all", "change", {}, 5, maxTokens);
   const degenDuelData = useDegenDuelTop30({
     limit: maxTokens,
     refreshInterval: enableDegenDuelTop30 ? 30000 : 0,
@@ -110,6 +110,7 @@ export const UnifiedTicker: React.FC<Props> = ({
   const lastTimestampRef = useRef<number>(0);
   const actualContentWidthRef = useRef<number>(0);
   const originalContentWidthRef = useRef<number>(0); // Width of original items only
+  const hasDraggedRef = useRef<boolean>(false); // Track if user actually dragged
 
   // Simple loading state
   const isOverallLoading = contestsLoadingProp || finalTokensLoading;
@@ -122,10 +123,17 @@ export const UnifiedTicker: React.FC<Props> = ({
       .slice(0, 10);
   }, [currentContests]);
 
-  // Just display whatever tokens we get - no filtering at UI level
+  // Sort tokens by price change (biggest movers first)
   const displayTokens = useMemo(() => {
     if (!finalTokens) return [];
-    return (finalTokens as Token[]).slice(0, maxTokens);
+    
+    const sortedTokens = [...(finalTokens as Token[])].sort((a, b) => {
+      const changeA = TokenHelpers.getPriceChange(a);
+      const changeB = TokenHelpers.getPriceChange(b);
+      return changeB - changeA; // Sort by actual change, biggest gains first
+    });
+    
+    return sortedTokens.slice(0, maxTokens);
   }, [finalTokens, maxTokens]);
 
   useEffect(() => {
@@ -138,7 +146,7 @@ export const UnifiedTicker: React.FC<Props> = ({
       return (
         <motion.div
           key="duel-announcement"
-          className="inline-flex items-center px-4 py-1.5 mx-2 rounded-lg bg-yellow-500/10 border border-yellow-400/30 whitespace-nowrap"
+          className="inline-flex items-center px-4 py-1.5 mx-2 rounded-lg bg-yellow-500/10 border border-yellow-400/30 whitespace-nowrap transition-all duration-300 ease-out"
           animate={{
             borderColor: ['rgb(251 191 36 / 0.3)', 'rgb(245 158 11 / 0.5)', 'rgb(217 119 6 / 0.3)', 'rgb(251 191 36 / 0.3)'],
           }}
@@ -266,19 +274,33 @@ export const UnifiedTicker: React.FC<Props> = ({
 
   // Simple ticker items - no complex logic
   const originalTickerItems = useMemo(() => {
+    let globalItemIndex = 0; // Track global position for staggered animations
+    
     const contestItems = (activeTab === "all" || activeTab === "contests") ? 
       sortedContests.map((contest, index) => {
         const contestKey = contest.id ? `contest-${contest.id}` : `contest-idx-${index}`;
         const contestImageUrl = getContestImageUrl(contest.image_url);
+        const currentItemIndex = globalItemIndex++;
         
         return (
           <div
             key={contestKey}
-            onClick={() => contest.id && navigate(`/contests/${contest.id}`)}
-            className={`relative inline-flex items-center rounded-full cursor-pointer hover:bg-brand-500/20 transition-transform duration-300 ease-out whitespace-nowrap overflow-hidden bg-brand-500/10 ${
-              isCompact ? 'px-2 py-0.5 mx-2 h-6' : 'px-3 py-0.5 mx-3 h-7'
-            }`}
+            onClick={() => {
+              // Only navigate if user didn't drag
+              if (!hasDraggedRef.current && contest.id) {
+                navigate(`/contests/${contest.id}`);
+              }
+            }}
+            className="relative inline-flex items-center rounded-lg cursor-pointer hover:bg-brand-500/20 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden border border-black/20 bg-brand-500/10"
             style={{
+              '--contest-px': isCompact ? '8px' : '12px',
+              '--contest-py': isCompact ? '2px' : '4px',
+              '--contest-mx': isCompact ? '8px' : '12px', 
+              '--contest-height': isCompact ? '24px' : '32px',
+              padding: 'var(--contest-py) var(--contest-px)',
+              margin: '0 var(--contest-mx)',
+              height: 'var(--contest-height)',
+              transitionDelay: `${currentItemIndex * 30}ms`, // Staggered animation
               willChange: "transform",
               transform: "translate3d(0, 0, 0)",
               ...(contestImageUrl && {
@@ -287,8 +309,13 @@ export const UnifiedTicker: React.FC<Props> = ({
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat'
               })
-            }}
+            } as any}
           >
+            {/* Dark overlay for better text readability */}
+            {contestImageUrl && (
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px]" />
+            )}
+            
             {/* Content with higher z-index */}
             <div className="relative z-10 flex items-center justify-between w-full h-full">
               <div className="flex items-center flex-shrink-0">
@@ -331,13 +358,21 @@ export const UnifiedTicker: React.FC<Props> = ({
       displayTokens.map((token: Token, index: number) => {
         const tokenKey = TokenHelpers.getAddress(token) || `token-${index}`;
         const logoUrl = token.image_url || token.header_image_url || `https://via.placeholder.com/24?text=${token.symbol.substring(0,1)}`;
+        const currentItemIndex = globalItemIndex++;
         
         // Format percentage change with proper color coding using helper function
         const change24h = TokenHelpers.getPriceChange(token);
         const formatPercentageChange = (change: number): { text: string; colorClass: string } => {
-          const absChange = Math.abs(change);
-          const sign = change >= 0 ? '+' : '';
-          const text = `${sign}${absChange.toFixed(0)}%`; // No decimals for crypto percentages
+          let text: string;
+          
+          if (change === 0) {
+            text = '-'; // Show just a dash for zero change
+            return { text, colorClass: 'text-white' };
+          } else if (change > 0) {
+            text = `+${change.toFixed(0)}%`; // Positive with + sign
+          } else {
+            text = `${change.toFixed(0)}%`; // Negative already has - sign from the number
+          }
           
           if (change > 10) return { text, colorClass: 'text-emerald-400 font-bold' };
           if (change > 5) return { text, colorClass: 'text-emerald-300' };
@@ -357,15 +392,26 @@ export const UnifiedTicker: React.FC<Props> = ({
           <div
             key={tokenKey}
             onClick={() => {
-              const address = TokenHelpers.getAddress(token);
-              if (address) navigate(`/tokens/${address}`);
+              // Only navigate if user didn't drag
+              if (!hasDraggedRef.current) {
+                const address = TokenHelpers.getAddress(token);
+                if (address) navigate(`/tokens/${address}`);
+              }
             }}
-            className={`relative inline-flex items-center rounded-full cursor-pointer hover:bg-cyber-500/20 transition-transform duration-300 ease-out whitespace-nowrap ${
-              isDegenDuelToken ? 'bg-gradient-to-r from-brand-500/10 to-cyber-500/10 border border-brand-400/20' : 'bg-cyber-500/10'
-            } ${
-              isCompact ? 'px-2 py-0.5 mx-2 h-6 min-w-[60px]' : 'px-3 py-0.5 mx-3 h-7 min-w-[100px]'
+            className={`relative inline-flex items-center rounded-lg cursor-pointer hover:bg-cyber-500/20 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden border border-black/20 ${
+              isDegenDuelToken ? 'bg-gradient-to-r from-brand-500/10 to-cyber-500/10' : 'bg-cyber-500/10'
             }`}
             style={{
+              '--token-px': isCompact ? '6px' : '12px',
+              '--token-py': isCompact ? '2px' : '4px', 
+              '--token-mx': isCompact ? '8px' : '12px',
+              '--token-height': isCompact ? '24px' : '32px',
+              '--token-min-width': isCompact ? '110px' : '100px',
+              padding: 'var(--token-py) var(--token-px)',
+              margin: '0 var(--token-mx)',
+              height: 'var(--token-height)',
+              minWidth: 'var(--token-min-width)',
+              transitionDelay: `${currentItemIndex * 30}ms`, // Staggered animation
               willChange: "transform",
               transform: "translate3d(0, 0, 0)",
               ...(token.header_image_url && {
@@ -374,25 +420,43 @@ export const UnifiedTicker: React.FC<Props> = ({
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat'
               })
-            }}
+            } as any}
           >
+            {/* Dark overlay for better text readability */}
+            {token.header_image_url && (
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px]" />
+            )}
+            
             {/* Content with higher z-index */}
-            <div className="relative z-10 flex items-center justify-between w-full h-full">
-              <div className="flex items-center flex-shrink-0">
-                <img src={logoUrl} alt={token.symbol} className={`rounded-full object-cover flex-shrink-0 ring-1 ring-white/20 ${
-                  isCompact ? 'w-3 h-3 mr-1' : 'w-5 h-5 mr-2'
-                }`} />
-                <span 
-                  className={`font-medium text-white flex-shrink-0 ${
-                    isCompact ? 'text-[10px]' : 'text-sm'
-                  }`}
+            <div className="relative z-10 flex items-center justify-between w-full h-full px-0.5">
+              <div className="flex items-center flex-shrink-0 max-w-[60%]">
+                <img 
+                  src={logoUrl} 
+                  alt={token.symbol} 
+                  className="rounded-full object-cover flex-shrink-0 transition-all duration-300 ease-out"
                   style={{
-                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
-                    WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
+                    '--logo-size': isCompact ? '36px' : '48px', // Much bigger - will overflow the container
+                    '--logo-margin': isCompact ? '4px' : '8px',
+                    width: 'var(--logo-size)',
+                    height: 'var(--logo-size)',
+                    marginRight: 'var(--logo-margin)',
+                    filter: 'blur(0.5px) contrast(1.1) saturate(0.9) brightness(1.0)',
+                    maskImage: 'radial-gradient(circle, black 70%, transparent 100%)',
+                    WebkitMaskImage: 'radial-gradient(circle, black 70%, transparent 100%)',
+                    boxShadow: '0 0 20px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.4)'
+                  } as any}
+                />
+                <span 
+                  className="font-medium text-white transition-all duration-300 ease-out"
+                  style={{
+                    '--text-size': isCompact ? '10px' : '14px',
+                    fontSize: 'var(--text-size)',
+                    textShadow: '2px 2px 4px rgba(0, 0, 0, 0.95), 1px 1px 8px rgba(0, 0, 0, 0.8), 0px 0px 12px rgba(0, 0, 0, 0.6)',
+                    WebkitTextStroke: '0.8px rgba(0, 0, 0, 0.7)',
                     paintOrder: 'stroke fill'
-                  }}
+                  } as any}
                 >
-                  {token.symbol}
+                  {token.symbol.length > 10 ? `${token.symbol.substring(0, 8)}..` : token.symbol}
                 </span>
               </div>
               <div className="flex items-center flex-shrink-0">
@@ -400,7 +464,7 @@ export const UnifiedTicker: React.FC<Props> = ({
                   <>
                     <span 
                       className={`text-brand-400 font-bold flex-shrink-0 ${
-                        isCompact ? 'text-[9px] ml-1' : 'text-xs ml-1.5'
+                        isCompact ? 'text-[10px] ml-1' : 'text-xs ml-1.5'
                       }`}
                       style={{
                         textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
@@ -410,23 +474,9 @@ export const UnifiedTicker: React.FC<Props> = ({
                     >
                       #{degenToken.trend_rank}
                     </span>
-                    <span 
-                      className={`text-yellow-400 flex-shrink-0 ${
-                        isCompact ? 'text-[9px] ml-0.5' : 'text-sm ml-1'
-                      }`}
-                      style={{
-                        textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
-                        WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
-                        paintOrder: 'stroke fill'
-                      }}
-                    >
-                      {degenToken.momentum_indicator}
-                    </span>
                     {!isCompact && (
                       <span 
-                        className={`text-gray-200 flex-shrink-0 ${
-                          isCompact ? 'text-[9px] ml-1' : 'text-xs ml-1.5'
-                        }`}
+                        className="text-gray-200 flex-shrink-0 text-xs ml-1.5"
                         style={{
                           textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
                           WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
@@ -440,11 +490,11 @@ export const UnifiedTicker: React.FC<Props> = ({
                 ) : (
                   <span 
                     className={`flex-shrink-0 font-medium ${changeData.colorClass} ${
-                      isCompact ? 'text-[9px] ml-1' : 'text-xs ml-1.5'
+                      isCompact ? 'text-[9px] ml-0.5' : 'text-xs ml-1.5'
                     }`}
                     style={{
-                      textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
-                      WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
+                      textShadow: '2px 2px 4px rgba(0, 0, 0, 0.95), 1px 1px 8px rgba(0, 0, 0, 0.8), 0px 0px 12px rgba(0, 0, 0, 0.6)',
+                      WebkitTextStroke: '0.8px rgba(0, 0, 0, 0.7)',
                       paintOrder: 'stroke fill'
                     }}
                   >
@@ -495,7 +545,7 @@ export const UnifiedTicker: React.FC<Props> = ({
     }
     
     return items;
-  }, [activeTab, sortedContests, displayTokens, isOverallLoading, finalDataConnected, duelAnnouncementItem, navigate]);
+  }, [activeTab, sortedContests, displayTokens, isOverallLoading, finalDataConnected, duelAnnouncementItem, navigate, isCompact]);
 
   // DEBUG: Measure actual element heights and computed styles
   useEffect(() => {
@@ -607,10 +657,21 @@ export const UnifiedTicker: React.FC<Props> = ({
     for (let setIndex = 0; setIndex < setsToRender; setIndex++) {
       originalTickerItems.forEach((item: ReactElement, itemIndex: number) => {
         const originalKey = item.key || `orig-idx-${itemIndex}`;
-        const clonedItem = setIndex === 0 ? item : React.cloneElement(item, { 
-          key: `clone-${setIndex - 1}-${originalKey}` 
-        });
-        itemsToRender.push(clonedItem);
+        const globalIndex = setIndex * originalTickerItems.length + itemIndex;
+        
+        if (setIndex === 0) {
+          itemsToRender.push(item);
+        } else {
+          // Clone with preserved delay but continue the sequence
+          const clonedItem = React.cloneElement(item, { 
+            key: `clone-${setIndex - 1}-${originalKey}`,
+            style: {
+              ...(item.props as any)?.style,
+              transitionDelay: `${globalIndex * 30}ms` // Continue staggered sequence
+            }
+          } as any);
+          itemsToRender.push(clonedItem);
+        }
       });
     }
     
@@ -623,6 +684,7 @@ export const UnifiedTicker: React.FC<Props> = ({
     if (hoverPauseTimeoutIdRef.current) clearTimeout(hoverPauseTimeoutIdRef.current);
     isHoverPausedRef.current = false;
     isInteractingRef.current = true;
+    hasDraggedRef.current = false; // Reset drag flag
     dragStartXRef.current = clientX;
     scrollStartTranslateXRef.current = translateXRef.current;
     
@@ -651,6 +713,12 @@ export const UnifiedTicker: React.FC<Props> = ({
     lastDragPositionRef.current = clientX;
     
     const deltaX = clientX - dragStartXRef.current;
+    
+    // If user moved more than 5 pixels, consider it a drag
+    if (Math.abs(deltaX) > 5) {
+      hasDraggedRef.current = true;
+    }
+    
     const newTranslateX = scrollStartTranslateXRef.current + deltaX;
     translateXRef.current = newTranslateX;
     scrollableContentRef.current.style.transform = `translate3d(${newTranslateX}px, 0, 0)`;
@@ -781,8 +849,8 @@ export const UnifiedTicker: React.FC<Props> = ({
         className={`h-full w-full overflow-hidden ${contentOverflows ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
         style={{ 
           paddingLeft: `${tabsWidth}px`,
-          maskImage: `linear-gradient(to right, transparent 0px, transparent ${tabsWidth - 10}px, black ${tabsWidth}px, black 100%)`,
-          WebkitMaskImage: `linear-gradient(to right, transparent 0px, transparent ${tabsWidth - 10}px, black ${tabsWidth}px, black 100%)`
+          maskImage: `linear-gradient(to right, transparent 0px, transparent ${tabsWidth - 20}px, black ${tabsWidth + 10}px, black 100%)`,
+          WebkitMaskImage: `linear-gradient(to right, transparent 0px, transparent ${tabsWidth - 20}px, black ${tabsWidth + 10}px, black 100%)`
         }}
         onMouseDown={contentOverflows ? (e) => handleInteractionStart(e.clientX) : undefined}
         onMouseMove={contentOverflows ? (e) => handleInteractionMove(e.clientX) : undefined}
@@ -813,7 +881,7 @@ export const UnifiedTicker: React.FC<Props> = ({
   };
 
   const floatingTabs = (
-    <div ref={floatingTabsRef} className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex space-x-0.5">
+    <div ref={floatingTabsRef} className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex space-x-0.5 pointer-events-auto">
       <AnimatePresence>
         <motion.button
           key="tab-all"
@@ -823,7 +891,7 @@ export const UnifiedTicker: React.FC<Props> = ({
           variants={tabButtonVariants}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className={`px-1.5 py-0.5 text-[10px] font-medium rounded-sm transition-all ${
+          className={`px-1.5 py-0.5 text-[10px] font-medium rounded-sm transition-all flex-shrink-0 ${
             activeTab === "all"
               ? "bg-gradient-to-r from-brand-400/20 to-cyber-400/20 text-brand-400 shadow-brand"
               : "text-gray-400 hover:text-gray-300"
@@ -839,7 +907,7 @@ export const UnifiedTicker: React.FC<Props> = ({
           variants={tabButtonVariants}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className={`px-1.5 py-0.5 text-[10px] font-medium rounded-sm transition-all ${
+          className={`px-1.5 py-0.5 text-[10px] font-medium rounded-sm transition-all flex-shrink-0 ${
             activeTab === "contests"
               ? "bg-brand-400/20 text-brand-400 shadow-brand"
               : "text-gray-400 hover:text-gray-300"
@@ -855,7 +923,7 @@ export const UnifiedTicker: React.FC<Props> = ({
           variants={tabButtonVariants}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className={`px-1.5 py-0.5 text-[10px] font-medium rounded-sm transition-all ${
+          className={`px-1.5 py-0.5 text-[10px] font-medium rounded-sm transition-all flex-shrink-0 ${
             activeTab === "tokens"
               ? "bg-cyber-400/20 text-cyber-400 shadow-cyber"
               : "text-gray-400 hover:text-gray-300"
@@ -867,7 +935,8 @@ export const UnifiedTicker: React.FC<Props> = ({
     </div>
   );
 
-  const currentHeightClass = isCompact ? "h-10 sm:h-10" : "h-12 sm:h-12";
+  // Use inline style for smooth height transition instead of classes
+  const currentHeight = isCompact ? 40 : 48; // h-10 = 40px, h-12 = 48px
 
   // Maintenance mode
   if (maintenanceMode) {
@@ -939,20 +1008,17 @@ export const UnifiedTicker: React.FC<Props> = ({
   }
 
   return (
-    <div className={`relative w-full group/ticker bg-dark-200/60 backdrop-blur-sm border-y border-dark-300/50 ${currentHeightClass}`}>
+    <div 
+      className="relative w-full group/ticker bg-dark-200/30 backdrop-blur-lg border-b border-cyan-400/30 transition-all duration-300 ease-out"
+      style={{ height: `${currentHeight}px` }}
+    >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-900/20 via-brand-500/10 to-brand-900/20 opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-br from-cyber-900/20 via-cyber-500/10 to-cyber-900/20 opacity-30" />
-        <div className="absolute inset-y-0 w-1/4 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-scan-slow opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/8 via-transparent to-cyan-500/8" />
       </div>
       
-      <motion.div className="absolute inset-x-0 top-0 pointer-events-none">
-        <motion.div className="h-[1px] bg-gradient-to-r from-transparent via-brand-400/30 to-transparent" />
-      </motion.div>
-      
-      <motion.div className="absolute inset-x-0 bottom-0 pointer-events-none">
-        <motion.div className="h-[1px] bg-gradient-to-r from-transparent via-brand-400/30 to-transparent" />
-      </motion.div>
+      <div className="absolute inset-x-0 bottom-0 pointer-events-none">
+        <div className="h-[1px] bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent shadow-lg shadow-cyan-500/20" />
+      </div>
       
       {(originalTickerItems.length > 0 || isOverallLoading) && floatingTabs}
       
@@ -972,6 +1038,13 @@ export const UnifiedTicker: React.FC<Props> = ({
           }
           .animate-scan-slow {
             animation: scan-slow 8s linear infinite;
+          }
+          /* Enable GPU acceleration for smooth transitions */
+          .transition-all {
+            will-change: auto;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            perspective: 1000px;
           }
         `
       }} />

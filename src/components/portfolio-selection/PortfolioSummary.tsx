@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Token } from "../../types/index";
+import { Token, TokenHelpers } from "../../types/index";
 import { Card, CardContent, CardHeader } from "../ui/Card";
 
 interface PortfolioSummaryProps {
@@ -39,7 +39,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
             {Array.from(selectedTokens.entries()).map(
               ([contractAddress, weight]) => {
                 const token = tokens.find(
-                  (t) => t.contractAddress === contractAddress,
+                  (t) => TokenHelpers.getAddress(t) === contractAddress,
                 );
                 return (
                   <div

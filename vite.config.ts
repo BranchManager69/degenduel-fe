@@ -429,7 +429,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
     },
     define: {
       'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
-      '__REACT_DEVTOOLS_GLOBAL_HOOK__': JSON.stringify(true) // Usually for devtools, but can influence build
+      '__REACT_DEVTOOLS_GLOBAL_HOOK__': JSON.stringify(true), // Usually for devtools, but can influence build
+      'process.env.REACT_DEVTOOLS_BACKEND': isDev ? JSON.stringify('ws://localhost:8097') : 'undefined'
     },
     plugins: [
       react({

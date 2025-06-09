@@ -132,6 +132,14 @@ export const Terminal = ({
   // Mobile keyboard visibility state
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
+  // Proactive messaging system state - use sessionStorage for persistence
+  const [pageLoadTime, setPageLoadTime] = useState<Date>(new Date());
+  const [hasShownProactiveMessage, setHasShownProactiveMessage] = useState(() => {
+    // Check if we've already shown a proactive message this session
+    return sessionStorage.getItem('didi_proactive_shown') === 'true';
+  });
+  const [lastInteractionTime, setLastInteractionTime] = useState<Date>(new Date());
+  
   // No body scroll lock - let the browser handle cursor-aware scrolling
   
   // Dynamic UI Manager ref
@@ -139,6 +147,37 @@ export const Terminal = ({
   
   // Get current location for page context
   const location = useLocation();
+  
+  // Check if tokens have loaded (look for token grid or any token data in DOM)
+  const checkTokensLoaded = () => {
+    // Look for token cards, token grid, or any indication tokens have loaded
+    const tokenElements = document.querySelectorAll('[data-testid*="token"], .token-card, .token-grid tr, [class*="token"]');
+    return tokenElements.length > 0;
+  };
+  
+  // Generate contextual proactive message based on current page and state
+  const getProactiveMessage = () => {
+    const pathname = location.pathname;
+    
+    if (pathname.includes('/tokens')) {
+      const tokensLoaded = checkTokensLoaded();
+      if (!tokensLoaded) {
+        return "Sometimes tokens can take a while to load if they haven't appeared yet.";
+      } else {
+        return "I can explain any token metrics you see here - just ask about price changes, volume, or what any of the data means.";
+      }
+    } else if (pathname.includes('/contest') && pathname.includes('/detail')) {
+      return "Want tips for building a winning portfolio for this contest? I can help you understand the rules and strategy.";
+    } else if (pathname.includes('/contest') && pathname.includes('/lobby')) {
+      return "I can explain how the contest scoring works or help you understand what you're seeing in the leaderboard.";
+    } else if (pathname === '/') {
+      return "I can explain any of the market data, hot tokens, or features you see on DegenDuel.";
+    } else if (pathname.includes('/profile')) {
+      return "I can help you understand your stats, achievements, or explain how the ranking system works.";
+    }
+    
+    return "I can help you understand anything you see on DegenDuel - just ask!";
+  };
   
   // Generate page-specific context for Didi
   const getPageContext = () => {
@@ -239,7 +278,7 @@ export const Terminal = ({
   // Initialize with simple welcome message for AI chat
   useEffect(() => {
     setConversationHistory([
-      { role: 'assistant', content: "🤖 Hi, I'm Didi! Ask me anything about DegenDuel.", tool_calls: undefined },
+      { role: 'assistant', content: "Hi, I'm Didi! Ask me anything about DegenDuel.", tool_calls: undefined },
     ]);
     
     // Set up global UI handler
@@ -425,40 +464,17 @@ export const Terminal = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  // Toggle through terminal sizes with desktop-specific behavior
+  // Toggle between large and small terminal sizes
   const cycleSize = () => {
-    // On desktop, we start with 'large' and toggle to 'middle' and 'contracted'
-    // as this gives a better experience with larger screens
-    if (isDesktopView) {
-      switch(sizeState) {
-        case 'large':
-          setSizeState('middle');
-          break;
-        case 'middle':
-          setSizeState('contracted');
-          break;
-        case 'contracted':
-          setSizeState('large');
-          break;
-      }
-    } else {
-      // On mobile/smaller screens, we use the original sequence
-      switch(sizeState) {
-        case 'large':
-          setSizeState('middle');
-          break;
-        case 'middle':
-          setSizeState('contracted');
-          break;
-        case 'contracted':
-          setSizeState('large');
-          break;
-      }
-    }
+    // Simple toggle between large and contracted (small)
+    setSizeState(sizeState === 'large' ? 'contracted' : 'large');
   };
 
   // Update handleEnterCommand to ONLY update conversationHistory for command output
   const handleEnterCommand = async (command: string) => {
+    // Update interaction time when user sends a message
+    setLastInteractionTime(new Date());
+    
     const { activateEasterEgg } = useStore.getState();
     // Create user message (will be added to history by AI service)
     const userMessage: AIMessage = { role: 'user', content: command }; 
@@ -772,6 +788,66 @@ export const Terminal = ({
     };
   }, []);
 
+  // Proactive messaging system
+  useEffect(() => {
+    // Reset state when page changes, but respect global session flag
+    setPageLoadTime(new Date());
+    setLastInteractionTime(new Date());
+    // Don't reset hasShownProactiveMessage - let it stay true for the entire session
+  }, [location.pathname]);
+
+  // Track user interactions to update last interaction time
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      setLastInteractionTime(new Date());
+    };
+
+    // Listen for various user interactions
+    window.addEventListener('click', handleUserInteraction);
+    window.addEventListener('keydown', handleUserInteraction);
+    window.addEventListener('scroll', handleUserInteraction);
+
+    return () => {
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+      window.removeEventListener('scroll', handleUserInteraction);
+    };
+  }, []);
+
+  // Proactive message timer
+  useEffect(() => {
+    if (hasShownProactiveMessage || !terminalMinimized) {
+      return; // Don't show if already shown or terminal is open
+    }
+
+    const timer = setTimeout(() => {
+      const now = new Date();
+      const timeSincePageLoad = (now.getTime() - pageLoadTime.getTime()) / 1000;
+      const timeSinceLastInteraction = (now.getTime() - lastInteractionTime.getTime()) / 1000;
+
+      // Show message after 30 seconds on page AND 10 seconds since last interaction
+      if (timeSincePageLoad >= 30 && timeSinceLastInteraction >= 10) {
+        const message = getProactiveMessage();
+        
+        // Add proactive message to conversation history
+        setConversationHistory(prev => [...prev, { 
+          role: 'assistant', 
+          content: `🤖 ${message}`,
+          tool_calls: undefined 
+        }]);
+        
+        // Show unread indicator and mark as shown globally
+        setHasUnreadMessages(true);
+        setHasShownProactiveMessage(true);
+        sessionStorage.setItem('didi_proactive_shown', 'true');
+        
+        console.log('[Terminal] Didi sent proactive message (once per session):', message);
+      }
+    }, 31000); // Check after 31 seconds
+
+    return () => clearTimeout(timer);
+  }, [pageLoadTime, lastInteractionTime, hasShownProactiveMessage, terminalMinimized, location.pathname]);
+
   return (
     <>
       {/* Dynamic UI Manager - Rendered outside terminal container */}
@@ -784,7 +860,7 @@ export const Terminal = ({
         <motion.div
           ref={terminalRef}
           key="terminal"
-          className={`bg-black/95 border border-purple-500/60 font-mono text-sm ${sizeState === 'large' ? 'xl:text-base' : ''} fixed bottom-4 left-4 right-4 p-4 ${sizeState === 'large' ? 'xl:p-5' : ''} rounded-md max-w-full z-[99998] shadow-2xl pointer-events-auto`}
+          className={`bg-black/95 border border-purple-500/60 text-sm ${sizeState === 'large' ? 'xl:text-base' : ''} fixed bottom-4 left-4 right-4 p-4 ${sizeState === 'large' ? 'xl:p-5' : ''} rounded-md max-w-full z-[99998] shadow-2xl pointer-events-auto`}
           style={{ 
             perspective: "1000px",
             transformStyle: "preserve-3d",
@@ -878,33 +954,23 @@ export const Terminal = ({
             
             {/* Browser-style window controls */}
             <div className="flex items-center space-x-1">
-              {/* Minimize button */}
+              {/* Size toggle button (yellow) */}
               <button
                 type="button" 
-                onClick={() => setTerminalMinimized(true)}
-                className="h-4 w-4 rounded-full bg-amber-400 hover:bg-amber-300 flex items-center justify-center transition-colors"
-                title="Minimize"
-              >
-                <span className="text-black text-xs font-bold scale-90">_</span>
-              </button>
-              
-              {/* Resize/maximize button */}
-              <button
-                type="button"
                 onClick={cycleSize}
-                className="h-4 w-4 rounded-full bg-green-500 hover:bg-green-400 flex items-center justify-center transition-colors"
-                title={sizeState === 'large' ? 'Contract to Medium' : sizeState === 'middle' ? 'Contract to Small' : 'Expand to Large'}
+                className="h-4 w-4 rounded-full bg-amber-400 hover:bg-amber-300 flex items-center justify-center transition-colors"
+                title={sizeState === 'large' ? 'Make smaller' : 'Make larger'}
               >
-                <span className="text-black text-[11px] font-bold transform">
-                  {sizeState === 'large' ? '-' : '+'}
+                <span className="text-black text-[10px] font-bold">
+                  {sizeState === 'large' ? '◦' : '•'}
                 </span>
               </button>
               
-              {/* Close button */}
+              {/* Close/minimize button (red) */}
               <button
                 type="button" 
                 onClick={() => setTerminalMinimized(true)}
-                className="h-4 w-4 rounded-full bg-red-500 hover:bg-red-400 flex items-center justify-center transition-colors ml-1"
+                className="h-4 w-4 rounded-full bg-red-500 hover:bg-red-400 flex items-center justify-center transition-colors"
                 title="Minimize"
               >
                 <span className="text-black text-[10px] font-bold transform">×</span>
@@ -933,7 +999,7 @@ export const Terminal = ({
             {/* System status bar section - maintaining height but removing content */}
             <div className="mt-3 space-y-1">
               {/* Empty space to maintain terminal height */}
-              <div className="text-lg font-mono px-3 py-2 text-white flex items-center">
+              <div className="text-lg px-3 py-2 text-white flex items-center">
                 {/* Content removed but height preserved */}
               </div>
             </div>
@@ -950,9 +1016,9 @@ export const Terminal = ({
         <div
           className="fixed z-[99999] pointer-events-auto"
           style={{
-            right: '24px',
-            bottom: '15%',
-            transform: 'translateY(0)',
+            left: '62.5%',
+            bottom: '2px',
+            transform: 'translateX(-50%) scale(0.665)',
           }}
         >
           <DidiAvatar
@@ -965,6 +1031,7 @@ export const Terminal = ({
               if (!isDragging) {
                 setTerminalMinimized(false);
                 setHasUnreadMessages(false);
+                setSizeState('large');
               }
             }}
             onDragStart={() => {

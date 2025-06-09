@@ -123,12 +123,8 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
                   />
                 )}
                 
-                {/* Smart gradient overlay - adapts to trend */}
-                <div className={`absolute inset-0 transition-all duration-500 ${
-                  metrics.trend === 'up' 
-                    ? 'bg-gradient-to-t from-green-900/80 via-black/60 to-black/20'
-                    : 'bg-gradient-to-t from-red-900/80 via-black/60 to-black/20'
-                }`} />
+                {/* Neutral gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/20" />
                 
                 {/* Data pulse overlay based on activity */}
                 {metrics.activity > 10 && (
@@ -303,11 +299,11 @@ export const OptimizedTokenCard: React.FC<OptimizedTokenCardProps> = React.memo(
                   </div>
                 </div>
                 
-                {/* FDV vs Market Cap */}
+                {/* Volume */}
                 <div className="bg-dark-300/60 rounded p-2">
-                  <div className="text-xs text-gray-400">FDV</div>
+                  <div className="text-xs text-gray-400">Volume</div>
                   <div className="text-sm font-bold text-white">
-                    ${formatNumber(token.fdv || "0", 'short')}
+                    ${formatNumber(TokenHelpers.getVolume(token), 'short')}
                   </div>
                 </div>
                 

@@ -66,10 +66,10 @@ export const ShareContestButton: React.FC<ShareContestButtonProps> = ({
           document.body.removeChild(tempButton);
         }}
         className="
-          w-full relative overflow-hidden 
+          w-8 h-8 flex-shrink-0 relative overflow-hidden 
           bg-dark-200/40 backdrop-blur-sm hover:bg-dark-200/60
           border border-dark-300/80 hover:border-brand-500/40
-          transition-all duration-300 rounded-lg py-2 px-3
+          transition-all duration-300 rounded-lg
           font-cyber tracking-wide
         "
       >
@@ -79,18 +79,15 @@ export const ShareContestButton: React.FC<ShareContestButtonProps> = ({
         {/* Very subtle border glow */}
         <div className="absolute -inset-[1px] rounded-lg blur-sm bg-gradient-to-r from-brand-500/0 via-brand-500/20 to-brand-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
-        {/* Button content */}
-        <div className="relative flex items-center justify-center gap-2">
+        {/* Button content - icon only */}
+        <div className="relative flex items-center justify-center">
           <svg 
-            className="w-3.5 h-3.5 text-gray-400 group-hover:text-brand-400 transition-colors duration-300" 
+            className="w-4 h-4 text-gray-400 group-hover:text-brand-400 transition-colors duration-300" 
             fill="currentColor" 
             viewBox="0 0 20 20"
           >
             <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
           </svg>
-          <span className="text-xs font-bold text-gray-400 group-hover:text-gray-300 uppercase transition-colors duration-300">
-            Share
-          </span>
         </div>
         
         {/* Subtle shine effect */}
