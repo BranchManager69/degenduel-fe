@@ -79,8 +79,6 @@ export const DidiAvatar = ({
         className={`
           w-full h-full rounded-full relative overflow-visible
           bg-gradient-to-br from-slate-800/90 via-slate-900/95 to-purple-900/80
-          border-2 transition-colors duration-500
-          ${colorScheme === 'green' ? 'border-emerald-400/60' : 'border-purple-400/60'}
         `}
         animate={{
           boxShadow: [
@@ -314,10 +312,10 @@ export const DidiAvatar = ({
             }}
             transition={{ duration: isExcited ? 1 : 3, repeat: Infinity }}
           >
-            {/* Beautiful mouth using Unicode */}
-            <div className="text-lg leading-none">
-              {isExcited ? '💋' : '👄'}
-            </div>
+            {/* Simple styled mouth */}
+            <div className={`w-3 h-1.5 rounded-full ${
+              isExcited ? 'bg-pink-500' : 'bg-pink-400'
+            } opacity-80`} />
           </motion.div>
         </div>
 
@@ -361,17 +359,6 @@ export const DidiAvatar = ({
           />
         )}
 
-        {/* Bottom status line */}
-        <motion.div
-          className={`absolute bottom-1 left-1/2 transform -translate-x-1/2 h-0.5 rounded-full ${
-            colorScheme === 'green' ? 'bg-emerald-400/60' : 'bg-purple-400/60'
-          }`}
-          animate={{
-            width: ['20%', '80%', '20%'],
-            opacity: [0.4, 0.8, 0.4]
-          }}
-          transition={{ duration: 2, repeat: Infinity }}
-        />
       </motion.div>
 
       {/* Enhanced tooltip */}

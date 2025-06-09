@@ -38,7 +38,7 @@ export const FloatingDuelNowButton: React.FC<FloatingDuelNowButtonProps> = ({
 
   return (
     <motion.div
-      className="fixed bottom-20 sm:bottom-24 md:bottom-32 left-1/2 -translate-x-1/2 z-50"
+      className="relative w-full flex justify-center mt-2 mb-4 px-4"
       initial={{ opacity: 0, y: 20, scale: 0.8 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ 
@@ -49,7 +49,7 @@ export const FloatingDuelNowButton: React.FC<FloatingDuelNowButtonProps> = ({
       }}
     >
       <motion.div
-        className="cursor-pointer group w-full max-w-xs sm:max-w-md"
+        className="cursor-pointer group w-full max-w-sm"
         onClick={handleClick}
         title="Start your trading duel now!"
         whileHover={{ scale: 1.05 }}

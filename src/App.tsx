@@ -17,6 +17,9 @@
 import React, { createContext, lazy, Suspense, useContext, useMemo } from "react";
 import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "react-router-dom";
 
+// Stagewise for visual debugging
+// import { StagewiseToolbar } from "@stagewise/toolbar-react";
+
 // Auth providers
 // Unified Auth Contexts
 import { SolanaConnectionProvider, useSolanaConnection } from './contexts/SolanaConnectionContext';
@@ -30,14 +33,15 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-  TrustWalletAdapter
+    PhantomWalletAdapter,
+    SolflareWalletAdapter,
+    TrustWalletAdapter
 } from "@solana/wallet-adapter-wallets";
 
 // Other providers of dubious quality:
 import { ToastListener, ToastProvider } from "./components/toast";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
+import { Toaster } from "react-hot-toast";
 
 // Components
 
@@ -131,8 +135,8 @@ const CreateContestPage = lazy(() => import('./pages/authenticated/CreateContest
 const MyContestsPage = lazy(() => import('./pages/authenticated/MyContestsPage'));
 const MyPortfoliosPage = lazy(() => import('./pages/authenticated/MyPortfoliosPage'));
 const NotificationsPage = lazy(() => import('./pages/authenticated/NotificationsPage'));
-// const TokenSelection = lazy(() => import('./pages/authenticated/PortfolioTokenSelectionPage').then(module => ({ default: module.TokenSelection })));
-const TokenSelection = lazy(() => import('./pages/authenticated/PortfolioTokenSelectionSimplified').then(module => ({ default: module.PortfolioTokenSelectionSimplified })));
+const TokenSelection = lazy(() => import('./pages/public/contests/PortfolioTokenSelectionPage').then(module => ({ default: module.TokenSelection })));
+// const TokenSelection = lazy(() => import('./pages/authenticated/PortfolioTokenSelectionSimplified').then(module => ({ default: module.PortfolioTokenSelectionSimplified })));
 const PrivateProfilePage = lazy(() => import('./pages/authenticated/PrivateProfilePage').then(module => ({ default: module.PrivateProfilePage })));
 const WalletPage = lazy(() => import('./pages/authenticated/WalletPage'));
 
@@ -298,6 +302,7 @@ const AppProvidersAndContent: React.FC = () => {
           <TokenDataProvider>
             <ToastProvider>
               <AppContent />
+              <Toaster position="top-right" />
             </ToastProvider>
           </TokenDataProvider>
         </WalletAdapterProviders>
@@ -365,6 +370,9 @@ const AppContent: React.FC = () => {
       {user && (user as any).is_superadmin && <UiDebugPanel />}
       {user && (user as any).is_superadmin && <ServiceDebugPanel />}
       {user && (user as any).is_superadmin && <GameDebugPanel />}
+      
+      {/* Stagewise Visual Debugging Toolbar */}
+      {/* {process.env.NODE_ENV === 'development' && <StagewiseToolbar />} */}
       
       {/* Performance Toggle moved to Footer */}
       

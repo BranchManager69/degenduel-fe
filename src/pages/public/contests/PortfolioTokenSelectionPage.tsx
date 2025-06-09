@@ -12,17 +12,17 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from "react"
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
-import PortfolioPreviewModal from "../../components/portfolio-selection/PortfolioPreviewModal";
-import { PortfolioSummary } from "../../components/portfolio-selection/PortfolioSummary";
-import { TokenFilters } from "../../components/portfolio-selection/TokenFilters";
-import { PortfolioOptimizedTokenCard } from "../../components/portfolio-selection/PortfolioOptimizedTokenCard";
-import { Button } from "../../components/ui/Button";
-import { Card } from "../../components/ui/Card";
-import { Skeleton } from "../../components/ui/Skeleton";
-import { ddApi } from "../../services/dd-api";
-import { useStore } from "../../store/useStore";
-import { Contest, SearchToken, TokenHelpers } from "../../types/index";
-import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
+import PortfolioPreviewModal from "../../../components/portfolio-selection/PortfolioPreviewModal";
+import { PortfolioSummary } from "../../../components/portfolio-selection/PortfolioSummary";
+import { TokenFilters } from "../../../components/portfolio-selection/TokenFilters";
+import { PortfolioOptimizedTokenCard } from "../../../components/portfolio-selection/PortfolioOptimizedTokenCard";
+import { Button } from "../../../components/ui/Button";
+import { Card } from "../../../components/ui/Card";
+import { Skeleton } from "../../../components/ui/Skeleton";
+import { ddApi } from "../../../services/dd-api";
+import { useStore } from "../../../store/useStore";
+import { Contest, SearchToken, TokenHelpers } from "../../../types/index";
+import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
 import { useWallet } from "@solana/wallet-adapter-react";
 
 // Declare Buffer on window type
@@ -138,6 +138,7 @@ export const TokenSelection: React.FC = () => {
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   const [contest, setContest] = useState<Contest | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [hasExistingPortfolio, setHasExistingPortfolio] = useState(false);
   const user = useStore((state) => state.user);
   
   // Infinite scroll state
@@ -169,6 +170,14 @@ export const TokenSelection: React.FC = () => {
   // Now using WebSocket-based standardized token data for better performance!
   console.log("🚀 PortfolioTokenSelectionPage: Using WebSocket-based standardized token data");
   
+  // Reset transaction state when user changes (fixes stuck button after login)
+  useEffect(() => {
+    setTransactionState({
+      status: "idle",
+      message: "",
+    });
+  }, [user?.wallet_address]);
+
   useEffect(() => {
     const fetchContest = async () => {
       if (!contestId || contestId === 'undefined' || contestId === 'null') {
@@ -205,11 +214,18 @@ export const TokenSelection: React.FC = () => {
 
   useEffect(() => {
     const fetchExistingPortfolio = async () => {
-      if (!contestId || !user?.wallet_address) return;
+      // Only load existing portfolio for authenticated users
+      if (!contestId || !user?.wallet_address) {
+        setLoadingEntryStatus(false);
+        setHasExistingPortfolio(false);
+        return;
+      }
 
       try {
         setLoadingEntryStatus(true);
+        console.error("🔴🔴🔴 FETCHING PORTFOLIO FOR CONTEST:", contestId, "🔴🔴🔴");
         const portfolioData = await ddApi.portfolio.get(Number(contestId));
+        console.error("🟢🟢🟢 PORTFOLIO DATA RECEIVED:", portfolioData, "🟢🟢🟢");
 
         // Create map using contract addresses instead of symbols
         const existingPortfolio = new Map<string, number>(
@@ -219,8 +235,24 @@ export const TokenSelection: React.FC = () => {
         );
 
         setSelectedTokens(existingPortfolio);
-      } catch (error) {
-        console.error("Failed to fetch existing portfolio:", error);
+        
+        // If we got portfolio data, user is already in the contest
+        if (existingPortfolio.size > 0) {
+          setHasExistingPortfolio(true);
+          console.error("🔵🔵🔵 USER HAS EXISTING PORTFOLIO! 🔵🔵🔵", {
+            portfolioSize: existingPortfolio.size,
+            tokens: Array.from(existingPortfolio.entries())
+          });
+        } else {
+          console.error("🟠🟠🟠 PORTFOLIO DATA RETURNED BUT NO TOKENS FOUND 🟠🟠🟠");
+        }
+      } catch (error: any) {
+        console.error("❌❌❌ FAILED TO FETCH PORTFOLIO ❌❌❌", error);
+        // If it's a 404 or similar, user is not in contest yet
+        if (error.response?.status === 404 || error.message?.includes("not found")) {
+          setHasExistingPortfolio(false);
+          console.error("🟣🟣🟣 USER NOT IN CONTEST YET (404) 🟣🟣🟣");
+        }
       } finally {
         setLoadingEntryStatus(false);
       }
@@ -264,6 +296,31 @@ export const TokenSelection: React.FC = () => {
     return orderedTokens;
   }, [tokens, selectedTokens]);
 
+  // Sort state for this page only
+  const [sortBy, setSortBy] = useState<'default' | 'marketCap' | 'volume' | 'change24h' | 'price'>('default');
+  
+  // Apply sorting to the memoized tokens
+  const sortedTokens = useMemo(() => {
+    if (sortBy === 'default') {
+      return memoizedTokens; // Keep backend order (DegenDuel score)
+    }
+    
+    return [...memoizedTokens].sort((a, b) => {
+      switch (sortBy) {
+        case 'marketCap':
+          return (Number(b.market_cap) || 0) - (Number(a.market_cap) || 0);
+        case 'volume':
+          return (Number(b.volume_24h) || 0) - (Number(a.volume_24h) || 0);
+        case 'change24h':
+          return (Number(b.change_24h) || 0) - (Number(a.change_24h) || 0);
+        case 'price':
+          return (Number(b.price) || 0) - (Number(a.price) || 0);
+        default:
+          return 0;
+      }
+    });
+  }, [memoizedTokens, sortBy]);
+
   // Token selection handler - will be defined after offline mode variables
 
   const totalWeight = Array.from(selectedTokens.values()).reduce(
@@ -294,18 +351,18 @@ export const TokenSelection: React.FC = () => {
     
     const tokenEntries = Array.from(selectedTokens.entries())
       .map(([contractAddress, weight]) => {
-        const token = memoizedTokens.find(t => t.contractAddress === contractAddress);
+        const token = sortedTokens.find(t => TokenHelpers.getAddress(t) === contractAddress);
         return `${token?.symbol || 'Unknown'} (${weight}%)`;
       })
       .join(', ');
     
     return tokenEntries;
-  }, [selectedTokens, memoizedTokens]);
+  }, [selectedTokens, sortedTokens]);
 
   const portfolioDetails = useMemo(() => {
     const tokens = Array.from(selectedTokens.entries())
       .map(([contractAddress, weight]) => {
-        const token = memoizedTokens.find(t => t.contractAddress === contractAddress);
+        const token = sortedTokens.find(t => TokenHelpers.getAddress(t) === contractAddress);
         return {
           symbol: token?.symbol || 'Unknown',
           weight,
@@ -318,7 +375,7 @@ export const TokenSelection: React.FC = () => {
       name: `Portfolio for ${contest?.name || 'Contest'}`,
       tokens
     };
-  }, [selectedTokens, memoizedTokens, contest?.name]);
+  }, [selectedTokens, sortedTokens, contest?.name]);
 
   const handleSubmit = async () => {
     if (!contest || !contestId || contestId === 'undefined' || contestId === 'null') {
@@ -338,9 +395,17 @@ export const TokenSelection: React.FC = () => {
       return;
     }
 
+    // BROWSING USERS: Redirect to login with return URL
     if (!user?.wallet_address) {
-      console.error("Submit failed: No wallet address");
-      toast.error("Please connect your wallet first");
+      console.log("User not authenticated, redirecting to login");
+      toast.error("Please log in to enter contests", { duration: 4000 });
+      
+      // Reset loading state immediately (don't leave button disabled)
+      setIsLoading(false);
+      
+      // Navigate to login with return URL to come back here
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      navigate(`/login?returnUrl=${returnUrl}`);
       return;
     }
 
@@ -616,8 +681,8 @@ export const TokenSelection: React.FC = () => {
         );
       }
 
-      // Navigate to contest page after successful entry (both free and paid)
-      navigate(`/contests/${contestId}`);
+      // Don't navigate immediately - let user see success and decide
+      // navigate(`/contests/${contestId}`);
     } catch (error: any) {
       const errorMsg = error.message || "Failed to enter contest";
 
@@ -629,13 +694,9 @@ export const TokenSelection: React.FC = () => {
           message: "You're already participating in this contest!",
         });
 
-        toast.success("You're already in this contest! Redirecting to contest page...", { duration: 3000 });
+        toast.success("You're already in this contest! You can update your portfolio.", { duration: 3000 });
         
-        // Navigate to contest page after brief delay
-        setTimeout(() => {
-          navigate(`/contests/${contestId}`);
-        }, 1500);
-        
+        // Don't navigate - let user see the success state
         return; // Don't show error state
       }
 
@@ -654,11 +715,7 @@ export const TokenSelection: React.FC = () => {
 
         toast.success("Successfully entered contest! (Analytics tracking temporarily unavailable)", { duration: 4000 });
         
-        // Navigate to contest page after brief delay
-        setTimeout(() => {
-          navigate(`/contests/${contestId}`);
-        }, 1500);
-        
+        // Don't navigate - let user see the success state
         return; // Don't show error state for this non-critical error
       }
 
@@ -1172,6 +1229,27 @@ export const TokenSelection: React.FC = () => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="flex flex-col min-h-screen">
+        {/* Browsing Users Info Banner */}
+        {!user?.wallet_address && (
+          <div className="bg-brand-500/10 border-b border-brand-500/30 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-brand-400 text-sm">
+                <span className="w-2 h-2 bg-brand-400 rounded-full"></span>
+                <span>You can build portfolios without logging in! Enter the contest when you're ready.</span>
+              </div>
+              <button
+                onClick={() => {
+                  const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                  navigate(`/login?returnUrl=${returnUrl}`);
+                }}
+                className="px-3 py-1 bg-brand-500/20 rounded text-xs hover:bg-brand-500/30 transition-colors font-mono"
+              >
+                [LOGIN]
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Enhanced Offline/Connection Status Banner */}
         {showOfflineIndicator && (
           <div className="bg-blue-500/10 border-b border-blue-500/30 px-4 py-3">
@@ -1295,23 +1373,38 @@ export const TokenSelection: React.FC = () => {
                         TOKEN.SELECTION
                       </h2>
                       <div className="text-xs font-mono text-gray-400">
-                        AVAILABLE: <span className="text-emerald-400">{memoizedTokens.length}</span>
+                        AVAILABLE: <span className="text-emerald-400">{sortedTokens.length}</span>
                       </div>
                     </div>
                     
                     {/* Simplified Filters - Only search and view mode */}
-                    <div className="mb-4 sm:mb-6">
+                    <div className="mb-4 sm:mb-6 space-y-4">
                       <TokenFilters
                         viewMode={viewMode}
                         onViewModeChange={setViewMode}
                         onTokenSearchSelect={handleTokenSearchSelect}
                       />
+                      
+                      {/* Sort dropdown */}
+                      <div className="flex justify-end">
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value as any)}
+                          className="px-3 py-2 bg-dark-200/50 border border-emerald-500/30 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-400"
+                        >
+                          <option value="default">🔥 Trending</option>
+                          <option value="marketCap">Market Cap</option>
+                          <option value="volume">Volume</option>
+                          <option value="change24h">24h Change</option>
+                          <option value="price">Price</option>
+                        </select>
+                      </div>
                     </div>
 
                     {/* Enhanced Token Grid - Visual rich cards with infinite scroll */}
                     <div className="relative">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {memoizedTokens.map((token) => {
+                        {sortedTokens.map((token) => {
                           const contractAddress = TokenHelpers.getAddress(token);
                           const isSelected = selectedTokens.has(contractAddress);
                           const weight = selectedTokens.get(contractAddress) || 0;
@@ -1377,7 +1470,7 @@ export const TokenSelection: React.FC = () => {
                       </h2>
                       <PortfolioSummary
                         selectedTokens={selectedTokens}
-                        tokens={memoizedTokens}
+                        tokens={sortedTokens}
                       />
 
                       <div className="mt-4 sm:mt-6">
@@ -1486,27 +1579,72 @@ export const TokenSelection: React.FC = () => {
                           </div>
                         )}
 
-                        <Button
-                          onClick={handlePreviewPortfolio}
-                          disabled={
-                            loadingEntryStatus ||
-                            portfolioValidation !== null ||
-                            isLoading ||
-                            transactionState.status !== "idle"
-                          }
-                          className="w-full relative group overflow-hidden text-sm sm:text-base py-3 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-emerald-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                          <span className="relative flex items-center justify-center font-medium font-mono">
-                            {isLoading ? (
-                              <div>
-                                [DEPLOYING...]
+                        {transactionState.status === "success" ? (
+                          <div className="space-y-4">
+                            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+                              <div className="flex items-center justify-center mb-3">
+                                <div className="text-4xl animate-bounce">🎉</div>
                               </div>
-                            ) : (
-                              "[PREVIEW.PORTFOLIO]"
-                            )}
-                          </span>
-                        </Button>
+                              <h3 className="text-lg font-bold text-emerald-400 text-center mb-2">
+                                Contest Entry Successful!
+                              </h3>
+                              <p className="text-sm text-gray-300 text-center mb-4">
+                                Your portfolio has been submitted and you're now competing!
+                              </p>
+                              {transactionState.signature && (
+                                <div className="text-center mb-4">
+                                  <a
+                                    href={`https://solscan.io/tx/${transactionState.signature}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-emerald-400 hover:text-emerald-300 underline"
+                                  >
+                                    View transaction on Solscan →
+                                  </a>
+                                </div>
+                              )}
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                  onClick={() => navigate(`/contests/${contestId}`)}
+                                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-sm"
+                                >
+                                  [VIEW.CONTEST]
+                                </Button>
+                                <Button
+                                  onClick={() => navigate('/contests')}
+                                  className="bg-dark-400 hover:bg-dark-300 text-white font-mono text-sm"
+                                >
+                                  [BROWSE.MORE]
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            onClick={handlePreviewPortfolio}
+                            disabled={
+                              loadingEntryStatus ||
+                              portfolioValidation !== null ||
+                              isLoading ||
+                              transactionState.status !== "idle"
+                            }
+                            className="w-full relative group overflow-hidden text-sm sm:text-base py-3 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-emerald-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <span className="relative flex items-center justify-center font-medium font-mono">
+                              {isLoading ? (
+                                <div>
+                                  [DEPLOYING...]
+                                </div>
+                              ) : user?.wallet_address ? (
+                                (console.log("Button render state:", { hasExistingPortfolio, user: user?.wallet_address }), 
+                                hasExistingPortfolio ? "[UPDATE.PORTFOLIO]" : "[PREVIEW.PORTFOLIO]")
+                              ) : (
+                                "[BUILD.PORTFOLIO]"
+                              )}
+                            </span>
+                          </Button>
+                        )}
 
                         {portfolioValidation && (
                           <p className="mt-2 text-xs sm:text-sm text-red-400 text-center font-mono">
@@ -1523,32 +1661,66 @@ export const TokenSelection: React.FC = () => {
             {/* Floating Submit Button for Mobile - Different styling */}
             <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-dark-100 to-transparent">
               <div className="max-w-md mx-auto">
-                <Button
-                  onClick={handlePreviewPortfolio}
-                  disabled={
-                    loadingEntryStatus ||
-                    portfolioValidation !== null ||
-                    isLoading ||
-                    transactionState.status !== "idle"
-                  }
-                  className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-emerald-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <span className="relative flex items-center justify-center gap-2 font-mono">
-                    {isLoading ? (
-                      <div>[DEPLOYING...]</div>
-                    ) : (
-                      <>
-                        <span className="font-medium">[PREVIEW]</span>
-                        <span className="text-emerald-400">{totalWeight}%</span>
-                      </>
-                    )}
-                  </span>
-                </Button>
-                {portfolioValidation && (
-                  <p className="mt-2 text-xs text-red-400 text-center font-mono bg-dark-100/95 rounded-lg py-2">
-                    ERROR: {portfolioValidation}
-                  </p>
+                {transactionState.status === "success" ? (
+                  <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+                    <div className="flex items-center justify-center mb-2">
+                      <div className="text-3xl">🎉</div>
+                    </div>
+                    <h3 className="text-base font-bold text-emerald-400 text-center mb-2">
+                      Entry Successful!
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        onClick={() => navigate(`/contests/${contestId}`)}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2"
+                      >
+                        [VIEW]
+                      </Button>
+                      <Button
+                        onClick={() => navigate('/contests')}
+                        className="bg-dark-400 hover:bg-dark-300 text-white font-mono text-xs py-2"
+                      >
+                        [MORE]
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Button
+                      onClick={handlePreviewPortfolio}
+                      disabled={
+                        loadingEntryStatus ||
+                        portfolioValidation !== null ||
+                        isLoading ||
+                        transactionState.status !== "idle"
+                      }
+                      className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-emerald-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <span className="relative flex items-center justify-center gap-2 font-mono">
+                        {isLoading ? (
+                          <div>[DEPLOYING...]</div>
+                        ) : user?.wallet_address ? (
+                          <>
+                            <span className="font-medium">[PREVIEW]</span>
+                            <span className="text-emerald-400">{totalWeight}%</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-medium">[BUILD]</span>
+                            <span className="text-emerald-400">{totalWeight}%</span>
+                          </>
+                        )}
+                      </span>
+                    </Button>
+                    <div className="mt-2 h-8">
+                      {portfolioValidation && (
+                        <p className="text-xs text-red-400 text-center font-mono bg-dark-100/95 rounded-lg py-2">
+                          ERROR: {portfolioValidation}
+                        </p>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             </div>

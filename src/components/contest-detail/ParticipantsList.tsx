@@ -81,6 +81,43 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
   }, [participants, searchQuery]);
 
   const sortedParticipants = useMemo(() => {
+    // Debug logging for participant data
+    console.log("[ParticipantsList] Participant data:", 
+      filteredParticipants.slice(0, 3).map(p => ({
+        nickname: p.nickname,
+        profile_image_url: p.profile_image_url,
+        user_level: p.user_level,
+        experience_points: p.experience_points,
+        has_user_level: !!p.user_level
+      }))
+    );
+    
+    // Test backend connectivity for profile images
+    if (filteredParticipants.length > 0) {
+      const testParticipant = filteredParticipants[0];
+      if (testParticipant.wallet_address) {
+        const testUrl = `${window.location.origin}/api/users/${testParticipant.wallet_address}/profile-image`;
+        console.log(`[ParticipantsList] Testing profile image endpoint:`, testUrl);
+        
+        // Test if the endpoint is reachable
+        fetch(testUrl, { method: 'HEAD' })
+          .then(response => {
+            console.log(`[ParticipantsList] Profile image endpoint test result:`, {
+              url: testUrl,
+              status: response.status,
+              headers: Object.fromEntries(response.headers.entries()),
+              ok: response.ok
+            });
+          })
+          .catch(error => {
+            console.error(`[ParticipantsList] Profile image endpoint unreachable:`, {
+              url: testUrl,
+              error: error.message
+            });
+          });
+      }
+    }
+    
     return [...filteredParticipants].sort((a, b) => {
       // Current user first
       if (a.is_current_user && !b.is_current_user) return -1;
@@ -286,12 +323,66 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                       <div className="relative w-full h-full">
                       {/* Profile image - zoomed and fading to right */}
                       <img
-                        src={participant.profile_image_url}
+                        src={(() => {
+                          // Log the URL being used
+                          const url = participant.profile_image_url;
+                          console.log(`[ParticipantsList] Attempting to load image for ${participant.nickname}:`, {
+                            originalUrl: url,
+                            isRelativePath: url && !url.startsWith('http'),
+                            isFullUrl: url && url.startsWith('http'),
+                            currentOrigin: window.location.origin,
+                            participantWallet: participant.wallet_address
+                          });
+                          
+                          // If URL is relative, it might need to be prefixed with API URL
+                          if (url && !url.startsWith('http')) {
+                            // Try to construct full URL if it's a relative path
+                            const fullUrl = `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
+                            console.log(`[ParticipantsList] Converting relative URL to full:`, fullUrl);
+                            return fullUrl;
+                          }
+                          
+                          // Test if profile image URL points to backend vs current origin
+                          if (url && url.startsWith('http')) {
+                            const urlObj = new URL(url);
+                            console.log(`[ParticipantsList] Full URL analysis for ${participant.nickname}:`, {
+                              hostname: urlObj.hostname,
+                              port: urlObj.port,
+                              currentHostname: window.location.hostname,
+                              currentPort: window.location.port,
+                              isCurrentDomain: urlObj.hostname === window.location.hostname && urlObj.port === window.location.port
+                            });
+                          }
+                          
+                          return url;
+                        })()}
                         alt={participant.nickname}
                         className="absolute left-0 top-0 h-full w-32 object-cover scale-125"
                         style={{
                           maskImage: 'linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%)',
                           WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%)'
+                        }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          console.error(`[ParticipantsList] Failed to load profile image for ${participant.nickname}:`, {
+                            url: participant.profile_image_url,
+                            currentSrc: target.src,
+                            naturalWidth: target.naturalWidth,
+                            naturalHeight: target.naturalHeight,
+                            complete: target.complete,
+                            error: e
+                          });
+                          // NOT hiding the broken image anymore - we want to see what's happening
+                          // target.style.display = 'none';
+                        }}
+                        onLoad={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          console.log(`[ParticipantsList] Successfully loaded profile image for ${participant.nickname}:`, {
+                            url: participant.profile_image_url,
+                            currentSrc: target.src,
+                            naturalWidth: target.naturalWidth,
+                            naturalHeight: target.naturalHeight
+                          });
                         }}
                       />
                       {/* Overlay for text readability */}

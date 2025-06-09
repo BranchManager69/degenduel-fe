@@ -137,7 +137,7 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
   // You might need other state or logic here depending on complexity
   return (
     <motion.div
-      className="mt-4 mb-6 md:mt-8 md:mb-10 flex flex-col items-center justify-center gap-3 md:gap-6 px-4 sm:px-0 max-w-full"
+      className="mt-4 mb-2 md:mt-8 md:mb-4 flex flex-col items-center justify-center gap-3 md:gap-6 px-4 sm:px-0 max-w-full"
       initial={{ opacity: 0, y: 20 }}
       animate={{
         opacity: animationPhase > 0 ? 1 : 0,
@@ -182,18 +182,18 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
           </button>
         </RouterLink>
 
-        {/* MCP AI ASSISTANTS button */}
-        <RouterLink to="/mcp" className="w-full sm:w-[48%]">
+        {/* FAQ button */}
+        <RouterLink to="/faq" className="w-full sm:w-[48%]">
           <button 
             className="w-full relative group overflow-hidden"
-            aria-label="Connect AI assistants to your trading"
+            aria-label="Frequently asked questions"
           >
             <div className="relative clip-edges bg-gradient-to-r from-purple-500 to-pink-600 p-[1px] transition-all duration-300 group-hover:from-purple-400 group-hover:to-pink-500 shadow-md shadow-purple-900/20">
               <div className="relative clip-edges bg-dark-200/40 backdrop-blur-sm px-5 py-3">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
                 <div className="relative flex items-center justify-between space-x-3 text-lg font-cyber">
                   <span className="bg-gradient-to-r from-purple-300 to-pink-400 text-transparent bg-clip-text group-hover:from-white group-hover:to-purple-200">
-                    MCP
+                    FAQ
                   </span>
                   <svg
                     className="w-5 h-5 text-purple-400 group-hover:text-white transform group-hover:translate-x-1 transition-all"

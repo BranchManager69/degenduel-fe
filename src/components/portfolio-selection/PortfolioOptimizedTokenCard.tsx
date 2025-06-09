@@ -314,7 +314,7 @@ export const PortfolioOptimizedTokenCard: React.FC<PortfolioOptimizedTokenCardPr
               }`}
             >
               <div
-                className="bg-gradient-to-r from-dark-900/95 via-dark-800/95 to-dark-900/95 backdrop-blur-sm p-3 border-t border-brand-500/30"
+                className="bg-black/70 backdrop-blur-sm p-3 border-t border-brand-500/30"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex justify-between items-center mb-2">

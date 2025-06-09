@@ -10,7 +10,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { API_URL } from '../../config/config';
+import { ddApi } from '../../services/dd-api';
 
 export interface WhaleTier {
   key: string;
@@ -79,26 +79,8 @@ export function useWhaleStatus(): UseWhaleStatusReturn {
     try {
       setError(null);
 
-      const response = await fetch(`${API_URL}/user/whale-status`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Include auth cookies/tokens
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Authentication required');
-        }
-        if (response.status === 403) {
-          throw new Error('Access denied');
-        }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data: WhaleStatusResponse = await response.json();
+      // Use the standardized API client from ddApi
+      const data: WhaleStatusResponse = await ddApi.users.getWhaleStatus();
 
       if (!data.success) {
         throw new Error(data.error || data.message || 'Failed to fetch whale status');
@@ -111,8 +93,23 @@ export function useWhaleStatus(): UseWhaleStatusReturn {
 
       setIsLoading(false);
     } catch (err: any) {
-      console.error('[useWhaleStatus] Error fetching whale status:', err);
-      setError(err.message || 'Failed to fetch whale status');
+      // Handle authentication errors gracefully for browsing users
+      if (err.message?.includes('authentication') || err.message?.includes('unauthorized') || err.message?.includes('401')) {
+        console.log('[useWhaleStatus] User not authenticated - setting default non-whale status');
+        setWhaleStatus({
+          is_whale: false,
+          current_balance: 0,
+          required_balance: 1000000,
+          balance_percentage: 0,
+          whale_tier: 'none',
+          tier_name: 'Not Connected',
+          last_updated: new Date().toISOString()
+        });
+        setError(null); // Don't show error to browsing users
+      } else {
+        console.error('[useWhaleStatus] Error fetching whale status:', err);
+        setError(err.message || 'Failed to fetch whale status');
+      }
       setIsLoading(false);
     }
   }, []);
@@ -123,20 +120,8 @@ export function useWhaleStatus(): UseWhaleStatusReturn {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_URL}/user/whale-status/refresh`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data: WhaleStatusResponse = await response.json();
+      // Use the standardized API client from ddApi
+      const data: WhaleStatusResponse = await ddApi.users.refreshWhaleStatus();
 
       if (!data.success) {
         throw new Error(data.error || data.message || 'Failed to refresh whale status');
@@ -149,8 +134,14 @@ export function useWhaleStatus(): UseWhaleStatusReturn {
 
       setIsLoading(false);
     } catch (err: any) {
-      console.error('[useWhaleStatus] Error forcing refresh:', err);
-      setError(err.message || 'Failed to refresh whale status');
+      // Handle authentication errors gracefully for browsing users
+      if (err.message?.includes('authentication') || err.message?.includes('unauthorized') || err.message?.includes('401')) {
+        console.log('[useWhaleStatus] User not authenticated - cannot refresh whale status');
+        setError(null); // Don't show any error to browsing users
+      } else {
+        console.error('[useWhaleStatus] Error forcing refresh:', err);
+        setError(err.message || 'Failed to refresh whale status');
+      }
       setIsLoading(false);
     }
   }, []);

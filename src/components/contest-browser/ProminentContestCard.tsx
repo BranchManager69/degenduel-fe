@@ -90,13 +90,14 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
   };
 
   return (
-    <motion.div
-      ref={cardRef}
-      onClick={onClick}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className={cn("group relative bg-gradient-to-br from-dark-200/90 via-dark-200/95 to-dark-300/90 backdrop-blur-md border-2 border-brand-400/30 hover:border-brand-400/60 transform transition-all duration-500 hover:scale-[1.02] rounded-xl overflow-hidden w-full max-w-full cursor-pointer", className)}
+    <div className="relative"> {/* Removed crown spacing */}
+      <motion.div
+        ref={cardRef}
+        onClick={onClick}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={cn("group relative bg-gradient-to-br from-dark-200/90 via-purple-900/20 to-dark-300/90 backdrop-blur-md border-2 border-purple-800/60 hover:border-purple-700/80 transform transition-all duration-500 hover:scale-[1.02] rounded-xl overflow-visible w-full max-w-full cursor-pointer", className)}
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
@@ -105,9 +106,9 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
         transition: { duration: 0.3 }
       }}
     >
-      {/* Enhanced Glow Effects */}
-      <div className="absolute -inset-[2px] bg-gradient-to-r from-brand-400/20 via-purple-500/20 to-brand-600/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400/30 via-purple-500/30 to-brand-600/30 rounded-xl blur-sm opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+      {/* Enhanced Glow Effects - Adding DegenDuel Purple */}
+      <div className="absolute -inset-[2px] bg-gradient-to-r from-amber-400/30 via-purple-500/25 to-amber-600/30 rounded-xl blur-lg opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute -inset-[1px] bg-gradient-to-r from-amber-400/40 via-purple-400/30 to-amber-600/40 rounded-xl blur-sm opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
       
       {/* Animated Background Pattern */}
       <div className="absolute inset-0 overflow-hidden rounded-xl">
@@ -124,14 +125,14 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
             }}
           />
           
-          {/* Animated energy waves */}
+          {/* Animated energy waves - Enhanced with Purple */}
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-400/5 to-transparent"
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/8 to-transparent"
             animate={{ x: ["-100%", "100%"] }}
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
           />
           <motion.div
-            className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-400/5 to-transparent"
+            className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/8 to-transparent"
             animate={{ y: ["-100%", "100%"] }}
             transition={{ duration: 4, repeat: Infinity, ease: "linear", delay: 1 }}
           />
@@ -140,7 +141,7 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
 
       {/* Contest Image with Enhanced Parallax Effect */}
       {getContestImageUrl(contest.image_url) && (
-        <div className="absolute inset-0 overflow-hidden rounded-xl">
+        <div className="absolute inset-0 overflow-hidden rounded-xl" style={{clipPath: 'inset(0 0 0 0 round 12px)'}}>
           {/* Loading state */}
           {!imageLoaded && !imageError && !imageBlurhash && (
             <div className="absolute inset-0 flex items-center justify-center bg-dark-300/50 z-10">
@@ -222,23 +223,23 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
       {/* Featured Label Banner */}
       <div className="absolute top-0 left-0 right-0 z-30">
         <motion.div
-          className="relative bg-gradient-to-r from-brand-500 via-purple-500 to-brand-600 text-white text-center py-3 px-6 rounded-t-xl"
+          className="relative bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-black text-center py-3 px-6 rounded-t-xl"
           initial={{ y: -50 }}
           animate={{ y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
           {/* Banner glow */}
-          <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400 via-purple-400 to-brand-600 rounded-t-xl blur-sm opacity-50" />
+          <div className="absolute -inset-[1px] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-600 rounded-t-xl blur-sm opacity-50" />
           
           {/* Banner content */}
-          <div className="relative z-10 flex items-center justify-center gap-2">
+          <div className="relative z-10 flex items-center justify-center gap-3">
             <motion.span
-              className="text-lg font-black uppercase tracking-wider"
+              className="text-lg font-black uppercase tracking-wider text-black"
               animate={{ 
                 textShadow: [
-                  "0 0 10px rgba(255,255,255,0.3)",
-                  "0 0 20px rgba(255,255,255,0.5)",
-                  "0 0 10px rgba(255,255,255,0.3)"
+                  "0 0 10px rgba(0,0,0,0.3)",
+                  "0 0 20px rgba(0,0,0,0.5)",
+                  "0 0 10px rgba(0,0,0,0.3)"
                 ]
               }}
               transition={{ duration: 2, repeat: Infinity }}
@@ -254,62 +255,15 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
             animate={{ opacity: 1 }}
           >
             <motion.div 
-              className="w-[30%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent"
+              className="w-[30%] h-full bg-gradient-to-r from-transparent via-purple-400/30 to-transparent"
               animate={{ x: ["-30%", "130%"] }}
               transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
             />
           </motion.div>
         </motion.div>
+        
       </div>
 
-      {/* Enhanced Status Indicator */}
-      <div className="absolute top-14 right-4 z-30">
-        {displayStatus === "active" && (
-          <motion.div 
-            className="relative overflow-hidden backdrop-blur-md rounded-lg border border-green-400/50 bg-dark-200/60"
-            initial={{ scale: 0, rotate: 45 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 via-brand-500/30 to-green-500/30" />
-            <div className="absolute -inset-[1px] rounded-lg blur-sm bg-gradient-to-r from-green-400/50 via-brand-400/50 to-green-400/50" />
-            
-            <div className="relative flex items-center gap-2 px-4 py-2">
-              <span className="relative flex h-3 w-3">
-                <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75" />
-                <span className="relative rounded-full w-3 h-3 bg-green-400" />
-              </span>
-              <span className="text-sm font-bold text-green-300 uppercase tracking-wide">LIVE NOW</span>
-            </div>
-          </motion.div>
-        )}
-        
-        {displayStatus === "pending" && (
-          <motion.div 
-            className="relative overflow-hidden backdrop-blur-md rounded-lg border border-blue-400/50 bg-dark-200/60"
-            initial={{ scale: 0, rotate: 45 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 via-brand-500/30 to-blue-500/30" />
-            <div className="absolute -inset-[1px] rounded-lg blur-sm bg-gradient-to-r from-blue-400/50 via-brand-400/50 to-blue-400/50" />
-            
-            <div className="relative flex items-center gap-2 px-4 py-2">
-              <motion.svg 
-                className="w-4 h-4 text-blue-300" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </motion.svg>
-              <span className="text-sm font-bold text-blue-300 uppercase tracking-wide">SOON</span>
-            </div>
-          </motion.div>
-        )}
-      </div>
 
       {/* Main Content Area */}
       <div className="relative p-6 pt-16 space-y-4 z-20">
@@ -365,68 +319,47 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
         >
-          {/* Entry Fee */}
-          <div className="flex-1 min-w-[150px] bg-dark-300/40 backdrop-blur-sm rounded-lg px-4 py-3 border border-blue-500/20 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="relative z-10 flex items-center justify-between">
-              <span className="text-xs font-medium text-blue-300 uppercase tracking-wide">Entry</span>
-              <span className="text-xl font-bold text-white">{formatCurrency(Number(contest.entry_fee))}</span>
-            </div>
-          </div>
-
-          {/* Prize Pool */}
-          <div className="flex-1 min-w-[200px] bg-dark-300/40 backdrop-blur-sm rounded-lg px-4 py-3 border border-brand-400/30 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="relative z-10 flex items-center justify-between">
-              <span className="text-xs font-medium text-brand-300 uppercase tracking-wide">Prize</span>
-              <span className="text-2xl font-bold text-brand-300">
-                {formatCurrency(Number(contest.total_prize_pool || contest.prize_pool || "0"))}
-              </span>
-            </div>
-            
-            {/* Prize pool shine effect */}
-            <motion.div 
-              className="absolute inset-0 overflow-hidden rounded-lg"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <motion.div 
-                className="w-[30%] h-full bg-gradient-to-r from-transparent via-brand-400/20 to-transparent"
-                animate={{ x: ["-30%", "130%"] }}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-              />
-            </motion.div>
-          </div>
-
-          {/* Players */}
-          <div className="flex-1 min-w-[150px] bg-dark-300/40 backdrop-blur-sm rounded-lg px-4 py-3 border border-green-500/20 relative overflow-hidden">
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-green-300 uppercase tracking-wide">Players</span>
-                <span className="text-lg font-bold text-white">
-                  {contest.participant_count}/{contest.max_participants}
+          {/* Entry Fee & Prize Pool - Simplified */}
+          <div className="flex-1 min-w-[300px]">
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-amber-300 uppercase tracking-wide">Entry</span>
+                {Number(contest.entry_fee) === 0 ? (
+                  <span className="text-lg font-bold text-green-400 uppercase tracking-wide">FREE</span>
+                ) : (
+                  <span className="text-lg font-bold text-white">{formatCurrency(Number(contest.entry_fee))}</span>
+                )}
+              </div>
+              <div className="w-px h-8 bg-amber-400/30" />
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-amber-300 uppercase tracking-wide">Prize</span>
+                <span className="text-xl font-bold text-amber-300">
+                  {formatCurrency(Number(contest.total_prize_pool || contest.prize_pool || "0"))}
                 </span>
               </div>
-              <div className="w-full bg-dark-400 rounded-full h-1.5 overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-green-400 to-brand-500 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(contest.participant_count / contest.max_participants) * 100}%` }}
-                  transition={{ duration: 1, delay: 0.8 }}
-                />
-              </div>
+            </div>
+          </div>
+
+          {/* Players - Simplified */}
+          <div className="flex-1 min-w-[150px]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-amber-300 uppercase tracking-wide">Players</span>
+              <span className="text-lg font-bold text-white">
+                {contest.participant_count}/{contest.max_participants}
+              </span>
             </div>
           </div>
         </motion.div>
 
         {/* Action Buttons */}
         <motion.div
-          className="flex flex-col sm:flex-row gap-4 pt-4"
+          className="flex flex-row gap-2 pt-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.9 }}
         >
-          <div className="flex-1">
+          {/* Enter Button - Takes most of the space */}
+          <div className="flex-1 min-w-0">
             <ContestButton
               id={Number(contest.id)}
               type={
@@ -439,11 +372,14 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
             />
           </div>
           
-          <ShareContestButton 
-            contestId={contest.id.toString()} 
-            contestName={contest.name}
-            status={displayStatus}
-          />
+          {/* Share Button - Fixed width */}
+          <div className="flex-shrink-0">
+            <ShareContestButton 
+              contestId={contest.id.toString()} 
+              contestName={contest.name}
+              status={displayStatus}
+            />
+          </div>
         </motion.div>
 
         {/* Contest Code */}
@@ -465,5 +401,6 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
         transition={{ duration: 2, repeat: Infinity }}
       />
     </motion.div>
+    </div>
   );
 };

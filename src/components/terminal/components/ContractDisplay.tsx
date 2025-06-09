@@ -28,7 +28,7 @@ export const ContractDisplay: React.FC<ContractDisplayProps> = ({
   if (isRevealed && contractAddress) {
     // When contract is revealed, show the real contract address in terminal-style green
     return (
-      <span className="text-green-400 font-mono tracking-wider relative">
+      <span className="text-green-400 tracking-wider relative">
         {contractAddress}
         <motion.span 
           className="absolute top-0 left-0 bg-green-500/10 h-full" 
@@ -42,7 +42,7 @@ export const ContractDisplay: React.FC<ContractDisplayProps> = ({
     // Before reveal, show redacted display (placeholder)
     const redactedDisplay = "[ ██-█████████-████████ ]";
     return (
-      <span className="text-red-400 font-mono tracking-wider relative">
+      <span className="text-red-400 tracking-wider relative">
         {redactedDisplay}
         <motion.span 
           className="absolute top-0 left-0 bg-red-500/20 h-full" 

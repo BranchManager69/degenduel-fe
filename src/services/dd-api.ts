@@ -855,6 +855,49 @@ export const ddApi = {
         return "/images/avatars/default.png";
       }
     },
+
+    // Whale status endpoints
+    getWhaleStatus: async (): Promise<any> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch('/user/whale-status', {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return await response.json();
+      } catch (error: any) {
+        console.error('[ddApi.users.getWhaleStatus] Error:', error);
+        throw error;
+      }
+    },
+
+    refreshWhaleStatus: async (): Promise<any> => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch('/user/whale-status/refresh', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return await response.json();
+      } catch (error: any) {
+        console.error('[ddApi.users.refreshWhaleStatus] Error:', error);
+        throw error;
+      }
+    },
   },
 
   // Token endpoints

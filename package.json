@@ -53,7 +53,12 @@
     "--------------- AI REVIEW COMMANDS --------------": "",
     "OLD-lint:ai": "claude -p 'you are a linter. please look at the changes vs. main and report what changes you see. report the filename and line number on one line, and a description of the issue on the second line. do not return any other text.'",
     "OLD-lint:ai:commit": "claude -p 'you are a linter. please look at the changes that are yet to be committed and report what changes you see. report the filename and line number on one line, and a description of the change on the second line. do not return any other text.'",
-    "--------------- OTHER COMMANDS ------------------": ""
+    "--------------- OTHER COMMANDS ------------------": "",
+    "--------------- LIGHTHOUSE COMMANDS ----------------": "",
+    "lighthouse": "npx @lhci/cli autorun --config=lighthouserc.json --url=https://degenduel.me",
+    "lighthouse:prod": "npx @lhci/cli autorun --config=lighthouserc.json --url=https://degenduel.me",
+    "lighthouse:dev": "npx @lhci/cli autorun --config=lighthouserc.json --url=https://dev.degenduel.me",
+    "lighthouse:local": "npx @lhci/cli autorun --config=lighthouserc.json --url=http://localhost:3010"
   },
   "dependencies": {
     "@branchmanager69/degenduel-shared": "^1.0.7",
@@ -106,7 +111,6 @@
     "pino": "^9.6.0",
     "postprocessing": "^6.36.7",
     "react": "^19.1.0",
-    "react-avataaars": "^0.2.3",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.1.0",
     "react-dropzone": "^14.3.5",
@@ -137,6 +141,7 @@
     "@babel/preset-react": "^7.26.3",
     "@babel/preset-typescript": "^7.26.0",
     "@docusaurus/eslint-plugin": "^3.7.0",
+    "@stagewise/toolbar-react": "^0.4.4",
     "@storybook/addon-essentials": "^8.6.12",
     "@storybook/addon-interactions": "^8.6.12",
     "@storybook/addon-links": "^8.6.12",

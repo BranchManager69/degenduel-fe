@@ -42,6 +42,26 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
     }
   };
   
+  // Handle sending command (shared by Enter key and send button)
+  const handleSendCommand = () => {
+    if (!userInput.trim()) return;
+    
+    // Add small delay for mobile to ensure proper keyboard handling
+    const isMobile = window.innerWidth <= 768;
+    const processCommand = () => {
+      const command = userInput.trim();
+      setUserInput('');
+      onEnter(command);
+    };
+    
+    if (isMobile) {
+      // Small delay for mobile keyboards
+      setTimeout(processCommand, 100);
+    } else {
+      processCommand();
+    }
+  };
+  
   React.useEffect(() => {
     adjustHeight();
   }, [userInput]);
@@ -248,20 +268,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
                 e.preventDefault(); // Prevent newline
                 e.stopPropagation(); // Stop event bubbling
                 
-                // Add small delay for mobile to ensure proper keyboard handling
-                const isMobile = window.innerWidth <= 768;
-                const processCommand = () => {
-                  const command = userInput.trim();
-                  setUserInput('');
-                  onEnter(command);
-                };
-                
-                if (isMobile) {
-                  // Small delay for mobile keyboards
-                  setTimeout(processCommand, 100);
-                } else {
-                  processCommand();
-                }
+                handleSendCommand();
               }
               // Allow Shift+Enter for new lines
             }}
@@ -301,6 +308,42 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
               overflowY: 'auto'
             }}
           />
+          
+          {/* Send button - always visible, enabled when there's text */}
+          <button
+            onClick={handleSendCommand}
+            disabled={!userInput.trim()}
+            className="ml-3 flex-shrink-0 h-10 w-10 rounded-full border-2 flex items-center justify-center transition-all duration-200 cursor-pointer transform hover:scale-105 active:scale-95"
+            style={{
+              background: userInput.trim() 
+                ? 'linear-gradient(135deg, #9D4EDD, #7B2CBF)'
+                : 'linear-gradient(135deg, #2D2D2D, #1A1A1A)',
+              borderColor: userInput.trim() ? '#9D4EDD' : '#2D2D2D',
+              boxShadow: userInput.trim() 
+                ? '0 0 20px rgba(157, 78, 221, 0.6), inset 0 2px 4px rgba(0, 0, 0, 0.2)'
+                : '0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.2)',
+              color: userInput.trim() ? '#ffffff' : '#666666'
+            }}
+            title={userInput.trim() ? "Send message (Enter)" : "Type a message to send"}
+          >
+            <svg 
+              width="16" 
+              height="16" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              className={`transition-all duration-200 ${
+                userInput.trim() ? 'text-white drop-shadow-sm' : 'text-gray-500'
+              }`}
+            >
+              <path 
+                d="M9 18L15 12L9 6" 
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
           
           {/* Voice input button - positioned at far right - Admin/SuperAdmin only */}
           {hasVoiceAccess && (

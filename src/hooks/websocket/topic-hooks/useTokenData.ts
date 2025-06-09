@@ -105,7 +105,8 @@ interface TokenDataFilters {
 export function useTokenData(
   _tokensToSubscribe: string[] | "all" = "all", // Now unused - kept for interface compatibility
   filters?: TokenDataFilters,
-  limit: number = 50 // Default to 50 for proper pagination
+  limit: number = 50, // Default to 50 for proper pagination
+  preserveOrder: boolean = true // Preserve REST API order when updating via WebSocket
 ) {
   // State for token data
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -113,6 +114,7 @@ export function useTokenData(
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasInitialData, setHasInitialData] = useState<boolean>(false);
+  const [isRestLoaded, setIsRestLoaded] = useState<boolean>(false);
   const [pagination, setPagination] = useState<{
     total: number;
     limit: number;
@@ -226,47 +228,6 @@ export function useTokenData(
     }
   }, [filters]);
 
-  // WebSocket pagination function for pro frontend experience
-  const fetchTokensViaWebSocket = useCallback(async (offset = 0) => {
-    try {
-      console.log('[useTokenData] Loading tokens via WebSocket for real-time experience');
-
-      if (!ws.isConnected) {
-        console.log('[useTokenData] WebSocket not connected, falling back to REST');
-        return fetchTokensViaRest(offset);
-      }
-
-      setIsLoading(true);
-
-      // Use WebSocket request for paginated data - professional trading platform style
-      const requestId = crypto.randomUUID();
-      const success = ws.sendMessage({
-        type: 'REQUEST',
-        topic: 'market_data',
-        action: 'getDegenDuelRanked',
-        requestId,
-        data: {
-          limit, // Use the limit parameter for proper pagination
-          offset,
-          format: 'paginated'
-        }
-      });
-
-      if (!success) {
-        console.log('[useTokenData] WebSocket send failed, falling back to REST');
-        return fetchTokensViaRest(offset);
-      }
-
-      console.log(`[useTokenData] WebSocket request sent for offset ${offset}`);
-
-      // The response will be handled by the WebSocket message handler
-      // No need to wait here - it's handled asynchronously via registerListener
-
-    } catch (err: any) {
-      console.error('[useTokenData] WebSocket pagination failed, falling back to REST:', err);
-      return fetchTokensViaRest(offset);
-    }
-  }, [ws.isConnected, ws.sendMessage, fetchTokensViaRest]);
 
   // WebSocket handler for ALL token data (initial + updates + paginated responses)
   const handleMarketData = useCallback((message: any) => {
@@ -274,6 +235,12 @@ export function useTokenData(
       // Handle paginated WebSocket responses (primary method)
       if (message.type === 'DATA' && message.topic === 'market_data' && message.action === 'degenDuelRanked') {
         console.log(`[useTokenData] Received paginated WebSocket response`);
+
+        // Skip paginated responses if we already have REST data loaded to prevent flickering
+        if (isRestLoaded && hasInitialData && message.requestId) {
+          console.log(`[useTokenData] Skipping WebSocket paginated response - already have REST data`);
+          return;
+        }
 
         // Check if we got paginated response format
         if (message.tokens && message.pagination) {
@@ -332,26 +299,67 @@ export function useTokenData(
         if (Array.isArray(message.data)) {
           console.log(`[useTokenData] Received real-time market data for ${message.data.length} tokens`);
 
-          // Transform and set ALL tokens - backend filters duplicates
-          const transformedTokens = message.data.map(transformBackendTokenData);
-
-          // Apply client-side filters if any
-          let filteredTokens = transformedTokens;
-          if (filters?.minMarketCap) {
-            filteredTokens = filteredTokens.filter((t: Token) => TokenHelpers.getMarketCap(t) >= filters.minMarketCap!);
-          }
-          if (filters?.minVolume) {
-            filteredTokens = filteredTokens.filter((t: Token) => TokenHelpers.getVolume(t) >= filters.minVolume!);
+          // Only process real-time updates if we have initial data
+          if (!hasInitialData || !isRestLoaded) {
+            console.log(`[useTokenData] Ignoring real-time update - no initial data yet`);
+            return;
           }
 
-          setTokens(filteredTokens);
+          // Transform update data
+          const updatedTokens = message.data.map(transformBackendTokenData);
+
+          // Update existing tokens with new price data
+          setTokens((prev: Token[]) => {
+            if (!preserveOrder) {
+              // If not preserving order, just replace with updated tokens
+              return updatedTokens;
+            }
+            
+            // Preserve order: Update tokens in-place
+            const tokenMap = new Map<string, Token>();
+            updatedTokens.forEach((token: Token) => {
+              tokenMap.set(token.address, token);
+            });
+            
+            // Update tokens in-place to preserve original order
+            const result: Token[] = prev.map((existingToken: Token) => {
+              const updatedToken = tokenMap.get(existingToken.address);
+              if (updatedToken) {
+                // Only update price-related fields to avoid re-ordering
+                const updated: Token = {
+                  ...existingToken,
+                  price: updatedToken.price,
+                  market_cap: updatedToken.market_cap,
+                  marketCap: updatedToken.marketCap,
+                  volume_24h: updatedToken.volume_24h,
+                  volume24h: updatedToken.volume24h,
+                  change_24h: updatedToken.change_24h,
+                  change24h: updatedToken.change24h,
+                  liquidity: updatedToken.liquidity,
+                  fdv: updatedToken.fdv
+                };
+                return updated;
+              }
+              return existingToken;
+            });
+            
+            // Apply filters while maintaining order
+            if (filters?.minMarketCap) {
+              return result.filter((t: Token) => TokenHelpers.getMarketCap(t) >= filters.minMarketCap!);
+            }
+            if (filters?.minVolume) {
+              return result.filter((t: Token) => TokenHelpers.getVolume(t) >= filters.minVolume!);
+            }
+            
+            return result;
+          });
           setLastUpdate(new Date());
           setIsLoading(false);
           setHasInitialData(true);
 
           dispatchWebSocketEvent('token_data_websocket_update', {
             socketType: 'market-data',
-            message: `Received ${filteredTokens.length} filtered tokens via WebSocket`,
+            message: `Received ${updatedTokens.length} token updates via WebSocket`,
             timestamp: new Date().toISOString()
           });
         }
@@ -361,7 +369,7 @@ export function useTokenData(
       setError('Failed to process market data');
       setIsLoading(false);
     }
-  }, [filters]);
+  }, [filters, isRestLoaded, hasInitialData, preserveOrder]);
 
   // Register WebSocket listener for ALL market data + paginated responses
   useEffect(() => {
@@ -401,13 +409,15 @@ export function useTokenData(
     };
   }, [ws.isConnected]);
 
-  // Pro Frontend: Load token data via WebSocket for real-time experience
+  // REST-First: Load token data via REST for immediate display, WebSocket for updates
   useEffect(() => {
-    if (!hasInitialData) {
-      console.log('[useTokenData] Loading initial token data via WebSocket (pro frontend approach)');
-      fetchTokensViaWebSocket(0);
+    // Only fetch if we haven't started loading yet
+    if (!hasInitialData && !isRestLoaded) {
+      console.log('[useTokenData] Loading initial token data via REST API for fast display');
+      setIsRestLoaded(true); // Set this BEFORE fetching to prevent duplicate calls
+      fetchTokensViaRest(0);
     }
-  }, [hasInitialData, fetchTokensViaWebSocket]);
+  }, [hasInitialData, isRestLoaded, fetchTokensViaRest]);
 
   // Handle reconnection events - retry getting data when WebSocket reconnects
   useEffect(() => {
@@ -418,31 +428,26 @@ export function useTokenData(
     }
   }, [ws.isConnected, hasInitialData, tokens.length]);
 
-  // Load more function for pagination (WebSocket-first, pro frontend approach)
+  // Load more function for pagination (REST-first for reliability)
   const loadMore = useCallback(() => {
     if (!pagination || !pagination.hasMore) {
       console.log('[useTokenData] No more tokens to load');
       return;
     }
 
-    console.log('[useTokenData] Loading more tokens via WebSocket (pro frontend)');
-    fetchTokensViaWebSocket(pagination.offset + pagination.limit);
-  }, [pagination, fetchTokensViaWebSocket]);
+    console.log('[useTokenData] Loading more tokens via REST API');
+    fetchTokensViaRest(pagination.offset + pagination.limit);
+  }, [pagination, fetchTokensViaRest]);
 
-  // Enhanced refresh that uses WebSocket for pro frontend experience
+  // Enhanced refresh that uses REST for reliable fresh data
   const refresh = useCallback(() => {
-    console.log('[useTokenData] Refreshing token data (pro frontend approach)');
-    if (ws.isConnected) {
-      console.log('[useTokenData] Refreshing via WebSocket request');
-      // Reset state and load fresh data via WebSocket
-      setHasInitialData(false);
-      setPagination(null);
-      fetchTokensViaWebSocket(0);
-    } else {
-      console.log('[useTokenData] WebSocket disconnected, refreshing via REST API');
-      fetchTokensViaRest(0);
-    }
-  }, [ws.isConnected, fetchTokensViaWebSocket, fetchTokensViaRest]);
+    console.log('[useTokenData] Refreshing token data via REST API');
+    // Reset state and load fresh data via REST
+    setHasInitialData(false);
+    setPagination(null);
+    setIsRestLoaded(false);
+    fetchTokensViaRest(0);
+  }, [fetchTokensViaRest]);
 
   // Return the token data and helper functions
   return {

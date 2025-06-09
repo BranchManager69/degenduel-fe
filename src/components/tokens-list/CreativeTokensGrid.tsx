@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useCallback } from "react";
-import { OptimizedTokenCard } from "./OptimizedTokenCard";
+import React, { useCallback, useEffect, useRef } from "react";
 import { Token, TokenHelpers } from "../../types";
-import { formatNumber, formatTokenPrice, formatPercentage } from "../../utils/format";
+import { formatNumber, formatPercentage, formatTokenPrice } from "../../utils/format";
+import { OptimizedTokenCard } from "./OptimizedTokenCard";
 
 interface CreativeTokensGridProps {
   tokens: Token[];
@@ -68,32 +68,44 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
   const HottestTokenCard = ({ token, index }: { token: Token, index: number }) => {
     const isSelected = token.symbol.toLowerCase() === selectedTokenSymbol?.toLowerCase();
     
+    // Check if this is DUEL token (forced at position 0)
+    const isDuel = token.symbol === 'DUEL' && index === 0;
+    
     // Backend already calculated the hotness - use position in list as score
-    const hotnessScore = Math.max(0, 100 - (index * 8)); // Diminishing score by position
-    const isTopThree = index < 3;
+    const isTopThree = !isDuel && index < 4; // Top 3 excluding DUEL
     const changeNum = token.change_24h || Number(token.change24h) || 0;
+    
+    // Actual rank (0 for DUEL, then 1, 2, 3...)
+    const displayRank = isDuel ? 0 : index;
     
     // Dynamic rank colors for top 3
     const getRankStyle = (rank: number) => {
+      if (isDuel) return { bg: 'from-yellow-500 to-yellow-600', glow: 'shadow-yellow-500/50' };
       switch(rank) {
-        case 0: return { bg: 'from-yellow-500 to-yellow-600', glow: 'shadow-yellow-500/50', icon: '👑' };
-        case 1: return { bg: 'from-gray-400 to-gray-500', glow: 'shadow-gray-400/50', icon: '🥈' };
-        case 2: return { bg: 'from-amber-600 to-amber-700', glow: 'shadow-amber-600/50', icon: '🥉' };
-        default: return { bg: 'from-brand-500 to-brand-600', glow: 'shadow-brand-500/30', icon: '🔥' };
+        case 1: return { bg: 'from-yellow-500 to-yellow-600', glow: 'shadow-yellow-500/50' };
+        case 2: return { bg: 'from-gray-400 to-gray-500', glow: 'shadow-gray-400/50' };
+        case 3: return { bg: 'from-amber-600 to-amber-700', glow: 'shadow-amber-600/50' };
+        default: return { bg: 'from-brand-500 to-brand-600', glow: 'shadow-brand-500/30' };
       }
     };
     
-    const rankStyle = getRankStyle(index);
+    const rankStyle = getRankStyle(displayRank);
     
     return (
       <div 
         className={`group relative overflow-hidden rounded-2xl transition-all duration-500 cursor-pointer backdrop-blur-xl
           ${isSelected ? 'ring-4 ring-yellow-500/60 scale-105 z-30' : 'hover:scale-[1.03] z-10'}
+          ${isDuel ? 'ring-2 ring-purple-500/60 shadow-[0_0_20px_rgba(147,51,234,0.4)]' : ''}
           ${isTopThree ? 'bg-gradient-to-br from-dark-100/90 via-dark-200/80 to-dark-300/90' : 'bg-dark-200/70'}
           ${isTopThree ? 'shadow-2xl ' + rankStyle.glow : 'shadow-xl shadow-black/20'}
         `}
         onClick={() => handleTokenClick(token)}
       >
+        {/* DUEL SPECIAL EFFECT */}
+        {isDuel && (
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-transparent to-purple-600/10 animate-pulse" />
+        )}
+        
         {/* STUNNING BANNER BACKGROUND */}
         <div className="absolute inset-0 overflow-hidden">
           {(token.header_image_url) ? (
@@ -103,14 +115,8 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
                 alt={token.symbol}
                 className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
               />
-              {/* Dynamic gradient overlay based on performance */}
-              <div className={`absolute inset-0 bg-gradient-to-t transition-all duration-500
-                ${changeNum >= 20 ? 'from-green-900/95 via-green-800/80 to-green-700/40' :
-                  changeNum >= 5 ? 'from-emerald-900/95 via-emerald-800/80 to-emerald-700/40' :
-                  changeNum >= 0 ? 'from-dark-900/95 via-dark-800/80 to-dark-700/40' :
-                  changeNum >= -5 ? 'from-red-900/95 via-red-800/80 to-red-700/40' :
-                  'from-red-900/98 via-red-800/90 to-red-700/60'}
-              `} />
+              {/* Neutral gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/20 transition-all duration-500" />
             </>
           ) : (
             <div 
@@ -121,52 +127,32 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
             />
           )}
           
-          {/* Animated particles for top performers */}
-          {hotnessScore > 80 && (
-            <div className="absolute inset-0">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-1 h-1 bg-yellow-400 rounded-full animate-pulse opacity-60"
-                  style={{
-                    left: `${Math.random() * 100}%`,
-                    top: `${Math.random() * 100}%`,
-                    animationDelay: `${Math.random() * 2}s`,
-                    animationDuration: `${2 + Math.random() * 2}s`
-                  }}
-                />
-              ))}
-            </div>
-          )}
         </div>
 
         {/* MAIN CONTENT */}
         <div className="relative z-10 p-4 h-full flex flex-col justify-between">
           {/* TOP ROW - Rank Badge & Performance Indicators */}
           <div className="flex justify-between items-start mb-3">
-            {/* PREMIUM RANK BADGE */}
-            <div className={`flex items-center justify-center w-8 h-8 rounded-xl shadow-2xl
-              bg-gradient-to-br ${rankStyle.bg} transform group-hover:scale-110 transition-transform duration-300
-              ${isTopThree ? 'ring-2 ring-white/30' : ''}
-            `}>
-              <span className="text-sm font-black text-white drop-shadow-lg">
-                {isTopThree ? rankStyle.icon : index + 1}
-              </span>
+            {/* LEFT SIDE - RANK BADGE */}
+            <div>
+              {!isDuel && (
+                <div className={`flex items-center justify-center w-8 h-8 rounded-xl shadow-2xl
+                  bg-gradient-to-br ${rankStyle.bg} transform group-hover:scale-110 transition-transform duration-300
+                  ${isTopThree ? 'ring-2 ring-white/30' : ''}
+                `}>
+                  <span className="text-sm font-black text-white drop-shadow-lg">
+                    {displayRank}
+                  </span>
+                </div>
+              )}
             </div>
             
-            {/* HOTNESS INDICATOR */}
-            <div className="flex items-center gap-2">
-              {hotnessScore > 70 && (
-                <div className="px-2 py-1 bg-orange-500/20 backdrop-blur-sm rounded-full border border-orange-400/30">
-                  <span className="text-xs text-orange-300 font-bold animate-pulse">🔥 HOT</span>
-                </div>
-              )}
-              {changeNum > 10 && (
-                <div className="px-2 py-1 bg-green-500/20 backdrop-blur-sm rounded-full border border-green-400/30">
-                  <span className="text-xs text-green-300 font-bold">📈 PUMP</span>
-                </div>
-              )}
-            </div>
+            {/* RIGHT SIDE - DEGENDUEL SCORE */}
+            {token.degenduel_score && (
+              <div className="px-3 py-1.5 bg-brand-500/20 backdrop-blur-sm rounded-lg border border-brand-400/30">
+                <span className="text-sm text-brand-300 font-bold">{Math.round(token.degenduel_score)}</span>
+              </div>
+            )}
           </div>
           
           {/* MIDDLE - TOKEN INFO */}
@@ -196,9 +182,6 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
                 `}>
                   {changeNum >= 0 ? '↗' : '↘'} {formatPercentage(TokenHelpers.getPriceChange(token))}
                 </div>
-                <div className="text-xs text-yellow-300 font-bold bg-yellow-500/10 px-2 py-1 rounded border border-yellow-400/20">
-                  🔥 {hotnessScore.toFixed(0)}
-                </div>
               </div>
             </div>
           </div>
@@ -212,8 +195,8 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
                 <div className="text-white font-bold">${formatNumber(TokenHelpers.getMarketCap(token), 'short')}</div>
               </div>
               <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
-                <div className="text-gray-400 mb-0.5">FDV</div>
-                <div className="text-white font-bold">${formatNumber(TokenHelpers.getFDV(token), 'short')}</div>
+                <div className="text-gray-400 mb-0.5">Volume</div>
+                <div className="text-white font-bold">${formatNumber(TokenHelpers.getVolume(token), 'short')}</div>
               </div>
               <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
                 <div className="text-gray-400 mb-0.5">Liq</div>
@@ -235,10 +218,6 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
                   }`}>
                     1h: {formatPercentage(token.priceChanges.h1, false)}
                   </div>
-                </div>
-                {/* Volume indicator */}
-                <div className="text-[10px] text-gray-400">
-                  Vol: ${formatNumber(TokenHelpers.getVolume(token), 'short')}
                 </div>
               </div>
             )}
