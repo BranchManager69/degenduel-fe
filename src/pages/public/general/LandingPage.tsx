@@ -49,6 +49,7 @@ import { config } from "../../../config/config"; // Config
 
 // Enhanced Floating Buttons
 import FloatingButtonStack from '../../../components/layout/FloatingButtonStack'; // Enhanced floating button stack
+import FloatingDuelNowButton from '../../../components/layout/FloatingDuelNowButton'; // Floating DUEL NOW button above footer
 
 // Important Notice
 import { ImportantNotice } from '../../../components/layout/ImportantNotice';
@@ -56,8 +57,8 @@ import { ImportantNotice } from '../../../components/layout/ImportantNotice';
 // Contract Address
 const FALLBACK_CA_FOR_BUTTONS = config.CONTRACT_ADDRESS.REAL;
 
-// Directly import the Features component
-import Features from "../../../components/landing/features-list/Features";
+// Lazy load the Features component for better performance
+const Features = React.lazy(() => import("../../../components/landing/features-list/Features"));
 
 // NEW: Import WebSocket-based contest hook
 import { useContests } from "../../../hooks/websocket/topic-hooks/useContests";
@@ -511,7 +512,7 @@ export const LandingPage: React.FC = () => {
   return (
     <>
       {/* <ScrollToTop /> */}
-      <div className="flex flex-col min-h-screen relative overflow-x-hidden">
+      <div className="flex flex-col min-h-screen relative" style={{ overflowX: 'clip' }}>
 
         {/* Important Notice - positioned at very top, before everything */}
         <motion.div
@@ -530,10 +531,10 @@ export const LandingPage: React.FC = () => {
           <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-0">
             
             {/* Landing Page Content */}
-            <div className="text-center space-y-4">
+            <div className="text-center space-y-2 md:space-y-4">
               
               {/* Title Section - Now featuring IntroLogo */}
-              <div className="flex flex-col items-center justify-center mb-8 md:mb-12">
+              <div className="flex flex-col items-center justify-center mb-4 md:mb-8">
                 
                 {/* Admin debug button - visible even when HeroTitle is hidden */}
                 {isAdministrator && (
@@ -605,7 +606,7 @@ export const LandingPage: React.FC = () => {
                 )}
                 
                 {/* Enhanced Hero Section with IntroLogo and animated background */}
-                <div className="relative w-full my-4 md:my-8">
+                <div className="relative w-full my-2 md:my-6">
                   
                   {/* Visual effects layer - positioned behind content */}
                   <div className="absolute inset-0 z-0 pointer-events-none">
@@ -719,54 +720,19 @@ export const LandingPage: React.FC = () => {
 
                 {/* Enhanced tagline with secondary line */}
                 <motion.div
-                  className="mt-8 mb-6"
+                  className="mt-4 mb-3 md:mt-8 md:mb-6"
                   variants={childVariants}
                 >
 
-                {/* Tagline with animated gradient */}
-                <motion.div
-                  className="relative"
-                  initial={{ backgroundPosition: "200% center" }}
-                  animate={{
-                    backgroundPosition: ["200% center", "-200% center"],
-                  }}
-                  transition={{
-                    duration: 3,
-                    ease: "easeInOut",
-                    repeat: Infinity,
-                    repeatDelay: 0.5,
-                  }}
-                  style={{
-                    backgroundImage: `
-                      linear-gradient(
-                        to right,
-                        #b266ff, #9933ff, #6600cc, #9933ff,
-                        #b266ff 50%, #9933ff 50%,
-                        #b266ff 55%, #9933ff 55%,
-                        #ddbcff 56%, #ffffff 58%,
-                        #ddbcff 60%, #9933ff 62%,
-                        #b266ff 70%
-                      )
-                    `,
-                    backgroundSize: "200% auto",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    color: "transparent",
-                    display: "inline-block"
-                  }}
-                >
-
-                  {/* Primary tagline */}
-                  <h2 className="text-2xl sm:text-3xl font-black leading-tight px-4">
+                {/* Hero tagline with glow effect */}
+                <div className="text-center space-y-2">
+                  <h2 className="text-2xl sm:text-3xl font-black text-[#9D4EDD] drop-shadow-[0_0_30px_rgba(157,78,221,0.5)] hover:drop-shadow-[0_0_40px_rgba(157,78,221,0.8)] transition-all duration-300 px-4">
                     High-Stakes Trading Competitions on Solana
                   </h2>
-                </motion.div>
-
-                {/* Secondary tagline */}
-                <p className="text-sm sm:text-base text-gray-300/80 font-medium mt-2">
-                  Win big. Trade like a degen. No liquidations.
-                </p>
+                  <p className="text-sm sm:text-base text-gray-300/80 font-medium">
+                    Win big. Trade like a degen. No liquidations.
+                  </p>
+                </div>
 
                 </motion.div>
 
@@ -776,7 +742,7 @@ export const LandingPage: React.FC = () => {
                 {/* Enhanced Features section - shown to all users */}
                 {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (
                   <motion.div
-                    className="relative w-full mt-12"
+                    className="relative w-full mt-6 md:mt-12"
                     initial={{ opacity: 0 }}
                     animate={{
                       opacity: animationPhase > 0 ? 1 : 0,
@@ -803,12 +769,13 @@ export const LandingPage: React.FC = () => {
                           //     ),                   // <-- REMOVE THIS LINE
                           // );                         // <-- REMOVE THIS LINE
                           return (
-
-                            // Features List (Loading fallback)
-                            // <React.Suspense fallback={<div>Loading features...</div>}> // <-- REMOVE THIS LINE
-                            <Features />
-                            // </React.Suspense> // <-- REMOVE THIS LINE
-                            
+                            <React.Suspense fallback={
+                              <div className="flex items-center justify-center py-20">
+                                <div className="text-gray-500 text-sm">Loading features...</div>
+                              </div>
+                            }>
+                              <Features />
+                            </React.Suspense>
                           );
                         }
                         return null;
@@ -852,7 +819,7 @@ export const LandingPage: React.FC = () => {
                     </div>
                   ) : error ? (
                     <div className="relative">
-                      <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
                         <div className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border border-dark-300/60 shadow-lg">
                           <div className="text-center py-4">
                             <div className="text-red-400 mb-2">
@@ -904,10 +871,10 @@ export const LandingPage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="relative">
-                      <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                      <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-4">
                         
                         {/* Contest sections container */}
-                        <div className="mb-8">
+                        <div className="mb-4 md:mb-8">
                           {/* Featured Contest Section - Show CROWN CONTEST only */}
                           {(() => {
                             // Inline Crown Contest detection (same as contest browser)
@@ -1036,6 +1003,11 @@ export const LandingPage: React.FC = () => {
         tokenSymbol={"DUEL"}
         enabled={forceShowFabs || (websocketContractRevealed && websocketContractAddress)}
         isCountdownComplete={isCountdownComplete}
+      />
+
+      {/* Floating DUEL NOW Button - positioned above footer */}
+      <FloatingDuelNowButton
+        enabled={true}
       />
     </>
   );

@@ -31,6 +31,7 @@ export interface User {
   wallet_address: string;   // Address of the user's connected wallet - REQUIRED for all users
   twitter_id?: string;      // Twitter ID for linked Twitter account (optional)
   discord_id?: string;      // Discord ID for linked Discord account (optional)
+  telegram_id?: string;     // Telegram ID for linked Telegram account (optional)
   passkey_id?: string;      // Passkey ID for linked passkey (optional)
   privy_id?: string;        // Privy ID if using Privy wallet (optional)
   auth_method?: string;     // The primary auth method used ('wallet', 'privy', etc.)

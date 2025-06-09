@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from "react";
 import { toast } from "react-hot-toast";
-import { FaTwitter } from "react-icons/fa";
 
 import { authDebug } from "../../config/config";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
@@ -11,6 +10,8 @@ interface TwitterLoginButtonProps {
   linkMode?: boolean;
   className?: string;
   onClick?: () => void;
+  onSuccess?: () => void;
+  iconOnly?: boolean;
 }
 
 /**
@@ -28,7 +29,9 @@ interface TwitterLoginButtonProps {
 const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({ 
   linkMode = false, 
   className = "",
-  onClick
+  onClick,
+  onSuccess,
+  iconOnly = false
 }) => {
   const {
     user, 
@@ -74,13 +77,42 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
         authDebug('TwitterBtn', errorMsg);
         toast.error(errorMsg);
       }
-    } catch (error) {
+    } catch (error: any) {
       const specificErrorMessage = "Must be authenticated to link Twitter account";
       let displayMessage = (error instanceof Error && error.message) 
                              ? error.message 
                              : `An error occurred during Twitter ${linkMode ? 'linking' : 'login'}`;
       
-      authDebug('TwitterBtn', 'Error in handleTwitterAuth', { errorMessage: displayMessage, originalError: error });
+      // Check for specific status codes in error response
+      const statusCode = error?.response?.data?.status;
+      const errorMessage = error?.response?.data?.message;
+      
+      authDebug('TwitterBtn', 'Error in handleTwitterAuth', { 
+        errorMessage: displayMessage, 
+        statusCode,
+        backendMessage: errorMessage,
+        originalError: error 
+      });
+
+      // Handle specific status codes with user-friendly messages
+      if (statusCode) {
+        switch (statusCode) {
+          case 'not_linked':
+            displayMessage = "This Twitter account is not linked to any wallet. Please connect your wallet first.";
+            break;
+          case 'user_not_found':
+            displayMessage = "User account not found. Please try connecting your wallet again.";
+            break;
+          case 'wallet_required':
+            displayMessage = "Please connect your wallet first to link your Twitter account.";
+            break;
+          case 'error':
+            displayMessage = errorMessage || "An error occurred during Twitter authentication.";
+            break;
+          default:
+            displayMessage = errorMessage || displayMessage;
+        }
+      }
 
       if (error instanceof Error && error.message === specificErrorMessage) {
         toast.error("Your session is not valid for linking. You'll be logged out.");
@@ -117,8 +149,11 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
       params: Object.fromEntries(urlParams.entries()), linkMode, hasUser: !!user
     });
     if (!linkMode && !user && urlParams.get("twitter") === "pending") {
-      authDebug('TwitterBtn', 'Found twitter=pending parameter, showing toast');
-      toast.error("Please connect your wallet to complete logging in with Twitter.");
+      authDebug('TwitterBtn', 'Found twitter=pending parameter, showing informative toast');
+      toast("Almost there! Connect your wallet to complete Twitter login", {
+        duration: 5000,
+        icon: "ℹ️"
+      });
     }
     if (urlParams.get("twitter_linked") === "true") {
       authDebug('TwitterBtn', 'Found twitter_linked=true parameter, showing success toast');
@@ -129,8 +164,13 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
       url.searchParams.delete("twitter_linked");
       window.history.replaceState({}, "", url);
       authDebug('TwitterBtn', 'Removed twitter_linked parameter from URL');
+      
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
     }
-  }, [user, linkMode]);
+  }, [user, linkMode, onSuccess]);
 
   return (
     <Button
@@ -143,9 +183,11 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
       {isLoading || isProcessing ? (
         <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full" />
       ) : (
-        <FaTwitter className="text-[#1DA1F2]" />
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
       )}
-      {linkMode ? "Link Twitter" : "Twitter"}
+      {!iconOnly && (linkMode ? "Link X" : "X")}
     </Button>
   );
 };

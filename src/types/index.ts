@@ -138,97 +138,157 @@ export interface TokensResponse {
   data: Token[];
 }
 
-// Enhanced Token interface (ACTUAL API RESPONSE STRUCTURE)
+// REAL Backend Token Interface - Supports Both Formats
 export interface Token {
   // Core identification
-  id: number;                    // Database ID
-  address: string;                // Token contract address (was contractAddress)
-  contractAddress: string;        // Keep for backward compatibility
-  symbol: string;                 // Token symbol (e.g., "BONK")
-  name: string;                   // Full token name
+  id: number;
+  address: string;
+  symbol: string;
+  name: string;
   
-  // Visual/metadata
-  image_url?: string;             // Square logo URL
-  header_image_url?: string;      // Banner image URL
-  color?: string;                 // Hex color (default: "#888888")
-  decimals: number;               // Token decimals (default: 9)
-  description?: string;           // Token description
-  tags?: string[];                // ["verified", "strict", "defi"]
+  // Status & Classification
+  is_active?: boolean;
+  priority_score?: number;
+  degenduel_score?: number;
+  trend_category?: string;
+  momentum_indicator?: string;
   
-  // Supply & ranking
-  total_supply?: number;          // Normalized total supply (was totalSupply)
-  totalSupply?: string;           // Keep for backward compatibility
-  priority_score?: number;        // 0-100 ranking score (was priorityScore)
-  priorityScore?: number;         // Keep for backward compatibility
-  first_seen_on_jupiter_at?: string; // ISO timestamp
-  firstSeenAt?: string | null;    // Keep for backward compatibility
+  // Visual/Metadata
+  image_url?: string | null;
+  header_image_url?: string | null;
+  open_graph_image_url?: string | null;
+  color?: string;
+  description?: string | null;
+  tags?: string[];
   
-  // DegenDuel Scoring (NEW!)
-  degenduel_score?: number;       // Real momentum score (can be millions!)
-  trend_category?: string;        // "Hot", "Heating Up", "Hidden Gem", etc.
-  momentum_indicator?: string;    // "explosive", "rising", "gaining", etc.
+  // Supply Information
+  total_supply?: number | null;
+  raw_supply?: number | null;
+  decimals: number;
   
-  // Price data (ALL NUMBERS NOW, NOT STRINGS!)
-  price: number;                  // Current USD price
-  change_24h: number;             // 24h price change % (was change24h string)
-  change24h: string;              // Keep for backward compatibility
-  market_cap: number;             // Market cap in USD (was marketCap string)
-  marketCap: string;              // Keep for backward compatibility
-  fdv: number;                    // Fully diluted valuation
-  liquidity: number;              // Total liquidity USD (simplified from object)
-  volume_24h: number;             // 24h volume USD (was volume24h string)
-  volume24h: string;              // Keep for backward compatibility
+  // Discovery & Tracking
+  first_seen_on_jupiter_at?: string | null;
+  pairCreatedAt?: string | null;
+  metadata_status?: string;
+  refresh_interval_seconds?: number;
   
-  // Enhanced timeframe data (ALL NUMBERS NOW!)
+  // Timestamps
+  created_at?: string;
+  updated_at?: string;
+  
+  // FORMAT 1: Standard Tokens (/api/tokens, WebSocket) - NESTED STRUCTURE
+  token_prices?: {
+    price: string;           // STRING format
+    change_24h: string;      // STRING format
+    market_cap: string;      // STRING format
+    volume_24h: string;      // STRING format
+    liquidity: string;       // STRING format
+    fdv: string;            // STRING format
+    updated_at: string;
+  } | null;
+  
+  // Enhanced data in nested structure
+  refresh_metadata?: {
+    enhanced_market_data?: {
+      priceChanges?: {
+        m5: number;   // REAL backend keys!
+        h1: number;
+        h6: number;
+        h24: number;
+      };
+      volumes?: {
+        m5: number;
+        h1: number;
+        h6: number;
+        h24: number;
+      };
+      transactions?: {
+        m5: { buys: number; sells: number };
+        h1: { buys: number; sells: number };
+        h6: { buys: number; sells: number };
+        h24: { buys: number; sells: number };
+      };
+    };
+  };
+  
+  // Social links in array format
+  token_socials?: Array<{
+    id: number;
+    token_id: number;
+    type: string;        // "twitter", "telegram", "discord", "website"
+    url: string;
+    created_at: string;
+  }>;
+  
+  // Token bucket memberships
+  token_bucket_memberships?: Array<{
+    id: number;
+    token_id: number;
+    bucket_id: number;
+    created_at: string;
+    token_buckets?: {
+      id: number;
+      name: string;
+      description: string;
+    };
+  }>;
+  
+  // FORMAT 2: Trending Tokens (/api/tokens/trending) - FLATTENED STRUCTURE
+  // Direct price data as numbers
+  price?: number;             // NUMBER format (trending)
+  change_24h?: number;        // NUMBER format (trending)
+  market_cap?: number | null; // NUMBER format (trending)
+  volume_24h?: number | null; // NUMBER format (trending)
+  liquidity?: number;         // NUMBER format (trending)
+  fdv?: number;              // NUMBER format (trending)
+  
+  // Flattened enhanced data
   priceChanges?: {
-    "5m": number;
-    "1h": number;
-    "6h": number;
-    "24h": number;
+    m5: number;   // REAL backend keys!
+    h1: number;
+    h6: number;
+    h24: number;
   };
   
   volumes?: {
-    "5m": number;
-    "1h": number;
-    "6h": number;
-    "24h": number;
+    m5: number;
+    h1: number;
+    h6: number;
+    h24: number;
   };
   
   transactions?: {
-    "5m": { buys: number; sells: number };
-    "1h": { buys: number; sells: number };
-    "6h": { buys: number; sells: number };
-    "24h": { buys: number; sells: number };
+    m5: { buys: number; sells: number };
+    h1: { buys: number; sells: number };
+    h6: { buys: number; sells: number };
+    h24: { buys: number; sells: number };
   };
   
-  pairCreatedAt?: string;         // When trading started
-  
-  // Social links (UPDATED STRUCTURE)
+  // Flattened social data
   socials?: {
-    twitter?: string;             // Just URL now, not object
+    twitter?: string;
     telegram?: string;
     discord?: string;
     website?: string;
   };
   
-  // Websites array
   websites?: Array<{
     label: string;
     url: string;
   }>;
   
-  // Status
-  status: string;
-  
-  // Legacy fields we need to keep for now
-  baseToken?: BaseToken;
-  quoteToken?: BaseToken;
-  
-  // Deprecated - remove eventually
-  images?: {
-    imageUrl: string;
-    headerImage: string;
-    openGraphImage: string;
+  // Legacy compatibility fields
+  contractAddress?: string;   // Alias for address
+  totalSupply?: string;       // Legacy
+  priorityScore?: number;     // Legacy
+  marketCap?: string;         // Legacy
+  volume24h?: string;         // Legacy
+  change24h?: string;         // Legacy
+  status?: string;            // Legacy
+  images?: {                  // Legacy
+    imageUrl?: string;
+    headerImage?: string;
+    openGraphImage?: string;
   };
 }
 
@@ -260,6 +320,129 @@ export interface TokenResponseMetadata {
   _stale?: boolean;
   _cachedAt?: string;
 }
+
+// Enhanced API response structure (matches REST API documentation)
+export interface EnhancedTokenApiResponse {
+  success: boolean;
+  data: Token[];
+  metadata: {
+    generated_at: string;
+    total_returned: number;
+    endpoint_type: "rest_api" | "websocket";
+  };
+}
+
+// Helper functions to handle both backend formats
+export const TokenHelpers = {
+  // Get price (handles both string and number formats)
+  getPrice(token: Token): number {
+    if (typeof token.price === 'number') return token.price; // Trending format
+    if (token.token_prices?.price) return parseFloat(token.token_prices.price); // Standard format
+    return 0;
+  },
+
+  // Get price change (handles both string and number formats)
+  getPriceChange(token: Token): number {
+    if (typeof token.change_24h === 'number') return token.change_24h; // Trending format
+    if (token.token_prices?.change_24h) return parseFloat(token.token_prices.change_24h); // Standard format
+    return 0;
+  },
+
+  // Get market cap (handles both string and number formats)
+  getMarketCap(token: Token): number {
+    if (typeof token.market_cap === 'number') return token.market_cap || 0; // Trending format
+    if (token.token_prices?.market_cap) return parseFloat(token.token_prices.market_cap); // Standard format
+    return 0;
+  },
+
+  // Get volume (handles both string and number formats)
+  getVolume(token: Token): number {
+    if (typeof token.volume_24h === 'number') return token.volume_24h || 0; // Trending format
+    if (token.token_prices?.volume_24h) return parseFloat(token.token_prices.volume_24h); // Standard format
+    return 0;
+  },
+
+  // Get liquidity (handles both string and number formats)
+  getLiquidity(token: Token): number {
+    if (typeof token.liquidity === 'number') return token.liquidity || 0; // Trending format
+    if (token.token_prices?.liquidity) return parseFloat(token.token_prices.liquidity); // Standard format
+    return 0;
+  },
+
+  // Get FDV (handles both string and number formats)
+  getFDV(token: Token): number {
+    if (typeof token.fdv === 'number') return token.fdv || 0; // Trending format
+    if (token.token_prices?.fdv) return parseFloat(token.token_prices.fdv); // Standard format
+    return 0;
+  },
+
+  // Get multi-timeframe price changes (handles both nested and flattened)
+  getPriceChanges(token: Token): { m5: number; h1: number; h6: number; h24: number } | null {
+    // Trending format (flattened)
+    if (token.priceChanges) return token.priceChanges;
+    // Standard format (nested)
+    if (token.refresh_metadata?.enhanced_market_data?.priceChanges) {
+      return token.refresh_metadata.enhanced_market_data.priceChanges;
+    }
+    return null;
+  },
+
+  // Get multi-timeframe volumes (handles both nested and flattened)
+  getVolumes(token: Token): { m5: number; h1: number; h6: number; h24: number } | null {
+    if (token.volumes) return token.volumes; // Trending format
+    if (token.refresh_metadata?.enhanced_market_data?.volumes) {
+      return token.refresh_metadata.enhanced_market_data.volumes; // Standard format
+    }
+    return null;
+  },
+
+  // Get multi-timeframe transactions (handles both nested and flattened)
+  getTransactions(token: Token): { m5: { buys: number; sells: number }; h1: { buys: number; sells: number }; h6: { buys: number; sells: number }; h24: { buys: number; sells: number } } | null {
+    if (token.transactions) return token.transactions; // Trending format
+    if (token.refresh_metadata?.enhanced_market_data?.transactions) {
+      return token.refresh_metadata.enhanced_market_data.transactions; // Standard format
+    }
+    return null;
+  },
+
+  // Get social links (handles both array and object formats)
+  getSocials(token: Token): Array<{ type: string; url: string }> {
+    // Standard format (array)
+    if (token.token_socials) {
+      return token.token_socials.map(social => ({
+        type: social.type,
+        url: social.url
+      }));
+    }
+    // Trending format (object)
+    if (token.socials) {
+      return Object.entries(token.socials).map(([type, url]) => ({
+        type,
+        url: url || ''
+      }));
+    }
+    return [];
+  },
+
+  // Get contract address (handles both address and contractAddress)
+  getAddress(token: Token): string {
+    return token.address || token.contractAddress || '';
+  },
+
+  // Get image URL (handles both legacy and new formats)
+  getImageUrl(token: Token): string | null {
+    // Check for legacy images object
+    if (token.images?.imageUrl) return token.images.imageUrl;
+    if (token.images?.headerImage) return token.images.headerImage;
+    if (token.images?.openGraphImage) return token.images.openGraphImage;
+    
+    // Check for direct fields
+    if (token.image_url) return token.image_url;
+    if (token.header_image_url) return token.header_image_url;
+    
+    return null;
+  }
+};
 
 // Activity Types
 export interface BaseActivity {

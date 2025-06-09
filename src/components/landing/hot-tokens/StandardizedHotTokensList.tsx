@@ -24,7 +24,7 @@ import React, { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useSound from 'use-sound';
 import { useStandardizedTokenData } from '../../../hooks/data/useStandardizedTokenData';
-import { Token } from '../../../types';
+import { Token, TokenHelpers } from '../../../types';
 import { formatNumber } from '../../../utils/format';
 import { DataContainer } from '../../shared/DataContainer';
 
@@ -262,7 +262,7 @@ export const StandardizedHotTokensList: React.FC<StandardizedHotTokensListProps>
                   {/* Token USD price */}
                   <div className="text-sm font-mono text-white">
                     {/* Token USD price (8 decimals) */}
-                    ${formatNumber(token.price, 8)}
+                    ${formatNumber(TokenHelpers.getPrice(token), 8)}
                   </div>
                   
                   {/* Volume badge */}
@@ -292,7 +292,7 @@ export const StandardizedHotTokensList: React.FC<StandardizedHotTokensListProps>
               >
                 {/* Start of price change value */}
                 <span className="font-mono text-base font-semibold">
-                  {isPositive ? '+' : ''}{formatNumber(token.change24h)}%
+                  {isPositive ? '+' : ''}{formatNumber(TokenHelpers.getPriceChange(token))}%
                 </span>
                 {/* End of price change value */}
               </div>

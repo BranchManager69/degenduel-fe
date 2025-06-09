@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from "react";
+import { Shield } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { admin } from "../../services/api/admin";
+import { authService } from "../../services/AuthService";
+import { useStore } from "../../store/useStore";
 import { VanityWalletBatchCreateResponse } from "../../types";
 
 interface VanityWalletBatchCreateProps {
@@ -8,6 +11,7 @@ interface VanityWalletBatchCreateProps {
 }
 
 export const VanityWalletBatchCreate: React.FC<VanityWalletBatchCreateProps> = ({ onSuccess }) => {
+  const { user } = useStore();
   const [patternsText, setPatternsText] = useState("");
   const [patterns, setPatterns] = useState<string[]>([]);
   const [isSuffix, setIsSuffix] = useState(false);
@@ -16,6 +20,38 @@ export const VanityWalletBatchCreate: React.FC<VanityWalletBatchCreateProps> = (
   const [submissionResults, setSubmissionResults] = useState<VanityWalletBatchCreateResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [patternErrors, setPatternErrors] = useState<string[]>([]);
+
+  // Check if user has super admin permissions
+  const isSuperAdmin = authService.hasRole('superadmin');
+
+  // If user doesn't have super admin access, show access denied
+  if (!isSuperAdmin) {
+    return (
+      <div className="bg-dark-300/30 rounded-lg border border-dark-300 p-4">
+        <div className="flex items-center gap-3 mb-4">
+          <Shield className="w-5 h-5 text-yellow-400" />
+          <h3 className="text-md font-medium text-gray-100">Batch Create Vanity Wallets</h3>
+          <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">
+            Super Admin Only
+          </span>
+        </div>
+        
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="w-4 h-4 text-yellow-400" />
+            <h4 className="text-sm font-medium text-yellow-400">Access Restricted</h4>
+          </div>
+          <p className="text-sm text-gray-400 mb-2">
+            Batch creating vanity wallets requires Super Admin permissions.
+          </p>
+          <div className="text-xs text-gray-500">
+            <div>Your role: <span className="text-gray-400">{user?.role || 'Unknown'}</span></div>
+            <div>Required: <span className="text-yellow-400">superadmin</span></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Process patterns text into an array of patterns
   useEffect(() => {
@@ -87,8 +123,15 @@ export const VanityWalletBatchCreate: React.FC<VanityWalletBatchCreateProps> = (
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Failed to create batch of vanity wallets:", error);
-      setError("Failed to create batch of vanity wallets. Please try again.");
-      toast.error("Failed to create batch of vanity wallets");
+      
+      // Handle 403 Forbidden specifically
+      if (error instanceof Error && error.message.includes('403')) {
+        setError("Access denied. Super admin permissions required.");
+        toast.error("Access denied: Super admin permissions required");
+      } else {
+        setError("Failed to create batch of vanity wallets. Please try again.");
+        toast.error("Failed to create batch of vanity wallets");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -96,7 +139,13 @@ export const VanityWalletBatchCreate: React.FC<VanityWalletBatchCreateProps> = (
 
   return (
     <div className="bg-dark-300/30 rounded-lg border border-dark-300 p-4">
-      <h3 className="text-md font-medium text-gray-100 mb-4">Batch Create Vanity Wallets</h3>
+      <div className="flex items-center gap-3 mb-4">
+        <Shield className="w-5 h-5 text-green-400" />
+        <h3 className="text-md font-medium text-gray-100">Batch Create Vanity Wallets</h3>
+        <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
+          Super Admin Access ✓
+        </span>
+      </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Patterns Textarea */}

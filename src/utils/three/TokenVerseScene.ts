@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { Token } from "../../types";
+import { Token, TokenHelpers } from "../../types";
 import ThreeManager from "./ThreeManager";
 
 interface TokenNode {
@@ -205,7 +205,7 @@ export class TokenVerseScene {
       id: index,
       symbol: token.symbol,
       name: token.name,
-      price: parseFloat(token.price.toString() || "0"),
+      price: TokenHelpers.getPrice(token),
       marketCap: parseFloat(token.marketCap?.toString() || "0"),
       volume24h: parseFloat(token.volume24h?.toString() || "0"),
       change24h: parseFloat(token.change24h?.toString() || "0"), // Use 24h change for animations

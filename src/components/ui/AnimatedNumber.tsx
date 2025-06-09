@@ -6,7 +6,7 @@
  */
 
 import { motion, useSpring, useTransform } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface AnimatedNumberProps {
   value: number;
@@ -15,6 +15,7 @@ interface AnimatedNumberProps {
   className?: string;
   prefix?: string;
   suffix?: string;
+  showChangeColor?: boolean; // New prop to enable color flash on change
 }
 
 export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
@@ -23,8 +24,13 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
   duration = 0.8,
   className = "",
   prefix = "",
-  suffix = ""
+  suffix = "",
+  showChangeColor = false
 }) => {
+  const [changeColor, setChangeColor] = useState<'up' | 'down' | null>(null);
+  const previousValue = useRef<number>(value);
+  const colorTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
+
   const spring = useSpring(value, { 
     damping: 20, 
     stiffness: 100,
@@ -39,11 +45,51 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
   });
 
   useEffect(() => {
+    // Detect change direction for color flash
+    if (showChangeColor && previousValue.current !== value) {
+      const direction = value > previousValue.current ? 'up' : 'down';
+      setChangeColor(direction);
+      
+      // Clear any existing timeout
+      if (colorTimeout.current) {
+        clearTimeout(colorTimeout.current);
+      }
+      
+      // Reset color after animation completes
+      colorTimeout.current = setTimeout(() => {
+        setChangeColor(null);
+      }, duration * 1000);
+    }
+    
+    previousValue.current = value;
     spring.set(value);
-  }, [spring, value]);
+  }, [spring, value, showChangeColor, duration]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (colorTimeout.current) {
+        clearTimeout(colorTimeout.current);
+      }
+    };
+  }, []);
+
+  // Dynamic color classes based on change direction
+  const getColorClass = () => {
+    if (!showChangeColor || !changeColor) return '';
+    return changeColor === 'up' 
+      ? 'text-green-400 transition-colors duration-300' 
+      : 'text-red-400 transition-colors duration-300';
+  };
 
   return (
-    <motion.span className={className}>
+    <motion.span 
+      className={`${className} ${getColorClass()}`}
+      animate={showChangeColor && changeColor ? { 
+        scale: [1, 1.05, 1],
+        transition: { duration: 0.3 }
+      } : {}}
+    >
       {prefix}
       <motion.span>{display}</motion.span>
       {suffix}

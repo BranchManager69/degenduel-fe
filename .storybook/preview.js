@@ -546,10 +546,16 @@ if (typeof window !== 'undefined') {
     };
   }
   
-  // Mock all API calls to prevent network requests
+  // Mock specific API calls but allow token API through
   const originalFetch = window.fetch;
   window.fetch = function(url, options) {
     console.log(`[Storybook] Intercepted fetch to: ${url}`);
+    
+    // Allow token API calls to go through to real backend
+    if (url.includes('/api/tokens') || url.includes('/tokens')) {
+      console.log('[Storybook] Allowing token API call through to real backend');
+      return originalFetch(url, options);
+    }
     
     // Mock system status API
     if (url.includes('/api/admin/system-status') || url.includes('/api/v69/system-status')) {

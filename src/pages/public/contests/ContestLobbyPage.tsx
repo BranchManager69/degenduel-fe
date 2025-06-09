@@ -17,19 +17,36 @@ import { Link, useParams } from "react-router-dom";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { ContestChat } from "../../../components/contest-chat/ContestChat";
 import { ContestTimer } from "../../../components/contest-lobby/ContestTimer";
-import { Leaderboard } from "../../../components/contest-lobby/Leaderboard";
+import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
 import { PortfolioPerformance } from "../../../components/contest-lobby/PortfolioPerformance";
 import { ReferralProgressCard } from "../../../components/contest-lobby/ReferralProgressCard";
 import { ShareContestButton } from "../../../components/contest-lobby/ShareContestButton";
 import { TokenPerformance } from "../../../components/contest-lobby/TokenPerformance";
 import { PerformanceChart } from "../../../components/contest-results/PerformanceChart";
+import { MultiParticipantChart } from "../../../components/contest-lobby/MultiParticipantChart";
+import { LiveTradeActivity } from "../../../components/contest-lobby/LiveTradeActivity";
+import { EnhancedPortfolioDisplay } from "../../../components/contest-lobby/EnhancedPortfolioDisplay";
 import { Badge } from "../../../components/ui/Badge";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
+import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/useContestParticipants";
 import { formatCurrency } from "../../../lib/utils";
-import { ddApi } from "../../../services/dd-api";
-import { ContestViewData } from "../../../types";
+import { ContestViewData, LeaderboardEntry } from "../../../types";
 import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
+
+// Helper function to transform LeaderboardEntry to Participant format
+const transformLeaderboardToParticipant = (entry: LeaderboardEntry): any => ({
+  wallet_address: entry.userId,
+  nickname: entry.username,
+  profile_image_url: entry.profilePictureUrl,
+  rank: entry.rank,
+  portfolio_value: entry.portfolioValue,
+  performance_percentage: entry.performancePercentage,
+  prize_awarded: entry.prizeAwarded,
+  is_current_user: entry.isCurrentUser,
+  is_ai_agent: entry.isAiAgent,
+  is_banned: false
+});
 
 // Contest Lobby page
 export const ContestLobby: React.FC = () => {
@@ -40,7 +57,7 @@ export const ContestLobby: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'performance' | 'chat'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'performance' | 'chart' | 'trades' | 'chat'>('overview');
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -58,8 +75,21 @@ export const ContestLobby: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const data = await ddApi.contests.getView(contestId);
-        setContestViewData(data);
+        // Backend team confirmed: use /contests/:id/leaderboard endpoint
+        const response = await fetch(`/api/contests/${contestId}/leaderboard`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch contest data: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // Transform the leaderboard response to match expected ContestViewData structure
+        const viewData: ContestViewData = {
+          contest: data.contest,
+          leaderboard: data.leaderboard || data.participants || [],
+          currentUserPerformance: (data.leaderboard || data.participants || []).find((entry: any) => entry.is_current_user) || null
+        };
+        
+        setContestViewData(viewData);
       } catch (err) {
         console.error("Failed to fetch contest view:", err);
         setError(err instanceof Error ? err.message : "Failed to load contest details.");
@@ -87,11 +117,18 @@ export const ContestLobby: React.FC = () => {
     }
   }, [contestViewData?.contest, contestIdFromParams]);
 
-  // WebSocket updates
+  // WebSocket updates for general contest data
   const { 
     contestViewData: wsUpdatedData, 
     error: wsError 
   } = useContestViewUpdates(contestIdFromParams ?? null, contestViewData);
+
+  // Real-time participants updates
+  const {
+    participants: realtimeParticipants
+  } = useContestParticipants(
+    contestIdFromParams ? parseInt(contestIdFromParams) : null
+  );
 
   // Effect to update page state when WebSocket pushes new data
   useEffect(() => {
@@ -113,7 +150,7 @@ export const ContestLobby: React.FC = () => {
     }
   };
 
-  const handleTabChange = (tab: 'overview' | 'performance' | 'chat') => {
+  const handleTabChange = (tab: 'overview' | 'performance' | 'chart' | 'trades' | 'chat') => {
     setActiveTab(tab);
     if (tab === 'chat') {
       setUnreadMessages(0);
@@ -124,7 +161,7 @@ export const ContestLobby: React.FC = () => {
   };
 
   // Handle keyboard navigation for tabs
-  const handleTabKeyDown = (event: React.KeyboardEvent, tab: 'overview' | 'performance' | 'chat') => {
+  const handleTabKeyDown = (event: React.KeyboardEvent, tab: 'overview' | 'performance' | 'chart' | 'trades' | 'chat') => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       handleTabChange(tab);
@@ -133,7 +170,17 @@ export const ContestLobby: React.FC = () => {
 
   // --- Derived data based on contestViewData ---
   const contestDetails = contestViewData?.contest;
-  const leaderboardEntries = contestViewData?.leaderboard || [];
+  
+  // Transform and use real-time participants if available, fall back to original data
+  const leaderboardEntries = useMemo(() => {
+    if (realtimeParticipants.length > 0) {
+      return realtimeParticipants;
+    }
+    
+    // Transform legacy LeaderboardEntry format to new Participant format
+    return (contestViewData?.leaderboard || []).map(transformLeaderboardToParticipant);
+  }, [realtimeParticipants, contestViewData?.leaderboard]);
+  
   const currentUserPerformance = contestViewData?.currentUserPerformance;
 
   // --- Memoized data for performance ---
@@ -308,6 +355,36 @@ export const ContestLobby: React.FC = () => {
                   </button>
                   <button
                     role="tab"
+                    aria-selected={activeTab === 'chart'}
+                    aria-label="Multi Chart tab"
+                    tabIndex={activeTab === 'chart' ? 0 : -1}
+                    onClick={() => handleTabChange('chart')}
+                    onKeyDown={(e) => handleTabKeyDown(e, 'chart')}
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      activeTab === 'chart'
+                        ? 'bg-brand-500/30 text-brand-300'
+                        : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
+                    }`}
+                  >
+                    Multi Chart
+                  </button>
+                  <button
+                    role="tab"
+                    aria-selected={activeTab === 'trades'}
+                    aria-label="Live Trades tab"
+                    tabIndex={activeTab === 'trades' ? 0 : -1}
+                    onClick={() => handleTabChange('trades')}
+                    onKeyDown={(e) => handleTabKeyDown(e, 'trades')}
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      activeTab === 'trades'
+                        ? 'bg-brand-500/30 text-brand-300'
+                        : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800/50'
+                    }`}
+                  >
+                    Live Trades
+                  </button>
+                  <button
+                    role="tab"
                     aria-selected={activeTab === 'chat'}
                     aria-label="Chat tab"
                     tabIndex={activeTab === 'chat' ? 0 : -1}
@@ -407,6 +484,26 @@ export const ContestLobby: React.FC = () => {
                     Performance
                   </button>
                   <button
+                    onClick={() => handleTabChange('chart')}
+                    className={`px-3 py-2 rounded-md text-left ${
+                      activeTab === 'chart'
+                        ? 'bg-brand-500/30 text-brand-300'
+                        : 'text-gray-400 hover:text-gray-300'
+                    }`}
+                  >
+                    Multi Chart
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('trades')}
+                    className={`px-3 py-2 rounded-md text-left ${
+                      activeTab === 'trades'
+                        ? 'bg-brand-500/30 text-brand-300'
+                        : 'text-gray-400 hover:text-gray-300'
+                    }`}
+                  >
+                    Live Trades
+                  </button>
+                  <button
                     onClick={() => handleTabChange('chat')}
                     className={`px-3 py-2 rounded-md text-left flex items-center ${
                       activeTab === 'chat'
@@ -442,7 +539,7 @@ export const ContestLobby: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-6">
                     {currentUserPerformance && <PortfolioPerformance {...portfolioDataForDisplay} />}
-                    <Leaderboard entries={leaderboardEntries} />
+                    <ParticipantsList participants={leaderboardEntries} />
                   </div>
                   <div className="space-y-6">
                     {/* Referral Progress Card - Hide for challenge contests */}
@@ -525,7 +622,98 @@ export const ContestLobby: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <Leaderboard entries={leaderboardEntries} className="mb-6" />
+                      <ParticipantsList participants={leaderboardEntries} />
+                    </motion.div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'chart' && (
+                <div className="space-y-6">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-dark-200/50 backdrop-blur-sm p-6 rounded-lg border border-dark-300"
+                  >
+                    <h2 className="text-xl font-bold text-gray-100 mb-4">Multi-Participant Performance Chart</h2>
+                    {contestIdFromParams && leaderboardEntries.length > 0 ? (
+                      <MultiParticipantChart
+                        contestId={contestIdFromParams}
+                        participants={leaderboardEntries.map(entry => ({
+                          wallet_address: entry.wallet_address,
+                          nickname: entry.nickname,
+                          is_current_user: entry.is_current_user
+                        }))}
+                        timeInterval="15m"
+                      />
+                    ) : (
+                      <div className="text-center py-10 text-gray-500">
+                        <p>Loading participants for chart...</p>
+                      </div>
+                    )}
+                  </motion.div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <ParticipantsList participants={leaderboardEntries} />
+                    </motion.div>
+                    
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      {contestIdFromParams && (
+                        <LiveTradeActivity contestId={contestIdFromParams} maxTrades={8} />
+                      )}
+                    </motion.div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'trades' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    {contestIdFromParams && (
+                      <LiveTradeActivity contestId={contestIdFromParams} maxTrades={20} />
+                    )}
+                  </motion.div>
+                  
+                  <div className="space-y-6">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <ParticipantsList participants={leaderboardEntries} contestStatus="live" />
+                    </motion.div>
+                    
+                    {/* Top Portfolios */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="space-y-4"
+                    >
+                      <h3 className="text-lg font-bold text-gray-100">Top Portfolios</h3>
+                      {contestIdFromParams && leaderboardEntries.slice(0, 3).map((participant, index) => (
+                        <EnhancedPortfolioDisplay
+                          key={participant.wallet_address}
+                          contestId={contestIdFromParams}
+                          walletAddress={participant.wallet_address}
+                          nickname={participant.nickname}
+                          showDetailed={index === 0}
+                        />
+                      ))}
                     </motion.div>
                   </div>
                 </div>
@@ -557,7 +745,7 @@ export const ContestLobby: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <Leaderboard entries={leaderboardEntries} className="mb-6" />
+                      <ParticipantsList participants={leaderboardEntries} />
                     </motion.div>
                   </div>
                 </div>

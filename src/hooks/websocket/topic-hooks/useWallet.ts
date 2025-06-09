@@ -406,6 +406,41 @@ export function useWallet(walletAddress?: string) {
       return () => clearTimeout(refreshTimeoutId);
     } else {
       console.warn('[Wallet WebSocket] Cannot refresh - WebSocket not connected');
+
+      // Enhanced debugging for WebSocket connection issues
+      console.group('🔌 WebSocket Connection Diagnostics');
+      console.log('Connection State:', {
+        isConnected: ws.isConnected,
+        connectionError: ws.connectionError,
+        lastConnectionTime: ws.lastConnectionTime
+      });
+
+      // Test WebSocket connectivity
+      console.log('Testing WebSocket connectivity...');
+      const testWs = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v69/ws`);
+
+      testWs.onopen = () => {
+        console.log('✅ WebSocket test connection successful');
+        testWs.close();
+      };
+
+      testWs.onerror = (error) => {
+        console.error('❌ WebSocket test connection failed:', error);
+      };
+
+      testWs.onclose = (event) => {
+        console.log(`🔌 WebSocket test connection closed: ${event.code} ${event.reason}`);
+      };
+
+      setTimeout(() => {
+        if (testWs.readyState === WebSocket.CONNECTING) {
+          console.error('❌ WebSocket test connection timeout');
+          testWs.close();
+        }
+      }, 5000);
+
+      console.groupEnd();
+
       setIsLoading(false);
     }
   }, [ws.isConnected, ws.request, walletAddress, isLoading]);

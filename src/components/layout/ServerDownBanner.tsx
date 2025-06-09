@@ -72,10 +72,11 @@ export const ServerDownBanner: React.FC = () => {
               </h3>
               <p className="text-xs md:text-sm text-red-300/80 line-clamp-1 sm:line-clamp-none">
                 <span className="hidden sm:inline">
-                  Our servers are currently experiencing issues. We are working
-                  to restore service.
+                  Branch Manager is making significant changes to the system.
                 </span>
-                <span className="sm:hidden">Server issues. Working on it.</span>
+                <span className="sm:hidden">
+                  Branch Manager is making significant changes to the system.
+                </span>
                 {downDuration > 0 && (
                   <span className="ml-1 sm:ml-2">
                     Down for {Math.floor(downDuration / 60)}m{" "}

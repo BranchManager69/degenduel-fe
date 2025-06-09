@@ -20,7 +20,7 @@
  */
 
 // import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'; // REMOVED
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useBiometricAuth } from "../../hooks/auth"; // Only useBiometricAuth
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../store/useStore";
@@ -38,6 +38,7 @@ import {
     ConnectWalletButton,
     SimpleWalletButton,
     DiscordLoginButton,
+    TelegramLoginButton,
     TwitterLoginButton
 } from "./index";
 
@@ -50,19 +51,8 @@ const LoginOptions = () => {
     isRegistered,
     error: biometricError
   } = useBiometricAuth();
-  const [showBiometricOption, setShowBiometricOption] = useState(false);
-  
   // Determine if user is authenticated
   const isAuthenticated = !!user?.wallet_address;
-  
-  useEffect(() => {
-    if (isAvailable && isAuthenticated) {
-      // For authenticated users, always show biometric option (register or authenticate)
-      setShowBiometricOption(true);
-    } else {
-      setShowBiometricOption(false);
-    }
-  }, [isAvailable, isAuthenticated]);
   
   useEffect(() => {
     if (biometricError) {
@@ -122,8 +112,8 @@ const LoginOptions = () => {
                       </p>
                     </div>
                     
-                    {/* Link Options (3 compact squares) */}
-                    <div className="grid grid-cols-3 gap-3">
+                    {/* Link Options (4 compact squares) */}
+                    <div className="grid grid-cols-4 gap-3">
                       {/* Link Twitter Account - Icon Only */}
                       <div className="relative p-0.5 bg-gradient-to-r from-[#1DA1F2]/40 to-[#1DA1F2]/80 rounded-md group overflow-hidden shadow-md aspect-square">
                         <div className="absolute inset-0 bg-[#1DA1F2]/10 group-hover:bg-[#1DA1F2]/20 transition-colors duration-300"></div>
@@ -146,20 +136,29 @@ const LoginOptions = () => {
                         </div>
                       </div>
                       
-                      {/* Register/Use Passkey - Icon Only */}
-                      {showBiometricOption && (
-                        <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md aspect-square">
-                          <div className="absolute inset-0 bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors duration-300"></div>
-                          <div className="w-full h-full z-10 relative flex items-center justify-center">
-                            <BiometricAuthButton 
-                              mode={isRegistered ? "authenticate" : "register"}
-                              buttonStyle="icon-only"
-                              className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0"
-                              onError={(error) => console.error("Passkey auth error:", error)}
-                            />
-                          </div>
+                      {/* Link Telegram Account - Icon Only */}
+                      <div className="relative p-0.5 bg-gradient-to-r from-[#0088cc]/40 to-[#0088cc]/80 rounded-md group overflow-hidden shadow-md aspect-square">
+                        <div className="absolute inset-0 bg-[#0088cc]/10 group-hover:bg-[#0088cc]/20 transition-colors duration-300"></div>
+                        <div className="w-full h-full z-10 relative flex items-center justify-center">
+                          <TelegramLoginButton 
+                            linkMode={true}
+                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0 flex items-center justify-center [&>*:not(svg)]:hidden [&>span]:hidden"
+                          />
                         </div>
-                      )}
+                      </div>
+                      
+                      {/* Register/Use Passkey - Icon Only */}
+                      <div className="relative p-0.5 bg-gradient-to-r from-blue-500/40 to-blue-600/80 rounded-md group overflow-hidden shadow-md aspect-square">
+                        <div className="absolute inset-0 bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors duration-300"></div>
+                        <div className="w-full h-full z-10 relative flex items-center justify-center">
+                          <BiometricAuthButton 
+                            mode={isRegistered ? "authenticate" : "register"}
+                            buttonStyle="icon-only"
+                            className="w-full h-full bg-transparent hover:bg-transparent border-transparent p-0"
+                            onError={(error) => console.error("Passkey auth error:", error)}
+                          />
+                        </div>
+                      </div>
                     </div>
                     
                     <div className="relative mt-6">

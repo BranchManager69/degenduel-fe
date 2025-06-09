@@ -16,7 +16,7 @@
 import { useWallet as useSolanaWalletAdapter } from "@solana/wallet-adapter-react"; // Renamed to avoid conflict
 import React, { useEffect, useMemo } from "react";
 import { useWallet as useCustomDegenWallet } from "../../hooks/websocket/topic-hooks/useWallet"; // Your custom hook
-// import { useStore } from "../../store/useStore"; // No longer needed for walletAddress
+import { AnimatedNumber } from "../ui/AnimatedNumber";
 
 interface WalletBalanceTickerProps {
   isCompact?: boolean;
@@ -44,11 +44,7 @@ export const WalletBalanceTicker: React.FC<WalletBalanceTickerProps> = ({
     }
   }, [walletAddress, isAdapterConnected, refreshWallet]);
   
-  // Format SOL balance
-  const formattedSolBalance = useMemo(() => {
-    if (!balance) return '0.000';
-    return balance.sol_balance.toFixed(3);
-  }, [balance]);
+  // No need for manual formatting anymore, AnimatedNumber handles it
   
   // Get top tokens by value
   const topTokens = useMemo(() => {
@@ -129,22 +125,45 @@ export const WalletBalanceTicker: React.FC<WalletBalanceTickerProps> = ({
   
   return (
     <div className={containerClasses}>
-      {/* Soft background glow effect */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-900/10 to-cyan-800/5 opacity-50" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
+      {/* Enhanced background with animated gradients */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Animated background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-900/20 via-dark-200/40 to-cyan-900/20 animate-pulse" />
+        
+        {/* Flowing light effect */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-purple-400/30 via-cyan-400/30 to-transparent animate-pulse" />
+          <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/30 via-purple-400/30 to-transparent animate-pulse" />
+        </div>
+        
+        {/* Subtle pattern overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent" />
       </div>
       
       {/* Content container */}
       <div className={contentClasses}>
-        {/* SOL Balance Item */}
-        <div className="group relative inline-flex items-center space-x-2 hover:bg-dark-300/50 px-2 py-1 rounded transition-all">
-          <span className="font-mono text-purple-400 group-hover:text-purple-300 font-medium">
-            SOL
-          </span>
-          <span className="font-medium text-gray-300 group-hover:text-gray-200">
-            {formattedSolBalance}
+        {/* SOL Balance Item - Enhanced */}
+        <div className="group relative inline-flex items-center space-x-3 hover:bg-gradient-to-r hover:from-orange-900/20 hover:to-yellow-900/20 px-3 py-1.5 rounded-lg transition-all duration-300 cursor-pointer border border-transparent hover:border-orange-400/20"
+             onClick={() => window.location.href = '/wallet'}
+             title="Click to view wallet details">
+          
+          {/* SOL icon indicator */}
+          <div className="flex items-center gap-1.5">
+            <div className="relative">
+              <div className="w-2 h-2 bg-gradient-to-r from-orange-400 to-yellow-500 rounded-full animate-pulse" />
+              <div className="absolute inset-0 w-2 h-2 bg-gradient-to-r from-orange-400 to-yellow-500 rounded-full blur-sm opacity-70" />
+            </div>
+            <span className="font-mono text-orange-300 group-hover:text-orange-200 font-semibold tracking-wider text-xs">
+              SOL
+            </span>
+          </div>
+          
+          <span className="font-mono font-bold text-white group-hover:text-orange-100 transition-colors">
+            <AnimatedNumber 
+              value={balance?.sol_balance || 0} 
+              decimals={3}
+              showChangeColor={true}
+            />
           </span>
         </div>
         
@@ -159,19 +178,27 @@ export const WalletBalanceTicker: React.FC<WalletBalanceTickerProps> = ({
         {topTokens.map((token) => (
           <div 
             key={token.symbol}
-            className="group relative inline-flex items-center space-x-2 hover:bg-dark-300/50 px-2 py-1 rounded transition-all"
+            className="group relative inline-flex items-center space-x-2 hover:bg-dark-300/50 px-2 py-1 rounded transition-all cursor-pointer"
+            onClick={() => window.location.href = '/wallet'}
+            title="Click to view wallet details"
           >
             <span className="font-mono text-cyan-400 group-hover:text-cyan-300 font-medium">
               {token.symbol}
             </span>
             <span className="font-medium text-gray-300 group-hover:text-gray-200">
-              {token.balance.toLocaleString(undefined, { 
-                maximumFractionDigits: token.balance > 1000 ? 0 : 2 
-              })}
+              <AnimatedNumber 
+                value={token.balance} 
+                decimals={token.balance > 1000 ? 0 : 2}
+                showChangeColor={true}
+              />
             </span>
             {token.value_usd && (
               <span className="text-gray-400 group-hover:text-gray-300">
-                (${token.value_usd.toFixed(2)})
+                ($<AnimatedNumber 
+                  value={token.value_usd} 
+                  decimals={2}
+                  showChangeColor={true}
+                />)
               </span>
             )}
           </div>

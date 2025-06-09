@@ -170,7 +170,6 @@ export const Header: React.FC = () => {
               {isAuthenticated && user && (
                 <CompactBalance 
                   walletAddress={user.wallet_address}
-                  showLabels={true}
                 />
               )}
               

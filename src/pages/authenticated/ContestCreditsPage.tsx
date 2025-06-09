@@ -3,9 +3,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
 import { CreditBalance, CreditPurchase, CreditHistory } from "../../components/contest-credits";
-import { useWebSocket } from "../../contexts/UnifiedWebSocketContext";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
-import { MessageType, SOCKET_TYPES } from "../../hooks/websocket";
+import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
 import { useStore } from "../../store/useStore";
 
 // Define the credit configuration interface
@@ -21,7 +20,7 @@ export const ContestCreditsPage: React.FC = () => {
   const storeUser = useStore(state => state.user);
   const { user: authUser, isAuthenticated } = useMigratedAuth();
   const user = authUser || storeUser;
-  const ws = useWebSocket();
+  const { notifications } = useNotifications();
   
   const [config, setConfig] = useState<CreditConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,38 +55,24 @@ export const ContestCreditsPage: React.FC = () => {
     fetchConfig();
   }, [fetchConfig]);
 
+  // Listen for credit-related notifications
   useEffect(() => {
-    if (!isAuthenticated || !user) {
-      setLoading(false);
+    if (!isAuthenticated || !user || !notifications) {
       return;
     }
 
-    let unregister: (() => void) | undefined;
-
-    // Wait for WebSocket to be ready for secure interactions
-    if (ws.isReadyForSecureInteraction && ws.registerListener) {
-      console.log('[ContestCreditsPage] WebSocket ready for secure interaction. Setting up listeners.');
-      const onCreditMessage = (message: any) => {
-        if (message.type === 'credit_added' || message.type === 'credit_updated') {
-          // Trigger refresh in child components by re-fetching config
-          fetchConfig();
-        }
-      };
-      
-      unregister = ws.registerListener(
-        "contest-credits-page",
-        [MessageType.DATA as any],
-        onCreditMessage,
-        [SOCKET_TYPES.NOTIFICATION]
-      );
-    }
+    // Check for new credit-related notifications and refresh config
+    const creditNotifications = notifications.filter(notification => 
+      notification.type === 'credit_added' || 
+      notification.type === 'credit_updated' ||
+      notification.type === 'contest_credit'
+    );
     
-    return () => {
-      if (unregister) {
-        unregister();
-      }
-    };
-  }, [isAuthenticated, user, ws.isReadyForSecureInteraction, ws.registerListener, fetchConfig]);
+    if (creditNotifications.length > 0) {
+      // Refresh config when credit notifications are received
+      fetchConfig();
+    }
+  }, [notifications, isAuthenticated, user, fetchConfig]);
 
   // If not authenticated, show login prompt
   if (!isAuthenticated || !user) {

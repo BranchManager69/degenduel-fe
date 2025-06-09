@@ -8,21 +8,22 @@ import {
     SystemProgram,
     Transaction,
 } from "@solana/web3.js";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import PortfolioPreviewModal from "../../components/portfolio-selection/PortfolioPreviewModal";
 import { PortfolioSummary } from "../../components/portfolio-selection/PortfolioSummary";
 import { TokenFilters } from "../../components/portfolio-selection/TokenFilters";
-import { TokenGrid } from "../../components/portfolio-selection/TokenGrid";
+import { PortfolioOptimizedTokenCard } from "../../components/portfolio-selection/PortfolioOptimizedTokenCard";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
-import { Contest, SearchToken } from "../../types/index";
+import { Contest, SearchToken, TokenHelpers } from "../../types/index";
 import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 // Declare Buffer on window type
 declare global {
@@ -119,7 +120,7 @@ export const TokenSelection: React.FC = () => {
     refresh: refreshTokens,
     loadMore,
     pagination
-  } = useStandardizedTokenData();
+  } = useStandardizedTokenData("all", "marketCap", {}, 5, 50); // Start with 50, load more on scroll
   
   // Jupiter filters don't work with the centralized hook right now
   // The backend already filters duplicates for us
@@ -135,12 +136,16 @@ export const TokenSelection: React.FC = () => {
     new Map(),
   );
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
-  
-  // Keep debouncedSearchQuery as empty for TokenGrid compatibility
-  const debouncedSearchQuery = "";
   const [contest, setContest] = useState<Contest | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const user = useStore((state) => state.user);
+  
+  // Infinite scroll state
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
+  
+  // Modern wallet adapter for transactions
+  const { publicKey, signTransaction, connected, connect } = useWallet();
   const [loadingEntryStatus, setLoadingEntryStatus] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [transactionState, setTransactionState] = useState<{
@@ -241,10 +246,10 @@ export const TokenSelection: React.FC = () => {
     
     // Split tokens: selected ones first, then unselected
     const selectedTokensList = tokens.filter(token => 
-      selectedAddresses.includes(token.contractAddress)
+      selectedAddresses.includes(TokenHelpers.getAddress(token))
     );
     const unselectedTokensList = tokens.filter(token => 
-      !selectedAddresses.includes(token.contractAddress)
+      !selectedAddresses.includes(TokenHelpers.getAddress(token))
     );
     
     // Put selected tokens at top for immediate visibility and clicking
@@ -396,17 +401,34 @@ export const TokenSelection: React.FC = () => {
           throw new Error("Contest wallet address not found");
         }
 
-        // 1. Create and send Solana transaction
-        console.log("Initializing Solana transaction...");
-        const { solana } = window as any;
-        if (!solana?.isPhantom) {
-          console.error("Phantom wallet not found in window.solana");
-          throw new Error("Phantom wallet not found");
+        // 1. Modern wallet connection and transaction flow
+        console.log("Initializing modern wallet transaction...");
+        
+        // Ensure wallet is connected - this will show wallet picker if not connected
+        if (!connected || !publicKey || !signTransaction) {
+          console.log("Wallet not connected, prompting connection...");
+          setTransactionState({
+            status: "preparing",
+            message: "Connecting wallet...",
+          });
+          
+          try {
+            await connect();
+            console.log("Wallet connected successfully");
+          } catch (error: any) {
+            console.error("Wallet connection failed:", error);
+            throw new Error("Please connect a Solana wallet to continue");
+          }
+        }
+
+        // Verify connected wallet matches user's registered wallet (after connection is confirmed)
+        if (user?.wallet_address && publicKey && publicKey.toBase58() !== user.wallet_address) {
+          throw new Error("Connected wallet doesn't match your registered wallet address");
         }
 
         console.log("Creating Solana connection...");
         const connection = new Connection(
-          '/api/solana-rpc', // UPDATED: Using server-side Solana proxy instead of direct RPC endpoint
+          '/api/solana-rpc', // Using server-side Solana proxy
           "confirmed",
         );
 
@@ -416,7 +438,7 @@ export const TokenSelection: React.FC = () => {
         const lamports = Math.floor(parseFloat(contest.entry_fee) * 1e9);
 
         console.log("Transaction details:", {
-          from: user.wallet_address,
+          from: publicKey?.toBase58(),
           to: contestDetails.wallet_address,
           amount: contest.entry_fee,
           lamports,
@@ -443,9 +465,14 @@ export const TokenSelection: React.FC = () => {
         const finalLamports =
           destAccount === null ? lamports + minRentExemption : lamports;
 
+        // Ensure we have a valid publicKey before creating transaction
+        if (!publicKey) {
+          throw new Error("Wallet public key not available");
+        }
+
         transaction.add(
           SystemProgram.transfer({
-            fromPubkey: new PublicKey(user.wallet_address),
+            fromPubkey: publicKey,
             toPubkey: new PublicKey(contestDetails.wallet_address),
             lamports: finalLamports,
           }),
@@ -455,25 +482,33 @@ export const TokenSelection: React.FC = () => {
         console.log("Getting latest blockhash...");
         const latestBlockhash = await connection.getLatestBlockhash();
         transaction.recentBlockhash = latestBlockhash.blockhash;
-        transaction.feePayer = new PublicKey(user.wallet_address);
+        transaction.feePayer = publicKey;
 
-        // COMPLIANT WITH PHANTOM'S RECOMMENDATIONS:
-        // Use Phantom's unified signAndSendTransaction method instead of separate sign + send calls
+        // Modern wallet adapter transaction signing
         setTransactionState({
           status: "signing",
           message: "Please confirm the transaction in your wallet...",
         });
 
-        console.log(
-          "Requesting transaction signature and submission from Phantom using recommended signAndSendTransaction method...",
-        );
+        console.log("Requesting transaction signature using modern wallet adapter...");
         
         try {
-          // Use signAndSendTransaction in a single call with the transaction object as a property
-          // This is the correct approach according to Phantom's documentation
-          const { signature } = await solana.signAndSendTransaction({
-            transaction, // Must be passed as a property of an options object
+          // Ensure signTransaction is available
+          if (!signTransaction) {
+            throw new Error("Wallet signing function not available");
+          }
+
+          // Use modern wallet adapter signTransaction method
+          const signedTransaction = await signTransaction(transaction);
+          console.log("Transaction signed successfully");
+
+          setTransactionState({
+            status: "sending",
+            message: "Sending transaction to blockchain...",
           });
+
+          // Send the signed transaction
+          const signature = await connection.sendRawTransaction(signedTransaction.serialize());
           console.log("Transaction sent, signature:", signature);
           confirmedSignature = signature; // Store locally to avoid race condition
 
@@ -506,8 +541,7 @@ export const TokenSelection: React.FC = () => {
             signature,
           });
 
-          // COMPLIANT WITH PHANTOM'S RECOMMENDATIONS:
-          // Use the modern confirmation pattern with signature, blockhash and lastValidBlockHeight
+          // Modern confirmation pattern
           await connection.confirmTransaction({
             signature,
             blockhash: latestBlockhash.blockhash,
@@ -521,17 +555,27 @@ export const TokenSelection: React.FC = () => {
           });
 
           console.log("Transaction confirmed!");
-        } catch (err) {
+        } catch (err: any) {
           console.error("Transaction error:", err);
+          
+          // Handle specific wallet errors
+          let errorMessage = "Transaction failed";
+          if (err.code === 4001 || err.message?.includes("User rejected")) {
+            errorMessage = "Transaction cancelled by user";
+          } else if (err.message?.includes("Insufficient funds")) {
+            errorMessage = "Insufficient SOL balance for transaction";
+          } else if (err.message?.includes("blockhash not found")) {
+            errorMessage = "Transaction expired, please try again";
+          } else if (err instanceof Error) {
+            errorMessage = err.message;
+          }
+          
           setTransactionState({
             status: "error",
             message: "Transaction failed",
-            error:
-              err instanceof Error
-                ? err.message
-                : "Unknown error during transaction",
+            error: errorMessage,
           });
-          throw err;
+          throw new Error(errorMessage);
         }
 
         // 2. Submit contest entry and portfolio in one atomic operation
@@ -688,12 +732,30 @@ export const TokenSelection: React.FC = () => {
   const isOfflineMode = !isTokenDataConnected && !isInWsGracePeriod;
   const showOfflineIndicator = isOfflineMode && memoizedTokens.length > 0;
 
+  // Load more tokens for infinite scroll
+  const loadMoreTokens = useCallback(() => {
+    if (isLoadingMore || !pagination?.hasMore || tokenListLoading) {
+      console.log('[PortfolioTokenSelectionPage] Cannot load more:', { isLoadingMore, hasMore: pagination?.hasMore, tokenListLoading });
+      return;
+    }
+    
+    console.log('[PortfolioTokenSelectionPage] Loading more tokens...');
+    setIsLoadingMore(true);
+    
+    // Use the actual loadMore function from the hook
+    loadMore();
+    
+    // Reset loading state after a short delay
+    setTimeout(() => {
+      setIsLoadingMore(false);
+    }, 500);
+  }, [isLoadingMore, pagination?.hasMore, tokenListLoading, loadMore]);
+
   // Enhanced token selection handler with offline support
   const handleTokenSelect = useCallback(
-    (contractAddress: string, weight: number) => {
+    (contractAddress: string) => {
       console.log("🔍 PortfolioTokenSelectionPage: handleTokenSelect called with:", {
         contractAddress,
-        weight,
         isOffline: isOfflineMode
       });
 
@@ -703,56 +765,64 @@ export const TokenSelection: React.FC = () => {
         return;
       }
 
-      if (
-        !contractAddress.includes("pump") &&
-        !contractAddress.includes("111")
-      ) {
-        console.warn(
-          "Received possible symbol instead of contract address:",
-          contractAddress,
-        );
-        const token = memoizedTokens.find((t) => t.symbol === contractAddress);
-        if (token) {
-          contractAddress = token.contractAddress;
-          console.log(
-            "Found matching token, using contract address:",
-            contractAddress,
-          );
-        }
-      }
-
       const token = memoizedTokens.find(
         (t) => t.contractAddress === contractAddress,
       );
       console.log("Token being selected:", token);
 
-      // Update selections immediately (works offline)
+      // Toggle selection with smart default weight
       setSelectedTokens((prev) => {
         const newSelectedTokens = new Map(prev);
-        if (weight === 0) {
-          newSelectedTokens.delete(contractAddress);
-        } else {
-          newSelectedTokens.set(contractAddress, weight);
-        }
         
-        // Track offline changes for sync when reconnected
-        if (isOfflineMode) {
-          setPendingSelections((pending) => {
-            const newPending = new Map(pending);
-            if (weight === 0) {
-              newPending.delete(contractAddress);
-            } else {
-              newPending.set(contractAddress, weight);
-            }
-            return newPending;
-          });
+        if (newSelectedTokens.has(contractAddress)) {
+          // Token is already selected - remove it
+          newSelectedTokens.delete(contractAddress);
           
-          // Show offline feedback
+          if (isOfflineMode) {
+            setPendingSelections((pending) => {
+              const newPending = new Map(pending);
+              newPending.delete(contractAddress);
+              return newPending;
+            });
+          }
+          
           if (token) {
-            toast.success(
-              `${token.symbol} ${weight === 0 ? 'removed' : 'selected'} (offline)`,
-              { duration: 2000 }
-            );
+            toast.success(`${token.symbol} removed from portfolio`, { duration: 2000 });
+          }
+        } else {
+          // Token not selected - add it with smart default weight
+          const usedWeight = Array.from(newSelectedTokens.values()).reduce((sum, w) => sum + w, 0);
+          const remainingWeight = 100 - usedWeight;
+          
+          let defaultWeight: number;
+          if (remainingWeight >= 20) {
+            defaultWeight = 20; // Give more meaningful chunk when plenty of space
+          } else if (remainingWeight >= 10) {
+            defaultWeight = 10; // Standard default when moderate space
+          } else if (remainingWeight >= 5) {
+            defaultWeight = remainingWeight; // Use all remaining when little space
+          } else if (remainingWeight > 0) {
+            defaultWeight = remainingWeight; // Use exactly what's left
+          } else {
+            // Portfolio full - show helpful error
+            toast.error(`Portfolio is full (${usedWeight}%). Remove tokens or adjust weights first.`, { 
+              duration: 4000 
+            });
+            return prev;
+          }
+          
+          newSelectedTokens.set(contractAddress, defaultWeight);
+          
+          if (isOfflineMode) {
+            setPendingSelections((pending) => {
+              const newPending = new Map(pending);
+              newPending.set(contractAddress, defaultWeight);
+              return newPending;
+            });
+          }
+          
+          if (token) {
+            toast.success(`${token.symbol} added with ${defaultWeight}% weight`, { duration: 2000 });
           }
         }
         
@@ -760,6 +830,40 @@ export const TokenSelection: React.FC = () => {
       });
     },
     [memoizedTokens, isOfflineMode],
+  );
+
+  // Handle weight changes for selected tokens
+  const handleWeightChange = useCallback(
+    (contractAddress: string, newWeight: number) => {
+      console.log("🔍 PortfolioTokenSelectionPage: handleWeightChange called with:", {
+        contractAddress,
+        newWeight,
+        isOffline: isOfflineMode
+      });
+
+      if (newWeight === 0) {
+        // Weight set to 0 means remove the token
+        handleTokenSelect(contractAddress);
+        return;
+      }
+
+      setSelectedTokens((prev) => {
+        const newSelectedTokens = new Map(prev);
+        newSelectedTokens.set(contractAddress, newWeight);
+        
+        // Track offline changes for sync when reconnected
+        if (isOfflineMode) {
+          setPendingSelections((pending) => {
+            const newPending = new Map(pending);
+            newPending.set(contractAddress, newWeight);
+            return newPending;
+          });
+        }
+        
+        return newSelectedTokens;
+      });
+    },
+    [isOfflineMode, handleTokenSelect],
   );
 
   // Handle token search selection with smart weight calculation and top positioning
@@ -797,7 +901,7 @@ export const TokenSelection: React.FC = () => {
       }
       
       // Add token to selection - this will trigger memoizedTokens to reorder and put it at top
-      handleTokenSelect(token.address, defaultWeight);
+      handleTokenSelect(token.address);
       
       // Scroll to top so user can see the newly selected token
       setTimeout(() => {
@@ -836,13 +940,39 @@ export const TokenSelection: React.FC = () => {
       }
       
       // Add the token even if not in current list (it will appear when data loads)
-      handleTokenSelect(token.address, defaultWeight);
+      handleTokenSelect(token.address);
       
       toast.success(`Added ${token.symbol} with ${defaultWeight}% weight - will appear when data loads`, { 
         duration: 4000 
       });
     }
   }, [memoizedTokens, handleTokenSelect, selectedTokens]);
+
+  // Set up infinite scroll observer
+  useEffect(() => {
+    if (!loadMoreTriggerRef.current) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pagination?.hasMore && !isLoadingMore && !tokenListLoading) {
+          console.log('[PortfolioTokenSelectionPage] Intersection detected, loading more tokens');
+          loadMoreTokens();
+        }
+      },
+      { 
+        threshold: 0.1,
+        rootMargin: '200px' // Start loading when 200px away from bottom
+      }
+    );
+    
+    observer.observe(loadMoreTriggerRef.current);
+    
+    return () => {
+      if (loadMoreTriggerRef.current) {
+        observer.unobserve(loadMoreTriggerRef.current);
+      }
+    };
+  }, [pagination?.hasMore, isLoadingMore, tokenListLoading, loadMoreTokens]);
 
   // FIXED: Never block UI for connection issues when we have cached data
   const displayError = tokensError && memoizedTokens.length === 0 ? tokensError : null;
@@ -856,8 +986,8 @@ export const TokenSelection: React.FC = () => {
     showOfflineIndicator
   });
 
-  // NEVER show loading skeleton - always show what we have immediately
-  if (false) {
+  // Show loading skeleton when we have no tokens and are loading
+  if (tokenListLoading && memoizedTokens.length === 0) {
     console.log("⏳ PortfolioTokenSelectionPage: Rendering skeleton loading state (no cached tokens)");
     return (
       <div className="flex flex-col min-h-screen">
@@ -1178,37 +1308,49 @@ export const TokenSelection: React.FC = () => {
                       />
                     </div>
 
-                    {/* Token Grid - ALWAYS show immediately, no loading states */}
+                    {/* Enhanced Token Grid - Visual rich cards with infinite scroll */}
                     <div className="relative">
-                      <TokenGrid
-                        tokens={memoizedTokens}
-                        selectedTokens={selectedTokens}
-                        onTokenSelect={handleTokenSelect}
-                        marketCapFilter=""
-                        searchQuery={debouncedSearchQuery}
-                        viewMode={viewMode}
-                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {memoizedTokens.map((token) => {
+                          const contractAddress = TokenHelpers.getAddress(token);
+                          const isSelected = selectedTokens.has(contractAddress);
+                          const weight = selectedTokens.get(contractAddress) || 0;
+                          
+                          return (
+                            <PortfolioOptimizedTokenCard
+                              key={contractAddress}
+                              token={token}
+                              isSelected={isSelected}
+                              weight={weight}
+                              onSelect={() => handleTokenSelect(contractAddress)}
+                              onWeightChange={(newWeight) => handleWeightChange(contractAddress, newWeight)}
+                            />
+                          );
+                        })}
+                      </div>
                       
-                      {/* Load more tokens from server if available */}
+                      {/* Infinite scroll trigger - Pure auto-loading, no buttons! */}
                       {pagination && pagination.hasMore && (
-                        <div className="mt-8 text-center">
-                          <button
-                            onClick={() => {
-                              console.log('[PortfolioTokenSelectionPage] Loading more tokens from server');
-                              loadMore();
-                            }}
-                            className="px-6 py-3 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-400 font-mono text-sm hover:bg-emerald-500/30 transition-colors"
-                            disabled={tokenListLoading}
-                          >
-                            {tokenListLoading ? (
-                              <span className="flex items-center gap-2">
-                                <div className="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin"></div>
-                                LOADING...
-                              </span>
+                        <div 
+                          ref={loadMoreTriggerRef}
+                          className="relative py-12"
+                        >
+                          <div className="flex items-center justify-center">
+                            {isLoadingMore ? (
+                              <div className="flex items-center gap-3">
+                                <div className="flex gap-1">
+                                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse delay-75"></div>
+                                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse delay-150"></div>
+                                </div>
+                                <span className="text-sm text-gray-400 font-mono">Loading more tokens...</span>
+                              </div>
                             ) : (
-                              `LOAD MORE TOKENS (${memoizedTokens.length}/${pagination.total})`
+                              <div className="text-xs text-gray-500 font-mono">
+                                Scroll for more • {memoizedTokens.length} tokens loaded
+                              </div>
                             )}
-                          </button>
+                          </div>
                         </div>
                       )}
                       

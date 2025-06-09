@@ -207,7 +207,7 @@ export function useStandardizedTokenData(
     loadMore,
     pagination,
     isLoading: underlyingIsLoading
-  } = useTokenData(tokensToSubscribe, backendFilters);
+  } = useTokenData(tokensToSubscribe, backendFilters, maxTopTokens);
 
   const [connectionState, setConnectionState] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -224,7 +224,7 @@ export function useStandardizedTokenData(
 
   // HOT TOKENS - Just take the first N tokens (no filtering!)
   const hotTokens = useMemo(() => {
-    if (!tokens || tokens.length === 0) return [];
+    if (!tokens || !Array.isArray(tokens) || tokens.length === 0) return [];
     
     // Hot tokens = first tokens from backend (already sorted by degenduel_score)
     return tokens.slice(0, maxHotTokens);
@@ -232,7 +232,7 @@ export function useStandardizedTokenData(
 
   // NO CLIENT-SIDE FILTERING - Just return tokens as-is from backend
   const filteredTokens = useMemo(() => {
-    return tokens || [];
+    return Array.isArray(tokens) ? tokens : [];
   }, [tokens]);
 
   // NO CLIENT-SIDE SORTING - Backend already sorted by degenduel_score
@@ -242,13 +242,13 @@ export function useStandardizedTokenData(
 
   // Top tokens - just first N from backend (already sorted)
   const topTokens = useMemo(() => {
-    if (!tokens || tokens.length === 0) return [];
+    if (!tokens || !Array.isArray(tokens) || tokens.length === 0) return [];
     return tokens.slice(0, maxTopTokens);
   }, [tokens, maxTopTokens]);
 
   // Calculate market statistics
   const stats = useMemo(() => {
-    if (!tokens || tokens.length === 0) {
+    if (!tokens || !Array.isArray(tokens) || tokens.length === 0) {
       return {
         totalVolume24h: 0,
         totalMarketCap: 0,
@@ -304,6 +304,7 @@ export function useStandardizedTokenData(
 
   // Token utilities
   const getTokenBySymbol = useCallback((symbol: string): Token | undefined => {
+    if (!Array.isArray(tokens)) return undefined;
     return tokens.find(token => token.symbol.toLowerCase() === symbol.toLowerCase());
   }, [tokens]);
 
@@ -330,12 +331,12 @@ export function useStandardizedTokenData(
   }, [refresh]);
 
   // Create TokenData versions of token arrays for backward compatibility
-  const tokensAsTokenData = useMemo(() => tokens.map(tokenToTokenData), [tokens]);
+  const tokensAsTokenData = useMemo(() => Array.isArray(tokens) ? tokens.map(tokenToTokenData) : [], [tokens]);
   const hotTokensAsTokenData = useMemo(() => hotTokens.map(tokenToTokenData), [hotTokens]);
   const topTokensAsTokenData = useMemo(() => topTokens.map(tokenToTokenData), [topTokens]);
 
   return {
-    tokens,
+    tokens: Array.isArray(tokens) ? tokens : [],
     isLoading: underlyingIsLoading,
     error: error,
     connectionState,

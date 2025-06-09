@@ -138,7 +138,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
     <div className="relative border-t border-mauve/30 bg-black/40">
       {/* Status indicator */}
       <div className="absolute top-0 right-0 transform -translate-y-full mr-2">
-        <div className="text-[9px] font-mono tracking-widest py-0.5 px-2 rounded-t-sm bg-mauve/10 text-mauve-light border border-mauve/30 border-b-0 inline-flex items-center">
+        <div className="text-[9px] tracking-widest py-0.5 px-2 rounded-t-sm bg-mauve/10 text-mauve-light border border-mauve/30 border-b-0 inline-flex items-center">
           <motion.span 
             className="inline-block h-1.5 w-1.5 bg-green-400 mr-1.5 rounded-full"
             animate={{ opacity: [0.7, 1, 0.7] }}
@@ -203,7 +203,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
             transition={{ duration: 1.5, repeat: Infinity }}
           >
             <motion.span 
-              className="text-mauve-light font-mono font-bold" 
+              className="text-mauve-light font-bold" 
               animate={{ 
                 opacity: [1, 0.4, 1],
                 textShadow: [
@@ -220,7 +220,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
           
           {/* Animated placeholder text, visible only when input is empty */}
           {userInput === '' && (
-            <div className="absolute left-9 pointer-events-none text-mauve-light/70 font-mono text-sm">
+            <div className="absolute left-9 pointer-events-none text-mauve-light/70 text-sm">
               {/* Typing animation that only plays once */}
               <motion.div
                 className="inline-block overflow-hidden whitespace-nowrap"

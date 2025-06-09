@@ -13,38 +13,46 @@ import SolanaWalletDisplay from '../SolanaWalletDisplay';
 interface CompactBalanceProps {
   walletAddress: string;
   className?: string;
-  showLabels?: boolean;
 }
 
 export const CompactBalance: React.FC<CompactBalanceProps> = ({
   walletAddress,
-  className = "",
-  showLabels = true
+  className = ""
 }) => {
   return (
-    <div className={`flex items-center gap-1.5 text-xs ${className}`}>
-      {/* SOL Balance */}
-      <div className="flex items-center gap-1 px-2 py-1 bg-gray-800/60 rounded-full border border-gray-700/50">
-        {showLabels && <span className="text-gray-400 text-[10px]">SOL</span>}
-        <div className="text-white font-medium">
-          <SolanaWalletDisplay 
-            walletAddress={walletAddress} 
-            compact={true}
-            className="text-[11px]"
-          />
+    <div className={`flex items-center gap-2 text-xs ${className}`}>
+      {/* SOL Balance - Enhanced Design */}
+      <div className="group relative overflow-hidden">
+        {/* Glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        {/* Main container */}
+        <div className="relative px-2.5 py-1 bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-sm rounded-full border border-gray-600/30 group-hover:border-orange-400/40 transition-all duration-300">
+          <div className="text-white">
+            <SolanaWalletDisplay 
+              walletAddress={walletAddress} 
+              compact={true}
+              className="text-[11px]"
+            />
+          </div>
         </div>
       </div>
       
-      {/* DegenDuel Token */}
-      <div className="flex items-center gap-1 px-2 py-1 bg-brand-800/60 rounded-full border border-brand-700/50">
-        {showLabels && <span className="text-brand-400 text-[10px]">DD</span>}
-        <div className="text-brand-200 font-medium">
-          <SolanaTokenDisplay 
-            mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS}
-            walletAddress={walletAddress}
-            compact={true}
-            className="text-[11px]"
-          />
+      {/* DegenDuel Token - Enhanced Design */}
+      <div className="group relative overflow-hidden">
+        {/* Glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        {/* Main container */}
+        <div className="relative px-2.5 py-1 bg-gradient-to-r from-purple-900/90 to-purple-800/90 backdrop-blur-sm rounded-full border border-purple-600/30 group-hover:border-purple-400/40 transition-all duration-300">
+          <div className="text-purple-100">
+            <SolanaTokenDisplay 
+              mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS}
+              walletAddress={walletAddress}
+              compact={true}
+              className="text-[11px]"
+            />
+          </div>
         </div>
       </div>
     </div>

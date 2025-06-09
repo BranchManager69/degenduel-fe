@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Token } from "../../types";
+import { Token, TokenHelpers } from "../../types";
 import { formatTokenPrice } from "../../utils/format";
 
 interface WeightSelectionDrawerProps {
@@ -160,7 +160,7 @@ export const WeightSelectionDrawer: React.FC<WeightSelectionDrawerProps> = ({
                   {token.symbol}
                 </h3>
                 <p className="text-sm text-gray-400">
-                  {formatTokenPrice(token.price)}
+                  {formatTokenPrice(TokenHelpers.getPrice(token))}
                 </p>
               </div>
             </div>

@@ -12,7 +12,7 @@ import { Card, CardContent } from "../../../components/ui/Card";
 import { RefreshCw } from "lucide-react";
 import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
 import { useStore } from "../../../store/useStore";
-import { Token, TokenResponseMetadata, SearchToken } from "../../../types";
+import { Token, TokenResponseMetadata, SearchToken, TokenHelpers } from "../../../types";
 import { resetToDefaultMeta } from "../../../utils/ogImageUtils";
 import { DegenDuelTop30 } from "@/components/trending/DegenDuelTop30";
 import { TokenErrorBoundary } from "../../../components/shared/TokenErrorBoundary";
@@ -63,7 +63,9 @@ const DuelTokenCard: React.FC = () => {
 
   return (
     <div className="bg-dark-200/80 backdrop-blur-sm border border-yellow-500/30 rounded-lg p-3 shadow-xl hover:shadow-yellow-500/20 transition-all duration-300 min-w-[120px] cursor-pointer group"
-         onClick={() => navigate(`/tokens/${duelData.symbol}`)}>
+         onClick={() => {
+           if (duelData.address) navigate(`/tokens/${duelData.address}`);
+         }}>
       <div className="flex items-center gap-2 mb-2">
         {duelData.image_url ? (
           <img src={duelData.image_url} alt={duelData.symbol} className="w-6 h-6 rounded-full" />
@@ -125,7 +127,7 @@ export const TokensPage: React.FC = () => {
     getTokenBySymbol,
     refresh,
     loadMore,
-  } = useStandardizedTokenData("all", "marketCap", {});
+  } = useStandardizedTokenData("all", "marketCap", {}, 5, 50); // Start with 50, load more on scroll
   
   // Token metadata for compatibility
   const metadata = useMemo<TokenResponseMetadata>(() => ({
@@ -136,29 +138,30 @@ export const TokensPage: React.FC = () => {
 
   // Token selection handler
   const handleTokenClick = useCallback((token: Token) => {
-    // Navigate to token detail page
-    navigate(`/tokens/${token.symbol}`);
+    // Navigate to token detail page using contract address
+    navigate(`/tokens/${TokenHelpers.getAddress(token)}`);
   }, [navigate]);
 
   // Modal close handler removed - no longer needed
 
   // Load more tokens for infinite scroll using real pagination
   const loadMoreTokens = useCallback(() => {
-    if (isLoadingMore || !pagination?.hasMore) {
-      console.log('[TokensPage] Cannot load more:', { isLoadingMore, hasMore: pagination?.hasMore });
+    if (isLoadingMore || !pagination?.hasMore || isLoading) {
+      console.log('[TokensPage] Cannot load more:', { isLoadingMore, hasMore: pagination?.hasMore, isLoading });
       return;
     }
     
+    console.log('[TokensPage] Loading more tokens...');
     setIsLoadingMore(true);
     
     // Use the actual loadMore function from the hook
     loadMore();
     
-    // Reset loading state (the hook will manage actual loading)
+    // Reset loading state after a short delay
     setTimeout(() => {
       setIsLoadingMore(false);
-    }, 1000);
-  }, [isLoadingMore, pagination?.hasMore, loadMore]);
+    }, 500);
+  }, [isLoadingMore, pagination?.hasMore, isLoading, loadMore]);
 
   // Token selection logic removed - using dedicated pages now
 
@@ -187,8 +190,8 @@ export const TokensPage: React.FC = () => {
                    allTokens.find(t => t.contractAddress?.toLowerCase() === (tokenAddress || tokenSymbol || '').toLowerCase());
       
       if (token) {
-        // Redirect to the dedicated token page
-        navigate(`/tokens/${token.symbol}`, { replace: true });
+        // Redirect to the dedicated token page using contract address
+        navigate(`/tokens/${TokenHelpers.getAddress(token)}`, { replace: true });
       } else {
         // If token not found, clear the URL parameters
         navigate(location.pathname, { replace: true });
@@ -218,7 +221,10 @@ export const TokensPage: React.FC = () => {
           loadMoreTokens();
         }
       },
-      { threshold: 0.1 }
+      { 
+        threshold: 0.1,
+        rootMargin: '200px' // Start loading when 200px away from bottom
+      }
     );
     
     observer.observe(loadMoreTriggerRef.current);
@@ -245,12 +251,11 @@ export const TokensPage: React.FC = () => {
 
   // Handle token search selection
   const handleTokenSearchSelect = useCallback((token: SearchToken) => {
-    // Navigate to the token detail page
-    if (token.symbol) {
-      navigate(`/tokens/${token.symbol}`);
+    // Navigate to the token detail page using contract address
+    if (token.address) {
+      navigate(`/tokens/${token.address}`);
     } else {
-      // Fallback to address if no symbol
-      navigate(`/tokens?address=${token.address}`);
+      console.warn('Token search result missing address:', token);
     }
   }, [navigate]);
 
@@ -398,18 +403,28 @@ export const TokensPage: React.FC = () => {
                 onTokenClick={handleTokenClick}
               />
               
-              {/* Load More Trigger */}
+              {/* Load More Trigger - Subtle infinite scroll indicator */}
               {hasMoreTokens && (
                 <div 
                   ref={loadMoreTriggerRef}
-                  className="flex items-center justify-center py-8"
+                  className="relative py-12"
                 >
-                  {isLoadingMore && (
-                    <div className="text-center">
-                      <div className="w-8 h-8 border-3 border-brand-500/20 border-t-brand-500 rounded-full animate-spin" />
-                      <p className="text-gray-400 mt-2 text-sm">Loading more tokens...</p>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-center">
+                    {isLoadingMore ? (
+                      <div className="flex items-center gap-3">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-brand-400 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-brand-400 rounded-full animate-pulse delay-75"></div>
+                          <div className="w-2 h-2 bg-brand-400 rounded-full animate-pulse delay-150"></div>
+                        </div>
+                        <span className="text-sm text-gray-400">Loading more tokens...</span>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-500">
+                        Scroll for more • {allTokens.length} tokens loaded
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </>

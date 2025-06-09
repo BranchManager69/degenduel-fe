@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
+import { TwitterLoginButton, DiscordLoginButton, TelegramLoginButton, BiometricAuthButton } from "../../auth";
 import { AdminControls } from "./UserMenuAdminControls";
 
 // Import shared menu components and configuration
@@ -50,159 +51,57 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   // Get shared menu items from unified configuration
   const { profileItems, contestItems, tokenItems } = getMenuItems(user, userLevel);
 
-  // Define a function to get color scheme based on level
-  const getLevelColorScheme = useMemo(() => {
-    // Return different color schemes based on level tiers
-    if (userLevel >= 40) {
-      return {
-        bg: "from-amber-500/20 via-amber-400/20 to-amber-300/20",
-        text: "text-amber-300",
-        border: "border-amber-400/30",
-        badge: "bg-gradient-to-r from-amber-600 to-amber-400",
-        badgeBorder: "border-amber-500/30",
-        hover: {
-          glow: "group-hover:shadow-[0_0_10px_rgba(251,191,36,0.3)]",
-          border: "group-hover:border-amber-400/50",
-          badge: "group-hover:from-amber-500 group-hover:to-amber-300",
-        },
-      };
-    } else if (userLevel >= 30) {
-      return {
-        bg: "from-fuchsia-500/20 via-fuchsia-400/20 to-fuchsia-300/20",
-        text: "text-fuchsia-300",
-        border: "border-fuchsia-400/30",
-        badge: "bg-gradient-to-r from-fuchsia-600 to-fuchsia-400",
-        badgeBorder: "border-fuchsia-500/30",
-        hover: {
-          glow: "group-hover:shadow-[0_0_10px_rgba(217,70,239,0.3)]",
-          border: "group-hover:border-fuchsia-400/50",
-          badge: "group-hover:from-fuchsia-500 group-hover:to-fuchsia-300",
-        },
-      };
-    } else if (userLevel >= 20) {
-      return {
-        bg: "from-blue-500/20 via-blue-400/20 to-blue-300/20",
-        text: "text-blue-300",
-        border: "border-blue-400/30",
-        badge: "bg-gradient-to-r from-blue-600 to-blue-400",
-        badgeBorder: "border-blue-500/30",
-        hover: {
-          glow: "group-hover:shadow-[0_0_10px_rgba(59,130,246,0.3)]",
-          border: "group-hover:border-blue-400/50",
-          badge: "group-hover:from-blue-500 group-hover:to-blue-300",
-        },
-      };
-    } else if (userLevel >= 10) {
-      return {
-        bg: "from-emerald-500/20 via-emerald-400/20 to-emerald-300/20",
-        text: "text-emerald-300",
-        border: "border-emerald-400/30",
-        badge: "bg-gradient-to-r from-emerald-600 to-emerald-400",
-        badgeBorder: "border-emerald-500/30",
-        hover: {
-          glow: "group-hover:shadow-[0_0_10px_rgba(16,185,129,0.3)]",
-          border: "group-hover:border-emerald-400/50",
-          badge: "group-hover:from-emerald-500 group-hover:to-emerald-300",
-        },
-      };
-    } else if (userLevel >= 5) {
-      return {
-        bg: "from-cyan-500/20 via-cyan-400/20 to-cyan-300/20",
-        text: "text-cyan-300",
-        border: "border-cyan-400/30",
-        badge: "bg-gradient-to-r from-cyan-600 to-cyan-400",
-        badgeBorder: "border-cyan-500/30",
-        hover: {
-          glow: "group-hover:shadow-[0_0_10px_rgba(6,182,212,0.3)]",
-          border: "group-hover:border-cyan-400/50",
-          badge: "group-hover:from-cyan-500 group-hover:to-cyan-300",
-        },
-      };
-    } else {
-      // Default colors for levels 1-4
-      return {
-        bg: "from-brand-500/20 via-brand-400/20 to-brand-300/20",
-        text: "text-brand-300",
-        border: "border-brand-400/30",
-        badge: "bg-gradient-to-r from-brand-600 to-brand-400",
-        badgeBorder: "border-brand-500/30",
-        hover: {
-          glow: "group-hover:shadow-[0_0_10px_rgba(153,51,255,0.3)]",
-          border: "group-hover:border-brand-400/50",
-          badge: "group-hover:from-brand-500 group-hover:to-brand-300",
-        },
-      };
-    }
-  }, [userLevel]);
 
   const buttonStyles = useMemo(() => {
-    // Super Admin styling takes precedence
+    // Super Admin styling takes precedence - keep distinct for security visibility
     if (isSuperAdmin) {
       return {
-        bg: "from-amber-500/20 via-amber-400/20 to-amber-300/20",
-        text: "text-amber-100",
-        border: "border-amber-400/30",
+        bg: "bg-red-800/60",
+        text: "text-orange-300",
+        border: "border-red-600/50",
         hover: {
-          bg: "group-hover:from-amber-400/30 group-hover:via-amber-300/30 group-hover:to-amber-200/30",
-          text: "group-hover:text-white",
-          border: "group-hover:border-amber-400/50",
-          glow: "group-hover:shadow-[0_0_15px_rgba(251,191,36,0.3)]",
+          bg: "group-hover:bg-red-700/70",
+          text: "group-hover:text-orange-200",
+          border: "group-hover:border-red-500/60",
+          glow: "",
         },
-        ring: "ring-amber-400/30 group-hover:ring-amber-400/50",
-        shine: "via-white/30",
+        ring: "",
+        shine: "",
       };
     }
 
-    // Admin styling takes secondary precedence
+    // Admin styling - keep distinct for visibility
     if (isAdministrator) {
       return {
-        bg: "from-brand-600/20 via-brand-500/20 to-brand-400/20",
-        text: "text-brand-100",
-        border: "border-brand-400/30",
+        bg: "bg-amber-800/60",
+        text: "text-amber-300",
+        border: "border-amber-600/50",
         hover: {
-          bg: "group-hover:from-brand-500/30 group-hover:via-brand-400/30 group-hover:to-brand-300/30",
-          text: "group-hover:text-white",
-          border: "group-hover:border-brand-400/50",
-          glow: "group-hover:shadow-[0_0_12px_rgba(153,51,255,0.25)]",
+          bg: "group-hover:bg-amber-700/70",
+          text: "group-hover:text-amber-200",
+          border: "group-hover:border-amber-500/60",
+          glow: "",
         },
-        ring: "ring-brand-400/30 group-hover:ring-brand-400/50",
-        shine: "via-white/25",
+        ring: "",
+        shine: "",
       };
     }
 
-    // For regular users, use level-based styling if they have a level
-    if (userLevel > 0) {
-      const levelColors = getLevelColorScheme;
-      return {
-        bg: levelColors.bg,
-        text: levelColors.text,
-        border: levelColors.border,
-        hover: {
-          bg: `group-hover:${levelColors.bg.replace("from-", "from-").replace("/20", "/30")}`,
-          text: "group-hover:text-white",
-          border: levelColors.hover.border,
-          glow: levelColors.hover.glow,
-        },
-        ring: `ring-${levelColors.border.replace("border-", "")} group-hover:ring-${levelColors.hover.border.replace("group-hover:border-", "")}`,
-        shine: "via-white/25",
-      };
-    }
-
-    // Default styling for users with no level
+    // All regular users get purple theme to match DUEL
     return {
-      bg: "from-brand-500/20 to-brand-400/20",
-      text: "text-gray-200",
-      border: "border-brand-400/20",
+      bg: "bg-purple-800/60",
+      text: "text-purple-200",
+      border: "border-purple-600/50",
       hover: {
-        bg: "group-hover:from-brand-400/25 group-hover:to-brand-300/25",
-        text: "group-hover:text-white",
-        border: "group-hover:border-brand-400/30",
-        glow: "group-hover:shadow-[0_0_8px_rgba(153,51,255,0.15)]",
+        bg: "group-hover:bg-purple-700/70",
+        text: "group-hover:text-purple-100",
+        border: "group-hover:border-purple-500/60",
+        glow: "",
       },
-      ring: "ring-brand-400/20 group-hover:ring-brand-400/30",
-      shine: "via-white/20",
+      ring: "",
+      shine: "",
     };
-  }, [isAdministrator, isSuperAdmin, userLevel, getLevelColorScheme]);
+  }, [isAdministrator, isSuperAdmin]);
 
   const displayName = useMemo(() => {
     if (!user) return 'User';
@@ -264,23 +163,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                   rounded-full border ${buttonStyles.border} ${
                     buttonStyles.hover.border
                   }
-                  ${buttonStyles.hover.glow} transition-shadow duration-500
                 `}
                 aria-label="User menu"
                 aria-expanded={open}
                 aria-haspopup="true"
               >
-                {/* Background gradient */}
+                {/* Background */}
                 <div
-                  className={`absolute inset-0 bg-gradient-to-r ${buttonStyles.bg} ${buttonStyles.hover.bg} transition-all duration-300`}
+                  className={`absolute inset-0 ${buttonStyles.bg} ${buttonStyles.hover.bg} transition-all duration-300`}
                 />
-
-                {/* Shine effect */}
-                <div className="absolute inset-0">
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-r from-transparent ${buttonStyles.shine} to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000`}
-                  />
-                </div>
 
                 {/* Content */}
                 <div className="relative flex items-center justify-between w-full px-3">
@@ -292,8 +183,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                           flex items-center justify-center 
                           ${isCompact ? "h-4 min-w-4 text-[9px]" : "h-5 min-w-5 text-[10px]"} 
                           px-1 font-bold rounded-full 
-                          ${getLevelColorScheme.badge}
-                          border ${getLevelColorScheme.badgeBorder}
+                          bg-purple-700/80 text-purple-100
+                          border border-purple-600/50
                           shadow-inner transition-all duration-300
                         `}
                       >
@@ -492,73 +383,102 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                       )}
                     </Menu.Item>
 
-                    {/* Twitter/X Section - Special Styling */}
+                    {/* Social Authentication Grid - Professional layout */}
                     <Menu.Item>
-                      {({ active }) => {
-                        const isTwitterLinked = user?.twitter_id || user?.twitter_handle;
-                        
-                        if (isTwitterLinked) {
-                          // Connected state - show handle or "Connected"
-                          return (
-                            <div
-                              className={`
-                                relative group overflow-hidden transition-all duration-300 ease-out
-                                flex items-center justify-between px-4 py-2 text-sm rounded-md
-                                bg-gradient-to-r from-green-600/20 via-emerald-500/20 to-green-600/20
-                                border border-green-500/30
-                                text-green-200 cursor-default
-                                ${active ? 'from-green-500/30 via-emerald-400/30 to-green-500/30 border-green-400/60 text-white' : ''}
-                              `}
-                              role="menuitem"
-                            >
-                              <span className="relative font-semibold tracking-wide whitespace-nowrap">
-                                {user?.twitter_handle ? `@${user.twitter_handle}` : 'X Connected'}
-                              </span>
-                              
-                              {/* Check icon */}
-                              <div className="relative w-4 h-4 opacity-80">
-                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full text-green-400">
-                                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                                </svg>
-                              </div>
+                      {() => (
+                        <div className="px-4 py-3 border-t border-gray-700/50">
+                          <div className="text-xs font-medium text-gray-400 mb-3 uppercase tracking-wide">Connect Accounts</div>
+                          <div className="grid grid-cols-4 gap-3">
+                            {/* X (Twitter) */}
+                            <div className="relative group">
+                              {user?.twitter_id ? (
+                                <div className="w-11 h-11 rounded-lg bg-gray-800/60 border border-gray-600/40 flex items-center justify-center relative overflow-hidden">
+                                  {/* X Logo SVG */}
+                                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                  </svg>
+                                  {/* Connected indicator */}
+                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800"></div>
+                                </div>
+                              ) : (
+                                <TwitterLoginButton 
+                                  linkMode={true}
+                                  iconOnly={true}
+                                  className="w-11 h-11 p-0 rounded-lg bg-gray-800/40 border border-gray-600/30 hover:bg-gray-700/60 hover:border-gray-500/50 transition-all duration-200 flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5"
+                                />
+                              )}
                             </div>
-                          );
-                        } else {
-                          // Not connected - show connect button
-                          return (
-                            <a
-                              href="https://degenduel.me/api/auth/twitter/login"
-                              className={`
-                                relative group overflow-hidden transition-all duration-300 ease-out
-                                flex items-center justify-between px-4 py-2 text-sm rounded-md
-                                bg-gradient-to-r from-blue-600/20 via-cyan-500/20 to-blue-600/20
-                                border border-blue-500/30 hover:border-blue-400/50
-                                text-blue-200 hover:text-white
-                                hover:shadow-[0_0_12px_rgba(59,130,246,0.4)]
-                                ${active ? 'from-blue-500/30 via-cyan-400/30 to-blue-500/30 border-blue-400/60 text-white shadow-[0_0_8px_rgba(59,130,246,0.3)]' : ''}
-                              `}
-                              role="menuitem"
-                            >
-                              {/* Background shine effect */}
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-                              
-                              {/* Scan line effect */}
-                              <div className="absolute inset-0 overflow-hidden">
-                                <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,rgba(255,255,255,0.08)_50%,transparent_100%)] animate-scan-fast opacity-0 group-hover:opacity-100" />
-                              </div>
-                              
-                              <span className="relative font-semibold tracking-wide group-hover:text-shadow-sm whitespace-nowrap">Connect with X</span>
-                              
-                              {/* X icon */}
-                              <div className="relative w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
-                                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                                </svg>
-                              </div>
-                            </a>
-                          );
-                        }
-                      }}
+
+                            {/* Discord */}
+                            <div className="relative group">
+                              {user?.discord_id ? (
+                                <div className="w-11 h-11 rounded-lg bg-[#5865F2]/20 border border-[#5865F2]/40 flex items-center justify-center relative overflow-hidden">
+                                  {/* Discord Logo SVG */}
+                                  <svg className="w-5 h-5 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.197.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+                                  </svg>
+                                  {/* Connected indicator */}
+                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800"></div>
+                                </div>
+                              ) : (
+                                <DiscordLoginButton 
+                                  linkMode={true}
+                                  iconOnly={true}
+                                  className="w-11 h-11 p-0 rounded-lg bg-[#5865F2]/10 border border-[#5865F2]/20 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/40 transition-all duration-200 flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5"
+                                />
+                              )}
+                            </div>
+
+                            {/* Telegram */}
+                            <div className="relative group">
+                              {user?.telegram_id ? (
+                                <div className="w-11 h-11 rounded-lg bg-[#0088cc]/20 border border-[#0088cc]/40 flex items-center justify-center relative overflow-hidden">
+                                  {/* Telegram Logo SVG */}
+                                  <svg className="w-5 h-5 text-[#0088cc]" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472c-.18 1.898-.962 6.502-1.36 8.627c-.168.9-.499 1.201-.82 1.23c-.696.065-1.225-.46-1.9-.902c-1.056-.693-1.653-1.124-2.678-1.8c-1.185-.78-.417-1.21.258-1.91c.177-.184 3.247-2.977 3.307-3.23c.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345c-.48.33-.913.49-1.302.48c-.428-.008-1.252-.241-1.865-.44c-.752-.245-1.349-.374-1.297-.789c.027-.216.325-.437.893-.663c3.498-1.524 5.83-2.529 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                                  </svg>
+                                  {/* Connected indicator */}
+                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800"></div>
+                                </div>
+                              ) : (
+                                <TelegramLoginButton 
+                                  linkMode={true}
+                                  iconOnly={true}
+                                  className="w-11 h-11 p-0 rounded-lg bg-[#0088cc]/10 border border-[#0088cc]/20 hover:bg-[#0088cc]/20 hover:border-[#0088cc]/40 transition-all duration-200 flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5"
+                                />
+                              )}
+                            </div>
+
+                            {/* Passkey */}
+                            <div className="relative group">
+                              {user?.passkey_id ? (
+                                <div className="w-11 h-11 rounded-lg bg-purple-500/20 border border-purple-500/40 flex items-center justify-center relative overflow-hidden">
+                                  {/* Fingerprint/Touch ID SVG */}
+                                  <svg className="w-5 h-5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/>
+                                    <path d="M5 19.5C5.5 18 6 15 6 12c0-.7.12-1.37.34-2"/>
+                                    <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
+                                    <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+                                    <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
+                                    <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+                                    <path d="M2 16h.01"/>
+                                    <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+                                    <path d="M9 6.8a6 6 0 0 1 9 5.2c0 .47 0 1.17-.02 2"/>
+                                  </svg>
+                                  {/* Connected indicator */}
+                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800"></div>
+                                </div>
+                              ) : (
+                                <BiometricAuthButton 
+                                  mode="register"
+                                  buttonStyle="icon-only"
+                                  className="w-11 h-11 p-0 rounded-lg bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 hover:border-purple-500/40 transition-all duration-200 flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5"
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </Menu.Item>
 
                     <MenuDivider />

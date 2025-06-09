@@ -30,6 +30,8 @@ export { default as WalletDebugger } from './WalletDebugger';
 
 // Export social login components
 export { default as DiscordLoginButton } from './DiscordLoginButton';
+export { SmartTwitterAuth } from './SmartTwitterAuth';
+export { default as TelegramLoginButton } from './TelegramLoginButton';
 export { default as TwitterLoginButton } from './TwitterLoginButton';
 
 // Export mock components (for testing and development)

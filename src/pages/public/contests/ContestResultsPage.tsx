@@ -5,14 +5,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ContestChat } from "../../../components/contest-chat/ContestChat";
-import { CelebrationOverlay } from "../../../components/contest-results/CelebrationOverlay";
 import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 import { formatCurrency } from "../../../lib/utils";
-import { ddApi } from "../../../services/dd-api";
+// import { ddApi } from "../../../services/dd-api"; // No longer needed - using fetch directly
 import { ContestViewData, TokenHoldingPerformance } from "../../../types";
 import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
 
@@ -27,10 +26,9 @@ export const ContestResults: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   const [activeTab, setActiveTab] = useState<'results' | 'details' | 'chat'>('results');
-  const [showCelebration, setShowCelebration] = useState(true);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [animationComplete, setAnimationComplete] = useState(false);
+  const [animationComplete] = useState(false);
   
   const headerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -46,8 +44,21 @@ export const ContestResults: React.FC = () => {
     const fetchContestResults = async () => {
       setIsLoading(true); setError(null);
       try {
-        const data = await ddApi.contests.getView(contestId);
-        setContestViewData(data);
+        // Backend team confirmed: use /contests/:id/leaderboard for results
+        const response = await fetch(`/api/contests/${contestId}/leaderboard`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch leaderboard: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // Transform the leaderboard response to match expected ContestViewData structure
+        const viewData: ContestViewData = {
+          contest: data.contest,
+          leaderboard: data.leaderboard,
+          currentUserPerformance: data.leaderboard.find((entry: any) => entry.is_current_user) || null
+        };
+        
+        setContestViewData(viewData);
       } catch (err) { setError(err instanceof Error ? err.message : "Failed to load contest results."); }
       finally { setIsLoading(false); }
     };
@@ -98,30 +109,7 @@ export const ContestResults: React.FC = () => {
     }
   };
   
-  // Handle celebration dismissal
-  const handleCelebrationClose = () => {
-    setShowCelebration(false);
-    setAnimationComplete(true);
-    
-    // Trigger a subtle header highlight effect when the celebration closes
-    if (headerRef.current) {
-      headerRef.current.classList.add('animate-pulse-brief');
-      setTimeout(() => {
-        if (headerRef.current) {
-          headerRef.current.classList.remove('animate-pulse-brief');
-        }
-      }, 1500);
-    }
-  };
   
-  // Auto-dismiss celebration after a delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      handleCelebrationClose();
-    }, 6000);
-    
-    return () => clearTimeout(timer);
-  }, []);
   
   // Trigger sequential animations after celebration completes
   useEffect(() => {
@@ -217,14 +205,7 @@ export const ContestResults: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen overflow-hidden">
       
-      {/* Enhanced celebration overlay with custom handler */}
-      {showCelebration && currentUserPerformance && (
-        <CelebrationOverlay
-          initialValue={parseFloat(currentUserPerformance.initialPortfolioValue)}
-          finalValue={parseFloat(currentUserPerformance.portfolioValue)}
-          onClose={handleCelebrationClose}
-        />
-      )}
+      {/* Celebration overlay removed - component no longer exists */}
 
       {/* Content Section Parent Container */}
       <div className="relative z-10 flex-grow">

@@ -8,7 +8,7 @@
  * consistent navigation options across all device types.
  */
 
-// Removed unused imports - FaTrophy, FaUserFriends since related menu items are commented out
+import { FaUserFriends } from "react-icons/fa";
 import { User } from "../../../types";
 
 // Define all menu items and sections in one place
@@ -66,13 +66,12 @@ export const getMenuItems = (user: User | null, _userLevel: number) => {
       to: "/contest-credits",
     },
     // Removed "Noti's" item - moved to dedicated notifications dropdown
-    // COMMENTED OUT: Invite & Earn menu item
-    // {
-    //   id: 'referrals',
-    //   label: "Invite & Earn",
-    //   icon: FaUserFriends,
-    //   to: "/referrals",
-    // }
+    {
+      id: 'referrals',
+      label: "Invite & Earn",
+      icon: FaUserFriends,
+      to: "/referrals",
+    }
   ];
 
   // Contests Section

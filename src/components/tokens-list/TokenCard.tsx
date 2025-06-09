@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { DeleteTokenModal } from "./DeleteTokenModal";
 import { useStore } from "../../store/useStore";
-import { Token } from "../../types";
+import { Token, TokenHelpers } from "../../types";
 import { formatNumber } from "../../utils/format";
 import { CopyToClipboard } from "../common/CopyToClipboard";
 import { Button } from "../ui/Button";
@@ -123,7 +123,7 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
                           Market Cap
                         </span>
                         <p className="font-numbers text-xl sm:text-2xl font-bold text-white tracking-wide mt-1">
-                          ${formatNumber(token.marketCap)}
+                          ${formatNumber(TokenHelpers.getMarketCap(token))}
                         </p>
                       </div>
                     </div>
@@ -133,14 +133,14 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
                   <div
                     className={`absolute -top-3 right-4 px-4 py-1.5 rounded-full font-accent text-sm sm:text-base font-medium backdrop-blur-md shadow-lg
                       ${
-                        Number(token.change24h) >= 0
+                        TokenHelpers.getPriceChange(token) >= 0
                           ? "bg-green-500/30 text-green-300 border border-green-500/30"
                           : "bg-red-500/30 text-red-300 border border-red-500/30"
                       }`}
                   >
                     <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shine-slow" />
                     <span className="font-numbers">
-                      {formatNumber(token.change24h)}%
+                      {formatNumber(TokenHelpers.getPriceChange(token))}%
                     </span>
                   </div>
                 </div>
@@ -173,7 +173,7 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
                       Price
                     </span>
                     <p className="font-numbers text-base font-bold text-white/90 mt-0.5 group-hover:text-white transition-colors duration-300">
-                      ${formatNumber(token.price)}
+                      ${formatNumber(TokenHelpers.getPrice(token))}
                     </p>
                   </div>
 
@@ -183,14 +183,14 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
                       24h Vol
                     </span>
                     <p className="font-numbers text-base font-bold text-white/90 mt-0.5 group-hover:text-white transition-colors duration-300">
-                      ${formatNumber(token.volume24h)}
+                      ${formatNumber(TokenHelpers.getVolume(token))}
                     </p>
                   </div>
                 </div>
 
                 {/* Contract Address */}
                 <div className="mb-4">
-                  <CopyToClipboard text={token.contractAddress}>
+                  <CopyToClipboard text={TokenHelpers.getAddress(token)}>
                     <div className="bg-dark-300/30 backdrop-blur-sm rounded-lg p-2.5 border border-white/5 hover:border-brand-400/20 transition-all duration-300 group cursor-pointer">
                       <div className="flex items-center justify-between">
                         <span className="font-accent text-xs text-white/40 uppercase tracking-wider group-hover:text-brand-400/60 transition-colors duration-300 whitespace-nowrap">
@@ -201,10 +201,10 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
                         </span>
                       </div>
                       <p className="font-mono text-sm text-white/70 truncate mt-0.5 group-hover:text-white transition-colors duration-300">
-                        {`${token.contractAddress.slice(
+                        {`${TokenHelpers.getAddress(token).slice(
                           0,
                           8,
-                        )}...${token.contractAddress.slice(-6)}`}
+                        )}...${TokenHelpers.getAddress(token).slice(-6)}`}
                       </p>
                     </div>
                   </CopyToClipboard>
@@ -291,7 +291,7 @@ export const TokenCard: React.FC<TokenCardProps> = ({ token }) => {
       <DeleteTokenModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        tokenAddress={token.contractAddress}
+        tokenAddress={TokenHelpers.getAddress(token)}
         tokenSymbol={token.symbol}
       />
     </>

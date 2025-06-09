@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { SimpleTokenCard } from "./SimpleTokenCard";
 import { WeightSelectionDrawer } from "./WeightSelectionDrawer";
-import { Token } from "../../types";
+import { Token, TokenHelpers } from "../../types";
 
 interface SimpleTokenGridProps {
   tokens: Token[];
@@ -29,7 +29,7 @@ export const SimpleTokenGrid: React.FC<SimpleTokenGridProps> = ({
       return (
         token.symbol.toLowerCase().includes(query) ||
         token.name.toLowerCase().includes(query) ||
-        token.contractAddress.toLowerCase().includes(query)
+        TokenHelpers.getAddress(token).toLowerCase().includes(query)
       );
     });
   }, [tokens, searchQuery]);
@@ -60,9 +60,10 @@ export const SimpleTokenGrid: React.FC<SimpleTokenGridProps> = ({
   }, [searchQuery]);
   
   const handleTokenToggle = useCallback((token: Token) => {
-    if (selectedTokens.has(token.contractAddress)) {
+    const tokenAddress = TokenHelpers.getAddress(token);
+    if (selectedTokens.has(tokenAddress)) {
       // Remove token
-      onTokenSelect(token.contractAddress, 0);
+      onTokenSelect(tokenAddress, 0);
     } else {
       // Add token with smart default weight
       const currentTotalWeight = Array.from(selectedTokens.values()).reduce((sum, w) => sum + w, 0);
@@ -80,7 +81,7 @@ export const SimpleTokenGrid: React.FC<SimpleTokenGridProps> = ({
         defaultWeight = 0;
       }
       
-      onTokenSelect(token.contractAddress, defaultWeight);
+      onTokenSelect(tokenAddress, defaultWeight);
     }
   }, [selectedTokens, onTokenSelect]);
   
@@ -97,26 +98,26 @@ export const SimpleTokenGrid: React.FC<SimpleTokenGridProps> = ({
   
   const handleDrawerWeightChange = useCallback((weight: number) => {
     if (editingToken) {
-      onTokenSelect(editingToken.contractAddress, weight);
+      onTokenSelect(TokenHelpers.getAddress(editingToken), weight);
     }
   }, [editingToken, onTokenSelect]);
   
   const handleRemoveFromDrawer = useCallback(() => {
     if (editingToken) {
-      onTokenSelect(editingToken.contractAddress, 0);
+      onTokenSelect(TokenHelpers.getAddress(editingToken), 0);
     }
   }, [editingToken, onTokenSelect]);
   
   // Calculate remaining weight for drawer
   const remainingWeight = 100 - Array.from(selectedTokens.values()).reduce((sum, w) => sum + w, 0);
-  const editingTokenWeight = editingToken ? selectedTokens.get(editingToken.contractAddress) || 0 : 0;
+  const editingTokenWeight = editingToken ? selectedTokens.get(TokenHelpers.getAddress(editingToken)) || 0 : 0;
   const availableForEditing = remainingWeight + editingTokenWeight;
   
   return (
     <div className="space-y-3">
       {/* Selected tokens first */}
       {Array.from(selectedTokens.entries()).map(([contractAddress, weight]) => {
-        const token = tokens.find(t => t.contractAddress === contractAddress);
+        const token = tokens.find(t => TokenHelpers.getAddress(t) === contractAddress);
         if (!token) return null;
         
         return (
@@ -140,10 +141,10 @@ export const SimpleTokenGrid: React.FC<SimpleTokenGridProps> = ({
       
       {/* Unselected tokens */}
       {visibleTokens
-        .filter(token => !selectedTokens.has(token.contractAddress))
+        .filter(token => !selectedTokens.has(TokenHelpers.getAddress(token)))
         .map(token => (
           <SimpleTokenCard
-            key={token.contractAddress}
+            key={TokenHelpers.getAddress(token)}
             token={token}
             isSelected={false}
             weight={0}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStandardizedTokenData } from './useStandardizedTokenData';
+import { TokenHelpers } from '../../types';
 
 interface GMGNPriceData {
   address: string;
@@ -144,7 +145,7 @@ export function useGMGNTokenPrices(): GMGNTokenPricesResult {
       
       // Extract token addresses (filter out invalid ones)
       const tokenAddresses = fallbackData.tokens
-        .map(token => token.contractAddress)
+        .map(token => TokenHelpers.getAddress(token))
         .filter(address => address && typeof address === 'string' && address.length > 20);
       
       // Fetch GMGN prices in batches
@@ -164,27 +165,28 @@ export function useGMGNTokenPrices(): GMGNTokenPricesResult {
           return;
         }
         
-        const gmgnPrice = gmgnPriceMap.get(token.contractAddress);
+        const tokenAddress = TokenHelpers.getAddress(token);
+        const gmgnPrice = gmgnPriceMap.get(tokenAddress);
         
         if (gmgnPrice) {
           // Use GMGN price
-          enhancedPrices.set(token.contractAddress, {
-            address: token.contractAddress,
+          enhancedPrices.set(tokenAddress, {
+            address: tokenAddress,
             price: gmgnPrice,
-            priceChange24h: token.change_24h, // Use fallback for other metrics
-            volume24h: token.volume_24h,
-            marketCap: token.market_cap,
+            priceChange24h: TokenHelpers.getPriceChange(token) || 0, // Use fallback for other metrics
+            volume24h: TokenHelpers.getVolume(token) || 0,
+            marketCap: TokenHelpers.getMarketCap(token) || 0,
             source: 'gmgn',
             lastUpdated: now
           });
         } else {
           // Use fallback price
-          enhancedPrices.set(token.contractAddress, {
-            address: token.contractAddress,
-            price: Number(token.price),
-            priceChange24h: token.change_24h,
-            volume24h: token.volume_24h,
-            marketCap: token.market_cap,
+          enhancedPrices.set(tokenAddress, {
+            address: tokenAddress,
+            price: TokenHelpers.getPrice(token) || 0,
+            priceChange24h: TokenHelpers.getPriceChange(token) || 0,
+            volume24h: TokenHelpers.getVolume(token) || 0,
+            marketCap: TokenHelpers.getMarketCap(token) || 0,
             source: 'fallback',
             lastUpdated: now
           });
@@ -222,7 +224,7 @@ export function useGMGNTokenPrices(): GMGNTokenPricesResult {
   
   // Enhanced tokens with GMGN prices
   const enhancedTokens = fallbackData.tokens.map(token => {
-    const priceData = gmgnPrices.get(token.contractAddress);
+    const priceData = gmgnPrices.get(TokenHelpers.getAddress(token));
     
     if (priceData && priceData.source === 'gmgn') {
       // Use GMGN price, keep other data from fallback
