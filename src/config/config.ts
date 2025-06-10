@@ -70,15 +70,6 @@ export const API_URL = isDev
     : `${DEV_URL}/api`
   : `${PROD_URL}/api`;
 
-// Debug profile images issue - log the API_URL construction
-console.log("[Config] Profile image debugging - API configuration:", {
-  isDev,
-  hostname: window.location.hostname,
-  host: window.location.host,
-  protocol: window.location.protocol,
-  API_URL,
-  profileImageEndpoint: `${API_URL}/users/{wallet}/profile-image`
-});
 
 /* WebSocket Base URL */
 //

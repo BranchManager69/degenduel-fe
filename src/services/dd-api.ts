@@ -2048,7 +2048,21 @@ export const ddApi = {
       }
     },
     // --- End of NEW method ---
+
+    // Check participation status (public endpoint)
+    checkParticipation: async (contestId: string | number, walletAddress: string) => {
+      const response = await fetch(
+        `${API_URL}/contests/${contestId}/check-participation?wallet_address=${encodeURIComponent(walletAddress)}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to check participation: ${response.status}`);
+      }
+
+      return response.json();
+    },
   },
+
 
   // Portfolio endpoints
   portfolio: {

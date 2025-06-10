@@ -4,3 +4,4 @@
 // Only export the UnifiedWebSocketStatus component for now
 // Additional components can be added as needed after verifying their export pattern
 export { UnifiedWebSocketStatus } from './UnifiedWebSocketStatus';
+export { AnimatedFormattedNumber, formatTokenBalance } from './AnimatedFormattedNumber';

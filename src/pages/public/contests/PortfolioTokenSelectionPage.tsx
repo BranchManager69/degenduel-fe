@@ -213,8 +213,7 @@ export const TokenSelection: React.FC = () => {
   }, [contestId]);
 
   useEffect(() => {
-    const fetchExistingPortfolio = async () => {
-      // Only load existing portfolio for authenticated users
+    const checkParticipationAndPortfolio = async () => {
       if (!contestId || !user?.wallet_address) {
         setLoadingEntryStatus(false);
         setHasExistingPortfolio(false);
@@ -223,42 +222,52 @@ export const TokenSelection: React.FC = () => {
 
       try {
         setLoadingEntryStatus(true);
-        console.error("🔴🔴🔴 FETCHING PORTFOLIO FOR CONTEST:", contestId, "🔴🔴🔴");
-        const portfolioData = await ddApi.portfolio.get(Number(contestId));
-        console.error("🟢🟢🟢 PORTFOLIO DATA RECEIVED:", portfolioData, "🟢🟢🟢");
-
-        // Create map using contract addresses instead of symbols
-        const existingPortfolio = new Map<string, number>(
-          (portfolioData.tokens as PortfolioToken[])?.map(
-            (token: PortfolioToken) => [token.contractAddress, token.weight],
-          ) || [],
-        );
-
-        setSelectedTokens(existingPortfolio);
         
-        // If we got portfolio data, user is already in the contest
-        if (existingPortfolio.size > 0) {
+        // Step 1: Check participation status (public endpoint)
+        console.error("🔍🔍🔍 CHECKING PARTICIPATION:", contestId, user.wallet_address, "🔍🔍🔍");
+        const participationData = await ddApi.contests.checkParticipation(contestId, user.wallet_address);
+        console.error("📊📊📊 PARTICIPATION DATA:", participationData, "📊📊📊");
+        
+        if (participationData.participating) {
           setHasExistingPortfolio(true);
-          console.error("🔵🔵🔵 USER HAS EXISTING PORTFOLIO! 🔵🔵🔵", {
-            portfolioSize: existingPortfolio.size,
-            tokens: Array.from(existingPortfolio.entries())
-          });
+          
+          // Step 2: Try to get existing portfolio (authenticated endpoint)
+          try {
+            console.error("🔴🔴🔴 FETCHING PORTFOLIO FOR EXISTING PARTICIPANT 🔴🔴🔴");
+            const portfolioData = await ddApi.portfolio.get(Number(contestId));
+            console.error("🟢🟢🟢 PORTFOLIO DATA RECEIVED:", portfolioData, "🟢🟢🟢");
+
+            // Create map using contract addresses instead of symbols
+            const existingPortfolio = new Map<string, number>(
+              (portfolioData.tokens as PortfolioToken[])?.map(
+                (token: PortfolioToken) => [token.contractAddress, token.weight],
+              ) || [],
+            );
+
+            setSelectedTokens(existingPortfolio);
+            console.error("✅✅✅ LOADED EXISTING PORTFOLIO WITH", existingPortfolio.size, "TOKENS ✅✅✅");
+            
+          } catch (portfolioError: any) {
+            console.error("⚠️⚠️⚠️ PORTFOLIO FETCH FAILED (USER IN CONTEST BUT NO PORTFOLIO YET) ⚠️⚠️⚠️", portfolioError);
+            // User is in contest but no portfolio yet - that's fine
+            setSelectedTokens(new Map());
+          }
         } else {
-          console.error("🟠🟠🟠 PORTFOLIO DATA RETURNED BUT NO TOKENS FOUND 🟠🟠🟠");
-        }
-      } catch (error: any) {
-        console.error("❌❌❌ FAILED TO FETCH PORTFOLIO ❌❌❌", error);
-        // If it's a 404 or similar, user is not in contest yet
-        if (error.response?.status === 404 || error.message?.includes("not found")) {
+          console.error("❌❌❌ USER NOT PARTICIPATING IN CONTEST ❌❌❌");
           setHasExistingPortfolio(false);
-          console.error("🟣🟣🟣 USER NOT IN CONTEST YET (404) 🟣🟣🟣");
+          setSelectedTokens(new Map());
         }
+        
+      } catch (error: any) {
+        console.error("💥💥💥 PARTICIPATION CHECK FAILED 💥💥💥", error);
+        setHasExistingPortfolio(false);
+        setSelectedTokens(new Map());
       } finally {
         setLoadingEntryStatus(false);
       }
     };
 
-    fetchExistingPortfolio();
+    checkParticipationAndPortfolio();
   }, [contestId, user?.wallet_address]);
 
   useEffect(() => {
@@ -444,17 +453,24 @@ export const TokenSelection: React.FC = () => {
           message: "Submitting contest entry...",
         });
 
-        await ddApi.contests.enterFreeContestWithPortfolio(
-          contestId,
-          portfolioData,
-        );
+        // Use correct endpoint based on participation status for free contests too
+        if (hasExistingPortfolio) {
+          console.log("Updating existing portfolio in free contest...");
+          await ddApi.contests.updatePortfolio(contestId, portfolioData);
+        } else {
+          console.log("Entering free contest with new portfolio...");
+          await ddApi.contests.enterFreeContestWithPortfolio(
+            contestId,
+            portfolioData,
+          );
+        }
 
         setTransactionState({
           status: "success",
-          message: "Success! You have entered the free contest.",
+          message: hasExistingPortfolio ? "Portfolio updated successfully!" : "Success! You have entered the free contest.",
         });
 
-        toast.success("Successfully entered free contest!", { duration: 5000 });
+        toast.success(hasExistingPortfolio ? "Portfolio updated successfully!" : "Successfully entered free contest!", { duration: 5000 });
 
       } else {
         // PAID CONTEST FLOW: Requires Solana transaction
@@ -651,21 +667,28 @@ export const TokenSelection: React.FC = () => {
           throw new Error("Transaction signature not available");
         }
 
-        await ddApi.contests.enterContestWithPortfolio(
-          contestId,
-          portfolioData,
-          confirmedSignature, // Use local variable instead of potentially stale state
-        );
+        // Use correct endpoint based on participation status
+        if (hasExistingPortfolio) {
+          console.log("Updating existing portfolio...");
+          await ddApi.contests.updatePortfolio(contestId, portfolioData);
+        } else {
+          console.log("Entering contest with new portfolio...");
+          await ddApi.contests.enterContestWithPortfolio(
+            contestId,
+            portfolioData,
+            confirmedSignature, // Use local variable instead of potentially stale state
+          );
+        }
 
         setTransactionState({
           status: "success",
-          message: "Success! You have entered the contest.",
+          message: hasExistingPortfolio ? "Portfolio updated successfully!" : "Success! You have entered the contest.",
           signature: confirmedSignature,
         });
 
         toast.success(
           <div>
-            <div>Successfully entered contest!</div>
+            <div>{hasExistingPortfolio ? "Portfolio updated successfully!" : "Successfully entered contest!"}</div>
             <div className="text-xs mt-1">
               <a
                 href={`https://solscan.io/tx/${confirmedSignature}`}
@@ -1586,10 +1609,13 @@ export const TokenSelection: React.FC = () => {
                                 <div className="text-4xl animate-bounce">🎉</div>
                               </div>
                               <h3 className="text-lg font-bold text-emerald-400 text-center mb-2">
-                                Contest Entry Successful!
+                                {hasExistingPortfolio ? "Portfolio Updated!" : "Contest Entry Successful!"}
                               </h3>
                               <p className="text-sm text-gray-300 text-center mb-4">
-                                Your portfolio has been submitted and you're now competing!
+                                {hasExistingPortfolio 
+                                  ? "Your portfolio has been updated and changes are live!"
+                                  : "Your portfolio has been submitted and you're now competing!"
+                                }
                               </p>
                               {transactionState.signature && (
                                 <div className="text-center mb-4">
@@ -1667,7 +1693,7 @@ export const TokenSelection: React.FC = () => {
                       <div className="text-3xl">🎉</div>
                     </div>
                     <h3 className="text-base font-bold text-emerald-400 text-center mb-2">
-                      Entry Successful!
+                      {hasExistingPortfolio ? "Updated!" : "Entry Successful!"}
                     </h3>
                     <div className="grid grid-cols-2 gap-2">
                       <Button

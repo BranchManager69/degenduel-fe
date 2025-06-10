@@ -38,6 +38,7 @@ export interface User {
   
   // Account status fields
   avatar_url?: string;
+  profile_image_url?: string;  // Backend profile image URL (full URL or path like /images/profiles/default_pic_green.png)
   is_admin?: boolean;
   is_superadmin?: boolean;
   banned?: boolean;

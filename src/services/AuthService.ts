@@ -534,6 +534,31 @@ export class AuthService {
       // Clear explicit logout flag (user is now logged in)
       localStorage.removeItem('degen_explicit_logout');
 
+      // Fetch full profile data including profile_image_url
+      try {
+        authDebug('AuthService', 'Fetching full user profile after login');
+        const profileResponse = await axiosInstance.get(`${API_URL}/users/me`);
+        if (profileResponse.data) {
+          // Update user with full profile data including profile_image_url
+          const enhancedUser = {
+            ...user,
+            ...profileResponse.data,
+            // Preserve auth-specific fields from login response
+            jwt: user.jwt,
+            wsToken: user.wsToken,
+            session_token: user.session_token
+          };
+          this.setUser(enhancedUser, 'wallet');
+          authDebug('AuthService', 'Enhanced user profile loaded', {
+            hasProfileImage: !!enhancedUser.profile_image_url,
+            nickname: enhancedUser.nickname
+          });
+        }
+      } catch (profileError) {
+        authDebug('AuthService', 'Failed to fetch enhanced profile, continuing with basic user data', profileError);
+        // Don't fail the login if profile fetch fails
+      }
+
       // Request WebSocket token
       tokenManagerService.refreshToken(TokenType.WS_TOKEN);
 
