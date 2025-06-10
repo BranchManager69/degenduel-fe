@@ -13,7 +13,7 @@
 
 import React from 'react';
 import { useSolanaTokenData } from '../hooks/data/useSolanaTokenData';
-import { AnimatedNumber } from './ui/AnimatedNumber';
+import { AnimatedFormattedNumber, formatTokenBalance } from './ui/AnimatedFormattedNumber';
 
 interface SolanaTokenDisplayProps {
   mintAddress?: string;
@@ -48,6 +48,7 @@ export const SolanaTokenDisplay: React.FC<SolanaTokenDisplayProps> = ({
     return amount.toLocaleString(undefined, { maximumFractionDigits: 0 });
   };
 
+
   // Compact display for headers and menus
   if (compact) {
     const handleClick = () => {
@@ -72,9 +73,9 @@ export const SolanaTokenDisplay: React.FC<SolanaTokenDisplayProps> = ({
             {tokenData.userBalance !== undefined 
               ? <>
                   <span className="font-medium">
-                    <AnimatedNumber 
+                    <AnimatedFormattedNumber 
                       value={parseFloat(tokenData.userBalance.toString())} 
-                      decimals={0}
+                      formatter={formatTokenBalance}
                       showChangeColor={true}
                     />
                   </span>

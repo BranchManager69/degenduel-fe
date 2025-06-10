@@ -78,21 +78,10 @@ const transformLegacyParticipant = (participant: any): any => {
   const walletAddress = participant.address || participant.wallet_address;
   const nickname = participant.nickname || participant.users?.nickname;
   
-  // Try to construct profile image URL if we have wallet address
-  const profileImageUrl = walletAddress ? 
-    `${window.location.origin}/api/users/${walletAddress}/profile-image` : null;
-  
-  console.log("[ContestDetailPage] Transforming participant:", {
-    originalData: participant,
-    walletAddress,
-    nickname,
-    profileImageUrl
-  });
-  
   return {
     wallet_address: walletAddress,
     nickname: nickname,
-    profile_image_url: profileImageUrl,
+    profile_image_url: null, // Legacy participants don't have profile images
     performance_percentage: participant.score?.toString(),
     is_current_user: false,
     is_ai_agent: false,
@@ -348,9 +337,20 @@ export const ContestDetails: React.FC = () => {
         sanitizedContest.participants,
       );
 
-      // Use the is_participating flag from the API response
-      // This is set by the dedicated /check-participation endpoint in the backend
-      setIsParticipating(data.is_participating || false);
+      // Check participation using the correct endpoint
+      if (user?.wallet_address) {
+        try {
+          console.log("🔍 Checking participation for contest detail page:", id, user.wallet_address);
+          const participationData = await ddApi.contests.checkParticipation(id!, user.wallet_address);
+          console.log("📊 Contest detail participation data:", participationData);
+          setIsParticipating(participationData.participating || false);
+        } catch (participationError) {
+          console.error("Failed to check participation:", participationError);
+          setIsParticipating(false);
+        }
+      } else {
+        setIsParticipating(false);
+      }
 
       setContest(sanitizedContest);
     } catch (err) {
@@ -519,7 +519,7 @@ export const ContestDetails: React.FC = () => {
       } else if (displayStatus === "cancelled") {
         return "View Details";
       } else {
-        return "Modify Portfolio";
+        return "Update Portfolio";
       }
     }
 

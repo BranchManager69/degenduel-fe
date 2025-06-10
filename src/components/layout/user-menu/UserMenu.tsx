@@ -18,6 +18,7 @@ import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
 import { TwitterLoginButton, DiscordLoginButton, TelegramLoginButton, BiometricAuthButton } from "../../auth";
+import { getFullImageUrl } from "../../../utils/profileImageUtils";
 import { AdminControls } from "./UserMenuAdminControls";
 
 // Import shared menu components and configuration
@@ -113,10 +114,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   }, [user, isCompact]);
 
   const profileImageUrl = useMemo(() => {
-    if (!user || imageError || !user.profile_image?.url) {
+    if (!user || imageError) {
       return "/assets/media/default/profile_pic.png";
     }
-    return user.profile_image.thumbnail_url || user.profile_image.url;
+    // Use the backend's profile_image_url field with our utility
+    // The backend provides either full URLs (Twitter/Discord) or paths like /images/profiles/default_pic_green.png
+    return getFullImageUrl(user.profile_image_url) || "/assets/media/default/profile_pic.png";
   }, [user, imageError]);
 
   const handleImageError = () => {
