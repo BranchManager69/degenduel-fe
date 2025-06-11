@@ -36,7 +36,7 @@ import { ddApi } from "../../../services/dd-api";
 // Date Utilities
 // Release Date Service
 import {
-  FALLBACK_RELEASE_DATE
+    FALLBACK_RELEASE_DATE
 } from '../../../services/releaseDateService';
 // Import PaginatedResponse from types (used for API response typing)
 // import type { PaginatedResponse } from '../../../types';
@@ -184,7 +184,7 @@ export const LandingPage: React.FC = () => {
         },
         min_participants: 2,
         max_participants: 100,
-        is_participating: (contest as any).joined || false,
+        is_participating: (contest as any).joined || (contest as any).participating || (contest as any).is_participating || false,
         contest_code: (contest as any).contest_id || (contest as any).id || '',
         image_url: undefined,
         participants: [],
@@ -206,7 +206,7 @@ export const LandingPage: React.FC = () => {
         },
         min_participants: 2,
         max_participants: 100,
-        is_participating: (contest as any).joined || false,
+        is_participating: (contest as any).joined || (contest as any).participating || (contest as any).is_participating || false,
         contest_code: (contest as any).contest_id || (contest as any).id || '',
         image_url: undefined,
         participants: [],
@@ -244,7 +244,7 @@ export const LandingPage: React.FC = () => {
             },
             min_participants: 2,
             max_participants: 100,
-            is_participating: (contest as any).joined || false,
+            is_participating: (contest as any).joined || (contest as any).participating || (contest as any).is_participating || false,
             contest_code: (contest as any).contest_id || (contest as any).id || '',
             image_url: undefined,
             participants: [],

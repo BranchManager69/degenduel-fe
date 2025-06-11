@@ -249,7 +249,7 @@ class AIService {
         body: JSON.stringify({
           messages,
           context: options.context || 'terminal',
-          loadout: 'default', // Add loadout parameter
+          loadoutType: options.context === 'terminal' ? 'terminal' : 'default', // Use loadoutType parameter to match backend expectation
           stream: true, // Explicitly enable streaming
           max_tokens: options.max_tokens || 400,
           temperature: options.temperature || 0.6,
@@ -591,6 +591,7 @@ class AIService {
           messages,
           conversationId: options.conversationId,
           context: options.context || 'terminal',
+          loadoutType: options.context === 'terminal' ? 'terminal' : 'default', // Use loadoutType parameter to match backend expectation
           stream: false, // Explicitly disable streaming for REST endpoint
           // Add web search tool with enhanced configuration
           tools: options.tools || [

@@ -529,9 +529,12 @@ const checkContestParticipation = async (
 
     // Handle different response formats from backend
     let isParticipating: boolean;
-    
-    if (data.is_participating !== undefined) {
-      // Direct format: { is_participating: boolean }
+
+    if (data.participating !== undefined) {
+      // Current backend format: { participating: boolean }
+      isParticipating = data.participating;
+    } else if (data.is_participating !== undefined) {
+      // Legacy format: { is_participating: boolean }
       isParticipating = data.is_participating;
     } else if (data.data?.participating !== undefined) {
       // Nested format: { data: { participating: boolean } }
@@ -2113,10 +2116,10 @@ export const ddApi = {
           contractAddress: item.token?.address || item.tokens?.address,
           weight: item.weight
         }));
-        
+
         return { tokens };
       }
-      
+
       // Fallback for unexpected format
       console.warn('[portfolio.get] Unexpected response format:', data);
       return { tokens: [] };

@@ -25,10 +25,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChallengeFriendButton } from "../../../components/contest-browser/ChallengeFriendButton";
 import { ContestCard } from "../../../components/contest-browser/ContestCard";
-import { ProminentContestCard } from "../../../components/contest-browser/ProminentContestCard";
 import { ContestSort } from "../../../components/contest-browser/ContestSort";
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
 import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
+import { ProminentContestCard } from "../../../components/contest-browser/ProminentContestCard";
 import { AuthDebugPanel } from "../../../components/debug";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContests } from "../../../hooks/websocket/topic-hooks/useContests";
@@ -87,7 +87,8 @@ export const ContestBrowser: React.FC = () => {
       },
       min_participants: 2,
       max_participants: 100,
-      is_participating: (contest as any).joined || false,
+      // Debug: Check all possible participation field names
+      is_participating: (contest as any).joined || (contest as any).participating || (contest as any).is_participating || false,
       contest_code: (contest as any).contest_id || (contest as any).id || '',
       image_url: undefined,
       participants: [],

@@ -333,6 +333,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                         ? "completed"
                         : "cancelled"
                 }
+                isParticipating={isParticipating}
               />
             </div>
           </div>
