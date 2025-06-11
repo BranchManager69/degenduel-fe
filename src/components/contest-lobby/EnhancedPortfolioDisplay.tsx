@@ -20,7 +20,7 @@ interface PortfolioData {
   initial_portfolio_value: string;
   total_pnl: string;
   total_pnl_percentage: string;
-  holdings: TokenHolding[];
+  holdings?: TokenHolding[];
   last_updated: string;
 }
 
@@ -54,7 +54,17 @@ export const EnhancedPortfolioDisplay: React.FC<EnhancedPortfolioDisplayProps> =
         }
 
         const data = await response.json();
-        setPortfolioData(data.portfolio);
+        console.log('[EnhancedPortfolioDisplay] API Response:', data);
+        
+        // Handle different possible response formats
+        if (data.portfolio) {
+          setPortfolioData(data.portfolio);
+        } else if (data.data) {
+          setPortfolioData(data.data);
+        } else {
+          // If the response is the portfolio data directly
+          setPortfolioData(data);
+        }
       } catch (err) {
         console.error('[EnhancedPortfolioDisplay] Failed to fetch portfolio:', err);
         setError(err instanceof Error ? err.message : 'Failed to load portfolio');
@@ -66,8 +76,10 @@ export const EnhancedPortfolioDisplay: React.FC<EnhancedPortfolioDisplayProps> =
     fetchPortfolioData();
   }, [contestId, walletAddress]);
 
-  const formatCurrency = (value: string) => {
-    const num = parseFloat(value);
+  const formatCurrency = (value: string | number | undefined) => {
+    if (value === undefined || value === null) return '$0.00';
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(num)) return '$0.00';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -76,8 +88,10 @@ export const EnhancedPortfolioDisplay: React.FC<EnhancedPortfolioDisplayProps> =
     }).format(num);
   };
 
-  const formatPercentage = (value: string) => {
-    const num = parseFloat(value);
+  const formatPercentage = (value: string | number | undefined) => {
+    if (value === undefined || value === null) return '0.00%';
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(num)) return '0.00%';
     return `${num >= 0 ? '+' : ''}${num.toFixed(2)}%`;
   };
 
@@ -127,7 +141,9 @@ export const EnhancedPortfolioDisplay: React.FC<EnhancedPortfolioDisplayProps> =
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-bold text-gray-100">{nickname}</h3>
           <div className="text-xs text-gray-400">
-            Updated {new Date(portfolioData.last_updated).toLocaleTimeString()}
+            {portfolioData.last_updated && !isNaN(new Date(portfolioData.last_updated).getTime()) 
+              ? `Updated ${new Date(portfolioData.last_updated).toLocaleTimeString()}`
+              : 'Loading...'}
           </div>
         </div>
         
@@ -150,7 +166,7 @@ export const EnhancedPortfolioDisplay: React.FC<EnhancedPortfolioDisplayProps> =
       </div>
 
       {/* Holdings */}
-      {showDetailed && portfolioData.holdings.length > 0 && (
+      {showDetailed && portfolioData.holdings && portfolioData.holdings.length > 0 && (
         <div className="space-y-2">
           <div className="text-sm font-medium text-gray-300 border-b border-dark-300 pb-2">
             Holdings ({portfolioData.holdings.length})
@@ -202,7 +218,7 @@ export const EnhancedPortfolioDisplay: React.FC<EnhancedPortfolioDisplayProps> =
       )}
 
       {/* Summary Bar */}
-      {!showDetailed && portfolioData.holdings.length > 0 && (
+      {!showDetailed && portfolioData.holdings && portfolioData.holdings.length > 0 && (
         <div className="mt-3">
           <div className="text-xs text-gray-400 mb-2">Token Allocation</div>
           <div className="flex h-2 bg-dark-400 rounded-full overflow-hidden">

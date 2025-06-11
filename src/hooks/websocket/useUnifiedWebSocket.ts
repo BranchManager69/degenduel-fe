@@ -167,7 +167,7 @@ export function useUnifiedWebSocket<T = any>(
     return instance.sendMessage(message);
   }, []);
 
-  const subscribe = useCallback((topicsToSubscribe: string[]) => {
+  const subscribe = useCallback((topicsToSubscribe: string[], _componentId?: string) => {
     if (topicsToSubscribe.length === 0) return false;
     const message: SubscriptionMessage = {
       type: DDExtendedMessageType.SUBSCRIBE,
@@ -176,7 +176,7 @@ export function useUnifiedWebSocket<T = any>(
     return sendMessage(message);
   }, [sendMessage]);
 
-  const unsubscribe = useCallback((topicsToUnsubscribe: string[]) => {
+  const unsubscribe = useCallback((topicsToUnsubscribe: string[], _componentId?: string) => {
     if (topicsToUnsubscribe.length === 0) return false;
     return sendMessage({
       type: DDExtendedMessageType.UNSUBSCRIBE,
@@ -203,8 +203,8 @@ export function useUnifiedWebSocket<T = any>(
     isAuthenticated: connectionState === ConnectionState.AUTHENTICATED,
     connectionState,
     error: connectionError,
-    subscribe,
-    unsubscribe,
+    subscribe: (topics: string[], componentId?: string) => subscribe(topics, componentId),
+    unsubscribe: (topics: string[], componentId?: string) => unsubscribe(topics, componentId),
     request
   }), [connectionState, connectionError, sendMessage, subscribe, unsubscribe, request]);
 }

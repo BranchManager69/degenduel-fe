@@ -8,7 +8,7 @@
  * @created 2025-04-10
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { TopicType } from '../index';
 import { DDExtendedMessageType } from '../types';
@@ -121,13 +121,16 @@ export function useMarketData() {
 
   // Subscribe to market data when connected (prevent duplicate subscriptions)
   const hasSubscribedMarketRef = useRef(false);
+  const componentId = useMemo(() => `market-data-${Math.random().toString(36).substr(2, 9)}`, []);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
 
     if (ws.isConnected && !hasSubscribedMarketRef.current) {
-      // Subscribe to market data topic
-      ws.subscribe([TopicType.MARKET_DATA]);
+      console.log('[useMarketData] Subscribing to market data with component ID:', componentId);
+
+      // Subscribe to market data topic with component ID
+      ws.subscribe([TopicType.MARKET_DATA], componentId);
       hasSubscribedMarketRef.current = true;
 
       // Request initial market data
@@ -154,11 +157,12 @@ export function useMarketData() {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
       if (hasSubscribedMarketRef.current) {
-        ws.unsubscribe([TopicType.MARKET_DATA]);
+        console.log('[useMarketData] Unsubscribing from market data with component ID:', componentId);
+        ws.unsubscribe([TopicType.MARKET_DATA], componentId);
         hasSubscribedMarketRef.current = false;
       }
     };
-  }, [ws.isConnected]); // Remove unstable dependencies
+  }, [ws.isConnected, componentId]);
 
   // Force refresh function
   const refreshMarketData = useCallback(() => {

@@ -33,9 +33,9 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
-    PhantomWalletAdapter,
-    SolflareWalletAdapter,
-    TrustWalletAdapter
+  PhantomWalletAdapter, // DO NOT DELETE DESPITE WHAT YOUR LINTER OR BRAIN SAYS. IT IS REQUIRED.
+  SolflareWalletAdapter, // DO NOT DELETE DESPITE WHAT YOUR LINTER OR BRAIN SAYS. IT IS REQUIRED.
+  TrustWalletAdapter
 } from "@solana/wallet-adapter-wallets";
 
 // Other providers of dubious quality:
@@ -147,7 +147,7 @@ const ContestChatExample = lazy(() => import('./pages/examples/ContestChatExampl
 const DegenDuelMCPPortal = lazy(() => import('./pages/public/general/DegenDuelMCPPortal').then(module => ({ default: module.DegenDuelMCPPortal })));
 const ContestBrowser = lazy(() => import('./pages/public/contests/ContestBrowserPage').then(module => ({ default: module.ContestBrowser })));
 const ContestDetails = lazy(() => import('./pages/public/contests/ContestDetailPage').then(module => ({ default: module.ContestDetails })));
-const ContestLobby = lazy(() => import('./pages/public/contests/ContestLobbyPage').then(module => ({ default: module.ContestLobby })));
+const ContestLobbyV2 = lazy(() => import('./pages/public/contests/ContestLobbyV2'));
 const ContestResults = lazy(() => import('./pages/public/contests/ContestResultsPage').then(module => ({ default: module.ContestResults })));
 const ComingSoonPage = lazy(() => import('./pages/public/general/ComingSoonPage'));
 const Contact = lazy(() => import('./pages/public/general/Contact').then(module => ({ default: module.Contact })));
@@ -196,8 +196,8 @@ const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ child
   // Configure wallet adapters
   const wallets: Adapter[] = useMemo(
     () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
+      new PhantomWalletAdapter(), // DO NOT DELETE DESPITE WHAT YOUR LINTER OR BRAIN SAYS. IT IS REQUIRED.
+      new SolflareWalletAdapter(), // DO NOT DELETE DESPITE WHAT YOUR LINTER OR BRAIN SAYS. IT IS REQUIRED.
       new TrustWalletAdapter(),
     ],
     []
@@ -261,52 +261,36 @@ export const App: React.FC = () => {
   // Move UnifiedAuthProvider above Router to prevent route-change remounts
   // This stops the cascade of provider remounts that was affecting WebSocket stability
   return (
-    <UnifiedAuthProvider>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}> 
-        {showComingSoon ? (
-          // App access is blocked, so we show Coming Soon
-          <ComingSoonPage />
-        ) : (
-          // App access is granted, so we can wrap the app in the providers and display
-          <AppProvidersAndContent />
-        )}
-      </Router>
-    </UnifiedAuthProvider>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}> 
+      {showComingSoon ? (
+        // App access is blocked, so we show Coming Soon
+        <ComingSoonPage />
+      ) : (
+        // App access is granted, so we can wrap the app in the providers and display
+        <AppProvidersAndContent />
+      )}
+    </Router>
   );
 };
 
 // Component to house providers that depend on auth state and manage dynamic DegenDuel RPC client
 const AppProvidersAndContent: React.FC = () => {
-  // const { user } = useMigratedAuth(); // This was here, but might not be needed directly in AppProvidersAndContent anymore
-  // const ddJwt = useMemo(() => (user as any)?.ddJwt || null, [user]); // same for this
-  // const [currentRpcEndpoint, setCurrentRpcEndpoint] = useState(() => `${window.location.origin}/api/solana-rpc/public`); // This logic is now in SolanaConnectionProvider
-
-  // useEffect(() => { // This useEffect and the rpcClientV2 below are now redundant
-  //   if (ddJwt) {
-  //     setCurrentRpcEndpoint(`${window.location.origin}/api/solana-rpc`);
-  //   } else {
-  //     setCurrentRpcEndpoint(`${window.location.origin}/api/solana-rpc/public`);
-  //   }
-  // }, [ddJwt]);
-
-  // const rpcClientV2 = useMemo(() => { // This is also likely handled or available via useSolanaConnection or wallet adapter's useConnection
-  //   return createDegenDuelRpcClient(currentRpcEndpoint, ddJwt);
-  // }, [currentRpcEndpoint, ddJwt]);
-
-
   return (
     <InviteSystemProvider>
-      <SolanaConnectionProvider>
-        {/* WalletAdapterProviders no longer takes the solanaConnectors prop */}
-        <WalletAdapterProviders>
-          <TokenDataProvider>
-            <ToastProvider>
-              <AppContent />
-              <Toaster position="top-right" />
-            </ToastProvider>
-          </TokenDataProvider>
-        </WalletAdapterProviders>
-      </SolanaConnectionProvider>
+      {/* Move UnifiedAuthProvider higher so SolanaConnectionProvider can access it */}
+      <UnifiedAuthProvider>
+        <SolanaConnectionProvider>
+          {/* WalletAdapterProviders no longer takes the solanaConnectors prop */}
+          <WalletAdapterProviders>
+            <TokenDataProvider>
+              <ToastProvider>
+                <AppContent />
+                <Toaster position="top-right" />
+              </ToastProvider>
+            </TokenDataProvider>
+          </WalletAdapterProviders>
+        </SolanaConnectionProvider>
+      </UnifiedAuthProvider>
     </InviteSystemProvider>
   );
 };
@@ -407,7 +391,7 @@ const AppContent: React.FC = () => {
           {/* Contest Routes */}
           <Route path="/contests" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><ContestBrowser /></Suspense></MaintenanceGuard>} />
           <Route path="/contests/:id" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><ContestDetails /></Suspense></MaintenanceGuard>} />
-          <Route path="/contests/:id/live" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><ContestLobby /></Suspense></MaintenanceGuard>} />
+          <Route path="/contests/:id/live" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><ContestLobbyV2 /></Suspense></MaintenanceGuard>} />
           <Route path="/contests/:id/results" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><ContestResults /></Suspense></MaintenanceGuard>} />
           
           {/* Token Routes */}

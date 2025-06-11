@@ -13,7 +13,7 @@
  * @updated 2025-05-05
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { dispatchWebSocketEvent } from '../../../utils/wsMonitor';
 import { TopicType } from '../index';
@@ -93,7 +93,6 @@ export function useWallet(walletAddress?: string) {
   const [walletState, setWalletState] = useState<WalletState>(DEFAULT_WALLET_STATE);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const isSubscribedRef = useRef<boolean>(false);
 
   // Message handler for WebSocket messages
   const handleMessage = useCallback((message: Partial<WebSocketWalletMessage>) => {
@@ -231,13 +230,42 @@ export function useWallet(walletAddress?: string) {
 
   // Subscribe to wallet data when connected (prevent duplicate subscriptions)
   const hasSubscribedWalletRef = useRef(false);
+  const componentId = useMemo(() => `wallet-${Math.random().toString(36).substr(2, 9)}`, []);
+
+  // Add debugging for auth state mismatches (non-invasive)
+  useEffect(() => {
+    const debugAuthState = () => {
+      console.group('🔍 [Wallet Auth Debug] Current Authentication State');
+      console.log('Frontend Auth:', {
+        isConnected: ws.isConnected,
+        isAuthenticated: ws.isAuthenticated,
+        isReadyForSecureInteraction: ws.isReadyForSecureInteraction,
+        connectionState: ws.connectionState,
+        hasConnectionError: !!ws.connectionError
+      });
+
+      // Check if there's a mismatch between frontend and WebSocket auth
+      if (ws.isConnected && !ws.isReadyForSecureInteraction) {
+        console.warn('🚨 POTENTIAL GHOST AUTH: Connected but not ready for secure interaction');
+        console.log('This might indicate the user appears authenticated but WebSocket auth failed');
+      }
+
+      console.groupEnd();
+    };
+
+    // Debug on state changes
+    debugAuthState();
+  }, [ws.isConnected, ws.isAuthenticated, ws.isReadyForSecureInteraction, ws.connectionState]);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | undefined;
 
-    if (ws.isConnected && !hasSubscribedWalletRef.current) {
-      // Subscribe to wallet and wallet-balance topics
-      ws.subscribe([TopicType.WALLET, 'wallet-balance']);
+    // Wait for secure interaction readiness instead of just connection
+    if (ws.isReadyForSecureInteraction && !hasSubscribedWalletRef.current) {
+      console.log('[useWallet] WebSocket ready for secure interaction. Subscribing to wallet data with component ID:', componentId);
+
+      // Subscribe to wallet and wallet-balance topics with component ID
+      ws.subscribe([TopicType.WALLET, 'wallet-balance'], componentId);
       hasSubscribedWalletRef.current = true;
 
       // Request initial wallet data
@@ -257,30 +285,31 @@ export function useWallet(walletAddress?: string) {
           console.warn('[Wallet WebSocket] Timed out waiting for data');
           setIsLoading(false);
         }
-      }, 15000);
-    } else if (!ws.isConnected) {
+      }, 30000);
+    } else if (!ws.isReadyForSecureInteraction) {
+      // Reset subscription flag when not ready for secure interaction
       hasSubscribedWalletRef.current = false;
+      console.log('[useWallet] WebSocket not ready for secure interaction, deferring wallet setup.');
     }
 
     // Cleanup function
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
       if (hasSubscribedWalletRef.current) {
-        ws.unsubscribe([TopicType.WALLET, 'wallet-balance']);
+        console.log('[useWallet] Unsubscribing from wallet data with component ID:', componentId);
+        ws.unsubscribe([TopicType.WALLET, 'wallet-balance'], componentId);
         hasSubscribedWalletRef.current = false;
       }
     };
-  }, [ws.isConnected, walletAddress]); // Remove unstable dependencies
+  }, [ws.isReadyForSecureInteraction, walletAddress, componentId]);
 
   // Cleanup subscription on unmount
   useEffect(() => {
     return () => {
-      if (isSubscribedRef.current) {
-        ws.unsubscribe([TopicType.WALLET, 'wallet-balance']);
-        isSubscribedRef.current = false;
-      }
+      console.log('[useWallet] Component unmounting, cleaning up subscriptions for component ID:', componentId);
+      ws.cleanupComponent(componentId);
     };
-  }, [ws.unsubscribe]);
+  }, [componentId, ws.cleanupComponent]);
 
   // Send a transaction
   const sendTransaction = useCallback((params: {
@@ -341,9 +370,9 @@ export function useWallet(walletAddress?: string) {
 
   // Update wallet settings
   const updateSettings = useCallback((settings: WalletSettings) => {
-    if (!ws.isConnected) {
-      console.warn('[Wallet WebSocket] Cannot update settings - WebSocket not connected');
-      return Promise.reject(new Error('WebSocket not connected'));
+    if (!ws.isReadyForSecureInteraction) {
+      console.warn('[Wallet WebSocket] Cannot update settings - WebSocket not ready for secure interaction');
+      return Promise.reject(new Error('WebSocket not ready for secure interaction'));
     }
 
     return new Promise<void>((resolve, reject) => {
@@ -376,13 +405,13 @@ export function useWallet(walletAddress?: string) {
         reject(new Error(errorMessage));
       }
     });
-  }, [ws.isConnected, ws.request]);
+  }, [ws.isReadyForSecureInteraction, ws.request]);
 
   // Force refresh wallet data
   const refreshWallet = useCallback(() => {
     setIsLoading(true);
 
-    if (ws.isConnected) {
+    if (ws.isReadyForSecureInteraction) {
       // Request fresh wallet data
       const requestParams = walletAddress ? { walletAddress } : {};
       ws.request(TopicType.WALLET, 'GET_WALLET_DATA', requestParams);
@@ -396,54 +425,19 @@ export function useWallet(walletAddress?: string) {
       // Set a timeout to reset loading state if we don't get data
       const refreshTimeoutId = setTimeout(() => {
         // Only clear loading if still waiting and connection is stable
-        if (isLoading && ws.isConnected) {
+        if (isLoading && ws.isReadyForSecureInteraction) {
           console.warn('[Wallet WebSocket] Refresh timed out waiting for data');
           setIsLoading(false);
         }
-      }, 15000);
+      }, 30000); // Increased from 15000 to 30000 (30 seconds)
 
       // Return cleanup function for the timeout
       return () => clearTimeout(refreshTimeoutId);
     } else {
-      console.warn('[Wallet WebSocket] Cannot refresh - WebSocket not connected');
-
-      // Enhanced debugging for WebSocket connection issues
-      console.group('🔌 WebSocket Connection Diagnostics');
-      console.log('Connection State:', {
-        isConnected: ws.isConnected,
-        connectionError: ws.connectionError,
-        lastConnectionTime: ws.lastConnectionTime
-      });
-
-      // Test WebSocket connectivity
-      console.log('Testing WebSocket connectivity...');
-      const testWs = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v69/ws`);
-
-      testWs.onopen = () => {
-        console.log('✅ WebSocket test connection successful');
-        testWs.close();
-      };
-
-      testWs.onerror = (error) => {
-        console.error('❌ WebSocket test connection failed:', error);
-      };
-
-      testWs.onclose = (event) => {
-        console.log(`🔌 WebSocket test connection closed: ${event.code} ${event.reason}`);
-      };
-
-      setTimeout(() => {
-        if (testWs.readyState === WebSocket.CONNECTING) {
-          console.error('❌ WebSocket test connection timeout');
-          testWs.close();
-        }
-      }, 5000);
-
-      console.groupEnd();
-
+      console.warn('[Wallet WebSocket] Cannot refresh - WebSocket not ready for secure interaction');
       setIsLoading(false);
     }
-  }, [ws.isConnected, ws.request, walletAddress, isLoading]);
+  }, [ws.isReadyForSecureInteraction, ws.request, walletAddress, isLoading]);
 
   // Return wallet data and helper functions
   return {
