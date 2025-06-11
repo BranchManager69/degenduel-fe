@@ -93,63 +93,69 @@ export default function CreditPurchase({ user, config, onPurchaseComplete }: Cre
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
       <h2 className="text-2xl font-bold text-white mb-6">Purchase Credits</h2>
 
-      <div className="bg-indigo-900/20 border border-indigo-600/30 rounded-lg p-4 mb-6">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-indigo-400 mb-2">
-            {config.tokens_per_credit.toLocaleString()} {config.token_symbol} = 1 Credit
-          </div>
-          <div className="text-sm text-gray-400">
-            {config.token_address ? `Token: ${config.token_address}` : 'Token will be available after launch'}
-          </div>
+      <div className="text-center mb-6">
+        <div className="text-3xl font-bold text-white mb-2">
+          {config.tokens_per_credit.toLocaleString()} {config.token_symbol} = 1 Credit
         </div>
+        {config.token_address && (
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(config.token_address!);
+              toast.success('Token address copied to clipboard!');
+            }}
+            className="font-mono text-xs text-gray-300 hover:text-white transition-colors cursor-pointer"
+            title="Click to copy token address"
+          >
+            {config.token_address}
+          </button>
+        )}
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Credits to Purchase:
-          </label>
-          <input 
-            type="number" 
-            min="1" 
-            max="10" 
-            value={creditsDesired}
-            onChange={(e) => setCreditsDesired(parseInt(e.target.value) || 1)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-
-        <div className="bg-gray-700/50 rounded-lg p-4">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-300">Total Cost:</span>
-            <span className="text-xl font-bold text-white">
-              {(config.tokens_per_credit * creditsDesired).toLocaleString()} {config.token_symbol}
-            </span>
-          </div>
-        </div>
-
+      <div className="text-center py-8">
+        <div className="text-6xl mb-4">🚧</div>
+        <h3 className="text-xl font-bold text-gray-200 mb-2">Coming Soon</h3>
+        <p className="text-gray-400 mb-6">Credit purchasing will be available via Believe Burn API</p>
         <button 
-          onClick={handlePurchase}
-          disabled={purchasing || !isConnected || !config.purchase_enabled}
-          className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-md transition-colors"
+          disabled={true}
+          className="w-full py-3 px-4 bg-gray-600 cursor-not-allowed text-gray-300 font-semibold rounded-lg"
         >
-          {purchasing ? 'Processing...' : `Purchase ${creditsDesired} Credit${creditsDesired > 1 ? 's' : ''}`}
+          Coming Soon - Purchase Credits
         </button>
-
-        {!isConnected && (
-          <div className="text-center text-yellow-400 text-sm">
-            Please connect your wallet to purchase credits
+      </div>
+      {false && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Credits to Purchase:
+            </label>
+            <input 
+              type="number" 
+              min="1" 
+              max="10" 
+              value={creditsDesired}
+              onChange={(e) => setCreditsDesired(parseInt(e.target.value) || 1)}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
-        )}
 
-        {!config.purchase_enabled && (
-          <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
-            <div className="text-yellow-400 text-sm text-center">
-              Credits will be available soon via Believe Burn API.
+          <div className="bg-gray-700 rounded p-4">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-300">Total Cost:</span>
+              <span className="text-xl font-bold text-white">
+                {(config.tokens_per_credit * creditsDesired).toLocaleString()} {config.token_symbol}
+              </span>
             </div>
           </div>
-        )}
-      </div>
+
+          <button 
+            onClick={handlePurchase}
+            disabled={purchasing || !isConnected}
+            className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded transition-colors"
+          >
+            {purchasing ? 'Processing...' : !isConnected ? 'Connect Wallet to Purchase' : `Purchase ${creditsDesired} Credit${creditsDesired > 1 ? 's' : ''}`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

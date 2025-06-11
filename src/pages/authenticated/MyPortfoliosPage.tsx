@@ -29,7 +29,7 @@ import { useStore } from "../../store/useStore";
 interface Portfolio {
   contestId: string;
   contestName: string;
-  status: "active" | "upcoming" | "completed" | "cancelled";
+  status: "active" | "pending" | "completed" | "cancelled";
   startTime: string;
   endTime: string;
   tokens: {
@@ -69,7 +69,7 @@ export const MyPortfoliosPage: React.FC = () => {
     }
   }, [user, navigate]);
 
-  // Fetch portfolios for each contest the user is participating in
+  // Fetch all portfolios in a single efficient API call
   useEffect(() => {
     const fetchPortfolios = async () => {
       if (!user?.wallet_address || contestsLoading) return;
@@ -77,91 +77,62 @@ export const MyPortfoliosPage: React.FC = () => {
       try {
         setLoading(true);
 
-        const portfolioPromises = contests.map(async (contest) => {
-          try {
-            // Get the portfolio for this contest
-            const portfolioResponse = await ddApi.portfolio.get(
-              Number(contest.contestId),
-            );
+        // Use the new batch API to get all portfolios in one request
+        const response = await ddApi.portfolio.getAllUserPortfolios(
+          user.wallet_address,
+          {
+            limit: 100, // Get up to 100 portfolios at once
+            includeTokens: true,
+            includePerformance: true, // Include performance for completed contests
+          }
+        );
 
-            // Get token metadata for display
-            const allTokensResponse = await ddApi.tokens.getAll();
-            
-            // Handle both legacy array format and new paginated format
-            const allTokens = Array.isArray(allTokensResponse) 
-              ? allTokensResponse 
-              : allTokensResponse.tokens || [];
+        // Transform the backend response to our Portfolio interface
+        const validPortfolios = response.portfolios
+          .filter((p: any) => p.has_portfolio && p.portfolio?.length > 0)
+          .map((p: any) => {
+            // Map tokens with all their metadata
+            const tokensWithInfo = p.portfolio.map((item: any) => ({
+              contractAddress: item.token?.address || item.token_id,
+              weight: item.weight,
+              name: item.token?.name || "Unknown Token",
+              symbol: item.token?.symbol || "???",
+              price: parseFloat(item.token?.price || "0"),
+              priceChange: parseFloat(item.token?.change_24h || "0"),
+              logoUrl: item.token?.image_url || "/images/tokens/default.png",
+            }));
 
-            // Map the tokens with additional info where available
-            const tokensWithInfo = portfolioResponse.tokens.map((token) => {
-              const tokenInfo = allTokens.find(
-                (t) =>
-                  t.contractAddress?.toLowerCase() ===
-                  token.contractAddress?.toLowerCase(),
-              );
-
-              return {
-                contractAddress: token.contractAddress,
-                weight: token.weight,
-                name: tokenInfo?.name || "Unknown Token",
-                symbol: tokenInfo?.symbol || "???",
-                price: tokenInfo?.price || 0,
-                priceChange: tokenInfo?.change_24h || tokenInfo?.change24h ? Number(tokenInfo?.change_24h || tokenInfo?.change24h) : 0,
-                logoUrl:
-                  tokenInfo?.images?.imageUrl || "/images/tokens/default.png",
-              };
-            });
-
-            // For completed contests, we could fetch performance data
+            // Build performance object if available
             let performance;
-            if (contest.status === "completed") {
-              try {
-                // This is a placeholder - you'd need to implement this API endpoint
-                const performanceData = await ddApi.contests
-                  .getPerformanceDetails(contest.contestId, user.wallet_address)
-                  .catch(() => null);
-
-                if (performanceData) {
-                  performance = {
-                    value: performanceData.value || 0,
-                    change: performanceData.change || 0,
-                    ranking: performanceData.ranking,
-                  };
-                }
-              } catch (err) {
-                console.warn(
-                  `Could not fetch performance for contest ${contest.contestId}:`,
-                  err,
-                );
-                // Non-critical error, continue without performance data
-              }
+            if (p.contest.status === "completed" && p.performance) {
+              performance = {
+                value: parseFloat(p.performance.final_balance || p.portfolio_value || "0"),
+                change: parseFloat(p.performance.roi?.replace("%", "") || "0"),
+                ranking: p.final_rank || p.rank,
+              };
             }
 
             return {
-              contestId: contest.contestId,
-              contestName: contest.name,
-              status: contest.status,
-              startTime: contest.startTime,
-              endTime: contest.endTime,
+              contestId: String(p.contest_id),
+              contestName: p.contest.name,
+              status: p.contest.status as "active" | "pending" | "completed" | "cancelled",
+              startTime: p.contest.start_time,
+              endTime: p.contest.end_time,
               tokens: tokensWithInfo,
               performance,
             } as Portfolio;
-          } catch (err) {
-            console.warn(
-              `Could not fetch portfolio for contest ${contest.contestId}:`,
-              err,
-            );
-            // Return null for contests without portfolios - likely contests where the user registered but didn't create a portfolio
-            return null;
-          }
-        });
+          });
 
-        const results = await Promise.all(portfolioPromises);
-        const validPortfolios = results.filter(
-          (p) => p !== null && p.tokens.length > 0,
-        ) as Portfolio[];
         setPortfolios(validPortfolios);
         setError(null);
+
+        // Handle pagination if needed
+        if (response.pagination?.has_more) {
+          console.info(
+            `User has more than ${response.pagination.limit} portfolios. ` +
+            `Showing first ${response.pagination.limit}.`
+          );
+        }
       } catch (err) {
         console.error("Error fetching portfolios:", err);
         setError("Failed to load your portfolios");
@@ -188,8 +159,11 @@ export const MyPortfoliosPage: React.FC = () => {
             t.symbol?.toLowerCase().includes(searchTerm.toLowerCase()),
         );
 
-      const matchesStatus =
-        statusFilter === "all" || portfolio.status === statusFilter;
+      const matchesStatus = statusFilter === "all" || 
+        (statusFilter === "upcoming" && portfolio.status === "pending") ||
+        (statusFilter === "active" && portfolio.status === "active") ||
+        (statusFilter === "completed" && portfolio.status === "completed") ||
+        (statusFilter === "cancelled" && portfolio.status === "cancelled");
 
       return matchesSearch && matchesStatus;
     });
@@ -222,6 +196,7 @@ export const MyPortfoliosPage: React.FC = () => {
     switch (status) {
       case "active":
         return "bg-green-500/10 text-green-400 border-green-500/20";
+      case "pending":
       case "upcoming":
         return "bg-blue-500/10 text-blue-400 border-blue-500/20";
       case "completed":

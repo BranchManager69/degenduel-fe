@@ -88,9 +88,10 @@ export const TokenSearch: React.FC<TokenSearchProps> = ({
     setShowSuggestions(false);
   };
 
-  const formatPrice = (price: string | null): string => {
+  const formatPrice = (price: string | number | null): string => {
     if (!price) return 'N/A';
-    const num = parseFloat(price);
+    const num = typeof price === 'string' ? parseFloat(price) : price;
+    if (isNaN(num)) return 'N/A';
     if (num < 0.01) return `$${num.toFixed(6)}`;
     return `$${num.toFixed(4)}`;
   };
@@ -114,22 +115,22 @@ export const TokenSearch: React.FC<TokenSearchProps> = ({
   const getInputClass = () => {
     switch (variant) {
       case "minimal":
-        return "w-full px-3 py-1.5 bg-dark-300/30 border border-dark-300/50 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-brand-400 focus:border-brand-400 text-sm transition-colors";
+        return "w-full px-3 py-1.5 bg-dark-300/30 border border-dark-300/50 rounded-md text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-brand-400 focus:border-brand-400 text-sm transition-colors appearance-none";
       case "modern":
-        return "w-full px-4 py-2 bg-dark-200/80 backdrop-blur-sm border-b-2 border-brand-400/50 rounded-t-md text-gray-100 placeholder-gray-400 focus:outline-none focus:border-brand-400 transition-colors text-sm";
+        return "w-full px-4 py-2 bg-dark-200/80 backdrop-blur-sm border-b-2 border-brand-400/50 rounded-t-md text-gray-100 placeholder-gray-400 focus:outline-none focus:border-brand-400 transition-colors text-sm appearance-none";
       default:
-        return "w-full px-4 py-2 bg-dark-300/50 border border-dark-300 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyber-500 transition-colors";
+        return "w-full px-4 py-2 bg-dark-300/50 border border-dark-300/50 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:border-brand-400 transition-colors appearance-none";
     }
   };
 
   const getSuggestionsContainerClass = () => {
     switch (variant) {
       case "minimal":
-        return "absolute z-50 w-full mt-1 bg-dark-200/90 backdrop-blur-md border border-dark-300/70 rounded-md shadow-lg";
+        return "absolute z-50 w-full mt-1 bg-dark-200/90 backdrop-blur-md border border-dark-300/30 rounded-md shadow-lg";
       case "modern":
-        return "absolute z-50 w-full mt-0 bg-dark-200/80 backdrop-blur-md border-x-2 border-b-2 border-brand-400/30 rounded-b-md shadow-xl";
+        return "absolute z-50 w-full mt-0 bg-dark-200/80 backdrop-blur-md rounded-b-md shadow-xl";
       default:
-        return "absolute z-50 w-full mt-1 bg-dark-200 border border-dark-300 rounded-lg shadow-xl";
+        return "absolute z-50 w-full mt-1 bg-dark-200 border border-dark-300/30 rounded-lg shadow-xl";
     }
   };
 
@@ -149,9 +150,13 @@ export const TokenSearch: React.FC<TokenSearchProps> = ({
             <li
               key={token.address}
               onClick={() => handleSuggestionClick(token)}
-              className={`px-4 py-3 hover:bg-dark-300/50 cursor-pointer transition-colors border-b border-dark-300/50 last:border-0 ${
+              className={`px-4 py-3 hover:bg-dark-300/50 cursor-pointer transition-all border-b border-dark-300/50 last:border-0 ${
                 variant === "modern"
                   ? "hover:border-l-2 hover:border-l-brand-400"
+                  : ""
+              } ${
+                !token.is_active 
+                  ? "opacity-50 hover:opacity-70" 
                   : ""
               }`}
             >
@@ -186,9 +191,9 @@ export const TokenSearch: React.FC<TokenSearchProps> = ({
                   <div className="text-right text-xs">
                     <div className="flex items-center gap-2 justify-end">
                       <span className="text-gray-100 font-medium">
-                        {formatPrice(token.current_price)}
+                        {formatPrice(token.price)}
                       </span>
-                      {formatChange(token.change_24h)}
+                      {formatChange(token.change_24h?.toString())}
                     </div>
                   </div>
                 )}

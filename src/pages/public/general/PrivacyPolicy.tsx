@@ -48,7 +48,7 @@ export const PrivacyPolicy: React.FC = () => {
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12 relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
             <h1 className="text-4xl font-bold text-gray-100 group-hover:animate-glitch relative">
               Privacy Policy
               <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -66,7 +66,7 @@ export const PrivacyPolicy: React.FC = () => {
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div
-                  className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100"
+                  className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream-responsive opacity-0 group-hover:opacity-100"
                   style={{
                     animationDelay: `${index * 150}ms`,
                   }}
@@ -114,7 +114,7 @@ export const PrivacyPolicy: React.FC = () => {
 
           {/* Enhanced Call to Action */}
           <div className="mt-16 text-center relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
             <h2 className="text-2xl font-bold text-gray-100 mb-4 group-hover:animate-glitch">
               Privacy Questions?
             </h2>
@@ -122,7 +122,7 @@ export const PrivacyPolicy: React.FC = () => {
               href="/contact"
               className="inline-flex items-center px-6 py-3 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors relative group overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream-responsive" />
               <span className="relative flex items-center font-medium group-hover:animate-glitch">
                 Contact Support
                 <svg

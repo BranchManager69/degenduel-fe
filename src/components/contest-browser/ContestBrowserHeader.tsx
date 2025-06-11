@@ -35,7 +35,7 @@ export const ContestBrowserHeader: React.FC<ContestBrowserHeaderProps> = ({
               </span>
             </h1>
             <p className="text-lg text-gray-400 max-w-2xl mx-auto relative group">
-              <span className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+              <span className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
               <span className="relative">
                 Join live duels, compete with other degens, and prove your worth
                 in the ultimate token trading competition.
@@ -69,7 +69,7 @@ export const ContestBrowserHeader: React.FC<ContestBrowserHeaderProps> = ({
                 onClick={onCreateContest}
                 className="relative group px-6 py-2.5 overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream-responsive" />
                 <span className="relative flex items-center gap-2">
                   <span>Create New Duel</span>
                   <svg

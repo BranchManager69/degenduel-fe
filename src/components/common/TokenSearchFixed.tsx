@@ -196,13 +196,13 @@ export const TokenSearchFixed: React.FC<TokenSearchFixedProps> = ({
                 {showPriceData && (
                   <div className="text-right flex-shrink-0">
                     <div className="text-gray-100 font-medium">
-                      {formatPrice(token.current_price)}
+                      {formatPrice(token.price?.toString())}
                     </div>
                     {token.change_24h && (
                       <div className={`text-xs ${
-                        parseFloat(token.change_24h) >= 0 ? 'text-green-400' : 'text-red-400'
+                        token.change_24h >= 0 ? 'text-green-400' : 'text-red-400'
                       }`}>
-                        {formatChange(token.change_24h)}
+                        {formatChange(token.change_24h.toString())}
                       </div>
                     )}
                   </div>

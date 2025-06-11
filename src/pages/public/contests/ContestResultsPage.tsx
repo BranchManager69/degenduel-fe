@@ -414,7 +414,7 @@ export const ContestResults: React.FC = () => {
                 onClick={() => navigate("/contests")}
                 className="relative group overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream-responsive" />
                 <span className="relative flex items-center font-medium group-hover:animate-glitch">
                   Join New Contest
                   <svg

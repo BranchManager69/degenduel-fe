@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
-import { CreditBalance, CreditPurchase, CreditHistory } from "../../components/contest-credits";
+import { CreditBalance, CreditPurchase, CreditHistory, JupiterPromotion } from "../../components/contest-credits";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
 import { useStore } from "../../store/useStore";
@@ -85,7 +85,7 @@ export const ContestCreditsPage: React.FC = () => {
           className="relative z-10 flex h-[50vh] items-center justify-center"
         >
           <div className="text-center relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
             <h2 className="text-xl font-semibold text-gray-200 group-hover:animate-glitch">
               Connect Your Wallet
             </h2>
@@ -105,7 +105,7 @@ export const ContestCreditsPage: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+          className="relative z-10 container mx-auto px-4 py-8"
         >
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-white mb-2">Contest Credits</h1>
@@ -153,7 +153,7 @@ export const ContestCreditsPage: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        className="relative z-10 container mx-auto px-4 py-8"
       >
         {/* Page Title */}
         <div className="text-center mb-8">
@@ -166,12 +166,18 @@ export const ContestCreditsPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Credit Balance Section */}
+        {/* Credit Balance Section */}
+        <div className="mb-8">
           <CreditBalance user={user} config={config} />
+        </div>
 
-          {/* Purchase Section - Only show if token is live */}
+        {/* Jupiter Special Promotion */}
+        <div className="mb-8">
+          <JupiterPromotion />
+        </div>
+
+        {/* Purchase Section */}
+        <div className="mb-8">
           <CreditPurchase 
             user={user} 
             config={config} 
@@ -183,7 +189,7 @@ export const ContestCreditsPage: React.FC = () => {
         <CreditHistory user={user} />
 
         {/* Navigation Links */}
-        <div className="mt-8 flex justify-center space-x-4">
+        <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4 sm:gap-4">
           <Link to="/contests">
             <Button variant="secondary" size="md">
               Browse Contests
@@ -200,23 +206,23 @@ export const ContestCreditsPage: React.FC = () => {
         <div className="mt-12">
           <h2 className="text-2xl font-bold text-white mb-6 text-center">Frequently Asked Questions</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-gray-700/50 hover:border-gray-600/50 transition-colors">
               <h3 className="text-lg font-semibold text-white mb-3">What are Contest Credits?</h3>
               <p className="text-gray-400">Contest Credits allow you to create your own custom contests that are available to all DegenDuel users. Each contest creation requires one credit.</p>
             </div>
             
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-gray-700/50 hover:border-gray-600/50 transition-colors">
               <h3 className="text-lg font-semibold text-white mb-3">How do I get more credits?</h3>
               <p className="text-gray-400">You can purchase credits by burning {config.tokens_per_credit.toLocaleString()} {config.token_symbol} tokens. Credits may also be granted for special events or achievements.</p>
             </div>
             
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-gray-700/50 hover:border-gray-600/50 transition-colors">
               <h3 className="text-lg font-semibold text-white mb-3">Do credits expire?</h3>
               <p className="text-gray-400">Yes, credits typically expire 90 days after acquisition if not used. Credits marked as "Expiring Soon" have 7 days or less remaining.</p>
             </div>
             
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-gray-700/50 hover:border-gray-600/50 transition-colors">
               <h3 className="text-lg font-semibold text-white mb-3">What happens when I create a contest?</h3>
               <p className="text-gray-400">When you create a contest, you'll use one credit. Your contest will then be available in the public contest browser for other users to join.</p>
             </div>

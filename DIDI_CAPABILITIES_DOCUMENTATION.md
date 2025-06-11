@@ -50,7 +50,27 @@ Didi is DegenDuel's advanced AI assistant with extensive tool access and dynamic
 - Build custom analysis panels
 - Deploy temporary widgets and tools
 
-### **3. System Context Integration**
+### **3. File Search (Knowledge Base)**
+```javascript
+{
+  type: "file_search",
+  enabled: true,
+  description: "Search DegenDuel knowledge base and documentation"
+}
+```
+**Capabilities:**
+- Search through 17+ documentation files in the knowledge base
+- Access platform documentation including:
+  - Contest rules and scoring systems
+  - Algorithm documentation
+  - API specifications
+  - Wallet profitability tracking guides
+  - Token eligibility rules
+  - Platform FAQs
+- Provide accurate, documented answers about DegenDuel features
+- Reference specific documentation sources
+
+### **4. System Context Integration**
 **Real-time Data Access:**
 ```javascript
 system_context: {
@@ -59,7 +79,7 @@ system_context: {
   current_month: new Date().getMonth() + 1,
   current_day: new Date().getDate(),
   platform: 'DegenDuel',
-  capabilities: ['web_search', 'dynamic_ui', 'market_data', 'token_analysis']
+  capabilities: ['web_search', 'dynamic_ui', 'file_search', 'market_data', 'token_analysis']
 }
 ```
 
@@ -256,7 +276,11 @@ system_context: {
     current_view: string,
     platform: 'DegenDuel'
   },
-  tools: [...],
+  tools: [
+    { type: "web_search", enabled: true },
+    { type: "dynamic_ui", enabled: true },
+    { type: "file_search", enabled: true }
+  ],
   system_context: {...}
 }
 ```

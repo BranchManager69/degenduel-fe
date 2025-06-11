@@ -13,7 +13,7 @@
  */
 
 import { motion } from "framer-motion";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
@@ -27,8 +27,8 @@ import { Card } from "../../../components/ui/Card";
 import { CountdownTimer } from "../../../components/ui/CountdownTimer";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestLifecycle } from "../../../hooks/websocket/topic-hooks/useContestLifecycle";
-import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/useContestParticipants";
+import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 import { getContestImageUrl } from "../../../lib/imageUtils";
 import {
   formatCurrency,
@@ -38,6 +38,16 @@ import {
 import { ddApi } from "../../../services/dd-api";
 import type { Contest as BaseContest, ContestViewData } from "../../../types/index";
 import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
+
+// Helper to parse the custom decimal format from the API
+const getNumericValue = (value: any): number => {
+  if (typeof value === 'object' && value !== null && Array.isArray(value.d) && value.d.length > 0) {
+    // As per user instruction, directly taking the value from the 'd' array.
+    return value.d[0];
+  }
+  // Fallback for primitive numbers or strings.
+  return Number(value) || 0;
+};
 
 // TODO: move elsewhere
 interface ContestParticipant {
@@ -136,6 +146,16 @@ export const ContestDetails: React.FC = () => {
     if (hasEnded) return "completed";
     if (hasStarted) return "active";
     return "pending";
+  }, [contest]);
+
+  // Check if this is a Crown Contest (Numero Uno) - same logic as ContestBrowserPage
+  const isCrownContest = useMemo(() => {
+    if (!contest) return false;
+    const upperName = contest.name.toUpperCase();
+    return upperName.includes('NUMERO UNO') || 
+           upperName.includes('NUMERO  UNO') || // double space
+           upperName.includes('NUMERO\tUNO') || // tab
+           upperName.includes('NUMEROUNO'); // no space
   }, [contest]);
 
   // WebSocket integration for real-time updates
@@ -291,14 +311,8 @@ export const ContestDetails: React.FC = () => {
       // Ensure settings are properly initialized
       const sanitizedContest = {
         ...data,
-        entry_fee:
-          typeof data.entry_fee === "string"
-            ? data.entry_fee
-            : String(data.entry_fee),
-        prize_pool:
-          typeof data.prize_pool === "string"
-            ? data.prize_pool
-            : String(data.prize_pool),
+        entry_fee: getNumericValue(data.entry_fee),
+        prize_pool: getNumericValue(data.prize_pool),
         participant_count: Number(data.participant_count) || 0,
         start_time: data.start_time,
         end_time: data.end_time,
@@ -556,7 +570,7 @@ export const ContestDetails: React.FC = () => {
                 key={i}
                 className="bg-dark-200/50 backdrop-blur-sm border-dark-300 relative overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream" />
+                <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream-responsive" />
                 <div className="p-6 relative">
                   <div className="animate-pulse space-y-2">
                     <div className="h-4 bg-dark-300 rounded w-1/2"></div>
@@ -605,7 +619,7 @@ export const ContestDetails: React.FC = () => {
       <div className="flex flex-col min-h-screen">
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
             <span className="relative z-10">
               {error || "Contest not found"}
             </span>
@@ -621,7 +635,7 @@ export const ContestDetails: React.FC = () => {
       <div className="flex flex-col min-h-screen">
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 backdrop-blur-sm rounded-lg relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
             <span className="relative z-10">Contest not found</span>
           </div>
         </div>
@@ -932,10 +946,21 @@ export const ContestDetails: React.FC = () => {
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs text-gray-400 uppercase tracking-wide">Entry Fee</p>
-                    <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-white"}`}>
-                      {formatCurrency(Number(contest.entry_fee))}
-                    </p>
-                    <p className="text-xs text-gray-500">Per participant</p>
+                    {Number(contest.entry_fee) === 0 ? (
+                      <div className="space-y-1">
+                        <p className={`text-2xl font-bold uppercase tracking-wide ${displayStatus === "cancelled" ? "text-gray-500" : "text-green-400"}`}>
+                          FREE
+                        </p>
+                        <p className="text-xs text-green-300/60">No cost to enter</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-white"}`}>
+                          {formatCurrency(Number(contest.entry_fee))}
+                        </p>
+                        <p className="text-xs text-gray-500">Per participant</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -953,11 +978,61 @@ export const ContestDetails: React.FC = () => {
                     <span className="text-xs text-brand-400 bg-brand-400/10 px-2 py-1 rounded-full">Prize</span>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-gray-400 uppercase tracking-wide">Total Prize Pool</p>
-                    <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent"}`}>
-                      {formatCurrency(Number(contest.total_prize_pool || contest.prize_pool || "0"))}
-                    </p>
-                    <p className="text-xs text-gray-500">Grows with entries</p>
+                    {isCrownContest ? (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-gray-400 uppercase tracking-wide">Total Prize Pool</p>
+                          {Number(contest.entry_fee) > 0 && (
+                            <div className="relative group/tooltip">
+                              <svg className="w-3 h-3 text-brand-400/60 hover:text-brand-300 transition-colors cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                              </svg>
+                              
+                              {/* Enhanced Tooltip */}
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                                <div className="bg-dark-200/95 backdrop-blur-md border border-brand-500/30 rounded-lg px-4 py-3 text-sm text-gray-200 whitespace-nowrap shadow-2xl">
+                                  <div className="relative">
+                                    <span className="block font-bold text-brand-300 mb-1">Maximum Prize Pool</span>
+                                    <span className="block text-gray-300">with a full roster of competitors.</span>
+                                    <span className="block text-brand-200">The more players, the bigger the rewards!</span>
+                                  </div>
+                                  {/* Enhanced Arrow */}
+                                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
+                                    <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-dark-200/95"></div>
+                                    <div className="absolute -top-[9px] -left-[8px] w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-brand-500/30"></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent"}`}>
+                            {formatCurrency(
+                              Number(contest.entry_fee) > 0
+                                ? Number(contest.entry_fee) * contest.max_participants
+                                : Number(contest.prize_pool || "0")
+                            )}
+                          </p>
+                          {displayStatus !== "cancelled" && Number(contest.entry_fee) > 0 && (
+                            <span className="text-sm font-mono text-brand-400/80 bg-brand-500/10 px-2 py-1 rounded">
+                              {contest.max_participants}x
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {Number(contest.entry_fee) > 0 ? "Maximum potential" : "Fixed prize pool"}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide">Total Prize Pool</p>
+                        <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent"}`}>
+                          {formatCurrency(Number(contest.total_prize_pool || contest.prize_pool || "0"))}
+                        </p>
+                        <p className="text-xs text-gray-500">Grows with entries</p>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1024,9 +1099,9 @@ export const ContestDetails: React.FC = () => {
 
           {/* Content Grid - Better Balanced Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Participants & Rules */}
+            {/* Left Column - Participants Only */}
             <div className="space-y-8">
-              {/* Participants Section - Moved to Left */}
+              {/* Participants Section */}
               {(realtimeParticipants.length > 0 || (Array.isArray(contest.participants) && contest.participants.length > 0)) ? (
                 <div className="group relative">
                   <SilentErrorBoundary>
@@ -1062,44 +1137,42 @@ export const ContestDetails: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <div className="relative p-6">
                     <h3 className="text-xl font-bold text-gray-100 mb-4">Participants</h3>
-                    <p className="text-gray-400">No participants yet. Be the first to join!</p>
+                    {displayStatus === "cancelled" ? (
+                      <p className="text-gray-400">Contest was canceled before anyone could join.</p>
+                    ) : (
+                      <p className="text-gray-400">No participants yet. Be the first to join!</p>
+                    )}
                   </div>
                 </div>
               )}
-              
-              {/* Rules Section - Updated Style */}
-              <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-dark-200/90 to-dark-300/90 backdrop-blur-sm border border-dark-100/20">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-gray-100">
-                      Rules & Token Whitelist
-                    </h3>
-                    <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded-full">
-                      Contest Parameters
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <span className="text-sm font-medium text-blue-400 block mb-2">Rules:</span>
-                      <p className="text-gray-400">Standard DegenDuel trading rules apply</p>
-                    </div>
-                    
-                    <div>
-                      <span className="text-sm font-medium text-blue-400 block mb-3">Allowed Tokens:</span>
-                      <AllowedTokensGrid
-                        maxInitialDisplay={8}
-                        className="mb-2"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
-            {/* Right Column - Prize & Referral */}
+            {/* Right Column - Rules, Prize & Referral */}
             <div className="space-y-8">
+              {/* Rules Section - At Top */}
+              <div className="group relative">
+                <SilentErrorBoundary>
+                  <div className="relative">
+                    <h3 className="text-xl font-bold text-gray-100 mb-4">Rules & Token Whitelist</h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <span className="text-sm font-medium text-blue-400 block mb-2">Rules:</span>
+                        <p className="text-gray-400">Standard DegenDuel trading rules apply</p>
+                      </div>
+                      
+                      <div>
+                        <span className="text-sm font-medium text-blue-400 block mb-3">Example Tokens:</span>
+                        <AllowedTokensGrid
+                          maxInitialDisplay={8}
+                          className="mb-2"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </SilentErrorBoundary>
+              </div>
+              
               {/* Prize Distribution */}
               <div className="group relative">
                 <SilentErrorBoundary>
@@ -1113,15 +1186,12 @@ export const ContestDetails: React.FC = () => {
                 </SilentErrorBoundary>
               </div>
               
-              {/* Referral Progress Card - Updated Style */}
+              {/* Referral Progress Card */}
               {displayStatus === "pending" && (contest as any)?.contest_type !== "CHALLENGE" && (
-                <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-dark-200/90 to-dark-300/90 backdrop-blur-sm border border-dark-100/20">
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative">
-                    <SilentErrorBoundary>
-                      <ReferralProgressCard className="!bg-transparent !border-0 !p-6" />
-                    </SilentErrorBoundary>
-                  </div>
+                <div className="group relative">
+                  <SilentErrorBoundary>
+                    <ReferralProgressCard />
+                  </SilentErrorBoundary>
                 </div>
               )}
             </div>

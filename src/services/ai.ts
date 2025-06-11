@@ -76,6 +76,10 @@ export interface ChatOptions extends AIBaseOptions {
     user_portfolio?: any; // User's portfolio data for context
     current_view?: string; // Current view state
   };
+  
+  // User authentication for terminal functions
+  userId?: string; // User's wallet address for authenticated functions
+  userRole?: string; // User's role (user/admin/superadmin) for role-based access
 }
 
 export interface ChatResponse {
@@ -254,6 +258,9 @@ class AIService {
           // NEW: Structured output options
           ...(options.structured_output && { structured_output: true }),
           ...(options.ui_context && { ui_context: options.ui_context }),
+          // User authentication for terminal functions
+          ...(options.userId && { userId: options.userId }),
+          ...(options.userRole && { userRole: options.userRole }),
           // Add web search tool with enhanced configuration
           tools: options.tools || [
             { 

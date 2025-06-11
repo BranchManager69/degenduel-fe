@@ -127,7 +127,7 @@ export const GlobalRankings = () => {
           <span className="relative z-10 group-hover:animate-glitch">
             Global Rankings
           </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
         </h1>
         <div className="text-center p-8 bg-yellow-400/10 border border-yellow-400/20 rounded-lg">
           <div className="flex items-center justify-center gap-2 text-yellow-400">
@@ -150,10 +150,10 @@ export const GlobalRankings = () => {
           <span className="relative z-10 group-hover:animate-glitch">
             Global Rankings
           </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
         </h1>
         <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-8 text-center relative group overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
           <div className="text-red-400 mb-2 animate-glitch relative z-10">
             {error}
           </div>

@@ -64,15 +64,15 @@ export default function CreditHistory({ user }: CreditHistoryProps) {
   ] as const;
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+    <div className="bg-gray-800/80 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-200">
       <h2 className="text-2xl font-bold text-white mb-6">Credit History</h2>
 
-      <div className="flex space-x-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {filterOptions.map(option => (
           <button
             key={option.key}
             onClick={() => setFilter(option.key)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-[1.02] ${
               filter === option.key 
                 ? 'bg-indigo-600 text-white' 
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -86,7 +86,7 @@ export default function CreditHistory({ user }: CreditHistoryProps) {
       {loading ? (
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="animate-pulse bg-gray-700/50 rounded-lg p-4">
+            <div key={i} className="animate-pulse bg-gray-700/50 backdrop-blur-sm rounded-lg p-4">
               <div className="flex justify-between items-start mb-2">
                 <div className="h-4 bg-gray-600 rounded w-1/4"></div>
                 <div className="h-6 bg-gray-600 rounded w-16"></div>
@@ -110,7 +110,7 @@ export default function CreditHistory({ user }: CreditHistoryProps) {
       ) : (
         <div className="space-y-4">
           {history.map(credit => (
-            <div key={credit.id} className="bg-gray-700/30 rounded-lg p-4 border border-gray-600/30">
+            <div key={credit.id} className="bg-gray-700/30 backdrop-blur-sm rounded-lg p-4 border border-gray-600/30 hover:bg-gray-700/50 hover:border-gray-600/50 transition-all duration-200">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center space-x-3">
                   <span className="text-white font-medium">{credit.source}</span>
@@ -125,7 +125,7 @@ export default function CreditHistory({ user }: CreditHistoryProps) {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm">
                 <div className="text-gray-400">
                   <span className="text-gray-500">Created:</span> {new Date(credit.created_at).toLocaleDateString()}
                 </div>

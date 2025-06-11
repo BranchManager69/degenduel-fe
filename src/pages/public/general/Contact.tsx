@@ -50,7 +50,7 @@ export const Contact: React.FC = () => {
 
       <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-300 hover:border-brand-400/20 transition-colors group relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+        <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream-responsive opacity-0 group-hover:opacity-100" />
         <CardContent className="p-8 relative">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -117,7 +117,7 @@ export const Contact: React.FC = () => {
                 disabled={isSubmitting}
                 className="relative group overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream-responsive" />
                 <span className="relative flex items-center font-medium group-hover:animate-glitch">
                   {isSubmitting ? (
                     <div className="animate-cyber-pulse">Sending...</div>
@@ -159,7 +159,7 @@ export const Contact: React.FC = () => {
 
       {/* Enhanced Social Links */}
       <div className="mt-16 text-center relative group">
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
         <h2 className="text-2xl font-bold text-gray-100 mb-4 group-hover:animate-glitch">
           Connect With Us
         </h2>

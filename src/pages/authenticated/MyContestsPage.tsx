@@ -54,7 +54,7 @@ export const MyContestsPage: React.FC = () => {
   const { user, isAuthenticated } = useMigratedAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState("active");
+  const [activeTab, setActiveTab] = useState("upcoming"); // Default to upcoming
 
   // Touch/swipe handling for mobile
   const touchStartX = useRef<number | null>(null);
@@ -134,7 +134,7 @@ export const MyContestsPage: React.FC = () => {
   // Removed cached contests - using WebSocket for real-time updates
     
   // Simple REST API fetch function - FIXED: removed cachedContests dependency
-  const fetchUserContests = useCallback(async (): Promise<void> => {
+  const fetchUserContests = useCallback(async () => {
     if (!user?.wallet_address) {
       setState(prev => ({ ...prev, isLoading: false, error: "Wallet not connected" }));
       return;
@@ -146,19 +146,28 @@ export const MyContestsPage: React.FC = () => {
       // Fetch user participations (backend team just fixed this!)
       const participations = await ddApi.contests.getUserParticipations(user.wallet_address);
       
+      // Also fetch full contest data to get complete information for ContestCard
+      const allContests = await ddApi.contests.getAll();
+      
       if (!Array.isArray(participations)) {
         throw new Error("Invalid response format");
       }
 
-      // Extract contests from participations with proper typing
+      // Extract contests from participations and merge with full contest data
       const userContests: Contest[] = participations
-        .map((participation: UserParticipation) => ({
-          ...participation.contest,
-          // Add user-specific data
-          user_portfolio_value: participation.portfolio_value,
-          user_rank: participation.rank,
-              is_participating: true,
-        }))
+        .map((participation: UserParticipation) => {
+          // Find the full contest data
+          const fullContest = allContests.find(c => c.id === participation.contest_id);
+          
+          return {
+            // Use full contest data as base (has all ContestCard fields)
+            ...(fullContest || participation.contest),
+            // Add user-specific data
+            user_portfolio_value: participation.portfolio_value,
+            user_rank: participation.rank,
+            is_participating: true,
+          };
+        })
         .filter((contest: Contest) => contest.id); // Only include valid contests
 
       console.log("[MyContests] Loaded", userContests.length, "user contests");
@@ -170,18 +179,20 @@ export const MyContestsPage: React.FC = () => {
         lastFetch: new Date(),
       });
 
+      console.log("[MyContests] State updated - isLoading: false, userContests.length:", userContests.length);
+
       // FIXED: Get fresh cache reference and update properly
       const currentCachedContests = useStore.getState().contests || [];
-      const allContests = [...currentCachedContests];
+      const cachedContests = [...currentCachedContests];
       userContests.forEach(userContest => {
-        const existingIndex = allContests.findIndex(c => c.id === userContest.id);
+        const existingIndex = cachedContests.findIndex(c => c.id === userContest.id);
         if (existingIndex >= 0) {
-          allContests[existingIndex] = { ...allContests[existingIndex], ...userContest };
+          cachedContests[existingIndex] = { ...cachedContests[existingIndex], ...userContest };
         } else {
-          allContests.push(userContest);
+          cachedContests.push(userContest);
         }
       });
-      useStore.getState().setContests(allContests);
+      useStore.getState().setContests(cachedContests);
       
     } catch (error) {
       console.error("[MyContests] Failed to fetch user contests:", error);
@@ -225,8 +236,6 @@ export const MyContestsPage: React.FC = () => {
 
   // Group contests by status with proper memoization
   const groupedContests = useMemo(() => {
-    const now = new Date();
-    
     const filtered = state.userContests.filter(contest => {
       // Search filter
       if (searchTerm && !contest.name.toLowerCase().includes(searchTerm.toLowerCase())) {
@@ -243,31 +252,58 @@ export const MyContestsPage: React.FC = () => {
     };
 
     filtered.forEach(contest => {
-      const startTime = new Date(contest.start_time);
-      const endTime = new Date(contest.end_time);
 
+      // Map the correct backend statuses
       if (contest.status === "cancelled") {
         groups.cancelled.push(contest);
-      } else if (now >= endTime) {
+      } else if (contest.status === "completed") {
         groups.completed.push(contest);
-      } else if (now >= startTime) {
+      } else if (contest.status === "active") {
         groups.active.push(contest);
-      } else {
+      } else if (contest.status === "pending") {
         groups.upcoming.push(contest);
       }
     });
 
+    console.log("[MyContests] Grouped contests:", {
+      total: filtered.length,
+      active: groups.active.length,
+      upcoming: groups.upcoming.length,
+      completed: groups.completed.length,
+      cancelled: groups.cancelled.length,
+      activeTab
+    });
+
     return groups;
-  }, [state.userContests, searchTerm]);
+  }, [state.userContests, searchTerm, activeTab]);
 
   // Total count for display
   const totalContests = state.userContests.length;
 
-  // Loading skeleton
-  if (state.isLoading && state.userContests.length === 0) {
+  // Auto-select active tab if there are active contests, otherwise stick with upcoming
+  useEffect(() => {
+    if (totalContests > 0) {
+      if (groupedContests.active.length > 0 && activeTab === "upcoming") {
+        console.log("[MyContests] Auto-switching to active tab (has active contests)");
+        setActiveTab("active");
+      }
+    }
+  }, [groupedContests.active.length, totalContests, activeTab]);
+
+  // Debug logging
+  console.log("[MyContests] Render state:", {
+    isLoading: state.isLoading,
+    userContestsLength: state.userContests.length,
+    error: state.error,
+    totalContests
+  });
+
+  // Loading skeleton - only show if we're loading AND have no data
+  if (state.isLoading && state.userContests.length === 0 && !state.error) {
     return (
-      <div className="min-h-screen bg-dark-100">
-        <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col min-h-screen">
+        <div className="relative flex-1" style={{ zIndex: 10 }}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <header className="mb-8">
             <h1 className="text-3xl font-bold text-white flex items-center gap-2">
               <FaTrophy className="text-brand-400" /> My Contests
@@ -293,14 +329,20 @@ export const MyContestsPage: React.FC = () => {
               </div>
             ))}
           </div>
+          </div>
         </div>
       </div>
     );
   }
 
+  console.log("[MyContests] Main render - about to return JSX, totalContests:", totalContests);
+  console.log("[MyContests] About to render tabs, totalContests:", totalContests);
+  
   return (
-    <div className="min-h-screen bg-dark-100">
-      <div className="container mx-auto px-4 py-8">
+    <div className="flex flex-col min-h-screen">
+      {/* Content Section */}
+      <div className="relative flex-1" style={{ zIndex: 10 }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <header className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-2">
@@ -343,7 +385,7 @@ export const MyContestsPage: React.FC = () => {
         </div>
 
         {/* Error State */}
-        {state.error && (
+        {state.error ? (
           <div className="mb-6">
             <Card className="bg-red-900/20 border-red-500/30">
               <CardContent className="py-4">
@@ -353,10 +395,10 @@ export const MyContestsPage: React.FC = () => {
                     Try Again
                   </Button>
                 </div>
-                </CardContent>
-              </Card>
-              </div>
-            )}
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
 
         {/* Empty State */}
         {totalContests === 0 && !state.isLoading && !state.error && (
@@ -481,6 +523,7 @@ export const MyContestsPage: React.FC = () => {
              </div>
               </div>
             )}
+        </div>
       </div>
     </div>
   );

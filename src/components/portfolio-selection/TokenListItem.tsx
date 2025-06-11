@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { FaCoins } from 'react-icons/fa';
 
-import { Token } from '../../types/index';
+import { Token, TokenHelpers } from '../../types/index';
+import { formatPercentage } from '../../utils/format';
+import { applyTokenImageOverrides } from '../../config/tokenImageOverrides';
 
 interface TokenListItemProps {
   token: Token;
@@ -9,6 +11,7 @@ interface TokenListItemProps {
   weight: number;
   onSelect: () => void;
   onWeightChange: (weight: number) => void;
+  remainingAllocation?: number;
 }
 
 // Helper function for dynamic price formatting
@@ -29,22 +32,71 @@ export const TokenListItem: React.FC<TokenListItemProps> = ({
   weight,
   onSelect,
   onWeightChange,
+  remainingAllocation = 0,
 }) => {
-  // Handle weight change
+  const [isEditingWeight, setIsEditingWeight] = useState(false);
+  const [tempWeight, setTempWeight] = useState(weight.toString());
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Apply frontend image overrides
+  const enhancedToken = useMemo(() => applyTokenImageOverrides(token), [token]);
+
+  // Sync tempWeight with weight prop
+  useEffect(() => {
+    setTempWeight(weight.toString());
+  }, [weight]);
+
+  // Handle weight change from slider
   const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
     onWeightChange(Number(e.target.value));
   };
 
-  // Format token change percentage
-  const changePercent = token.change24h != null
-    ? `${(Number(token.change24h) * 100).toFixed(1)}%`
-    : "N/A";
+  // Handle weight percentage tap-to-edit
+  const handleWeightEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditingWeight(true);
+    setTempWeight(weight.toString());
+  };
+
+  const handleWeightSubmit = () => {
+    const newWeight = Math.max(0, Math.min(100, parseInt(tempWeight) || 0));
+    onWeightChange(newWeight);
+    setIsEditingWeight(false);
+  };
+
+  const handleWeightCancel = () => {
+    setTempWeight(weight.toString());
+    setIsEditingWeight(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleWeightSubmit();
+    } else if (e.key === 'Escape') {
+      handleWeightCancel();
+    }
+  };
+
+  // Auto-focus input when editing starts
+  useEffect(() => {
+    if (isEditingWeight && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditingWeight]);
+
+  // Format token change percentage using TokenHelpers (same as card view)
+  const priceChange = TokenHelpers.getPriceChange(token);
+  const changePercent = formatPercentage(priceChange, false);
 
   // Set change color based on positive/negative
-  const changeColor = (Number(token.change24h) || 0) >= 0
+  const changeColor = priceChange >= 0
     ? "text-green-400"
     : "text-red-400";
+
+  // Get header image for background
+  const headerImage = enhancedToken.header_image_url || enhancedToken.images?.headerImage;
 
   return (
     <div 
@@ -53,25 +105,39 @@ export const TokenListItem: React.FC<TokenListItemProps> = ({
       } hover:bg-dark-200/50 transition-colors cursor-pointer`}
       onClick={onSelect}
     >
-      <div className="flex items-center p-2">
-        {/* Token symbol and icon (if available) */}
-        <div className="flex-shrink-0 w-8 h-8 relative rounded-full overflow-hidden bg-dark-300 mr-2">
-          {token.images && (
+      {/* Very faint header background for selected tokens */}
+      {isSelected && headerImage && (
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0.9) 100%), url(${headerImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+      )}
+      <div className="flex items-stretch">
+        {/* Token symbol and icon (if available) - square edge-to-edge */}
+        <div className="flex-shrink-0 w-12 h-12 relative overflow-hidden bg-dark-300 rounded-l-lg">
+          {(enhancedToken.image_url || enhancedToken.images) && (
             <img 
-              src={token.images.imageUrl || token.images.headerImage || token.images.openGraphImage} 
+              src={enhancedToken.image_url || enhancedToken.images?.imageUrl || enhancedToken.images?.headerImage || enhancedToken.images?.openGraphImage} 
               alt={token.symbol}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
             />
           )}
         </div>
         
         {/* Token info */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline">
+        <div className="min-w-0 flex-1 py-2 px-3 flex flex-col justify-center">
+          <div className="flex items-baseline justify-between">
             <span className="font-bold text-white text-sm truncate">
               {token.symbol}
             </span>
-            <span className={`ml-2 text-xs ${changeColor}`}>
+            <span className={`text-xs ${changeColor} font-medium`}>
               {changePercent}
             </span>
           </div>
@@ -95,7 +161,44 @@ export const TokenListItem: React.FC<TokenListItemProps> = ({
               <FaCoins size={8} className="text-brand-400" />
               <span>Weight</span>
             </div>
-            <span className="text-xs text-brand-400 font-bold">{weight}%</span>
+            <div className="flex items-center gap-2">
+              {isEditingWeight ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    ref={inputRef}
+                    type="number"
+                    value={tempWeight}
+                    onChange={(e) => setTempWeight(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onBlur={handleWeightSubmit}
+                    className="w-8 bg-brand-500/20 text-brand-400 text-xs font-bold text-center rounded px-1 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                    min="0"
+                    max="100"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <span className="text-xs text-brand-400">%</span>
+                </div>
+              ) : (
+                <span 
+                  className="text-xs text-brand-400 font-bold cursor-pointer hover:text-brand-300 transition-colors"
+                  onClick={handleWeightEdit}
+                >
+                  {weight}%
+                </span>
+              )}
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const maxWeight = weight + remainingAllocation;
+                  onWeightChange(maxWeight);
+                }}
+                className="px-1.5 py-0.5 bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 text-xs font-medium rounded transition-colors"
+                disabled={remainingAllocation <= 0}
+              >
+                Max
+              </button>
+            </div>
           </div>
           
           <input 

@@ -24,17 +24,18 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate();
   
-  // Get top 200 tokens to show a random sample
+  // Get enough tokens to properly fill the display
   const { tokens: allTokens, isLoading, error } = useStandardizedTokenData(
     "all", 
     'marketCap', 
     { status: 'active' }, 
-    200 // Get top 200 tokens
+    5,  // maxHotTokens (not used here)
+    24  // maxTopTokens - get 24 tokens to have a good selection
   );
 
   // Randomize tokens for variety
   const actualTokens = useMemo(() => {
-    // Use tokens from the API (top 200 active tokens)
+    // Use tokens from the API
     if (allTokens && allTokens.length > 0) {
       // Shuffle the tokens array for random selection
       const shuffled = [...allTokens].sort(() => Math.random() - 0.5);
@@ -154,7 +155,7 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
       {/* Summary text - more natural language */}
       <div className="flex items-center justify-between text-xs text-gray-500">
         <span>
-          Featuring tokens like...
+          Popular tokens in contests
         </span>
         {hasMoreTokens && (
           <button

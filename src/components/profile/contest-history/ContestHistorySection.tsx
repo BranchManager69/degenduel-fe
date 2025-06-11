@@ -76,7 +76,7 @@ export const ContestHistorySection: React.FC = () => {
   if (error) {
     return (
       <div className="border border-red-500/20 rounded-lg p-4 relative group">
-        <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+        <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
         <ErrorMessage message={error} className="animate-glitch" />
       </div>
     );

@@ -306,7 +306,7 @@ export const ContestBrowser: React.FC = () => {
               key={i}
               className="animate-pulse bg-dark-200 rounded-lg h-64 relative overflow-hidden group"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream" />
+              <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream-responsive" />
               <div className="p-6 space-y-4">
                 <div className="h-6 bg-dark-300 rounded w-3/4" />
                 <div className="h-4 bg-dark-300 rounded w-1/2" />
@@ -388,7 +388,7 @@ export const ContestBrowser: React.FC = () => {
               <span className="relative z-10 group-hover:animate-glitch">
                 Duel Explorer
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
             </h1>
             {isAuthenticated && (
               <div className="flex gap-3">
@@ -457,7 +457,7 @@ export const ContestBrowser: React.FC = () => {
               isFilterMenuOpen ? "block" : "hidden"
             } md:block mb-8 space-y-4 bg-dark-200/50 backdrop-blur-sm p-4 rounded-lg border border-dark-300 relative group animate-fade-in`}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream rounded-lg" />
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive rounded-lg" />
             <div className="relative z-10">
               {/* Filter Controls */}
               <div className="flex flex-wrap gap-4 mb-4">

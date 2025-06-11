@@ -8,6 +8,7 @@ import { ActivityMonitor } from "../../components/admin/ActivityMonitor";
 import AdminLogsPanel from "../../components/admin/AdminLogsPanel";
 import { BalanceManager } from "../../components/admin/BalanceManager";
 import WalletReclaimFunds from "../../components/admin/WalletReclaimFunds";
+import { SystemNoticesManager } from "../../components/admin/SystemNoticesManager";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
@@ -663,6 +664,11 @@ export const AdminDashboard: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {/* System Notices Management */}
+            <LazyLoad>
+              <SystemNoticesManager />
+            </LazyLoad>
 
             {/* System Reports Button */}
             <Link

@@ -1187,4 +1187,121 @@ export const admin = {
       }
     },
   },
+
+  systemNotices: {
+    // Get all system notices
+    list: async () => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch('/admin/system-notices');
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch system notices: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to fetch system notices:', error);
+        throw error;
+      }
+    },
+
+    // Create a new system notice
+    create: async (data: {
+      title?: string;
+      message: string;
+      type: 'info' | 'warning' | 'error' | 'success';
+      is_active: boolean;
+      start_date?: string | null;
+      end_date?: string | null;
+    }) => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch('/admin/system-notices', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create system notice: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to create system notice:', error);
+        throw error;
+      }
+    },
+
+    // Update an existing system notice
+    update: async (id: number, data: {
+      title?: string;
+      message: string;
+      type: 'info' | 'warning' | 'error' | 'success';
+      is_active: boolean;
+      start_date?: string | null;
+      end_date?: string | null;
+    }) => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/system-notices/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to update system notice: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to update system notice:', error);
+        throw error;
+      }
+    },
+
+    // Delete a system notice
+    delete: async (id: number) => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/system-notices/${id}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to delete system notice: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to delete system notice:', error);
+        throw error;
+      }
+    },
+
+    // Toggle active status of a system notice
+    toggleActive: async (id: number) => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch(`/admin/system-notices/${id}/toggle-active`, {
+          method: 'PATCH',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to toggle system notice status: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to toggle system notice status:', error);
+        throw error;
+      }
+    },
+  },
 };

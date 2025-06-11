@@ -1,5 +1,4 @@
-import { motion } from "framer-motion";
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
@@ -24,169 +23,260 @@ export const ReferralProgressCard: React.FC<ReferralProgressCardProps> = ({
 
   // Calculate progress to next credit (3 qualifications = 1 credit)
   const progressToNext = qualifiedReferrals % 3;
-  const creditsFromReferrals = Math.floor(qualifiedReferrals / 3);
+  
+  // Generate referral link (assuming user has a referral_code field)
+  const userReferralCode = (user as any)?.referral_code || (user as any)?.wallet_address?.slice(0, 8).toUpperCase();
+  const referralLink = `${window.location.origin}?ref=${userReferralCode}`;
+  
+  // Copy functionality
+  const [copied, setCopied] = useState(false);
+  const [showSteps, setShowSteps] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
+  const copyReferralLink = async () => {
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+    }
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`bg-gradient-to-br from-brand-500/10 to-brand-600/5 border border-brand-400/20 rounded-lg p-4 backdrop-blur-sm ${className}`}
-    >
-      <div className="space-y-4">
-        {/* Header with Better Title */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-brand-500/30 to-brand-600/30 rounded-xl flex items-center justify-center">
-                <svg className="h-5 w-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-              {/* Animated Badge for Credits */}
-              {contestCredits > 0 && (
-                <motion.div 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                >
-                  {contestCredits}
-                </motion.div>
-              )}
-            </div>
-            <div>
-              <h3 className="text-white font-bold text-base">Contest Credits</h3>
-              <p className="text-xs text-gray-400">Create your own contests & duels!</p>
-            </div>
+    <div className={`space-y-6 bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300 ${className}`}>
+      <h3 className="text-xl font-bold text-gray-100">Contest Credits</h3>
+      
+      {/* Simple credit display */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-brand-400">{contestCredits}</span>
+            <span className="text-sm text-gray-400">credits available</span>
           </div>
-        </div>
-
-        {/* Main Value Proposition */}
-        <div className="bg-gradient-to-r from-brand-500/20 to-brand-600/20 rounded-lg p-4 border border-brand-400/30">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-white">{contestCredits}</span>
-                <span className="text-sm text-gray-400">credits</span>
-              </div>
-              <p className="text-xs text-brand-300 mt-1">
-                Create {contestCredits} public contest{contestCredits !== 1 ? 's' : ''} or duel{contestCredits !== 1 ? 's' : ''}!
-              </p>
-            </div>
-            {contestCredits > 0 && (
-              <Link
-                to="/contests/create"
-                className="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white text-sm px-4 py-2 rounded-lg transition-all font-medium shadow-lg"
-              >
-                Create Contest
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* Progress with Clear Explanation */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-white">Next Contest Credit</span>
-            <span className="text-sm text-brand-300 font-bold">
-              {3 - progressToNext} more friend{3 - progressToNext !== 1 ? 's' : ''} needed
-            </span>
-          </div>
-          
-          {/* Visual Progress */}
-          <div className="relative">
-            <div className="flex items-center gap-2">
-              {[1, 2, 3].map((step) => (
-                <div key={step} className="flex-1">
-                  <div className={`h-3 rounded-full transition-all duration-500 ${
-                    step <= progressToNext 
-                      ? 'bg-gradient-to-r from-brand-400 to-brand-500' 
-                      : 'bg-dark-400'
-                  }`} />
-                </div>
-              ))}
-            </div>
-            {/* Progress Labels */}
-            <div className="flex items-center justify-between mt-1">
-              {[1, 2, 3].map((step) => (
-                <div key={step} className="text-center flex-1">
-                  <span className={`text-xs ${step <= progressToNext ? 'text-brand-300' : 'text-gray-500'}`}>
-                    {step === 3 ? '🎉' : step}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Clear Explanation */}
-          <div className="bg-dark-400/30 rounded-lg p-3 border border-dark-300">
-            <p className="text-xs text-gray-300 leading-relaxed">
-              <span className="font-medium text-brand-300">How it works:</span> When 3 friends you invite join AND play in any contest, you get 1 contest credit to create your own contest!
-            </p>
-          </div>
-        </div>
-
-        {/* Stats with Better Labels */}
-        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-brand-400/10">
-          <div className="text-center">
-            <div className="text-xl font-bold text-white">{totalReferrals}</div>
-            <div className="text-xs text-gray-400">Invited</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-yellow-400">{pendingReferrals}</div>
-            <div className="text-xs text-gray-400">Joined</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-green-400">{qualifiedReferrals}</div>
-            <div className="text-xs text-gray-400">Played</div>
-          </div>
-        </div>
-
-        {/* Clear Status Messages */}
-        {pendingReferrals > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-yellow-500/10 border border-yellow-400/20 rounded-lg p-3"
-          >
-            <div className="flex items-start gap-2">
-              <div className="animate-pulse">
-                <svg className="h-4 w-4 text-yellow-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium text-yellow-300 mb-1">
-                  {pendingReferrals} friend{pendingReferrals !== 1 ? 's' : ''} ready to qualify!
-                </div>
-                <div className="text-xs text-yellow-400/80">
-                  They've joined - once they play their first contest, you'll earn a contest credit!
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Compelling CTA */}
-        <div className="bg-gradient-to-r from-dark-300/50 to-dark-400/50 rounded-lg p-4 text-center border border-brand-400/20">
-          <p className="text-sm text-white font-medium mb-2">
-            {contestCredits === 0 
-              ? "Start earning contest credits!" 
-              : `You've earned ${creditsFromReferrals} contest credit${creditsFromReferrals !== 1 ? 's' : ''} so far!`}
+          <p className="text-sm text-gray-500 mt-1">
+            Invite friends to earn more credits
           </p>
+        </div>
+        {contestCredits > 0 && (
           <Link
-            to="/referrals"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white px-5 py-2.5 rounded-lg transition-all font-medium group"
+            to="/contests/create"
+            className="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg transition-colors font-medium"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-            </svg>
-            <span>Shill Your Ref Link</span>
-            <svg className="h-3 w-3 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            Create Contest
+          </Link>
+        )}
+      </div>
+
+      {/* Clean progress indicator */}
+      {progressToNext > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-400">Progress to next credit</span>
+            <span className="text-brand-300">{progressToNext}/3</span>
+          </div>
+          <div className="w-full h-2 bg-dark-400 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-brand-400 transition-all duration-500"
+              style={{ width: `${(progressToNext / 3) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Referral Link Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-300">Your Referral Link</span>
+          <Link to="/referrals" className="text-xs text-brand-400 hover:text-brand-300">
+            View Details →
           </Link>
         </div>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 bg-dark-400/50 rounded-lg px-3 py-2 text-sm text-gray-300 font-mono truncate">
+            {referralLink}
+          </div>
+          <button
+            onClick={copyReferralLink}
+            className="bg-brand-500 hover:bg-brand-600 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+          >
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
       </div>
-    </motion.div>
+
+      {/* Minimal stats */}
+      <div className="flex items-center justify-around text-center">
+        <div>
+          <div className="text-lg font-semibold text-gray-300">{totalReferrals}</div>
+          <div className="text-xs text-gray-500">Invited</div>
+        </div>
+        <div className="w-px h-8 bg-dark-400" />
+        <div>
+          <div className="text-lg font-semibold text-gray-300">{pendingReferrals}</div>
+          <div className="text-xs text-gray-500">Joined</div>
+        </div>
+        <div className="w-px h-8 bg-dark-400" />
+        <div>
+          <div className="text-lg font-semibold text-brand-300">{qualifiedReferrals}</div>
+          <div className="text-xs text-gray-500">Qualified</div>
+        </div>
+      </div>
+
+      {/* Jupiter Special Promotion */}
+      <div className="border-t border-dark-400 pt-4">
+        <div className="bg-gradient-to-r from-emerald-900/20 to-green-900/20 rounded-lg p-4 border border-emerald-500/30 relative overflow-hidden">
+          {/* Background glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-green-500/5 opacity-50" />
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-3">
+              {/* Left side - Title with Jupiter logo */}
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-8 h-8 bg-black/40 backdrop-blur-sm border border-emerald-400/50 rounded-full p-1.5 shadow-lg">
+                    <img
+                      src="/assets/media/logos/jup.png"
+                      alt="Jupiter"
+                      className="w-full h-full object-contain opacity-90"
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-emerald-400/20 rounded-full blur-md" />
+                </div>
+                
+                <h4 className="text-white font-bold text-base">
+                  Free Contest Credit
+                </h4>
+              </div>
+              
+              {/* Right side - Limited Time */}
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                <span className="text-emerald-300 font-semibold text-sm">Limited Time</span>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <p className="text-gray-300 text-sm leading-relaxed">
+                Give DegenDuel a like on Jupiter to earn a free Contest Credit 🎉
+              </p>
+              
+              {/* Expandable Steps Section */}
+              <div className="mt-3">
+                <button
+                  onClick={() => {
+                    setShowSteps(!showSteps);
+                    setAnimationKey(prev => prev + 1); // Force re-trigger animation
+                  }}
+                  className="w-full text-left flex items-center justify-between py-2 px-3 bg-dark-400/30 hover:bg-dark-400/50 rounded-lg transition-colors text-sm text-gray-300 hover:text-white"
+                >
+                  <span className="font-medium">How to get your free credit</span>
+                  <svg 
+                    className={`w-4 h-4 transform transition-transform ${showSteps ? 'rotate-180' : ''}`}
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {showSteps && (
+                  <div className="mt-2 space-y-3 px-3 pb-3">
+                    {/* Step 1 */}
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                        1
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-300">
+                          <span className="font-medium text-white">Link X/Twitter to DegenDuel</span>
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Connect your Twitter account in your profile settings
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Step 2 with Jupiter screenshot */}
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                        2
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-300 mb-2">
+                          <span className="font-medium text-white">Like DUEL on Jupiter</span>
+                        </p>
+                        
+                        {/* Jupiter Screenshot with Animated Zoom Focus */}
+                        <div className="relative bg-dark-400/50 rounded-lg p-3 border border-emerald-500/20">
+                          <div className="relative overflow-hidden rounded-md">
+                            <img 
+                              key={animationKey} // Force re-render to restart animation
+                              src="/assets/media/other/JLS.png"
+                              alt="Jupiter Screenshot"
+                              className={`w-full h-32 object-cover ${showSteps ? `zoom-to-bottom-left-${animationKey}` : ''}`}
+                            />
+                            
+                            {/* Highlight overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/30 via-transparent to-transparent opacity-60" />
+                            
+                            {/* Animated pointer */}
+                            <div className="absolute bottom-4 left-4">
+                              <div className="relative">
+                                <div className="w-4 h-4 bg-emerald-400 rounded-full animate-pulse shadow-lg" />
+                                <div className="absolute -top-1 -right-1 w-6 h-6 border-2 border-emerald-400 rounded-full animate-ping" />
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-2 text-center">
+                            Click the ♡ Like button in the Community Metrics section
+                          </p>
+                        </div>
+                        
+                        {/* Dynamic CSS for zoom animation - updates every time */}
+                        <style dangerouslySetInnerHTML={{
+                          __html: `
+                            .zoom-to-bottom-left-${animationKey} {
+                              animation: zoomToBottomLeft-${animationKey} 4s ease-in-out forwards;
+                              transform-origin: 0% 100%; /* Bottom left corner */
+                            }
+                            
+                            @keyframes zoomToBottomLeft-${animationKey} {
+                              0% {
+                                transform: scale(1);
+                              }
+                              100% {
+                                transform: scale(6);
+                              }
+                            }
+                          `
+                        }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <button
+                onClick={() => window.open('https://jup.ag/tokens/F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', '_blank')}
+                className="group mt-3 w-full bg-gradient-to-r from-emerald-500 via-emerald-600 to-green-600 hover:from-emerald-400 hover:via-emerald-500 hover:to-green-500 text-white px-6 py-3 rounded-xl transition-all duration-300 font-semibold text-sm shadow-xl hover:shadow-emerald-500/30 hover:shadow-2xl flex items-center justify-center gap-3 border border-emerald-400/20 hover:border-emerald-300/40 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <div className="w-5 h-5 bg-white/10 rounded-full p-1 group-hover:bg-white/20 transition-colors">
+                  <img
+                    src="/assets/media/logos/jup.png"
+                    alt="Jupiter"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <span className="tracking-wide">Like on Jupiter</span>
+                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-}; 
+};
