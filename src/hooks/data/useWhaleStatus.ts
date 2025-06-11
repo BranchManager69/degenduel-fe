@@ -64,19 +64,47 @@ export interface UseWhaleStatusReturn {
   forceRefresh: () => Promise<void>;
 }
 
+// FIXED: Add optional authentication parameter
+export interface UseWhaleStatusOptions {
+  isAuthenticated?: boolean;
+  userId?: string;
+}
+
 /**
  * Hook for server-side whale status verification
  * Uses the new backend endpoints for secure, unhackable verification
+ * 
+ * @param options - Optional configuration including authentication state
  */
-export function useWhaleStatus(): UseWhaleStatusReturn {
+export function useWhaleStatus(options: UseWhaleStatusOptions = {}): UseWhaleStatusReturn {
+  const { isAuthenticated = false, userId } = options;
+
   const [whaleStatus, setWhaleStatus] = useState<WhaleStatusData | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false); // FIXED: Start as false when not authenticated
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   // Fetch whale status from server
   const fetchWhaleStatus = useCallback(async () => {
+    // FIXED: Only fetch if authenticated
+    if (!isAuthenticated) {
+      // Set default non-whale status for unauthenticated users
+      setWhaleStatus({
+        is_whale: false,
+        current_balance: 0,
+        required_balance: 1000000,
+        balance_percentage: 0,
+        whale_tier: 'none',
+        tier_name: 'Not Connected',
+        last_updated: new Date().toISOString()
+      });
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
     try {
+      setIsLoading(true);
       setError(null);
 
       // Use the standardized API client from ddApi
@@ -112,10 +140,16 @@ export function useWhaleStatus(): UseWhaleStatusReturn {
       }
       setIsLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // Force refresh via POST endpoint
   const forceRefresh = useCallback(async () => {
+    // FIXED: Only refresh if authenticated
+    if (!isAuthenticated) {
+      console.log('[useWhaleStatus] User not authenticated - cannot refresh whale status');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -144,12 +178,12 @@ export function useWhaleStatus(): UseWhaleStatusReturn {
       }
       setIsLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
-  // Initial load
+  // FIXED: Only fetch on authentication state change, not on mount
   useEffect(() => {
     fetchWhaleStatus();
-  }, [fetchWhaleStatus]);
+  }, [isAuthenticated, userId, fetchWhaleStatus]);
 
   // Computed values
   const isWhale = whaleStatus?.is_whale || false;

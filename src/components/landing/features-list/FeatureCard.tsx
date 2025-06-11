@@ -13,7 +13,9 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
+import ReactDOM from "react-dom";
 import { useIsVisible } from "../../../hooks/ui/useIsVisible";
+import { usePortal } from "../../../hooks/ui/usePortal";
 import { MeasureRender } from "../../../utils/performance";
 
 // Feature flags
@@ -41,7 +43,7 @@ const DEGENDUEL_FEATURES_IMAGES = {
   "1v1 Duels": "/assets/media/features/1v1-duels.png",                              // Placeholder for 1v1 Duels
   "Advanced Analytics": "/assets/media/features/advanced-analytics.png",            // ✅
   "Bring Your Own Agent": "/assets/media/features/bring-your-own-agent.png",        // Placeholder for Bring Your Own Agent
-  "Degen Rep": "/assets/media/features/reputation-system.png",                      // ✅
+  "Degen Reputation": "/assets/media/features/reputation-system.png",              // ✅
   // ...
 };
 
@@ -80,9 +82,9 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   const [AnimationComponentLoaded, setAnimationComponentLoaded] = useState<React.ComponentType | null>(null);
   
   const cardRef = useRef<HTMLDivElement>(null);
-  const scrollPositionRef = useRef<number>(0);
   const isVisible = useIsVisible(cardRef as React.RefObject<Element>, { threshold: 0.1 });
   const prefersReducedMotion = useReducedMotion();
+  const portalRoot = usePortal('feature-modal-root');
 
   // If no image is provided, try to use a default one
   const featureImage = imagePath || (title in DEGENDUEL_FEATURES_IMAGES ? DEGENDUEL_FEATURES_IMAGES[title as keyof typeof DEGENDUEL_FEATURES_IMAGES] : null);
@@ -160,44 +162,41 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         tag: ""
       };
   
-  // Toggle expanded state with mobile-safe scroll handling
+  // Toggle expanded state - simplified version
   const toggleModal = () => {
-    const newModalState = !isModalOpen;
-    setIsModalOpen(newModalState);
+    const newState = !isModalOpen;
+    setIsModalOpen(newState);
     
-    if (newModalState) {
+    // Fix for background scrolling
+    if (newState) {
       // Store current scroll position
-      scrollPositionRef.current = window.scrollY || window.pageYOffset || 0;
-      
-      // Prevent body scroll on mobile
-      document.body.style.overflow = 'hidden';
+      const scrollY = window.scrollY;
       document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollPositionRef.current}px`;
+      document.body.style.top = `-${scrollY}px`;
       document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
     } else {
-      // Restore body scroll
-      document.body.style.overflow = '';
+      // Get the scroll position back
+      const scrollY = document.body.style.top;
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.width = '';
-      
+      document.body.style.overflow = '';
       // Restore scroll position
-      const savedPosition = scrollPositionRef.current;
-      requestAnimationFrame(() => {
-        window.scrollTo(0, savedPosition);
-      });
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
     }
   };
 
   // Feature card JSX
   return (
     <MeasureRender id="FeatureCard" logThreshold={5}>
+      <>
       {/* Feature card container */}
       <div ref={cardRef} className={`relative h-full bg-dark-300 rounded-xl overflow-hidden border border-gray-700 hover:border-brand-400/50 transition-all duration-300 cursor-pointer ${className}`} onClick={toggleModal}>
         
         {/* Feature card content */}
         <motion.div 
-          className={`relative z-10 h-full ${isModalOpen ? 'pointer-events-none' : 'cursor-pointer group'}`}
+          className="relative z-10 h-full cursor-pointer group"
           initial={{ opacity: 0, y: 20 }}
           animate={isVisible && !prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -208,7 +207,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900/90 to-black border border-gray-800/40 h-full group-hover:border-purple-500/40 transition-all duration-300 shadow-lg group-hover:shadow-xl flex flex-col">
             
             {/* Dynamic Feature Illustration/Banner - Mobile optimized aspect ratio */}
-            <div className="relative aspect-[4/3] sm:aspect-square w-full overflow-hidden shrink-0">
+            <div className="relative aspect-[3/2] sm:aspect-square w-full overflow-hidden shrink-0">
               
               {/* Gradient overlay for consistent branding & readability */}
               <div className={`absolute inset-0 bg-gradient-to-br from-gray-900/50 via-gray-900/30 to-gray-900/70 z-10`}></div>
@@ -267,36 +266,30 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               {/* Bottom content reveal gradient */}
               <div className="absolute bottom-0 left-0 right-0 h-8 sm:h-12 bg-gradient-to-t from-gray-900 via-gray-900/95 to-transparent z-20"></div>
               
-              {/* "COMING SOON" overlay for upcoming features */}
-              {isUpcoming && (
-                
-                // "COMING SOON" overlay container
-                <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-30">
-                  {/* "COMING SOON" overlay */}
-                  <motion.div 
-                    className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-600/90 text-white text-xs font-bold uppercase tracking-wide backdrop-blur-sm border border-blue-500/50"
-                    animate={{
-                      boxShadow: [
-                        '0 0 0px rgba(59, 130, 246, 0)',
-                        '0 0 15px rgba(59, 130, 246, 0.6)',
-                        '0 0 0px rgba(59, 130, 246, 0)'
-                      ],
-                    }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    {/* "COMING SOON" text */}
-                    {colorScheme.tag}
-                  </motion.div>
-                </div>
-
-              )}
+              {/* More/When button in top right corner */}
+              <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-30">
+                <motion.button
+                  className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[10px] sm:text-xs font-bold uppercase tracking-wide border border-white/20`}
+                  whileHover={{ 
+                    scale: 1.05,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    borderColor: 'rgba(255,255,255,0.4)'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleModal();
+                  }}
+                >
+                  {isUpcoming ? 'When?' : 'More'}
+                </motion.button>
+              </div>
             </div>
             
             {/* Content section with bold typography and integrated CTA - Mobile optimized padding */}
-            <div className="relative px-2 sm:px-3 py-2 sm:py-3 z-10 flex-grow">
+            <div className="relative px-2 sm:px-3 py-1.5 sm:py-3 z-10 flex-grow flex flex-col">
               
               {/* Feature title (prominent) - Mobile optimized size */}
-              <h3 className={`text-base sm:text-lg md:text-xl font-bold font-russo-one mb-1 sm:mb-2 text-white tracking-wide relative leading-tight`}>
+              <h3 className={`text-sm sm:text-lg md:text-xl font-bold font-russo-one mb-0.5 sm:mb-2 text-white tracking-wide relative leading-tight`}>
                 {title}
                 
                 {/* Animated underline effect */}
@@ -310,48 +303,34 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               </h3>
               
               {/* Feature description - Mobile optimized sizing */}
-              <p className="text-gray-300 leading-snug font-sans text-xs sm:text-sm min-h-[2.5em] sm:min-h-[3.5em] mb-2">
+              <p className="text-gray-300 leading-tight sm:leading-snug font-sans text-[10px] sm:text-sm flex-grow mb-1 sm:mb-2">
                 {description}
               </p>
 
-              {/* Integrated "Learn More" CTA */}
-              <div className="flex justify-end">
-                <motion.button
-                  className={`px-2 py-1 rounded-md bg-gradient-to-r ${colorScheme.primary} bg-opacity-10 text-white text-xs font-medium font-sans flex items-center space-x-1`}
-                  whileHover={{ 
-                    scale: 1.05,
-                    boxShadow: colorScheme.glow,
-                  }}
-                >
-                  {/* CTA text ("More" or "When?") */}
-                  <span>
-                    {isUpcoming ? 'When?' : 'More'}
-                  </span>
-                  
-                  {/* CTA icon (right arrow) */}
-                  <motion.span
-                    animate={{ x: [0, 3, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    className="inline-block"
-                  >
-                    →
-                  </motion.span>
-
-                </motion.button>
-              </div>
+              {/* Removed inline button - now in top right corner */}
 
             </div>
           </div>
         </motion.div>
         
-        {/* Expandable card (overlay when expanded) */}
+        {/* Accent line animation on hover for compact card */}
+        <motion.div 
+          className={`absolute bottom-0 left-0 h-1 bg-gradient-to-r ${colorScheme.primary} w-0 group-hover:w-full transition-all duration-700 ${isModalOpen ? 'hidden' : ''}`}
+          initial={{ width: 0 }}
+          whileHover={{ width: "100%" }}
+        />
+
+      </div>
+
+      {/* Expandable card (overlay when expanded) - MOVED OUTSIDE */}
+      {portalRoot && ReactDOM.createPortal(
         <AnimatePresence>
           {/* Card expanded view */}
           {isModalOpen && (
 
-            // Card expanded view container - BETTER MOBILE MODAL
-            <motion.div
-              className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-start sm:items-center justify-center p-0 sm:p-4 md:p-8"
+              // Card expanded view container - BETTER MOBILE MODAL
+              <motion.div
+              className="fixed inset-0 z-[100000] bg-black/80 backdrop-blur-md flex items-start sm:items-center justify-center p-0 sm:p-4 md:p-8 overflow-y-auto"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -359,7 +338,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             >
               {/* Modal content - Mobile optimized, compact design */}
               <motion.div 
-                className="w-full h-full sm:h-auto sm:max-w-4xl sm:max-h-[95vh] flex flex-col bg-gray-900/95 sm:rounded-lg border-0 sm:border border-gray-800 overflow-hidden"
+                className="w-[90%] max-w-md sm:max-w-4xl h-auto max-h-[80vh] sm:max-h-[95vh] flex flex-col bg-gray-900/95 rounded-lg border border-gray-800 overflow-hidden my-auto"
                 initial={{ scale: 0.9, opacity: 0, y: 50 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 50 }}
@@ -480,16 +459,10 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence>
-        
-        {/* Accent line animation on hover for compact card */}
-        <motion.div 
-          className={`absolute bottom-0 left-0 h-1 bg-gradient-to-r ${colorScheme.primary} w-0 group-hover:w-full transition-all duration-700 ${isModalOpen ? 'hidden' : ''}`}
-          initial={{ width: 0 }}
-          whileHover={{ width: "100%" }}
-        />
-
-      </div>
+        </AnimatePresence>,
+        portalRoot
+      )}
+      </>
     </MeasureRender>
   );
 };

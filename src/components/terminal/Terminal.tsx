@@ -25,7 +25,6 @@ declare global {
 import { motion, useMotionValue } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useTerminalData } from '../../hooks/websocket';
 import { AIMessage, aiService } from '../../services/ai';
 import { useStore } from '../../store/useStore';
 
@@ -87,10 +86,11 @@ import { TerminalProps, TerminalSize } from './types';
  * @returns The terminal component.
  */
 // Terminal component (This is MASSIVE)
-export const Terminal = ({ 
-  config, 
-  onCommandExecuted, 
-  size = 'large'
+export const Terminal = ({
+  config,
+  onCommandExecuted,
+  size = 'middle',
+  isInitiallyMinimized = true,
 }: TerminalProps) => {
   
   // We no longer need to set window.contractAddress as it's now fetched from the API
@@ -114,17 +114,17 @@ export const Terminal = ({
   };
   
   const [userInput, setUserInput] = useState('');
-  const [terminalMinimized, setTerminalMinimized] = useState(true);
+  const [terminalMinimized, setTerminalMinimized] = useState(isInitiallyMinimized);
   const [terminalExitComplete] = useState(false);
   
   const [easterEggActive, setEasterEggActive] = useState(false);
   const [glitchActive, setGlitchActive] = useState(false);
   const [easterEggActivated, setEasterEggActivated] = useState(false);
-  // This is now the single source for history display
   const [conversationHistory, setConversationHistory] = useState<AIMessage[]>([]); 
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const [sizeState, setSizeState] = useState<TerminalSize>(size);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [dynamicStyle, setDynamicStyle] = useState<React.CSSProperties>({});
   
   // State for drag handling
   const [isDragging, setIsDragging] = useState(false);
@@ -709,55 +709,7 @@ export const Terminal = ({
   // ADD THIS LOG:
   console.log("[Terminal] Rendering state - Minimized:", terminalMinimized, "Current Size:", sizeState, "Passed Prop Size:", size, "HasUnread:", hasUnreadMessages);
 
-  const {
-    terminalData: wsTerminalData,
-    refreshTerminalData: refreshWsTerminalData,
-    isConnected: wsConnected,
-  } = useTerminalData();
-
-  const initialDataLoadAttemptedRef = useRef(false);
-
-  useEffect(() => {
-    if (wsTerminalData && wsTerminalData.commands) {
-      try {
-        // REMOVED: Unused commandMap update logic
-        // The terminal doesn't use commandMap for processing commands
-        // All commands are either hardcoded special commands or sent to AI
-      } catch (error) {
-        console.error('[Terminal] Failed to update terminal commands from WebSocket:', error);
-      }
-    }
-  }, [wsTerminalData]);
-
-  useEffect(() => {
-    let isMounted = true;
-    const manageConnection = async () => {
-      if (wsConnected) {
-        if (!initialDataLoadAttemptedRef.current && typeof refreshWsTerminalData === 'function') {
-          await refreshWsTerminalData(); 
-          if(isMounted) initialDataLoadAttemptedRef.current = true;
-        }
-      } else {
-        if(isMounted) initialDataLoadAttemptedRef.current = false; 
-      }
-    };
-    manageConnection();
-    return () => { isMounted = false; };
-  }, [wsConnected]);
   
-  useEffect(() => {
-    const glitchInterval = setInterval(() => {
-      glitchAmount.set(Math.random() * 0.03);
-    }, 100);
-    return () => clearInterval(glitchInterval);
-  }, [glitchAmount]);
-  
-  useEffect(() => {
-    if (conversationHistory.length > 0) { 
-        // console.log('[Terminal] Conversation History State Updated (for linting):', conversationHistory); // Debug log
-    }
-  }, [conversationHistory]);
-
   // Mobile keyboard detection for terminal
   useEffect(() => {
     let initialViewportHeight = window.visualViewport?.height ?? window.innerHeight;
@@ -848,6 +800,45 @@ export const Terminal = ({
     return () => clearTimeout(timer);
   }, [pageLoadTime, lastInteractionTime, hasShownProactiveMessage, terminalMinimized, location.pathname]);
 
+  // Mobile keyboard handling to keep terminal above keyboard on iOS
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isIOS || !window.visualViewport || terminalMinimized) {
+      return;
+    }
+
+    const viewport = window.visualViewport;
+    const terminalElement = terminalRef.current;
+
+    const handleResize = () => {
+      if (!terminalElement) return;
+
+      const viewportHeight = viewport.height;
+      const terminalHeight = terminalElement.offsetHeight;
+      // A significant difference between window and viewport height indicates the keyboard is up
+      const keyboardIsUp = window.innerHeight > viewportHeight + 50; 
+
+      if (keyboardIsUp) {
+        // Position the terminal so its bottom is just above the keyboard
+        const newTop = viewport.offsetTop + viewportHeight - terminalHeight - 4; // 4px margin
+        setDynamicStyle({
+          top: `${newTop}px`,
+          bottom: 'auto', // Override the default CSS
+        });
+      } else {
+        // Keyboard is closed, revert to default CSS positioning
+        setDynamicStyle({});
+      }
+    };
+
+    viewport.addEventListener('resize', handleResize);
+
+    return () => {
+      viewport.removeEventListener('resize', handleResize);
+      setDynamicStyle({}); // Cleanup on unmount or when terminal is minimized
+    };
+  }, [terminalMinimized]);
+
   return (
     <>
       {/* Dynamic UI Manager - Rendered outside terminal container */}
@@ -867,7 +858,8 @@ export const Terminal = ({
             transformOrigin: "center center",
             overflow: "hidden",
             maxWidth: "100%",
-            textAlign: "left" /* Ensure all text is left-aligned by default */
+            textAlign: "left", /* Ensure all text is left-aligned by default */
+            ...dynamicStyle
           }}
           onWheel={(e) => {
             // Better scroll event handling - only prevent propagation if we can actually scroll
@@ -958,7 +950,7 @@ export const Terminal = ({
               <button
                 type="button" 
                 onClick={cycleSize}
-                className="h-4 w-4 rounded-full bg-amber-400 hover:bg-amber-300 flex items-center justify-center transition-colors"
+                className={`h-4 w-4 rounded-full flex items-center justify-center transition-colors ${sizeState === 'contracted' ? 'bg-green-500 hover:bg-green-400' : 'bg-amber-400 hover:bg-amber-300'}`}
                 title={sizeState === 'large' ? 'Make smaller' : 'Make larger'}
               >
                 <span className="text-black text-[10px] font-bold">
@@ -994,16 +986,9 @@ export const Terminal = ({
               setUserInput={setUserInput}
               onEnter={handleEnterCommand}
               glitchActive={glitchActive}
+              size={sizeState}
             />
             
-            {/* System status bar section - maintaining height but removing content */}
-            <div className="mt-3 space-y-1">
-              {/* Empty space to maintain terminal height */}
-              <div className="text-lg px-3 py-2 text-white flex items-center">
-                {/* Content removed but height preserved */}
-              </div>
-            </div>
-
           </div>
         </motion.div>
       )}

@@ -5,6 +5,7 @@ import { OptimizedTokenCard } from "./OptimizedTokenCard";
 
 interface CreativeTokensGridProps {
   tokens: Token[];
+  featuredTokens?: Token[]; // NEW: Separate stable featured tokens
   selectedTokenSymbol?: string | null;
   onTokenClick?: (token: Token) => void;
 }
@@ -15,6 +16,7 @@ interface CreativeTokensGridProps {
  */
 export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(({ 
   tokens, 
+  featuredTokens = [], // NEW: Default to empty array
   selectedTokenSymbol,
   onTokenClick
 }) => {
@@ -42,21 +44,12 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     }
   }, [onTokenClick]);
 
-  // RESPECT BACKEND ORDER - The backend already sorted by DegenDuel algorithm!
-  // We no longer need client-side hotness calculation since the backend does it better
+  // NEW: Use provided featuredTokens for stability, fallback to slice for backward compatibility
+  const trendingTokens = featuredTokens.length > 0 ? featuredTokens : tokens.slice(0, 12);
   
-  // For the "Hottest Tokens" section, just take the first 12 tokens as they come from backend
-  // The backend has already sorted them by the DegenDuel scoring algorithm
-  const trendingTokens = tokens.slice(0, 12);   // Top 12 tokens in backend order
-  
-  // Exclude tokens already shown in hottest section
-  const featuredTokenAddresses = new Set(
-    trendingTokens.map(t => t.contractAddress)
-  );
-  
-  const restTokens = tokens.filter(
-    token => !featuredTokenAddresses.has(token.contractAddress)
-  );
+  // For the standard grid, use the provided tokens (which are already the "rest" tokens from the page)
+  // Or exclude featured tokens if we're using the old method
+  const restTokens = featuredTokens.length > 0 ? tokens : tokens.slice(12);
 
   // We no longer need this function as we're using inline styling
   // const getTrendColor = (change: string) => {

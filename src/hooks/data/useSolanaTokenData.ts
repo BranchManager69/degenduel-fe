@@ -113,6 +113,9 @@ export function useSolanaTokenData(
   // If no wallet address is provided, use the current user's wallet address
   const effectiveWalletAddress = walletAddress || user?.wallet_address;
 
+  // FIXED: Add authentication guard - only fetch wallet balance if user is authenticated
+  const isAuthenticated = !!user?.wallet_address;
+
   // Default to use the DegenDuel token address from config if none provided
   const effectiveMintAddress = mintAddress || config.SOLANA.DEGEN_TOKEN_ADDRESS;
 
@@ -162,8 +165,8 @@ export function useSolanaTokenData(
       return;
     }
 
-    // If wallet address is requested but user is not authenticated, skip wallet balance fetch
-    const skipWalletBalance = effectiveWalletAddress && !user?.wallet_address;
+    // FIXED: If wallet address is requested but user is not authenticated, skip wallet balance fetch
+    const skipWalletBalance = effectiveWalletAddress && !isAuthenticated;
 
     setIsLoading(true);
     setError(null);
@@ -255,7 +258,7 @@ export function useSolanaTokenData(
       setError(err instanceof Error ? err.message : 'Unknown error fetching token data');
       setIsLoading(false);
     }
-  }, [validationResult, connection, connectionTier, effectiveWalletAddress, user, effectiveMintAddress]);
+  }, [validationResult, connection, connectionTier, effectiveWalletAddress, isAuthenticated, effectiveMintAddress]);
 
   // Fetch data on mount and when addresses change
   useEffect(() => {

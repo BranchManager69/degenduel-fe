@@ -527,18 +527,25 @@ const checkContestParticipation = async (
 
     const data = await response.json();
 
-    // Validate response format
-    if (data.is_participating === undefined) {
+    // Handle different response formats from backend
+    let isParticipating: boolean;
+    
+    if (data.is_participating !== undefined) {
+      // Direct format: { is_participating: boolean }
+      isParticipating = data.is_participating;
+    } else if (data.data?.participating !== undefined) {
+      // Nested format: { data: { participating: boolean } }
+      isParticipating = data.data.participating;
+    } else {
       console.warn(
         "[DD-API] Invalid participation check response format:",
-        { contestId, data },
+        JSON.stringify(data),
       );
       participationCache.set(cacheKey, { result: false, timestamp: now });
       return false;
     }
 
-    // The dedicated endpoint returns is_participating boolean
-    const result = Boolean(data.is_participating);
+    const result = Boolean(isParticipating);
 
     // Store in cache
     participationCache.set(cacheKey, { result, timestamp: now });

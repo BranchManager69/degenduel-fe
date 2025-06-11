@@ -44,14 +44,40 @@ const TelegramLoginButton: React.FC<TelegramLoginButtonProps> = ({
   const [linkingUrl, setLinkingUrl] = React.useState<string | null>(null);
   const isMounted = useRef(true);
 
-  // Check if user already has Telegram linked
-  const actualIsTelegramLinked = user && isTelegramLinked && isTelegramLinked();
-
+  // FIXED: ALL useEffect hooks MUST be called before any conditional logic
   React.useEffect(() => {
+    isMounted.current = true;
     return () => {
       isMounted.current = false;
     };
   }, []);
+
+  // FIXED: Move URL parameter checking useEffect BEFORE early returns
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    authDebug('TelegramBtn', 'Checking URL parameters in button component', { 
+      params: Object.fromEntries(urlParams.entries()), linkMode, hasUser: !!user
+    });
+    
+    if (urlParams.get("telegram_linked") === "true") {
+      authDebug('TelegramBtn', 'Found telegram_linked=true parameter, showing success toast');
+      toast.success("Telegram account linked successfully!");
+      const storedRedirectPath = localStorage.getItem("auth_redirect_path");
+      authDebug('TelegramBtn', 'Checking for stored redirect path', { hasStoredPath: !!storedRedirectPath, path: storedRedirectPath || 'none' });
+      const url = new URL(window.location.href);
+      url.searchParams.delete("telegram_linked");
+      window.history.replaceState({}, "", url);
+      authDebug('TelegramBtn', 'Removed telegram_linked parameter from URL');
+      
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+    }
+  }, [user, linkMode, onSuccess]);
+
+  // Check if user already has Telegram linked - AFTER all hooks
+  const actualIsTelegramLinked = user && isTelegramLinked && isTelegramLinked();
 
   const handleTelegramAuth = async () => {
     if (onClick) {
@@ -136,6 +162,7 @@ const TelegramLoginButton: React.FC<TelegramLoginButtonProps> = ({
     }
   };
 
+  // FIXED: All conditional logic/early returns AFTER hooks
   // Don't show link button if user is not authenticated
   if (linkMode && !user) {
     return null;
@@ -145,30 +172,6 @@ const TelegramLoginButton: React.FC<TelegramLoginButtonProps> = ({
   if (linkMode && actualIsTelegramLinked) {
     return null;
   }
-
-  // Check for successful linking in URL parameters
-  React.useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    authDebug('TelegramBtn', 'Checking URL parameters in button component', { 
-      params: Object.fromEntries(urlParams.entries()), linkMode, hasUser: !!user
-    });
-    
-    if (urlParams.get("telegram_linked") === "true") {
-      authDebug('TelegramBtn', 'Found telegram_linked=true parameter, showing success toast');
-      toast.success("Telegram account linked successfully!");
-      const storedRedirectPath = localStorage.getItem("auth_redirect_path");
-      authDebug('TelegramBtn', 'Checking for stored redirect path', { hasStoredPath: !!storedRedirectPath, path: storedRedirectPath || 'none' });
-      const url = new URL(window.location.href);
-      url.searchParams.delete("telegram_linked");
-      window.history.replaceState({}, "", url);
-      authDebug('TelegramBtn', 'Removed telegram_linked parameter from URL');
-      
-      // Call onSuccess callback if provided
-      if (onSuccess) {
-        onSuccess();
-      }
-    }
-  }, [user, linkMode, onSuccess]);
 
   // If we have a linking URL, show it
   if (linkingUrl) {

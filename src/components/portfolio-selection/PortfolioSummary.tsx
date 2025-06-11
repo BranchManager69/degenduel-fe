@@ -27,7 +27,8 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
             </h3>
             <span
               className={`text-xs sm:text-sm font-medium ${
-                totalWeight === 100 ? "text-green-400" : "text-gray-400"
+                totalWeight === 100 ? "text-green-400" : 
+                totalWeight > 100 ? "text-red-300 font-bold" : "text-gray-400"
               }`}
             >
               {totalWeight}% Allocated
@@ -35,6 +36,18 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
           </div>
         </CardHeader>
         <CardContent className="py-2 sm:py-3">
+          {/* Weight Progress Bar */}
+          <div className="mb-4">
+            <div className="h-2 bg-dark-400 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  totalWeight === 100 ? 'bg-green-500' : 
+                  totalWeight > 100 ? 'bg-red-700' : 'bg-yellow-500'
+                }`}
+                style={{ width: `${Math.min(totalWeight, 100)}%` }}
+              />
+            </div>
+          </div>
           <div className="space-y-2">
             {Array.from(selectedTokens.entries()).map(
               ([contractAddress, weight]) => {

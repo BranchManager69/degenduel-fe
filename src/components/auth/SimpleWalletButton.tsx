@@ -15,21 +15,33 @@ export const SimpleWalletButton: React.FC<SimpleWalletButtonProps> = ({
   isCompact = false
 }) => {
   const auth = useMigratedAuth();
-  const { connected, publicKey, signMessage } = useWallet();
-  const [authAttempted, setAuthAttempted] = React.useState(false);
+  const { publicKey, connected, signMessage } = useWallet();
+  const [isAuthenticating, setIsAuthenticating] = React.useState(false);
+  const [hasConnected, setHasConnected] = React.useState(false);
+  
+  // Create a unique ID for this component instance for debugging
+  const instanceId = React.useRef(`SWB-${Math.random().toString(36).substr(2, 9)}`).current;
 
-  // Auto-authenticate when wallet connects (with proper guards)
+  // Track when wallet connects
   React.useEffect(() => {
-    const handleAutoAuth = async () => {
-      // Guard: Only try once per wallet connection
-      if (connected && publicKey && signMessage && !auth.isAuthenticated && !auth.loading && !authAttempted) {
-        console.log('SimpleWalletButton: Auto-authenticating wallet...');
-        setAuthAttempted(true); // Prevent retriggering
+    if (connected && !hasConnected) {
+      console.log(`[${instanceId}] Wallet connected, triggering authentication...`);
+      setHasConnected(true);
+    } else if (!connected && hasConnected) {
+      setHasConnected(false);
+    }
+  }, [connected, hasConnected, instanceId]);
+
+  // Handle authentication after wallet connects
+  React.useEffect(() => {
+    const authenticate = async () => {
+      if (connected && publicKey && signMessage && hasConnected && !auth.isAuthenticated && !isAuthenticating) {
+        setIsAuthenticating(true);
         
         try {
           const walletAddress = publicKey.toBase58();
+          console.log(`[${instanceId}] SimpleWalletButton: Authenticating wallet...`);
           
-          // Create the same signature wrapper that ConnectWalletButton uses
           const signMessageWrapper = async (messageToSign: Uint8Array) => {
             if (!signMessage) {
               throw new Error('Wallet signing function not available.');
@@ -39,43 +51,28 @@ export const SimpleWalletButton: React.FC<SimpleWalletButtonProps> = ({
           };
 
           await auth.loginWithWallet(walletAddress, signMessageWrapper);
-          console.log('SimpleWalletButton: Authentication successful!');
+          console.log(`[${instanceId}] SimpleWalletButton: Authentication successful!`);
           onLoginComplete?.();
         } catch (error) {
-          console.error('SimpleWalletButton: Auto-authentication failed:', error);
-          // Don't reset authAttempted - let user manually retry if needed
+          console.error(`[${instanceId}] SimpleWalletButton: Authentication failed:`, error);
+        } finally {
+          setIsAuthenticating(false);
         }
       }
     };
 
-    handleAutoAuth();
-  }, [connected, publicKey, signMessage, auth.isAuthenticated, auth.loading, authAttempted, auth.loginWithWallet, onLoginComplete]);
+    authenticate();
+  }, [connected, publicKey, signMessage, hasConnected, auth.isAuthenticated, auth.loginWithWallet, onLoginComplete, instanceId, isAuthenticating]);
 
-  // Reset auth attempt when wallet disconnects
-  React.useEffect(() => {
-    if (!connected) {
-      setAuthAttempted(false);
-    }
-  }, [connected]);
-
+  // Determine the wrapper class based on isCompact prop
+  // isCompact=true means header button (small, square)
+  // isCompact=false means login page button (large, rounded)
+  const wrapperClass = isCompact ? 'header-wallet-button' : 'login-wallet-button w-full';
+  
   return (
-    <div className={className}>
+    <div className={`${wrapperClass} ${className}`}>
       <WalletMultiButton 
-        style={{
-          backgroundColor: 'transparent',
-          background: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%)',
-          border: '1px solid rgba(139, 92, 246, 0.3)',
-          borderRadius: isCompact ? '4px' : '8px',
-          fontSize: isCompact ? '11px' : '16px', 
-          height: isCompact ? '24px' : '48px',
-          padding: isCompact ? '0 8px' : '0 24px',
-          fontWeight: '600',
-          transition: 'all 0.3s ease', // Smooth transition when header compacts
-          minWidth: isCompact ? '80px' : '160px', // Prevent button from getting too small
-        }}
-        className={`hover:scale-105 hover:shadow-lg transition-all duration-300 ${
-          isCompact ? 'text-xs' : 'text-base'
-        }`}
+        className={isCompact ? 'compact-wallet' : ''}
       />
     </div>
   );

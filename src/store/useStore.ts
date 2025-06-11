@@ -304,6 +304,7 @@ interface StateData {
   webSocketAlerts: WebSocketAlert[];
   isEasterEggActive: boolean;
   landingPageAnimationDone: boolean;
+  performanceMode: boolean;
 }
 
 // Full state type including actions
@@ -318,6 +319,7 @@ export interface State extends StateData {
   setMaintenanceMode: (enabled: boolean) => void;
   setMaintenanceState: (state: StateData["maintenanceState"]) => void;
   updateMaintenanceState: (updates: Partial<NonNullable<StateData["maintenanceState"]>>) => void;
+  setPerformanceMode: (enabled: boolean) => void;
   // SkyDuel actions
   setSkyDuelSelectedNode: (nodeId: string | undefined) => void;
   setServiceState: (
@@ -524,6 +526,7 @@ type StorePersist = PersistOptions<
     | "contests"
     | "tokens"
     | "skyDuel"
+    | "performanceMode"
   >
 >;
 
@@ -547,6 +550,7 @@ const persistConfig: StorePersist = {
     contests: state.contests,
     tokens: state.tokens,
     skyDuel: state.skyDuel,
+    performanceMode: state.performanceMode,
   }),
   onRehydrateStorage: () => {
     return async (state) => {
@@ -832,6 +836,7 @@ const initialState: StateData = {
   isEasterEggActive: false,
   landingPageAnimationDone: false,
   skyDuel: initialSkyDuelState,
+  performanceMode: false,
 };
 
 // Create the store
@@ -1393,6 +1398,7 @@ export const useStore = create<State>()(
           webSocketAlerts: [...prev.webSocketAlerts, alert],
         })),
       setLandingPageAnimationDone: (done) => set({ landingPageAnimationDone: done }),
+      setPerformanceMode: (enabled) => set({ performanceMode: enabled }),
       setSkyDuelState: (skyDuelData) =>
         set((state) => ({ skyDuel: { ...state.skyDuel, ...skyDuelData } })),
       setSkyDuelSelectedNode: (nodeId) =>

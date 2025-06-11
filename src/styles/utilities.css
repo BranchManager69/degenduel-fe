@@ -298,6 +298,34 @@ html::-webkit-scrollbar-corner {
   border-radius: 4px;
 }
 
+/* Performance optimized animations for ProminentContestCard */
+@keyframes slide-x {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.animate-slide-x {
+  animation: slide-x 8s linear infinite;
+}
+
+.animate-shine {
+  animation: shine 3s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(157, 78, 221, 0.5);
   border-radius: 4px;

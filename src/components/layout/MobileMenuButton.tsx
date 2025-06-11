@@ -578,7 +578,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                           </div>
                         ) : (
                           <TwitterLoginButton 
-                            linkMode={true}
+                            linkMode={!!user}
                             iconOnly={true}
                             className="w-11 h-11 p-0 rounded-lg bg-gray-800/40 border border-gray-600/30 hover:bg-gray-700/60 hover:border-gray-500/50 transition-all duration-200 flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5"
                             onSuccess={() => setIsOpen(false)}
@@ -607,7 +607,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                       </div>
 
                       {/* Telegram */}
-                      <div className="relative group">
+                      <div className={`relative group ${!(isAdministrator || isSuperAdmin) ? 'opacity-50 cursor-not-allowed' : ''}`}>
                         {user?.telegram_id ? (
                           <div className="w-11 h-11 rounded-lg bg-[#0088cc]/20 border border-[#0088cc]/40 flex items-center justify-center relative overflow-hidden">
                             {/* Telegram Logo SVG */}
@@ -617,17 +617,23 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                             {/* Connected indicator */}
                             <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800"></div>
                           </div>
-                        ) : (
+                        ) : (isAdministrator || isSuperAdmin) ? (
                           <TelegramLoginButton 
-                            linkMode={true}
+                            linkMode={!!user}
                             iconOnly={true}
                             className="w-11 h-11 p-0 rounded-lg bg-[#0088cc]/10 border border-[#0088cc]/20 hover:bg-[#0088cc]/20 hover:border-[#0088cc]/40 transition-all duration-200 flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5"
                           />
+                        ) : (
+                          <div className="w-11 h-11 rounded-lg bg-[#0088cc]/10 border border-[#0088cc]/20 flex items-center justify-center pointer-events-none">
+                            <svg className="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472c-.18 1.898-.962 6.502-1.36 8.627c-.168.9-.499 1.201-.82 1.23c-.696.065-1.225-.46-1.9-.902c-1.056-.693-1.653-1.124-2.678-1.8c-1.185-.78-.417-1.21.258-1.91c.177-.184 3.247-2.977 3.307-3.23c.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345c-.48.33-.913.49-1.302.48c-.428-.008-1.252-.241-1.865-.44c-.752-.245-1.349-.374-1.297-.789c.027-.216.325-.437.893-.663c3.498-1.524 5.83-2.529 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                            </svg>
+                          </div>
                         )}
                       </div>
 
                       {/* Passkey */}
-                      <div className="relative group">
+                      <div className={`relative group ${!(isAdministrator || isSuperAdmin) ? 'opacity-50 cursor-not-allowed' : ''}`}>
                         {user?.passkey_id ? (
                           <div className="w-11 h-11 rounded-lg bg-purple-500/20 border border-purple-500/40 flex items-center justify-center relative overflow-hidden">
                             {/* Fingerprint/Touch ID SVG */}
@@ -645,12 +651,26 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                             {/* Connected indicator */}
                             <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800"></div>
                           </div>
-                        ) : (
+                        ) : (isAdministrator || isSuperAdmin) ? (
                           <BiometricAuthButton 
                             mode="register"
                             buttonStyle="icon-only"
                             className="w-11 h-11 p-0 rounded-lg bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 hover:border-purple-500/40 transition-all duration-200 flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5"
                           />
+                        ) : (
+                          <div className="w-11 h-11 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center pointer-events-none">
+                            <svg className="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"/>
+                              <path d="M5 19.5C5.5 18 6 15 6 12c0-.7.12-1.37.34-2"/>
+                              <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
+                              <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+                              <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
+                              <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+                              <path d="M2 16h.01"/>
+                              <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+                              <path d="M9 6.8a6 6 0 0 1 9 5.2c0 .47 0 1.17-.02 2"/>
+                            </svg>
+                          </div>
                         )}
                       </div>
                     </div>

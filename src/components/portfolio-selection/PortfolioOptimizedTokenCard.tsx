@@ -1,8 +1,8 @@
-import React, { useMemo, useState, useCallback } from "react";
-import { Token, TokenHelpers } from "../../types";
-import { formatNumber, formatTokenPrice, formatPercentage } from "../../utils/format";
-import { CopyToClipboard } from "../common/CopyToClipboard";
+import React, { useCallback, useMemo, useState } from "react";
 import { FaCoins } from "react-icons/fa";
+import { Token, TokenHelpers } from "../../types";
+import { formatNumber, formatPercentage, formatTokenPrice } from "../../utils/format";
+import { CopyToClipboard } from "../common/CopyToClipboard";
 
 // Helper function to get a color based on token symbol
 const getTokenColor = (symbol: string): string => {
@@ -124,18 +124,81 @@ export const PortfolioOptimizedTokenCard: React.FC<PortfolioOptimizedTokenCardPr
   }, [token]);
 
   return (
-    <div className="aspect-[3/4] w-full perspective-1000">
-      <div className="relative w-full h-full">
-        {/* Main Card */}
+    <div className="w-full perspective-1000">
+      {/* Mobile Layout - Compact horizontal card */}
+      <div className="sm:hidden">
         <div 
-          className={`relative w-full h-full rounded-xl overflow-hidden shadow-lg cursor-pointer transition-all duration-300 ${
+          className={`relative w-full h-16 rounded-lg overflow-hidden shadow-lg cursor-pointer transition-all duration-200 ${
             isSelected 
-              ? 'ring-2 ring-brand-500 shadow-brand-500/20 scale-105 z-20' 
-              : 'hover:scale-[1.02] hover:shadow-xl z-10'
+              ? 'ring-2 ring-brand-500 shadow-brand-500/20 bg-brand-500/10' 
+              : 'bg-dark-200/70 hover:bg-dark-200/80'
           }`}
           onClick={handleCardClick}
         >
-          <div className="relative w-full h-full bg-dark-200/70 backdrop-blur-sm hover:bg-dark-200/80 transition-all duration-300 group">
+          <div className="flex items-center h-full px-3 gap-3">
+            {/* Token Logo */}
+            {logoUrl && (
+              <img src={logoUrl} alt={token.symbol} className="w-8 h-8 rounded-full flex-shrink-0" />
+            )}
+            
+            {/* Token Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-sm truncate">{token.symbol}</span>
+                <span className={`text-xs ${TokenHelpers.getPriceChange(token) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {formatPercentage(TokenHelpers.getPriceChange(token), false)}
+                </span>
+              </div>
+              <div className="text-xs text-gray-400 truncate">{formatTokenPrice(TokenHelpers.getPrice(token))}</div>
+            </div>
+            
+            {/* Selection Status */}
+            <div className="flex-shrink-0">
+              {isSelected ? (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onWeightChange(Math.max(0, weight - 1));
+                    }}
+                    className="w-7 h-7 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 rounded-full text-white font-bold flex items-center justify-center active:scale-95 transition-all duration-150"
+                  >
+                    −
+                  </button>
+                  <div className="bg-brand-500/20 rounded px-2 py-1 min-w-[42px] text-center">
+                    <span className="text-sm font-bold text-brand-100">{weight}%</span>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onWeightChange(Math.min(100, weight + 1));
+                    }}
+                    className="w-7 h-7 bg-gradient-to-br from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 rounded-full text-white font-bold flex items-center justify-center active:scale-95 transition-all duration-150"
+                  >
+                    +
+                  </button>
+                </div>
+              ) : (
+                <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Layout - Original tall cards */}
+      <div className="hidden sm:block aspect-[3/4] w-full">
+        <div className="relative w-full h-full">
+          {/* Main Card */}
+          <div 
+            className={`relative w-full h-full rounded-xl overflow-hidden shadow-lg cursor-pointer transition-all duration-300 ${
+              isSelected 
+                ? 'ring-2 ring-brand-500 shadow-brand-500/20 scale-105 z-20' 
+                : 'hover:scale-[1.02] hover:shadow-xl z-10'
+            }`}
+            onClick={handleCardClick}
+          >
+            <div className="relative w-full h-full bg-dark-200/70 backdrop-blur-sm hover:bg-dark-200/80 transition-all duration-300 group">
             
             {/* HIGH-RES BANNER BACKGROUND with Parallax */}
             <div className="absolute inset-0 overflow-hidden">
@@ -472,6 +535,7 @@ export const PortfolioOptimizedTokenCard: React.FC<PortfolioOptimizedTokenCardPr
               </CopyToClipboard>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

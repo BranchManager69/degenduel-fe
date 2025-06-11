@@ -50,8 +50,6 @@ import { config } from "../../../config/config"; // Config
 import FloatingButtonStack from '../../../components/layout/FloatingButtonStack'; // Enhanced floating button stack
 import FloatingDuelNowButton from '../../../components/layout/FloatingDuelNowButton'; // Floating DUEL NOW button above footer
 
-// Important Notice
-import { ImportantNotice } from '../../../components/layout/ImportantNotice';
 
 // Contract Address
 const FALLBACK_CA_FOR_BUTTONS = config.CONTRACT_ADDRESS.REAL;
@@ -61,6 +59,8 @@ const Features = React.lazy(() => import("../../../components/landing/features-l
 
 // NEW: Import WebSocket-based contest hook
 import { useContests } from "../../../hooks/websocket/topic-hooks/useContests";
+
+// NOT READY YET:
 
 // Landing Page
 export const LandingPage: React.FC = () => {
@@ -292,9 +292,6 @@ export const LandingPage: React.FC = () => {
   // Initialize User and Admin status
   const { user, isAdministrator } = useMigratedAuth();
   
-  // Terminal Data - This is the "AI Chat" websocket connection
-  // const terminalData = useTerminalData(); // Commented out as it's not used
-
   // **CRITICAL: Load data IMMEDIATELY - don't wait for WebSocket!**
   useEffect(() => {
     // Step 1: We're already showing cached data from state initialization
@@ -509,15 +506,6 @@ export const LandingPage: React.FC = () => {
       {/* <ScrollToTop /> */}
       <div className="flex flex-col min-h-screen relative" style={{ overflowX: 'clip' }}>
 
-        {/* Important Notice - positioned at very top, before everything */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="w-full"
-        >
-          <ImportantNotice />
-        </motion.div>
 
         {/* Landing Page Content Section */}
         <section className="relative flex-1 pb-20" style={{ zIndex: 10 }}>

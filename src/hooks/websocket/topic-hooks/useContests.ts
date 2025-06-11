@@ -347,8 +347,6 @@ export function useContests(userId?: string) {
   const hasSubscribedContestRef = useRef(false);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
     if (ws.isConnected && !hasSubscribedContestRef.current) {
       // Subscribe to contest data topic
       ws.subscribe([TopicType.CONTEST]);
@@ -368,26 +366,20 @@ export function useContests(userId?: string) {
         timestamp: new Date().toISOString()
       });
 
-      // Set a timeout to reset loading state if we don't get data
-      timeoutId = setTimeout(() => {
-        if (isLoading) {
-          console.warn('[Contest WebSocket] Timed out waiting for data');
-          setIsLoading(false);
-        }
-      }, 10000);
+      // Timeout has been removed to prevent warnings when backend is slow.
+      // The isLoading flag will remain true until data is received.
     } else if (!ws.isConnected) {
       hasSubscribedContestRef.current = false;
     }
 
     // Cleanup function
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
       if (hasSubscribedContestRef.current) {
         ws.unsubscribe([TopicType.CONTEST]);
         hasSubscribedContestRef.current = false;
       }
     };
-  }, [ws.isConnected, userId]); // Remove unstable dependencies
+  }, [ws.isConnected, userId]);
 
   // Helper to join a contest
   const joinContest = useCallback((contestId: string) => {
@@ -443,12 +435,12 @@ export function useContests(userId?: string) {
         timestamp: new Date().toISOString()
       });
 
-      // Set a timeout to reset loading state if we don't get data
-      setTimeout(() => {
-        if (isLoading) {
-          setIsLoading(false);
-        }
-      }, 10000);
+      // Timeout removed to prevent warnings.
+      // setTimeout(() => {
+      //   if (isLoading) {
+      //     setIsLoading(false);
+      //   }
+      // }, 10000);
     } else {
       console.warn('[Contest WebSocket] Cannot refresh - WebSocket not connected');
       setIsLoading(false);

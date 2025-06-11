@@ -38,6 +38,9 @@ export interface TerminalProps {
   };
   onCommandExecuted?: (command: string, response: string) => void;
   size?: TerminalSize; // Size prop for controlling terminal dimensions
+  isInitiallyMinimized?: boolean;
+  onStateChange?: (state: { minimized: boolean; size: TerminalSize }) => void;
+  onCommand?: (command: string) => void;
 }
 
 // Define a union type for console output items - can be string or JSX
@@ -74,6 +77,7 @@ export interface TerminalInputProps {
   setUserInput: (input: string) => void;
   onEnter: (command: string) => void;
   glitchActive?: boolean;
+  size?: TerminalSize;
 }
 
 // Props for the CommandTray component

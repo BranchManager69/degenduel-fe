@@ -63,8 +63,19 @@ export function useSolanaWalletData(walletAddress?: string): {
   const user = useStore(state => state.user);
   const effectiveWalletAddress = walletAddress || user?.wallet_address;
 
+  // FIXED: Add authentication guard - only make API calls if user is authenticated
+  const isAuthenticated = !!user?.wallet_address;
+
   // Function to fetch wallet data
   const fetchWalletData = useCallback(async () => {
+    // FIXED: Skip API calls if user is not authenticated
+    if (!isAuthenticated) {
+      setWalletData(null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     if (!effectiveWalletAddress) {
       setError('No wallet address provided');
       setIsLoading(false);
@@ -81,24 +92,24 @@ export function useSolanaWalletData(walletAddress?: string): {
     try {
       // Validate wallet address
       const pubkey = new PublicKey(effectiveWalletAddress);
-      
+
       // Fetch SOL balance (in lamports)
       const balance = await connection.getBalance(pubkey);
-      
+
       // Convert lamports to SOL
       const solBalance = balance / 1_000_000_000; // 1 SOL = 10^9 lamports
-      
+
       // Fetch token accounts owned by this wallet
       const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
         pubkey,
         { programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') }
       );
-      
+
       // Process token balances
       const tokenBalances: TokenBalance[] = tokenAccounts.value.map(account => {
         const data = account.account.data as ParsedAccountData;
         const info = data.parsed.info;
-        
+
         return {
           mint: info.mint,
           balance: info.tokenAmount.amount,
@@ -106,18 +117,18 @@ export function useSolanaWalletData(walletAddress?: string): {
           uiBalance: info.tokenAmount.uiAmount
         };
       });
-      
+
       // Fetch recent transactions (limit to 10 for performance)
       const signatures = await connection.getSignaturesForAddress(pubkey, { limit: 10 });
-      
+
       // Get transaction details
       const transactions: SolanaTransaction[] = [];
-      
+
       // Process in batches of 3 to avoid rate limits
       const batchSize = 3;
       for (let i = 0; i < signatures.length; i += batchSize) {
         const batch = signatures.slice(i, i + batchSize);
-        
+
         // Fetch transaction details in parallel
         const txDetails = await Promise.all(
           batch.map(async (sig) => {
@@ -125,7 +136,7 @@ export function useSolanaWalletData(walletAddress?: string): {
               const tx = await connection.getParsedTransaction(sig.signature, {
                 maxSupportedTransactionVersion: 0
               });
-              
+
               if (!tx) {
                 return {
                   signature: sig.signature,
@@ -139,7 +150,7 @@ export function useSolanaWalletData(walletAddress?: string): {
                   error: 'Transaction details not found'
                 };
               }
-              
+
               return {
                 signature: sig.signature,
                 timestamp: tx.blockTime || null,
@@ -167,10 +178,10 @@ export function useSolanaWalletData(walletAddress?: string): {
             }
           })
         );
-        
+
         transactions.push(...txDetails);
       }
-      
+
       // Update state with wallet data
       setWalletData({
         address: effectiveWalletAddress,
@@ -178,19 +189,19 @@ export function useSolanaWalletData(walletAddress?: string): {
         tokenBalances,
         recentTransactions: transactions
       });
-      
+
       setIsLoading(false);
     } catch (err) {
       console.error('Error fetching wallet data:', err);
       setError(err instanceof Error ? err.message : 'Unknown error fetching wallet data');
       setIsLoading(false);
     }
-  }, [effectiveWalletAddress, connection]);
+  }, [effectiveWalletAddress, connection, isAuthenticated]);
 
   // Helper function to extract addresses from transaction
   const extractAddresses = (tx: ParsedTransactionWithMeta, role: 'sender' | 'receiver'): string[] => {
     const addresses = new Set<string>();
-    
+
     // Process instructions
     tx.transaction.message.instructions.forEach(ix => {
       if ('parsed' in ix && ix.parsed && 'type' in ix.parsed) {
@@ -204,7 +215,7 @@ export function useSolanaWalletData(walletAddress?: string): {
         }
       }
     });
-    
+
     // Process SOL transfers from message accounts and inner instructions
     if (tx.meta && tx.meta.innerInstructions) {
       tx.meta.innerInstructions.forEach(inner => {
@@ -221,7 +232,7 @@ export function useSolanaWalletData(walletAddress?: string): {
         });
       });
     }
-    
+
     return Array.from(addresses);
   };
 

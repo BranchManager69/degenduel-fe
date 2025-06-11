@@ -21,7 +21,7 @@ import { User } from '../../../types';
 
 // Define WhaleRoomButton component (encapsulated within CtaSection)
 const WhaleRoomButton: React.FC<{ user: User | null }> = ({ user }) => {
-  // Use server-side whale status verification
+  // FIXED: Pass authentication state to useWhaleStatus hook
   const { 
     isWhale, 
     isLoading, 
@@ -29,7 +29,10 @@ const WhaleRoomButton: React.FC<{ user: User | null }> = ({ user }) => {
     whaleStatus,
     currentBalance,
     progressPercentage 
-  } = useWhaleStatus();
+  } = useWhaleStatus({ 
+    isAuthenticated: !!user?.wallet_address,
+    userId: user?.wallet_address 
+  });
 
   // Don't show if user is not authenticated
   if (!user?.wallet_address) {

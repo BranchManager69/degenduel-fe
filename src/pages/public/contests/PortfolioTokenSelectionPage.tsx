@@ -2,28 +2,28 @@
 
 import { Buffer } from "buffer";
 
+import { useWallet } from "@solana/wallet-adapter-react";
 import {
     Connection,
     PublicKey,
     SystemProgram,
     Transaction,
 } from "@solana/web3.js";
-import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import PortfolioPreviewModal from "../../../components/portfolio-selection/PortfolioPreviewModal";
 import { PortfolioSummary } from "../../../components/portfolio-selection/PortfolioSummary";
 import { TokenFilters } from "../../../components/portfolio-selection/TokenFilters";
-import { PortfolioOptimizedTokenCard } from "../../../components/portfolio-selection/PortfolioOptimizedTokenCard";
+import { TokenGrid } from "../../../components/portfolio-selection/TokenGrid";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Skeleton } from "../../../components/ui/Skeleton";
+import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Contest, SearchToken, TokenHelpers } from "../../../types/index";
-import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
-import { useWallet } from "@solana/wallet-adapter-react";
 
 // Declare Buffer on window type
 declare global {
@@ -306,7 +306,7 @@ export const TokenSelection: React.FC = () => {
   }, [tokens, selectedTokens]);
 
   // Sort state for this page only
-  const [sortBy, setSortBy] = useState<'default' | 'marketCap' | 'volume' | 'change24h' | 'price'>('default');
+  const [sortBy, setSortBy] = useState<'default' | 'marketCap' | 'volume' | 'change24h' | 'price'>('volume');
   
   // Apply sorting to the memoized tokens
   const sortedTokens = useMemo(() => {
@@ -342,8 +342,8 @@ export const TokenSelection: React.FC = () => {
     if (totalWeight !== 100) {
       return "Total weight must equal 100%";
     }
-    if (selectedTokens.size < 2) {
-      return "Select at least 2 tokens";
+    if (selectedTokens.size < 1) {
+      return "Select at least 1 token";
     }
     return null;
   }, [totalWeight, selectedTokens.size]);
@@ -438,10 +438,14 @@ export const TokenSelection: React.FC = () => {
       // Prepare portfolio data
       const portfolioData = {
         tokens: Array.from(selectedTokens.entries()).map(
-          ([contractAddress, weight]) => ({
-            contractAddress,
-            weight,
-          }),
+          ([contractAddress, weight]) => {
+            const token = sortedTokens.find(t => TokenHelpers.getAddress(t) === contractAddress);
+            return {
+              symbol: token?.symbol || '',
+              contractAddress,
+              weight,
+            };
+          }
         ),
       };
 
@@ -1426,56 +1430,20 @@ export const TokenSelection: React.FC = () => {
 
                     {/* Enhanced Token Grid - Visual rich cards with infinite scroll */}
                     <div className="relative">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {sortedTokens.map((token) => {
-                          const contractAddress = TokenHelpers.getAddress(token);
-                          const isSelected = selectedTokens.has(contractAddress);
-                          const weight = selectedTokens.get(contractAddress) || 0;
-                          
-                          return (
-                            <PortfolioOptimizedTokenCard
-                              key={contractAddress}
-                              token={token}
-                              isSelected={isSelected}
-                              weight={weight}
-                              onSelect={() => handleTokenSelect(contractAddress)}
-                              onWeightChange={(newWeight) => handleWeightChange(contractAddress, newWeight)}
-                            />
-                          );
-                        })}
-                      </div>
-                      
-                      {/* Infinite scroll trigger - Pure auto-loading, no buttons! */}
-                      {pagination && pagination.hasMore && (
-                        <div 
-                          ref={loadMoreTriggerRef}
-                          className="relative py-12"
-                        >
-                          <div className="flex items-center justify-center">
-                            {isLoadingMore ? (
-                              <div className="flex items-center gap-3">
-                                <div className="flex gap-1">
-                                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse delay-75"></div>
-                                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse delay-150"></div>
-                                </div>
-                                <span className="text-sm text-gray-400 font-mono">Loading more tokens...</span>
-                              </div>
-                            ) : (
-                              <div className="text-xs text-gray-500 font-mono">
-                                Scroll for more • {memoizedTokens.length} tokens loaded
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Pagination info for admins */}
-                      {pagination && user && (user.role === 'admin' || user.role === 'superadmin') && (
-                        <div className="mt-4 text-center text-xs font-mono text-gray-500">
-                          Loaded: {memoizedTokens.length} | Total: {pagination.total} | HasMore: {pagination.hasMore ? '✅' : '❌'}
-                        </div>
-                      )}
+                      <TokenGrid
+                        tokens={sortedTokens}
+                        selectedTokens={selectedTokens}
+                        onTokenSelect={(contractAddress, weight) => {
+                          if (weight === 0) {
+                            handleTokenSelect(contractAddress);
+                          } else {
+                            handleWeightChange(contractAddress, weight);
+                          }
+                        }}
+                        marketCapFilter=""
+                        viewMode={viewMode}
+                        searchQuery=""
+                      />
                     </div>
                   </div>
                 </Card>
@@ -1720,21 +1688,29 @@ export const TokenSelection: React.FC = () => {
                         isLoading ||
                         transactionState.status !== "idle"
                       }
-                      className="w-full relative group overflow-hidden text-sm py-4 shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
+                      className={`w-full relative group overflow-hidden text-sm py-4 shadow-lg transition-all duration-300 ${
+                        totalWeight > 100
+                          ? "shadow-red-500/20 bg-red-600 hover:bg-red-500 border-red-500"
+                          : "shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
+                      }`}
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-emerald-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+                        totalWeight > 100
+                          ? "bg-gradient-to-r from-red-400/20 via-red-500/20 to-red-600/20"
+                          : "bg-gradient-to-r from-emerald-400/20 via-emerald-500/20 to-emerald-600/20"
+                      }`} />
                       <span className="relative flex items-center justify-center gap-2 font-mono">
                         {isLoading ? (
                           <div>[DEPLOYING...]</div>
                         ) : user?.wallet_address ? (
                           <>
                             <span className="font-medium">[PREVIEW]</span>
-                            <span className="text-emerald-400">{totalWeight}%</span>
+                            <span className={totalWeight > 100 ? "text-red-200 font-bold" : "text-emerald-400"}>{totalWeight}%</span>
                           </>
                         ) : (
                           <>
                             <span className="font-medium">[BUILD]</span>
-                            <span className="text-emerald-400">{totalWeight}%</span>
+                            <span className={totalWeight > 100 ? "text-red-200 font-bold" : "text-emerald-400"}>{totalWeight}%</span>
                           </>
                         )}
                       </span>

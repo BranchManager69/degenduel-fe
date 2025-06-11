@@ -468,13 +468,19 @@ export class AuthService {
     signMessage: (message: Uint8Array) => Promise<SignMessageOutput>
   ): Promise<User> {
     try {
-      authDebug('AuthService', 'Starting wallet authentication', { walletAddress });
+      authDebug('AuthService', 'Starting wallet authentication', { 
+        walletAddress,
+        timestamp: new Date().toISOString(),
+        callStack: new Error().stack?.split('\n').slice(2, 5).join(' -> ')
+      });
 
       // Use the configured instance for challenge
       const challengeUrl = `${API_URL}/auth/challenge?wallet=${encodeURIComponent(walletAddress)}`;
+      authDebug('AuthService', 'Requesting auth challenge', { challengeUrl, timestamp: new Date().toISOString() });
       const nonceResponse = await axiosInstance.get(challengeUrl);
 
       const nonce = nonceResponse.data.nonce || nonceResponse.data.challenge;
+      authDebug('AuthService', 'Received nonce from server', { nonce, timestamp: new Date().toISOString() });
 
       if (!nonce) {
         throw new Error('Failed to get authentication nonce from server');
@@ -502,6 +508,13 @@ export class AuthService {
 
       // Use the configured instance for verification
       const verifyUrl = `${API_URL}/auth/verify-wallet`;
+      authDebug('AuthService', 'Sending signature for verification', { 
+        wallet: walletAddress,
+        nonce,
+        messagePreview: message.substring(0, 100) + '...',
+        timestamp: new Date().toISOString()
+      });
+      
       const authResponse = await axiosInstance.post(verifyUrl, {
         wallet: walletAddress,
         signature,
@@ -533,31 +546,6 @@ export class AuthService {
 
       // Clear explicit logout flag (user is now logged in)
       localStorage.removeItem('degen_explicit_logout');
-
-      // Fetch full profile data including profile_image_url
-      try {
-        authDebug('AuthService', 'Fetching full user profile after login');
-        const profileResponse = await axiosInstance.get(`${API_URL}/users/me`);
-        if (profileResponse.data) {
-          // Update user with full profile data including profile_image_url
-          const enhancedUser = {
-            ...user,
-            ...profileResponse.data,
-            // Preserve auth-specific fields from login response
-            jwt: user.jwt,
-            wsToken: user.wsToken,
-            session_token: user.session_token
-          };
-          this.setUser(enhancedUser, 'wallet');
-          authDebug('AuthService', 'Enhanced user profile loaded', {
-            hasProfileImage: !!enhancedUser.profile_image_url,
-            nickname: enhancedUser.nickname
-          });
-        }
-      } catch (profileError) {
-        authDebug('AuthService', 'Failed to fetch enhanced profile, continuing with basic user data', profileError);
-        // Don't fail the login if profile fetch fails
-      }
 
       // Request WebSocket token
       tokenManagerService.refreshToken(TokenType.WS_TOKEN);
@@ -671,6 +659,79 @@ export class AuthService {
     }
 
     authDebug('AuthService', 'Hard reset complete - page refresh recommended');
+  }
+
+  /**
+   * Fetch and update the user's full profile data
+   * This is safe to call after authentication is complete
+   * 
+   * @returns Promise that resolves to true if successful, false otherwise
+   */
+  public async fetchAndUpdateUserProfile(): Promise<boolean> {
+    try {
+      if (!this.isAuthenticated()) {
+        authDebug('AuthService', 'Cannot fetch user profile - not authenticated');
+        return false;
+      }
+
+      const token = await this.getToken(TokenType.JWT);
+      if (!token) {
+        authDebug('AuthService', 'Cannot fetch user profile - no JWT token');
+        return false;
+      }
+
+      authDebug('AuthService', 'Fetching user profile from /users/me');
+      
+      const response = await axiosInstance.get(`${API_URL}/users/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.data) {
+        const updatedUser = response.data;
+        
+        // Preserve existing auth-related fields from current user
+        const currentUser = this.user;
+        if (currentUser) {
+          // Merge the profile data with existing auth data
+          const mergedUser = {
+            ...currentUser,
+            ...updatedUser,
+            // Ensure critical auth fields are preserved
+            jwt: currentUser.jwt,
+            wsToken: currentUser.wsToken,
+            session_token: currentUser.session_token,
+            auth_method: currentUser.auth_method
+          };
+          
+          authDebug('AuthService', 'User profile updated successfully', {
+            nickname: mergedUser.nickname,
+            hasProfileImage: !!mergedUser.profile_image_url,
+            wallet: mergedUser.wallet_address
+          });
+          
+          // Update the user without triggering a full auth state change
+          this.user = mergedUser;
+          
+          // Also update the store
+          const store = useStore.getState();
+          if (store.setUser) {
+            store.setUser(mergedUser);
+          }
+          
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      authDebug('AuthService', 'Error fetching user profile', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      // Don't throw - this is a non-critical enhancement
+      return false;
+    }
   }
 
   // setupTokenRefreshHandlers remains the same (currently empty)

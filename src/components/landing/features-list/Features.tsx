@@ -16,6 +16,7 @@ import React, { RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { useIsVisible } from "../../../hooks/ui/useIsVisible";
 import { MeasureRender } from "../../../utils/performance";
 import { FeatureList } from "./FeatureList";
+import { SectionHeader } from "./SectionHeader";
 
 // Hook for reduced motion preference
 const useReducedMotion = () => {
@@ -121,7 +122,7 @@ const Features: React.FC = () => {
   // Features section JSX
   return (
     <MeasureRender id="Features" logThreshold={16}>
-      <div ref={containerRef} className="relative py-12 md:py-20 overflow-hidden">
+      <div ref={containerRef} className="relative py-6 md:py-10 overflow-hidden">
         {CosmicEffects}
 
         {/* Features section container */}
@@ -132,62 +133,10 @@ const Features: React.FC = () => {
           transition={{ duration: 0.8 }}
         >
           {/* Features section header */}
-          <motion.div
-            className="text-center mb-8 md:mb-16 px-4"
-            initial={{ opacity: 0, y: -20 }}
-            animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-          >
-            {/* Features section title section with animated underline and glow */}
-            <div className="relative inline-block">
-              
-              {/* Features section title */}
-              <motion.h2 
-                className="text-2xl md:text-4xl font-bold font-russo text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 tracking-wider uppercase relative inline-block"
-                animate={isVisible && !prefersReducedMotion ? {
-                  textShadow: [
-                    "0 0 8px rgba(168, 85, 247, 0.2)",
-                    "0 0 16px rgba(168, 85, 247, 0.4)",
-                    "0 0 8px rgba(168, 85, 247, 0.2)"
-                  ] 
-                } : {}}
-                transition={!prefersReducedMotion ? { 
-                  duration: 3, 
-                  repeat: Infinity 
-                } : {}}
-              >
-                {/* Title */}
-                What is DegenDuel?
-                
-                {/* Animated underline */}
-                <motion.div 
-                  className="absolute -bottom-2 md:-bottom-3 left-0 right-0 h-0.5 md:h-1 bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 rounded-full"
-                  initial={{ width: 0, left: "50%" }}
-                  animate={isVisible ? { width: "100%", left: 0 } : { width: 0, left: "50%" }}
-                  transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
-                />
-
-              </motion.h2>
-              
-            </div>
-            
-            {/* Features section subtitle section with animated blinking cursor */}
-            <div className="mt-4 md:mt-6 flex items-center justify-center px-2">
-              
-              {/* Subtitle */}
-              <p className="text-gray-300 max-w-2xl mx-auto text-sm md:text-lg font-mono tracking-wide text-center">
-                Experience crypto trading like never before - competitive, fun, and rewarding.
-              </p>
-
-              {/* Blinking cursor - Only animate when visible and motion allowed */}
-              <motion.span
-                className="ml-1 md:ml-2 inline-block w-1.5 md:w-2 h-4 md:h-5 bg-brand-400"
-                animate={isVisible && !prefersReducedMotion ? { opacity: [1, 0, 1] } : { opacity: 1 }}
-                transition={!prefersReducedMotion ? { duration: 1.2, repeat: Infinity } : {}}
-              />
-
-            </div>
-          </motion.div>
+          <SectionHeader 
+            title="What is DegenDuel?"
+            subtitle="Experience crypto trading like never before - competitive, fun, and rewarding."
+          />
 
           {/* Features List Component */}
           <div className="px-2 md:px-4 relative z-10 max-w-7xl mx-auto">

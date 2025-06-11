@@ -1,8 +1,8 @@
-import React, { useRef, useCallback, useMemo, useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { TokenListItem } from "./TokenListItem";
-import { PortfolioOptimizedTokenCard } from "./PortfolioOptimizedTokenCard";
 import { Token, TokenHelpers } from "../../types/index";
+import { PortfolioOptimizedTokenCard } from "./PortfolioOptimizedTokenCard";
+import { TokenListItem } from "./TokenListItem";
 
 interface TokenGridProps {
   tokens: Token[];
@@ -87,8 +87,8 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
       console.log("🔍 TokenGrid: Removing token from selection");
       onTokenSelect(tokenAddress, 0); // Remove token
     } else {
-      console.log("🔍 TokenGrid: Adding token to selection with 50% weight");
-      onTokenSelect(tokenAddress, 50); // Add token with default weight
+              console.log("🔍 TokenGrid: Adding token to selection with 10% weight");
+        onTokenSelect(tokenAddress, 10); // Add token with default weight
     }
   }, [selectedTokens, onTokenSelect]);
 
