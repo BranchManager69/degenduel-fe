@@ -53,8 +53,10 @@ export function useContestViewUpdates(contestId: string | null, initialData: Con
 
   // Update local state when initial data changes
   useEffect(() => {
-    setUpdatedData(initialData);
-  }, [initialData]);
+    if (initialData !== updatedData) {
+      setUpdatedData(initialData);
+    }
+  }, [initialData, updatedData]);
 
   const handleMessage = useCallback((message: Partial<ContestWebSocketMessage>) => {
     if (!contestId || !message.data || message.data.contestId !== contestId || message.type !== DDExtendedMessageType.DATA) {
@@ -66,36 +68,56 @@ export function useContestViewUpdates(contestId: string | null, initialData: Con
     setUpdatedData(prevData => {
       if (!prevData) return initialData;
 
-      // Create deep copies to ensure immutability
-      let newContestData = prevData.contest ? { ...prevData.contest } : null;
-      let newLeaderboard = prevData.leaderboard ? prevData.leaderboard.map(e => ({ ...e })) : [];
-      let newCurrentUserPerformance = prevData.currentUserPerformance ? { ...prevData.currentUserPerformance } : null;
+      // Create copies only when necessary
+      let hasChanges = false;
+      let newContestData = prevData.contest;
+      let newLeaderboard = prevData.leaderboard;
+      let newCurrentUserPerformance = prevData.currentUserPerformance;
 
       // Handle contest topic updates
       if (topic === WEBSOCKET_TOPICS.CONTEST) {
         if (subtype === 'leaderboard' && action === WEBSOCKET_ACTIONS.LEADERBOARD_UPDATE && data.leaderboard) {
-          newLeaderboard = data.leaderboard.map(e => ({ ...e }));
+          // Only update if leaderboard data is actually different
+          const isDifferent = !newLeaderboard ||
+            newLeaderboard.length !== data.leaderboard.length ||
+            JSON.stringify(newLeaderboard) !== JSON.stringify(data.leaderboard);
 
-          // Update current user performance from leaderboard
-          const currentUserEntry = newLeaderboard.find(e => e.isCurrentUser);
-          if (currentUserEntry && newCurrentUserPerformance) {
-            newCurrentUserPerformance.rank = currentUserEntry.rank;
-            newCurrentUserPerformance.portfolioValue = currentUserEntry.portfolioValue;
-            newCurrentUserPerformance.performancePercentage = currentUserEntry.performancePercentage;
+          if (isDifferent) {
+            newLeaderboard = data.leaderboard.map(e => ({ ...e }));
+            hasChanges = true;
+
+            // Update current user performance from leaderboard
+            const currentUserEntry = newLeaderboard.find(e => e.isCurrentUser);
+            if (currentUserEntry && newCurrentUserPerformance) {
+              newCurrentUserPerformance = {
+                ...newCurrentUserPerformance,
+                rank: currentUserEntry.rank,
+                portfolioValue: currentUserEntry.portfolioValue,
+                performancePercentage: currentUserEntry.performancePercentage
+              };
+            }
           }
 
           dispatchWebSocketEvent('contest_view_leaderboard_update', { contestId });
         }
 
         else if (subtype === 'status' && action === WEBSOCKET_ACTIONS.STATUS_UPDATE && data.status && newContestData) {
-          newContestData.status = data.status;
+          if (newContestData.status !== data.status) {
+            newContestData = { ...newContestData, status: data.status };
+            hasChanges = true;
+          }
           dispatchWebSocketEvent('contest_view_status_update', { contestId, status: data.status });
         }
 
         else if (subtype === 'update' && action === WEBSOCKET_ACTIONS.CONTEST_UPDATE) {
           // General contest updates (participant count, etc.)
           if (newContestData) {
-            newContestData = { ...newContestData, ...data };
+            const updatedContestData = { ...newContestData, ...data };
+            // Check if anything actually changed
+            if (JSON.stringify(newContestData) !== JSON.stringify(updatedContestData)) {
+              newContestData = updatedContestData;
+              hasChanges = true;
+            }
           }
           dispatchWebSocketEvent('contest_view_contest_update', { contestId });
         }
@@ -104,23 +126,33 @@ export function useContestViewUpdates(contestId: string | null, initialData: Con
       // Handle user-specific updates
       else if (topic === WEBSOCKET_TOPICS.USER && subtype === 'contest_participation' && action === WEBSOCKET_ACTIONS.PARTICIPANT_UPDATE && data.participantData) {
         if (newCurrentUserPerformance) {
-          newCurrentUserPerformance = { ...newCurrentUserPerformance, ...data.participantData };
+          const updatedPerformance = { ...newCurrentUserPerformance, ...data.participantData };
+          if (JSON.stringify(newCurrentUserPerformance) !== JSON.stringify(updatedPerformance)) {
+            newCurrentUserPerformance = updatedPerformance;
+            hasChanges = true;
 
-          // Update user's entry in leaderboard
-          const userIndex = newLeaderboard.findIndex(e => e.isCurrentUser);
-          if (userIndex !== -1) {
-            newLeaderboard[userIndex] = { ...newLeaderboard[userIndex], ...(data.participantData as Partial<LeaderboardEntry>) };
+            // Update user's entry in leaderboard
+            if (newLeaderboard) {
+              const userIndex = newLeaderboard.findIndex(e => e.isCurrentUser);
+              if (userIndex !== -1) {
+                newLeaderboard = [...newLeaderboard];
+                newLeaderboard[userIndex] = { ...newLeaderboard[userIndex], ...(data.participantData as Partial<LeaderboardEntry>) };
+              }
+            }
           }
 
           dispatchWebSocketEvent('contest_view_participant_update', { contestId });
         }
       }
 
-      if (!newContestData) return prevData;
+      // Only return new object if something actually changed
+      if (!hasChanges || !newContestData) {
+        return prevData;
+      }
 
       return {
         contest: newContestData,
-        leaderboard: newLeaderboard,
+        leaderboard: newLeaderboard || [],
         currentUserPerformance: newCurrentUserPerformance,
       };
     });

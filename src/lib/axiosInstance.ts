@@ -47,24 +47,28 @@ axiosInstance.interceptors.response.use(
     // Skip token refresh for auth-related endpoints
     const authEndpoints = ['/auth/refresh', '/auth/challenge', '/auth/verify-wallet', '/auth/status', '/auth/login', '/auth/logout'];
     const isAuthEndpoint = authEndpoints.some(endpoint => originalRequest.url?.includes(endpoint));
-    
+
     // Check if it's a 401 error and not an auth endpoint
     if (error.response?.status === 401 && !isAuthEndpoint && !originalRequest._retry) {
-      
-      // Only attempt refresh if we have tokens stored (i.e., user was previously authenticated)
-      // This prevents refresh attempts when user is not logged in
-      const hasStoredTokens = document.cookie.includes('token=') || 
-                              document.cookie.includes('jwt=') || 
-                              document.cookie.includes('r_session=') ||
-                              localStorage.getItem('degenduel-storage')?.includes('"jwt"');
-      
+
+      // Enhanced token detection - check multiple sources
+      const hasStoredTokens = (
+        document.cookie.includes('token=') ||
+        document.cookie.includes('jwt=') ||
+        document.cookie.includes('r_session=') ||
+        localStorage.getItem('degenduel-storage')?.includes('"jwt"') ||
+        // Check if user appears authenticated in auth service
+        (typeof window !== 'undefined' && (window as any).authService?.isAuthenticated?.())
+      );
+
       if (!hasStoredTokens) {
-        // No tokens stored, user is not authenticated, don't try to refresh
+        console.log('[Axios Interceptor] No authentication tokens found, skipping refresh');
         return Promise.reject(error);
       }
 
       // Prevent multiple refresh attempts concurrently
       if (isRefreshing) {
+        console.log('[Axios Interceptor] Refresh already in progress, queuing request');
         // If refresh is already in progress, queue the failed request
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject, config: originalRequest });
@@ -76,29 +80,49 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        console.log('[Axios Interceptor] Session expired (401). Attempting token refresh...');
-        // Make the refresh request (no body needed, uses r_session cookie)
-        await axiosInstance.post('/auth/refresh', {}); // Using the same instance ensures cookies are sent
+        console.group('🔄 [Axios Interceptor] Token Refresh Attempt');
+        console.log('Original request failed with 401:', originalRequest.url);
+        console.log('Auth tokens detected, attempting refresh...');
 
-        console.log('[Axios Interceptor] Token refresh successful. Retrying original request...');
-        // Process queue without passing token
-        processQueue(null);
-        // Retry the original request with the same instance
-        return axiosInstance(originalRequest);
+        // Try to refresh the token
+        console.log('[axios] Attempting token refresh...');
+        const refreshResponse = await axiosInstance.post('/auth/refresh', {});
+
+        if (refreshResponse.status === 200) {
+          console.log('[axios] Token refresh successful, retrying original request');
+          // Retry the original request
+          return axiosInstance.request(originalRequest);
+        } else {
+          throw new Error(`Token refresh failed with status: ${refreshResponse.status}`);
+        }
 
       } catch (refreshError: any) {
-        console.error('[Axios Interceptor] Token refresh failed.', refreshError?.response?.data || refreshError);
-        // Process queue without passing token
+        console.group('❌ [Axios Interceptor] Token Refresh Failed');
+        console.error('Refresh error:', refreshError?.response?.data || refreshError?.message);
+        console.log('Triggering logout and rejecting queued requests');
+        console.groupEnd();
+
+        // Process queue with error
         processQueue(refreshError);
-        
-        // Only logout if we had tokens before (i.e., user was authenticated)
-        if (hasStoredTokens) {
-          // Trigger logout
-          // Using authService directly might cause circular dependency issues.
-          // Consider an event emitter or state management action instead.
-          authService.logout();
+
+        // Enhanced logout trigger - use multiple methods
+        try {
+          // Try to use authService if available
+          if (typeof window !== 'undefined' && (window as any).authService?.logout) {
+            await (window as any).authService.logout();
+          } else if (authService?.logout) {
+            await authService.logout();
+          } else {
+            // Fallback: redirect to login
+            console.warn('[Axios Interceptor] AuthService not available, redirecting to login');
+            window.location.href = '/login';
+          }
+        } catch (logoutError) {
+          console.error('[Axios Interceptor] Logout failed:', logoutError);
+          // Ultimate fallback
+          window.location.href = '/login';
         }
-        
+
         // Reject the original request's promise with the refresh error
         return Promise.reject(refreshError);
       } finally {

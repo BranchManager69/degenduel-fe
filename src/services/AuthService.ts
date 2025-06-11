@@ -468,7 +468,7 @@ export class AuthService {
     signMessage: (message: Uint8Array) => Promise<SignMessageOutput>
   ): Promise<User> {
     try {
-      authDebug('AuthService', 'Starting wallet authentication', { 
+      authDebug('AuthService', 'Starting wallet authentication', {
         walletAddress,
         timestamp: new Date().toISOString(),
         callStack: new Error().stack?.split('\n').slice(2, 5).join(' -> ')
@@ -508,13 +508,13 @@ export class AuthService {
 
       // Use the configured instance for verification
       const verifyUrl = `${API_URL}/auth/verify-wallet`;
-      authDebug('AuthService', 'Sending signature for verification', { 
+      authDebug('AuthService', 'Sending signature for verification', {
         wallet: walletAddress,
         nonce,
         messagePreview: message.substring(0, 100) + '...',
         timestamp: new Date().toISOString()
       });
-      
+
       const authResponse = await axiosInstance.post(verifyUrl, {
         wallet: walletAddress,
         signature,
@@ -681,7 +681,7 @@ export class AuthService {
       }
 
       authDebug('AuthService', 'Fetching user profile from /users/me');
-      
+
       const response = await axiosInstance.get(`${API_URL}/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -690,7 +690,7 @@ export class AuthService {
 
       if (response.data) {
         const updatedUser = response.data;
-        
+
         // Preserve existing auth-related fields from current user
         const currentUser = this.user;
         if (currentUser) {
@@ -704,26 +704,26 @@ export class AuthService {
             session_token: currentUser.session_token,
             auth_method: currentUser.auth_method
           };
-          
+
           authDebug('AuthService', 'User profile updated successfully', {
             nickname: mergedUser.nickname,
             hasProfileImage: !!mergedUser.profile_image_url,
             wallet: mergedUser.wallet_address
           });
-          
+
           // Update the user without triggering a full auth state change
           this.user = mergedUser;
-          
+
           // Also update the store
           const store = useStore.getState();
           if (store.setUser) {
             store.setUser(mergedUser);
           }
-          
+
           return true;
         }
       }
-      
+
       return false;
     } catch (error) {
       authDebug('AuthService', 'Error fetching user profile', {
@@ -734,9 +734,36 @@ export class AuthService {
     }
   }
 
+  /**
+   * Check if user is truly authenticated (not just appears authenticated)
+   * This performs a quick server-side validation to prevent ghost auth
+   */
+  public async isReallyAuthenticated(): Promise<boolean> {
+    try {
+      if (!this.isAuthenticated()) {
+        return false;
+      }
+
+      // Quick server check - use a lightweight endpoint
+      const response = await axiosInstance.get(`${API_URL}/auth/status`, {
+        timeout: 3000 // Quick timeout
+      });
+
+      return response.data?.authenticated === true;
+    } catch (error) {
+      // If the check fails, assume not authenticated
+      return false;
+    }
+  }
+
   // setupTokenRefreshHandlers remains the same (currently empty)
   private setupTokenRefreshHandlers() { /* ... */ }
 }
 
 // Export singleton instance
 export const authService = AuthService.getInstance();
+
+// Expose globally for axios interceptor (prevents circular dependencies)
+if (typeof window !== 'undefined') {
+  (window as any).authService = authService;
+}

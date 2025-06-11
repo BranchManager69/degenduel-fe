@@ -63,9 +63,12 @@ export interface UnifiedWebSocketContextType {
   
   // WebSocket methods
   sendMessage: (message: any) => boolean;
-  subscribe: (topics: string[]) => boolean;
-  unsubscribe: (topics: string[]) => boolean;
+  subscribe: (topics: string[], componentId?: string) => boolean;
+  unsubscribe: (topics: string[], componentId?: string) => boolean;
   request: (topic: string, action: string, params?: any) => boolean;
+  
+  // Component cleanup
+  cleanupComponent: (componentId: string) => void;
   
   // Listener management
   registerListener: (
@@ -111,11 +114,13 @@ export const UnifiedWebSocketProvider: React.FC<{
   const heartbeatIntervalRef = useRef<number | null>(null);
   const missedHeartbeatsRef = useRef<number>(0);
   
-  // Subscription tracking to prevent duplicates
+  // Subscription tracking to prevent duplicates - ENHANCED
   const currentTopicsRef = useRef<Set<string>>(new Set());
+  const pendingSubscriptionsRef = useRef<Set<string>>(new Set()); // Track pending subscriptions
+  const subscriptionDebounceRef = useRef<Map<string, NodeJS.Timeout>>(new Map()); // Debounce rapid subscriptions
   
-  // Pending subscriptions queue to handle calls before socket is ready
-  const pendingSubscriptionsRef = useRef<string[]>([]);
+  // Track which components have subscribed to which topics for cleanup
+  const componentSubscriptionsRef = useRef<Map<string, Set<string>>>(new Map());
   
   // Get default configuration
   const defaultUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v69/ws`; // doubt that this is the best practices method but it works for now
@@ -124,7 +129,7 @@ export const UnifiedWebSocketProvider: React.FC<{
   
   // Set default options
   const reconnectInterval = options.reconnectInterval || 3000; // 3 seconds base
-  const heartbeatInterval = options.heartbeatInterval || 30000;
+  const heartbeatInterval = options.heartbeatInterval || 25000; // 25 seconds to match backend and stay under Cloudflare's 90s timeout
   const maxMissedHeartbeats = options.maxMissedHeartbeats || 3;
   
   // Handle authentication state changes
@@ -187,12 +192,13 @@ export const UnifiedWebSocketProvider: React.FC<{
       // Set up event handlers
       ws.onopen = handleOpen;
       ws.onmessage = handleMessage;
-      ws.onclose = handleClose;
-      ws.onerror = handleError;
+      ws.onclose = (event: CloseEvent) => handleCloseOrError(event, 'close');
+      ws.onerror = (event: Event) => handleCloseOrError(event, 'error');
 
     } catch (error) {
-      setConnectionError(error instanceof Error ? error.message : String(error));
+      console.error('[WebSocket] Error creating connection:', error);
       setConnectionState(ConnectionState.ERROR);
+      setConnectionError(`Failed to create WebSocket connection: ${error}`);
       scheduleReconnect();
     }
   }, [connectionUrl]);
@@ -211,9 +217,9 @@ export const UnifiedWebSocketProvider: React.FC<{
     startHeartbeat();
     
     // Process any pending subscriptions
-    if (pendingSubscriptionsRef.current.length > 0) {
+    if (pendingSubscriptionsRef.current.size > 0) {
       const pendingTopics = [...pendingSubscriptionsRef.current];
-      pendingSubscriptionsRef.current = []; // Clear the queue
+      pendingSubscriptionsRef.current.clear(); // Clear the queue
       
       // Subscribe to pending topics
       subscribe(pendingTopics);
@@ -232,6 +238,7 @@ export const UnifiedWebSocketProvider: React.FC<{
 
       // Handle proper pong responses from backend
       if ((message.type === 'RESPONSE' || message.type === 'SYSTEM') && message.action === 'pong') {
+        console.debug('[WebSocket] Received pong response from server');
         missedHeartbeatsRef.current = 0;
         // Clear the ping timeout since we got a response
         if (pingTimeoutRef.current !== null) {
@@ -240,8 +247,35 @@ export const UnifiedWebSocketProvider: React.FC<{
         }
         return;
       }
+      
+      // Handle backend's SYSTEM heartbeat messages (as per backend specification)
+      if (message.type === 'SYSTEM' && message.action === 'heartbeat' && message.topic === 'system') {
+        // Backend sends heartbeats to keep connection alive through Cloudflare
+        // Log this for debugging but don't reset our ping counter since this is server-initiated
+        console.debug('[WebSocket] Received server heartbeat:', {
+          timestamp: message.data?.timestamp,
+          serverTime: message.data?.serverTime
+        });
+        // Distribute to listeners who might want to track server heartbeats
+        distributeMessage(message);
+        return;
+      }
+      
+      // Handle simple pong response (for Cloudflare bidirectional traffic)
+      if (message.type === 'pong') {
+        console.debug('[WebSocket] Received simple pong response from server for Cloudflare');
+        missedHeartbeatsRef.current = 0;
+        // Clear the ping timeout since we got a response
+        if (pingTimeoutRef.current !== null) {
+          window.clearTimeout(pingTimeoutRef.current);
+          pingTimeoutRef.current = null;
+        }
+        return;
+      }
+      
       // Handle explicit PONG type if backend sends it
       if (message.type === DDExtendedMessageType.PONG) {
+        console.debug('[WebSocket] Received PONG response from server');
         missedHeartbeatsRef.current = 0;
         // Clear the ping timeout since we got a response
         if (pingTimeoutRef.current !== null) {
@@ -313,121 +347,35 @@ export const UnifiedWebSocketProvider: React.FC<{
     }
   };
   
-  // Handle WebSocket close
-  const handleClose = (event: CloseEvent) => {
-    
-    // Identify specific types of connection issues
-    let errorMessage = '';
-    let localServerDown = false;
-    
-    // Check if we're in production environment
-    const isProduction = import.meta.env.PROD || window.location.hostname === 'degenduel.me';
-    
-    switch (event.code) {
-      case 1000:
-        // Normal closure
-        errorMessage = 'Connection closed normally';
-        break;
-      case 1001:
-        errorMessage = isProduction ? 'Server maintenance in progress' : 'Server is going away';
-        break;
-      case 1005:
-        // Empty status - common browser-side issue, not server error
-        errorMessage = isProduction ? 'Connection temporarily unavailable' : `Connection closed with code ${event.code}: ${event.reason || 'Unknown reason'}`;
-        break;
-      case 1006:
-        // Abnormal closure - often indicates server unavailability or network issues
-        errorMessage = isProduction ? 'Connection temporarily unavailable' : 'Can\'t connect to DegenDuel.';
-        localServerDown = true;
-        break;
-      case 1011:
-        errorMessage = isProduction ? 'Service temporarily unavailable' : 'Server encountered an error';
-        localServerDown = true;
-        break;
-      case 1012:
-        errorMessage = isProduction ? 'Server maintenance in progress' : 'Server is restarting';
-        localServerDown = true;
-        break;
-      case 1013:
-        errorMessage = isProduction ? 'Service temporarily unavailable' : 'Server is unavailable';
-        localServerDown = true;
-        break;
-      default:
-        errorMessage = isProduction 
-          ? 'Connection issue - reconnecting...' 
-          : `Connection closed with code ${event.code}: ${event.reason || 'Unknown reason'}`;
-    }
-    
-    // Update server down state
-    setIsServerDown(localServerDown);
+  // Handle WebSocket close/error
+  const handleCloseOrError = (event: CloseEvent | Event, source: 'close' | 'error') => {
+    const reason = event instanceof CloseEvent ? `Code: ${event.code}, Reason: ${event.reason}` : 'Connection error';
+    console.log(`[WebSocket] Connection ${source}: ${reason}`);
     
     // Stop heartbeat
     stopHeartbeat();
     
     // Clear subscription tracking on disconnect
+    console.log('[WebSocket] Clearing subscription tracking due to disconnection');
     currentTopicsRef.current.clear();
+    pendingSubscriptionsRef.current.clear();
+    componentSubscriptionsRef.current.clear();
     
-    // Clear pending subscriptions queue on disconnect
-    pendingSubscriptionsRef.current = [];
+    // Clear any pending debounce timers
+    subscriptionDebounceRef.current.forEach(timer => clearTimeout(timer));
+    subscriptionDebounceRef.current.clear();
     
-    // Update state
-    setConnectionState(ConnectionState.DISCONNECTED);
-    setConnectionError(errorMessage);
-    
-    // Use a shorter initial reconnect delay for server down scenarios
-    if (localServerDown && reconnectAttemptsRef.current === 0) {
-      // For server down on first attempt, use a shorter delay (5s)
-      // This avoids unnecessary rapid reconnects when server is known to be down
-      const serverDownDelay = 5000;
-      reconnectTimeoutRef.current = window.setTimeout(() => {
-        reconnectTimeoutRef.current = null;
-        // Try to confirm server status before actual reconnect
-        checkServerStatus().then(isUp => {
-          if (isUp) {
-            connect();
-          } else {
-            // If still down, continue with normal exponential backoff
-            reconnectAttemptsRef.current++;
-            scheduleReconnect();
-          }
-        }).catch(() => {
-          // If check fails, proceed with normal reconnect
-          reconnectAttemptsRef.current++;
-          scheduleReconnect();
-        });
-      }, serverDownDelay);
-      return;
+    // Set appropriate connection state
+    if (source === 'error' || (event instanceof CloseEvent && (event.code === 1006 || event.code >= 4000))) {
+      setConnectionState(ConnectionState.ERROR);
+      setConnectionError(`WebSocket ${source}: ${reason}`);
+    } else {
+      setConnectionState(ConnectionState.DISCONNECTED);
+      setConnectionError(null);
     }
     
-    // Reconnect if not a clean close
-    if (event.code !== 1000) {
-      scheduleReconnect();
-    }
-  };
-  
-  // Check if the server is available
-  const checkServerStatus = async (): Promise<boolean> => {
-    try {
-      // Try to fetch a lightweight endpoint to check server status
-      const response = await fetch('/api/health', { 
-        method: 'HEAD',
-        // Short timeout to avoid hanging
-        signal: AbortSignal.timeout(2000)
-      });
-      return response.ok;
-    } catch (error) {
-      return false;
-    }
-  };
-  
-  // Handle WebSocket error
-  const handleError = () => {
-    // WebSocket error events don't provide much information
-    // Most errors will be captured by the close event
-    // Don't tear down the context - just set error state and let close event handle reconnection
-    // This prevents the infinite reconnect spiral where onerror triggers a rebuild
-    setConnectionState(ConnectionState.ERROR);
-    setConnectionError('WebSocket connection error - server may be down or unreachable');
+    // Attempt reconnection
+    scheduleReconnect();
   };
   
   // Schedule reconnection with exponential backoff (no permanent failure)
@@ -472,7 +420,20 @@ export const UnifiedWebSocketProvider: React.FC<{
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         // Send ping
         try {
-          const pingMessage = {
+          // Send simple ping message for Cloudflare bidirectional traffic requirement
+          const simplePingMessage = {
+            type: 'ping',
+            timestamp: Date.now()
+          };
+          
+          wsRef.current.send(JSON.stringify(simplePingMessage));
+          
+          console.debug('[WebSocket] Sent simple ping to server for Cloudflare:', {
+            timestamp: simplePingMessage.timestamp
+          });
+          
+          // Also send the REQUEST ping for compatibility with existing system
+          const requestPingMessage = {
             type: 'REQUEST',
             topic: 'system',
             action: 'ping',
@@ -480,7 +441,12 @@ export const UnifiedWebSocketProvider: React.FC<{
             timestamp: new Date().toISOString()
           };
           
-          wsRef.current.send(JSON.stringify(pingMessage));
+          wsRef.current.send(JSON.stringify(requestPingMessage));
+          
+          console.debug('[WebSocket] Sent REQUEST ping to server:', {
+            requestId: requestPingMessage.requestId,
+            timestamp: requestPingMessage.timestamp
+          });
           
           // Clear any existing ping timeout
           if (pingTimeoutRef.current !== null) {
@@ -491,8 +457,14 @@ export const UnifiedWebSocketProvider: React.FC<{
           pingTimeoutRef.current = window.setTimeout(() => {
             missedHeartbeatsRef.current++;
             
+            console.warn('[WebSocket] Ping timeout - no pong received:', {
+              missedHeartbeats: missedHeartbeatsRef.current,
+              maxMissedHeartbeats: maxMissedHeartbeats
+            });
+            
             // If we've missed too many, consider the connection dead
             if (missedHeartbeatsRef.current >= maxMissedHeartbeats) {
+              console.error('[WebSocket] Too many missed heartbeats, closing connection');
               wsRef.current?.close();
               wsRef.current = null;
               scheduleReconnect();
@@ -612,20 +584,21 @@ export const UnifiedWebSocketProvider: React.FC<{
     }
   }, []);
   
-  // Subscribe to topics (stable reference with useCallback + duplicate prevention)
-  const subscribe = useCallback((topics: string[]) => {
+  // Subscribe to topics (stable reference with useCallback + duplicate prevention + debouncing)
+  const subscribe = useCallback((topics: string[], componentId?: string) => {
     // If WebSocket isn't ready, queue the subscriptions for later
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       if (topics.length === 0) return false;
       
       // Add to pending queue (avoid duplicates)
       const newPendingTopics = topics.filter(topic => 
-        !pendingSubscriptionsRef.current.includes(topic) && 
+        !pendingSubscriptionsRef.current.has(topic) && 
         !currentTopicsRef.current.has(topic)
       );
       
       if (newPendingTopics.length > 0) {
-        pendingSubscriptionsRef.current.push(...newPendingTopics);
+        newPendingTopics.forEach(topic => pendingSubscriptionsRef.current.add(topic));
+        console.log(`[WebSocket] Queued ${newPendingTopics.length} topics for later subscription`);
       }
       
       return true; // Indicate that the request was accepted (queued)
@@ -638,74 +611,185 @@ export const UnifiedWebSocketProvider: React.FC<{
     // Filter out already subscribed topics to prevent duplicates
     const newTopics = topics.filter(topic => !currentTopicsRef.current.has(topic));
     if (newTopics.length === 0) {
+      console.log(`[WebSocket] All topics already subscribed: ${topics.join(', ')}`);
       return true; // Already subscribed, return success
     }
     
-    // Create the base message with only new topics
-    const createSubscribeMessage = (authToken?: string) => {
-    const message: any = {
-      type: 'SUBSCRIBE',
-        topics: [...newTopics] // Use only new topics to prevent duplicates
-    };
+    // DEBOUNCING: Clear any pending debounce timers for these topics
+    newTopics.forEach(topic => {
+      const existingTimer = subscriptionDebounceRef.current.get(topic);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+        subscriptionDebounceRef.current.delete(topic);
+      }
+    });
     
-      if (authToken) {
-        message.authToken = authToken;
+    // DEBOUNCING: Set a short delay to batch rapid subscription requests
+    const debounceDelay = 100; // 100ms debounce
+    const debounceTimer = setTimeout(() => {
+      // Check if topics are still valid for subscription (connection might have changed)
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+        console.warn('[WebSocket] Connection lost during debounced subscription');
+        return;
       }
       
-      return message;
-    };
-    
-    // Handle authenticated subscription
-    if (authService.isAuthenticated()) {
-      authService.getToken(TokenType.WS_TOKEN)
-        .then(token => {
-          const message = createSubscribeMessage(token || undefined);
-          const success = sendMessage(message);
-          if (success) {
-            // Mark topics as subscribed
-            newTopics.forEach(topic => currentTopicsRef.current.add(topic));
+      // Double-check that topics aren't already subscribed (might have happened during debounce)
+      const finalTopics = newTopics.filter(topic => !currentTopicsRef.current.has(topic));
+      if (finalTopics.length === 0) {
+        console.log('[WebSocket] All topics already subscribed during debounce');
+        return;
+      }
+      
+      console.group(`🔗 [WebSocket] Subscribing to ${finalTopics.length} topics`);
+      console.log('Topics:', finalTopics);
+      console.log('Component:', componentId || 'unknown');
+      console.groupEnd();
+      
+      // Create the base message with only new topics
+      const createSubscribeMessage = (authToken?: string) => {
+        const message: any = {
+          type: 'SUBSCRIBE',
+          topics: [...finalTopics] // Use only new topics to prevent duplicates
+        };
+        
+        if (authToken) {
+          message.authToken = authToken;
+        }
+        
+        return message;
+      };
+      
+      // Handle authenticated subscription
+      if (authService.isAuthenticated()) {
+        authService.getToken(TokenType.WS_TOKEN)
+          .then(token => {
+            const message = createSubscribeMessage(token || undefined);
+            const success = sendMessage(message);
+            if (success) {
+              // Mark topics as subscribed
+              finalTopics.forEach(topic => currentTopicsRef.current.add(topic));
+              
+              // Track component subscriptions for cleanup
+              if (componentId) {
+                if (!componentSubscriptionsRef.current.has(componentId)) {
+                  componentSubscriptionsRef.current.set(componentId, new Set());
+                }
+                finalTopics.forEach(topic => 
+                  componentSubscriptionsRef.current.get(componentId)!.add(topic)
+                );
+              }
+            }
+          })
+          .catch(() => {
+            // Send without token if token retrieval fails
+            const message = createSubscribeMessage();
+            const success = sendMessage(message);
+            if (success) {
+              // Mark topics as subscribed
+              finalTopics.forEach(topic => currentTopicsRef.current.add(topic));
+              
+              // Track component subscriptions for cleanup
+              if (componentId) {
+                if (!componentSubscriptionsRef.current.has(componentId)) {
+                  componentSubscriptionsRef.current.set(componentId, new Set());
+                }
+                finalTopics.forEach(topic => 
+                  componentSubscriptionsRef.current.get(componentId)!.add(topic)
+                );
+              }
+            }
+          });
+        return;
+      }
+      
+      // Send without auth for public topics
+      const message = createSubscribeMessage();
+      const success = sendMessage(message);
+      if (success) {
+        // Mark topics as subscribed
+        finalTopics.forEach(topic => currentTopicsRef.current.add(topic));
+        
+        // Track component subscriptions for cleanup
+        if (componentId) {
+          if (!componentSubscriptionsRef.current.has(componentId)) {
+            componentSubscriptionsRef.current.set(componentId, new Set());
           }
-        })
-        .catch(() => {
-          // Send without token if token retrieval fails
-          const message = createSubscribeMessage();
-          const success = sendMessage(message);
-          if (success) {
-            // Mark topics as subscribed
-            newTopics.forEach(topic => currentTopicsRef.current.add(topic));
-          }
-      });
-      return true;
-    }
+          finalTopics.forEach(topic => 
+            componentSubscriptionsRef.current.get(componentId)!.add(topic)
+          );
+        }
+      }
+      
+      // Remove debounce timer
+      newTopics.forEach(topic => subscriptionDebounceRef.current.delete(topic));
+    }, debounceDelay);
     
-    // Send without auth for public topics
-    const message = createSubscribeMessage();
-    const success = sendMessage(message);
-    if (success) {
-      // Mark topics as subscribed
-      newTopics.forEach(topic => currentTopicsRef.current.add(topic));
-    }
-    return success;
+    // Store debounce timer
+    newTopics.forEach(topic => subscriptionDebounceRef.current.set(topic, debounceTimer));
+    
+    return true;
   }, []); // Empty dependency array for stable reference
   
   // Unsubscribe from topics (stable reference with useCallback + tracking)
-  const unsubscribe = useCallback((topics: string[]) => {
+  const unsubscribe = useCallback((topics: string[], componentId?: string) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || topics.length === 0) {
+      // Even if WebSocket is not connected, clean up tracking
+      if (componentId) {
+        const componentTopics = componentSubscriptionsRef.current.get(componentId);
+        if (componentTopics) {
+          topics.forEach(topic => componentTopics.delete(topic));
+          if (componentTopics.size === 0) {
+            componentSubscriptionsRef.current.delete(componentId);
+          }
+        }
+      }
+      topics.forEach(topic => currentTopicsRef.current.delete(topic));
       return false;
     }
     
+    // Only unsubscribe from topics that are actually subscribed
+    const subscribedTopics = topics.filter(topic => currentTopicsRef.current.has(topic));
+    if (subscribedTopics.length === 0) {
+      console.log(`[WebSocket] No subscribed topics to unsubscribe from: ${topics.join(', ')}`);
+      return true;
+    }
+    
+    console.log(`🔗 [WebSocket] Unsubscribing from ${subscribedTopics.length} topics:`, subscribedTopics);
+    
     const success = sendMessage({
       type: 'UNSUBSCRIBE',
-      topics
+      topics: subscribedTopics
     });
     
     if (success) {
       // Remove topics from subscription tracking
-      topics.forEach(topic => currentTopicsRef.current.delete(topic));
+      subscribedTopics.forEach(topic => currentTopicsRef.current.delete(topic));
+      
+      // Remove from component tracking
+      if (componentId) {
+        const componentTopics = componentSubscriptionsRef.current.get(componentId);
+        if (componentTopics) {
+          subscribedTopics.forEach(topic => componentTopics.delete(topic));
+          if (componentTopics.size === 0) {
+            componentSubscriptionsRef.current.delete(componentId);
+          }
+        }
+      }
     }
     
     return success;
   }, [sendMessage]);
+  
+  // Clean up all subscriptions for a specific component
+  const cleanupComponent = useCallback((componentId: string) => {
+    const componentTopics = componentSubscriptionsRef.current.get(componentId);
+    if (componentTopics && componentTopics.size > 0) {
+      console.log(`🧹 [WebSocket] Cleaning up ${componentTopics.size} subscriptions for component: ${componentId}`);
+      const topicsArray = Array.from(componentTopics);
+      unsubscribe(topicsArray, componentId);
+    }
+    componentSubscriptionsRef.current.delete(componentId);
+  }, [unsubscribe]);
   
   // Make a request (stable reference with useCallback)
   const request = useCallback((topic: string, action: string, params: any = {}) => {
@@ -791,6 +875,44 @@ export const UnifiedWebSocketProvider: React.FC<{
   const isAuthenticated = connectionState === ConnectionState.AUTHENTICATED;
   const isReadyForSecureInteraction = isAuthenticated;
   
+  // Add debugging for ghost authentication states (non-invasive)
+  useEffect(() => {
+    if (isConnected) {
+      const frontendAuthState = authService.isAuthenticated();
+      const frontendUser = authService.getUser();
+      
+      console.group('🔍 [WebSocket Auth Debug] Authentication State Check');
+      console.log('WebSocket State:', {
+        connectionState,
+        isConnected,
+        isAuthenticated,
+        isReadyForSecureInteraction
+      });
+      console.log('Frontend Auth State:', {
+        isAuthenticated: frontendAuthState,
+        hasUser: !!frontendUser,
+        userWallet: frontendUser?.wallet_address,
+        hasJWT: !!frontendUser?.jwt,
+        hasSessionToken: !!frontendUser?.session_token
+      });
+      
+      // Detect potential ghost auth scenarios
+      if (frontendAuthState && !isAuthenticated && isConnected) {
+        console.warn('🚨 GHOST AUTH DETECTED: Frontend thinks user is authenticated, but WebSocket auth failed');
+        console.log('💡 This could mean:');
+        console.log('   - JWT token expired but frontend hasn\'t refreshed');
+        console.log('   - WebSocket auth handshake failed');
+        console.log('   - Token mismatch between frontend and WebSocket');
+      }
+      
+      if (!frontendAuthState && isAuthenticated) {
+        console.warn('🚨 REVERSE GHOST AUTH: WebSocket authenticated but frontend thinks user is not');
+      }
+      
+      console.groupEnd();
+    }
+  }, [connectionState, isConnected, isAuthenticated]);
+  
   // Setup the singleton instance for useUnifiedWebSocket hook (only log once)
   const hasLoggedSetup = useRef(false);
   useEffect(() => {
@@ -826,7 +948,12 @@ export const UnifiedWebSocketProvider: React.FC<{
     subscribe,
     unsubscribe,
     request,
-    registerListener
+    registerListener,
+    
+    // Component cleanup
+    cleanupComponent: (componentId: string) => {
+      cleanupComponent(componentId);
+    }
   };
   
   return (

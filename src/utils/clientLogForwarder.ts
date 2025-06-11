@@ -50,6 +50,9 @@ let enableVerboseClientConsole = (NODE_ENV === 'development');
 // Admin override flag - when true, shows logs even if enableVerboseClientConsole is false
 let adminOverrideActive = false;
 
+// Debug flag to control admin log display - SET TO FALSE to disable admin logs
+const SHOW_ADMIN_LOGS = false;
+
 /**
  * Check if the current user has admin/superadmin role and should get verbose console output
  */
@@ -180,11 +183,12 @@ export const initializeClientLogForwarder = (): void => {
   console.log = (...args: any[]) => {
     if (shouldShowVerboseConsole()) {
       try { 
-        if (adminOverrideActive && !enableVerboseClientConsole) {
+        if (adminOverrideActive && !enableVerboseClientConsole && SHOW_ADMIN_LOGS) {
           originalConsole.log('🔧[ADMIN]', ...args);
-        } else {
+        } else if (!adminOverrideActive || enableVerboseClientConsole) {
           originalConsole.log.apply(originalConsole, args);
         }
+        // If SHOW_ADMIN_LOGS is false, admin logs are completely suppressed
       } catch (e) { /* ignore internal log error */ }
     }
   };
@@ -192,11 +196,12 @@ export const initializeClientLogForwarder = (): void => {
   console.info = (...args: any[]) => {
     if (shouldShowVerboseConsole()) {
       try { 
-        if (adminOverrideActive && !enableVerboseClientConsole) {
+        if (adminOverrideActive && !enableVerboseClientConsole && SHOW_ADMIN_LOGS) {
           originalConsole.info('🔧[ADMIN]', ...args);
-        } else {
+        } else if (!adminOverrideActive || enableVerboseClientConsole) {
           originalConsole.info.apply(originalConsole, args);
         }
+        // If SHOW_ADMIN_LOGS is false, admin logs are completely suppressed
       } catch (e) { /* ignore internal log error */ }
     }
   };

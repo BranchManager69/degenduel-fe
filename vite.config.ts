@@ -50,7 +50,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
           'engine.io-client': path.resolve(__dirname, 'node_modules/engine.io-client/build/esm/index.js'),
           'json-stable-stringify': path.resolve(__dirname, 'node_modules/json-stable-stringify/index.js'),
           'rtcpeerconnection-shim': path.resolve(__dirname, 'node_modules/rtcpeerconnection-shim/rtcpeerconnection.js'),
-          'sdp': path.resolve(__dirname, 'node_modules/sdp/sdp.js')
+          'sdp': path.resolve(__dirname, 'node_modules/sdp/sdp.js'),
+          // Add buffer polyfill for Solana dependencies - removed due to path resolution issues
         }
       },
       server: {
@@ -287,7 +288,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
         'engine.io-client': path.resolve(__dirname, 'node_modules/engine.io-client/build/esm/index.js'),
         'json-stable-stringify': path.resolve(__dirname, 'node_modules/json-stable-stringify/index.js'),
         'rtcpeerconnection-shim': path.resolve(__dirname, 'node_modules/rtcpeerconnection-shim/rtcpeerconnection.js'),
-        'sdp': path.resolve(__dirname, 'node_modules/sdp/sdp.js')
+        'sdp': path.resolve(__dirname, 'node_modules/sdp/sdp.js'),
+        // Add buffer polyfill for Solana dependencies - removed due to path resolution issues
       }
     },
     server: {
@@ -430,7 +432,10 @@ export default defineConfig(({ command, mode }): UserConfig => {
     define: {
       'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
       '__REACT_DEVTOOLS_GLOBAL_HOOK__': JSON.stringify(true), // Usually for devtools, but can influence build
-      'process.env.REACT_DEVTOOLS_BACKEND': isDev ? JSON.stringify('ws://localhost:8097') : 'undefined'
+      'process.env.REACT_DEVTOOLS_BACKEND': isDev ? JSON.stringify('ws://localhost:8097') : 'undefined',
+      // Fix for Solana and crypto dependencies
+      global: 'globalThis',
+      'process.env': {},
     },
     plugins: [
       react({
@@ -459,7 +464,9 @@ export default defineConfig(({ command, mode }): UserConfig => {
         "graphql",
         "@telegram-apps/bridge", // ???
         "bowser", // Added bowser here
-        "base64url" // Added base64url here
+        "base64url", // Added base64url here
+        // "buffer", // Removed - causing path resolution issues
+        // "process", // Removed - causing path resolution issues
       ],
       exclude: [
         "@react-three/fiber",
@@ -468,6 +475,11 @@ export default defineConfig(({ command, mode }): UserConfig => {
       ],
       esbuildOptions: {
         target: "esnext",
+        // Add polyfills for Node.js modules
+        define: {
+          global: 'globalThis',
+        },
+        inject: [],
       },
     },
     build: {

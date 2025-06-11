@@ -66,7 +66,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     
     // Backend already calculated the hotness - use position in list as score
     const isTopThree = !isDuel && index < 4; // Top 3 excluding DUEL
-    const changeNum = token.change_24h || Number(token.change24h) || 0;
+    const changeNum = Number(token.change_24h || token.change24h) || 0;
     
     // Actual rank (0 for DUEL, then 1, 2, 3...)
     const displayRank = isDuel ? 0 : index;
@@ -143,7 +143,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
             {/* RIGHT SIDE - DEGENDUEL SCORE */}
             {token.degenduel_score && (
               <div className="px-3 py-1.5 bg-brand-500/20 backdrop-blur-sm rounded-lg border border-brand-400/30">
-                <span className="text-sm text-brand-300 font-bold">{Math.round(token.degenduel_score)}</span>
+                <span className="text-sm text-brand-300 font-bold">{Math.round(Number(token.degenduel_score) || 0)}</span>
               </div>
             )}
           </div>
@@ -202,14 +202,14 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
               <div className="flex items-center justify-between px-1">
                 <div className="flex gap-1">
                   <div className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    (token.priceChanges.m5 || 0) >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                    (Number(token.priceChanges.m5) || 0) >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
                   }`}>
-                    5m: {formatPercentage(token.priceChanges.m5, false)}
+                    5m: {formatPercentage(Number(token.priceChanges.m5) || 0, false)}
                   </div>
                   <div className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    (token.priceChanges.h1 || 0) >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                    (Number(token.priceChanges.h1) || 0) >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
                   }`}>
-                    1h: {formatPercentage(token.priceChanges.h1, false)}
+                    1h: {formatPercentage(Number(token.priceChanges.h1) || 0, false)}
                   </div>
                 </div>
               </div>

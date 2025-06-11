@@ -15,8 +15,8 @@
  * @updated 2025-05-06
  */
 
-import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { useWallet } from "@solana/wallet-adapter-react";
+import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { AuthEventType, AuthMethod, authService, TokenType } from '../services';
 import { User } from '../types/user';
 
@@ -228,23 +228,50 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
   //
   // Note: This ONLY affects users who authenticated via wallet. Social auth users 
   // (Twitter, Discord, etc.) are unaffected by wallet disconnection.
-  const { connected: walletConnected } = useWallet();
+  const { connected: walletConnected, publicKey, wallet } = useWallet();
   
+  // Enhanced wallet disconnect detection
   useEffect(() => {
-    // Only auto-logout if ALL these conditions are met:
-    // 1. Wallet is currently disconnected (!walletConnected)
-    // 2. User appears authenticated (status.isAuthenticated) 
-    // 3. User originally authenticated via wallet (auth_method === 'wallet')
-    //
-    // This prevents accidentally logging out social auth users when wallet disconnects
-    if (!walletConnected && 
-        status.isAuthenticated && 
-        status.user?.auth_method === 'wallet') {
+    // Only monitor wallet-authenticated users
+    if (!status.isAuthenticated || status.user?.auth_method !== 'wallet') {
+      return;
+    }
+    
+    // Check multiple indicators of disconnection
+    const isWalletDisconnected = (
+      !walletConnected ||           // Adapter reports disconnected
+      !publicKey ||                 // No public key available
+      !wallet                       // No wallet selected
+    );
+    
+    // Additional check: Verify the current wallet matches the authenticated wallet
+    const authenticatedWallet = status.user?.wallet_address;
+    const currentWallet = publicKey?.toBase58();
+    const walletMismatch = authenticatedWallet && currentWallet && authenticatedWallet !== currentWallet;
+    
+    if (isWalletDisconnected || walletMismatch) {
+      console.group('🚨 [UnifiedAuthContext] Wallet Disconnect Detected');
+      console.log('Disconnect Reasons:', {
+        walletConnected,
+        hasPublicKey: !!publicKey,
+        hasWallet: !!wallet,
+        authenticatedWallet,
+        currentWallet,
+        walletMismatch
+      });
+      console.log('Triggering logout to prevent ghost authentication');
+      console.groupEnd();
       
-      console.log('[UnifiedAuthContext] Wallet disconnected for wallet-authenticated user - triggering logout to prevent split-brain auth state');
       authService.logout();
     }
-  }, [walletConnected, status.isAuthenticated, status.user?.auth_method]);
+  }, [
+    walletConnected, 
+    publicKey, 
+    wallet, 
+    status.isAuthenticated, 
+    status.user?.auth_method, 
+    status.user?.wallet_address
+  ]);
   
   // Determine active auth method from user object (is this really the best way to do this?)
   const determineActiveMethod = (user: User): AuthMethod | null => {
@@ -408,7 +435,7 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
  * 
  * @returns UnifiedAuthContextType
  */
-export const useAuth = (): UnifiedAuthContextType => {
+export function useAuth(): UnifiedAuthContextType {
   const context = useContext(UnifiedAuthContext);
   
   if (context === undefined) {
@@ -416,4 +443,7 @@ export const useAuth = (): UnifiedAuthContextType => {
   }
   
   return context;
-};
+}
+
+// Default export for the provider (helps with Fast Refresh)
+export default UnifiedAuthProvider;

@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 
-import { PublicUserSearch } from "../common/PublicUserSearch";
 import { getFullImageUrl } from "../../utils/profileImageUtils";
+import { PublicUserSearch } from "../common/PublicUserSearch";
 
 // New unified participant structure from backend API
 interface Participant {
@@ -140,7 +140,7 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [sortedParticipants, contestStatus, previousRanks]);
+  }, [sortedParticipants, contestStatus]);
 
   // Get rank styling - maximum impact
   const getRankClass = (position?: number) => {

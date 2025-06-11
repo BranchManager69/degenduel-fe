@@ -2,8 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 // Import the images directly
-import greenSpriteSheet from './guys/white_buy_guy.png';
 import redSpriteSheet from './guys/black_sell_guy.png';
+import greenSpriteSheet from './guys/white_buy_guy.png';
 // For future expansion, you can add more sprite sheets:
 // import blueSpriteSheet from './guys/basic_guy.png';
 // import blackBuySpriteSheet from './guys/black_buy_guy.png';
@@ -47,7 +47,7 @@ const SpriteAnimation: React.FC<SpriteAnimationProps> = ({
         canvas = document.createElement('canvas');
         canvasRef.current = canvas;
       }
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx) return;
 
       // Size canvas to image
