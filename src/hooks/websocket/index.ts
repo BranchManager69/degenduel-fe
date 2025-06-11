@@ -105,9 +105,9 @@ import { useWallet } from './topic-hooks/useWallet';
 export * from './topic-hooks/useAchievements';
 export * from './topic-hooks/useCircuitBreaker';
 export * from './topic-hooks/useContestChat';
-export * from './topic-hooks/useContests';
 export * from './topic-hooks/useContestLifecycle';
 export * from './topic-hooks/useContestPositions';
+export * from './topic-hooks/useContests';
 export * from './topic-hooks/useContestScheduler';
 export * from './topic-hooks/useLiquiditySim';
 export * from './topic-hooks/useMarketData';
@@ -119,13 +119,12 @@ export * from './topic-hooks/useServerStatus';
 export * from './topic-hooks/useService';
 export * from './topic-hooks/useSkyDuel';
 export * from './topic-hooks/useSystemSettings';
-export * from './topic-hooks/useTerminalData';
 export * from './topic-hooks/useTokenData';
+export * from './topic-hooks/useTokenProfiles';
 export * from './topic-hooks/useTokenSchedulerStatus';
 export * from './topic-hooks/useTradeEvents';
 export * from './topic-hooks/useUserEvents';
 export * from './topic-hooks/useVanityDashboard';
-export * from './topic-hooks/useTokenProfiles';
 export { useWallet };
 
 // DEPRECATED - The individual WebSocket hooks below will be replaced
@@ -143,4 +142,14 @@ export * from './legacy/useSystemSettingsWebSocket';
 export * from './legacy/useWalletWebSocket';
 export * from './legacy/useWebSocket';
 // export * from './legacy/useRPCBenchmarkWebSocket'; // REMOVED: All components migrated to useRPCBenchmark
+
+export * from './topic-hooks/useContests';
+export * from './topic-hooks/useLaunchEvent';
+export * from './topic-hooks/useNotifications';
+export * from './topic-hooks/useSystemSettings';
+export * from './topic-hooks/useTokenData';
+export * from './topic-hooks/useTokenProfiles';
+export * from './topic-hooks/useWallet';
+export * from './types';
+export * from './useUnifiedWebSocket';
 

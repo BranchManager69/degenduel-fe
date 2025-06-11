@@ -93,7 +93,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="group relative bg-dark-200/80 backdrop-blur-sm border border-dark-300 hover:border-brand-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-brand-500/10 rounded-lg overflow-hidden w-full max-w-full"
+      className="group relative bg-dark-200/80 backdrop-blur-sm border border-dark-300 hover:border-brand-400/20 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-brand-500/10 rounded-lg overflow-visible w-full max-w-full"
     >
       {/* Contest Image with Parallax Effect */}
       {getContestImageUrl(contest.image_url) && (
@@ -188,7 +188,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
       <div className="relative p-4 sm:p-6 space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
           <div className="space-y-1.5 flex-1 min-w-0 mb-2 sm:mb-0">
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-100 truncate pr-2 group-hover:text-brand-300 transition-colors hover:text-brand-400 cursor-pointer">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-100 truncate pr-2 group-hover:text-brand-300 transition-colors hover:text-brand-400 cursor-pointer">
               {contest.name}
             </h3>
             <p className="text-sm font-medium text-brand-300">
@@ -226,67 +226,58 @@ export const ContestCard: React.FC<ContestCardProps> = ({
 
           {/* No separate badge needed - now integrated into button */}
 
-          {/* Enhanced Status Indicators - Styled like ContestButton */}
-          <div className="absolute top-2 right-2 z-20">
-            {/* Live Indicator with glow effect */}
+          {/* Edge-to-Edge Corner Status Indicators - Clipped to card rounded corners */}
+          <div className="absolute top-0 right-0 z-20 overflow-hidden rounded-tr-lg">
+            {/* Live Indicator - Edge corner effect */}
             {displayStatus === "active" && (
-              <div className="relative overflow-hidden backdrop-blur-sm rounded-md border border-green-500/30 group">
-                {/* Animated gradient background */}
-                <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 via-brand-500/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative overflow-hidden">
+                {/* Corner triangle background */}
+                <div className="w-0 h-0 border-l-[60px] border-l-transparent border-t-[60px] border-t-green-500/30"></div>
                 
-                {/* Animated border glow */}
-                <div className="absolute -inset-[1px] rounded-md blur-sm bg-gradient-to-r from-green-500/30 via-brand-500/30 to-green-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                {/* Animated glow effect */}
+                <div className="absolute top-0 right-0 w-0 h-0 border-l-[60px] border-l-transparent border-t-[60px] border-t-green-400/20 group-hover:border-t-green-400/40 transition-all duration-500"></div>
                 
-                {/* Badge content */}
-                <div className="relative flex items-center gap-1.5 px-3 py-1 bg-dark-200/40">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75"></span>
-                    <span className="relative rounded-full w-2 h-2 bg-green-400"></span>
-                  </span>
-                  <span className="text-xs font-bold text-green-400 uppercase tracking-wide font-cyber">LIVE</span>
+                
+                {/* Status text positioned in corner */}
+                <div className="absolute top-1 right-1 transform rotate-45 origin-center">
+                  <span className="text-[8px] font-bold text-green-400 uppercase tracking-wider">LIVE</span>
                 </div>
               </div>
             )}
             
-            {/* Upcoming Indicator with glow effect */}
+            {/* Upcoming Indicator - Edge corner effect */}
             {displayStatus === "pending" && (
-              <div className="relative overflow-hidden backdrop-blur-sm rounded-md border border-blue-500/30 group">
-                {/* Animated gradient background */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-brand-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative overflow-hidden">
+                {/* Corner triangle background */}
+                <div className="w-0 h-0 border-l-[60px] border-l-transparent border-t-[60px] border-t-blue-500/30"></div>
                 
-                {/* Animated border glow */}
-                <div className="absolute -inset-[1px] rounded-md blur-sm bg-gradient-to-r from-blue-500/30 via-brand-500/30 to-blue-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                {/* Animated glow effect */}
+                <div className="absolute top-0 right-0 w-0 h-0 border-l-[60px] border-l-transparent border-t-[60px] border-t-blue-400/20 group-hover:border-t-blue-400/40 transition-all duration-500"></div>
                 
-                {/* Badge content */}
-                <div className="relative flex items-center gap-1.5 px-3 py-1 bg-dark-200/40">
-                  <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-xs font-bold text-blue-400 uppercase tracking-wide font-cyber">SOON</span>
+                
+                {/* Status text positioned in corner */}
+                <div className="absolute top-1 right-1 transform rotate-45 origin-center">
+                  <span className="text-[8px] font-bold text-blue-400 uppercase tracking-wider">SOON</span>
                 </div>
               </div>
             )}
             
-            {/* Completed Indicator with glow effect */}
+            {/* Completed Indicator - Edge corner effect */}
             {displayStatus === "completed" && (
-              <div className="relative overflow-hidden backdrop-blur-sm rounded-md border border-gray-500/30 group">
-                {/* Animated gradient background */}
-                <div className="absolute inset-0 bg-gradient-to-r from-gray-500/20 via-brand-500/20 to-gray-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative overflow-hidden">
+                {/* Corner triangle background */}
+                <div className="w-0 h-0 border-l-[60px] border-l-transparent border-t-[60px] border-t-gray-500/30"></div>
                 
-                {/* Animated border glow */}
-                <div className="absolute -inset-[1px] rounded-md blur-sm bg-gradient-to-r from-gray-500/30 via-brand-500/30 to-gray-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                {/* Animated glow effect */}
+                <div className="absolute top-0 right-0 w-0 h-0 border-l-[60px] border-l-transparent border-t-[60px] border-t-gray-400/20 group-hover:border-t-gray-400/40 transition-all duration-500"></div>
                 
-                {/* Badge content */}
-                <div className="relative flex items-center gap-1.5 px-3 py-1 bg-dark-200/40">
-                  <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wide font-cyber">ENDED</span>
+                
+                {/* Status text positioned in corner */}
+                <div className="absolute top-1.5 right-1.5 transform rotate-45 origin-center">
+                  <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">DONE</span>
                 </div>
               </div>
             )}
-            
-            {/* Removed Cancelled Indicator from top corner since we now have the stamp */}
           </div>
         </div>
 
@@ -394,103 +385,130 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           )}
         </div>
 
-        {/* Entry Fee and Est. Prize Pool with modern, visually connected design */}
-        <div className="relative mt-2 mb-3">
-          {/* Visual comparison container */}
-          <div className="flex flex-col space-y-4">
-            {/* Entry Fee Section - More understated */}
-            <div className="flex items-center">
-              <div className="w-24 flex-shrink-0">
-                <span className="text-xs uppercase tracking-wider text-gray-400 font-medium">Entry Fee</span>
-              </div>
-              <div className="flex-1 ml-3">
-                <div className="relative h-11 rounded-md overflow-hidden bg-dark-300/40 backdrop-blur-sm flex items-center">
-                  {/* Inner content */}
-                  <div className="absolute inset-y-0 left-0 bg-blue-500/10" 
-                       style={{ 
-                         width: `${Math.min(100, (Number(contest.entry_fee) / (Number(contest.prize_pool) * 0.9)) * 100)}%` 
-                       }}>
-                    {/* Subtle pulse animation */}
-                    <div className="absolute inset-0 bg-blue-400/5 animate-pulse-slow"></div>
-                  </div>
-                  
-                  {/* The value */}
-                  <div className="relative z-10 px-3 py-2 flex items-center">
-                    <span className={`text-xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-blue-300"}`}>
-                      {formatCurrency(Number(contest.entry_fee))}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Prize Pool Section - More prominent */}
-            <div className="flex items-center">
-              <div className="w-24 flex-shrink-0">
-                <span className="text-xs uppercase tracking-wider text-gray-400 font-medium">Prize Pool</span>
-              </div>
-              <div className="flex-1 ml-3">
-                <div className="relative h-14 rounded-md overflow-hidden bg-dark-300/40 backdrop-blur-sm flex items-center">
-                  {/* Background fill - always full width */}
-                  <div className="absolute inset-y-0 left-0 right-0 bg-brand-600/20">
-                    {/* Subtle shine animation */}
-                    <div className="absolute inset-0 overflow-hidden">
-                      <div className="absolute inset-0 opacity-20 bg-gradient-to-r from-transparent via-brand-400/40 to-transparent -translate-x-full animate-shine-slow"></div>
-                    </div>
-                  </div>
-                  
-                  {/* The value */}
-                  <div className="relative z-10 px-3 py-2 flex items-center justify-between w-full">
-                    
-                    {/* Prize pool display - use total_prize_pool if available, fallback to calculated */}
-                    <span className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-brand-300"}`}>
-                      {formatCurrency(Number(contest.total_prize_pool || contest.prize_pool || "0"))}
-                    </span>
-                    
-                    {/* Visual multiplier */}
-                    {displayStatus !== "cancelled" && Number(contest.entry_fee) > 0 && (
-                      <span className="text-sm font-mono text-gray-400 mr-3">
-                        {(Number(contest.prize_pool) / Number(contest.entry_fee)).toFixed(1)}x
-                      </span>
-                    )}
-                  </div>
-                </div>
+        {/* Entry Fee and Prize Pool - Transposed Layout */}
+        <div className="grid grid-cols-2 gap-3 mt-2 mb-3">
+          {/* Entry Fee Section */}
+          <div className="space-y-2">
+            <span className="text-xs uppercase tracking-wider text-gray-400 font-medium block">Entry Fee</span>
+            <div className="relative h-12 rounded-md overflow-hidden bg-dark-300/40 backdrop-blur-sm flex items-center">
+              {/* Subtle background effect */}
+              <div className="absolute inset-0 bg-blue-500/5"></div>
+              
+              {/* The value */}
+              <div className="relative z-10 px-3 py-2 flex items-center justify-center w-full">
+                <span className={`text-lg font-bold whitespace-nowrap ${displayStatus === "cancelled" ? "text-gray-500" : "text-blue-300"}`}>
+                  {formatCurrency(Number(contest.entry_fee))}
+                </span>
               </div>
             </div>
           </div>
-
-          {/* Connecting line element */}
-          <div className="absolute left-24 top-[2.75rem] bottom-[2.75rem] w-px bg-gradient-to-b from-blue-500/30 via-brand-500/30 to-brand-500/30"></div>
+          
+          {/* Prize Pool Section */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1">
+              <span className="text-xs uppercase tracking-wider text-gray-400 font-medium">Prize Pool</span>
+              {/* Info icon with hover trigger */}
+              {Number(contest.entry_fee) > 0 && (
+                <div className="relative group/tooltip" style={{isolation: 'isolate'}}>
+                  <svg className="w-3 h-3 text-purple-400/70 hover:text-purple-300/90 transition-colors cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                  </svg>
+                  
+                  {/* Tooltip - uses transform to break out of card stacking context */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-200 pointer-events-none" style={{zIndex: 9999, position: 'absolute', transform: 'translateX(-50%) translateY(-100%) translateZ(0)'}}>
+                    <div className="bg-dark-200/95 backdrop-blur-sm border border-brand-500/20 rounded-lg px-3 py-2 text-xs text-gray-300 whitespace-nowrap shadow-2xl">
+                      <div className="relative">
+                        <span className="block font-medium text-brand-300 mb-1">Maximum Prize Pool</span>
+                        <span className="block">with a full roster of competitors.</span>
+                        <span className="block">The more players, the bigger the rewards!</span>
+                      </div>
+                      {/* Arrow pointing down */}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
+                        <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-dark-200/95"></div>
+                        <div className="absolute -top-[7px] -left-[6px] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-brand-500/20"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="relative h-12 rounded-md overflow-hidden bg-dark-300/40 backdrop-blur-sm flex items-center group">
+              {/* Background fill with shine effect */}
+              <div className="absolute inset-0 bg-brand-600/20">
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute inset-0 opacity-20 bg-gradient-to-r from-transparent via-brand-400/40 to-transparent -translate-x-full animate-shine-slow"></div>
+                </div>
+              </div>
+              
+              {/* The value */}
+              <div className="relative z-10 px-2 py-2 flex items-center justify-between w-full">
+                {/* Prize pool display */}
+                <span className={`text-lg font-bold whitespace-nowrap ${displayStatus === "cancelled" ? "text-gray-500" : "text-brand-300"}`}>
+                  {formatCurrency(
+                    Number(contest.entry_fee) > 0 
+                      ? Number(contest.entry_fee) * contest.max_participants
+                      : Number(contest.prize_pool || "0")
+                  )}
+                </span>
+                
+                {/* Visual multiplier */}
+                {displayStatus !== "cancelled" && Number(contest.entry_fee) > 0 && (
+                  <span className="text-xs font-mono text-gray-400 whitespace-nowrap ml-1">
+                    {contest.max_participants}x
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Players Progress with enhanced styling */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-400">Players</span>
-            <span className={`text-sm font-medium ${displayStatus === "cancelled" ? "text-gray-500" : "text-gray-300"}`}>
-              {contest.participant_count}/{contest.max_participants}
-            </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Competition</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-gray-400/30 to-transparent"></div>
           </div>
-          <div className="relative h-2 bg-dark-300 rounded-full overflow-hidden">
+          
+          {/* Enhanced Progress Bar with Text Inside */}
+          <div className="relative h-6 bg-gray-900 rounded-full overflow-hidden group">
+            {/* Background pattern */}
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900"></div>
+            
+            {/* Progress fill */}
             <div
-              className={`absolute inset-0 rounded-full transition-all duration-300 ease-out ${
+              className={`absolute inset-0 rounded-full transition-all duration-500 ease-out ${
                 displayStatus === "cancelled" 
                   ? "bg-gray-500/50" 
-                  : "bg-gradient-to-r from-brand-400 to-brand-600"
+                  : "bg-gradient-to-r from-brand-500 via-brand-400 to-brand-500"
               }`}
               style={{
-                width: `${
-                  (Number(contest.participant_count) /
-                    contest.max_participants) *
-                  100
-                }%`,
+                width: `${(contest.participant_count / contest.max_participants) * 100}%`,
               }}
             >
+              {/* Animated shine on progress bar */}
               {displayStatus !== "cancelled" && (
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
               )}
             </div>
+            
+            {/* Text inside progress bar */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className={`text-xs font-bold drop-shadow-lg ${displayStatus === "cancelled" ? "text-gray-400" : "text-white"}`}>
+                {contest.participant_count}/{contest.max_participants}
+              </span>
+            </div>
           </div>
+          
+          {/* Status indicator - only for special statuses */}
+          {(contest.participant_count === contest.max_participants || contest.participant_count > contest.max_participants * 0.8) && (
+            <div className="text-center">
+              {contest.participant_count === contest.max_participants ? (
+                <span className="text-xs font-bold text-green-400 uppercase tracking-wide">Contest Full</span>
+              ) : (
+                <span className="text-xs font-bold text-yellow-400 uppercase tracking-wide">Filling Fast</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Action buttons row */}

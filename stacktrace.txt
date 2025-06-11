@@ -1,0 +1,1581 @@
+solanaActionsContentScript.js:27 Uncaught (in promise) TypeError: Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.
+    at solanaActionsContentScript.js:27:41730
+(anonymous) @ solanaActionsContentScript.js:27
+Promise.then
+mT @ solanaActionsContentScript.js:27
+fk @ solanaActionsContentScript.js:27
+q6 @ solanaActionsContentScript.js:1214
+await in q6
+(anonymous) @ solanaActionsContentScript.js:1214
+(anonymous) @ solanaActionsContentScript.js:1214
+hook.js:608 Module "buffer" has been externalized for browser compatibility. Cannot access "buffer.Buffer" in client code. See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+overrideMethod @ hook.js:608
+get @ browser-external:buffer:9
+(anonymous) @ bn.js:56
+node_modules/bn.js/lib/bn.js @ bn.js:3548
+__require2 @ chunk-RZ55PUNP.js:17
+node_modules/@solana/web3.js/lib/index.browser.esm.js @ index.ts:24
+__init @ chunk-RZ55PUNP.js:14
+(anonymous) @ @solana_web3__js.js:85
+config.ts:175 [Config] Release date from environment variables: {env_var: '2025-05-29T23:59:00-05:00', parsed_date: Fri May 30 2025 00:59:00 GMT-0400 (Eastern Daylight Time), display_full: 'May 29, 2025', display_short: 'May 29, 2025', display_time: '23:59:00'}
+config.ts:218 ⚔️ DegenDuel client configuration successful:
+config.ts:220 Using: {environment: 'development', apiUrl: 'http://localhost:3010/api', wsUrl: 'ws://localhost:3010', port: '3006', hostname: 'localhost', …}
+useStore.ts:566 [STORE REHYDRATE] Starting maintenance check {origin: 'http://localhost:3010', apiUrl: 'http://localhost:3010/api', timestamp: '2025-06-10T19:43:34.980Z', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'}
+config.ts:43 [AuthDebug:AuthService] 19:43:34.980 Initializing and restoring session...
+config.ts:43 [AuthDebug:AuthService] 19:43:34.980 Found stored JWT token, attempting to restore session
+config.ts:43 [AuthDebug:AuthService] 19:43:34.980 Checking authentication status (attempt 1)
+index.ts:4 API_URL configuration in use: {environment: 'development', apiUrl: 'http://localhost:3010/api'}
+useUnifiedWebSocket.ts:65 [useUnifiedWebSocket] Created default instance with state: connecting
+wsMonitor.ts:45 [WSMonitor] WebSocket connection tracking initialized
+wsMonitor.ts:56 [WSMonitor] WebSocket connection attempt tracking initialized
+wsMonitor.ts:65 [WSMonitor] WebSocket error tracking initialized
+wsMonitor.ts:74 [WSMonitor] WebSocket suspension tracking initialized
+hook.js:608 Module "buffer" has been externalized for browser compatibility. Cannot access "buffer.Buffer" in client code. See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+overrideMethod @ hook.js:608
+get @ browser-external:buffer:9
+(anonymous) @ bn.js:56
+node_modules/elliptic/node_modules/bn.js/lib/bn.js @ bn.js:3447
+__require2 @ chunk-RZ55PUNP.js:17
+node_modules/elliptic/lib/elliptic/utils.js @ utils.js:4
+__require2 @ chunk-RZ55PUNP.js:17
+node_modules/elliptic/lib/elliptic.js @ elliptic.js:6
+__require2 @ chunk-RZ55PUNP.js:17
+(anonymous) @ chunk-EY3NXHR4.js?v=f3e1ff6c:10195
+config.ts:43 [AuthDebug:BiometricAuth] 19:43:35.034 WebAuthn is available in this browser
+useSolanaWalletData.ts:22 [Solana] DegenDuel RPC: http://localhost:3010/api/solana-rpc
+clientLogForwarder.ts:178 [LogForwarder] Initializing with console overrides. Verbose client console: true + 🔧 ADMIN OVERRIDE ACTIVE
+clientLogForwarder.ts:535 [LogForwarder] Fetching remote client logging setting from /api/v1/settings/client-logging-status
+clientLogForwarder.ts:186 🔧 [AUTO-DEV] Development environment detected - running connectivity test automatically!
+hook.js:608 Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+issueWarning @ lit-html.ts:233
+(anonymous) @ lit-html.ts:239
+hook.js:608 Phantom was registered as a Standard Wallet. The Wallet Adapter for Phantom can be removed from your app.
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+(anonymous) @ useStandardWalletAdapters.ts:49
+(anonymous) @ useStandardWalletAdapters.ts:45
+mountMemo @ react-dom-client.development.js:6603
+useMemo @ react-dom-client.development.js:22924
+exports.useMemo @ react.development.js:1209
+useStandardWalletAdapters @ useStandardWalletAdapters.ts:42
+WalletProvider @ WalletProvider.tsx:52
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<WalletProvider>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+WalletAdapterProviders @ App.tsx:208
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<WalletAdapterProviders>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+AppProvidersAndContent @ App.tsx:300
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<AppProvidersAndContent>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+App @ App.tsx:270
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<App>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+(anonymous) @ main.tsx:31
+hook.js:608 Solflare was registered as a Standard Wallet. The Wallet Adapter for Solflare can be removed from your app.
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+(anonymous) @ useStandardWalletAdapters.ts:49
+(anonymous) @ useStandardWalletAdapters.ts:45
+mountMemo @ react-dom-client.development.js:6603
+useMemo @ react-dom-client.development.js:22924
+exports.useMemo @ react.development.js:1209
+useStandardWalletAdapters @ useStandardWalletAdapters.ts:42
+WalletProvider @ WalletProvider.tsx:52
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<WalletProvider>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+WalletAdapterProviders @ App.tsx:208
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<WalletAdapterProviders>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+AppProvidersAndContent @ App.tsx:300
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<AppProvidersAndContent>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+App @ App.tsx:270
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<App>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+(anonymous) @ main.tsx:31
+clientLogForwarder.ts:186 [AUTH SYSTEM] Mounting Normalized Auth API (useMigratedAuth.ts).
+hook.js:608 No background_scene in global system settings! Falling back to local default.
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+extractBackgroundSettings @ extractBackgroundSettings.ts:44
+BackgroundEffects @ BackgroundEffects.tsx:46
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<BackgroundEffects>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+AppContent @ App.tsx:380
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<AppContent>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+AppProvidersAndContent @ App.tsx:303
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<AppProvidersAndContent>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+App @ App.tsx:270
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<App>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+(anonymous) @ main.tsx:31
+clientLogForwarder.ts:186 PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:186 [AUTH SYSTEM] Mounting Normalized Auth API (useMigratedAuth.ts).
+clientLogForwarder.ts:186 [AUTH SYSTEM] Mounting Normalized Auth API (useMigratedAuth.ts).
+clientLogForwarder.ts:186 [AUTH SYSTEM] Mounting Normalized Auth API (useMigratedAuth.ts).
+clientLogForwarder.ts:186 [AUTH SYSTEM] Mounting Normalized Auth API (useMigratedAuth.ts).
+clientLogForwarder.ts:186 [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:186 [AUTH SYSTEM] Mounting Normalized Auth API (useMigratedAuth.ts).
+clientLogForwarder.ts:186 [useSystemSettings] WebSocket not connected, deferring initial settings request.
+clientLogForwarder.ts:186 [useNotifications] WebSocket not ready for secure interaction, deferring setup.
+clientLogForwarder.ts:186 [useNotifications] WebSocket not ready for secure interaction, deferring setup.
+clientLogForwarder.ts:186 [useLaunchEvent] WebSocket not connected, deferring subscription.
+clientLogForwarder.ts:186 [useTokenData] Loading initial token data via REST API for fast display
+clientLogForwarder.ts:186 [useTokenData] Loading tokens via REST API for immediate display
+clientLogForwarder.ts:186 [useDegenDuelTop30] Fetching 15 DegenDuel Top tokens
+clientLogForwarder.ts:186 [UnifiedTicker] Animation check - overflows: false, animating: false
+clientLogForwarder.ts:186 [EdgeToEdgeTicker] Page: /, isCompact: false, compactOverrideProp: undefined, isCompactFromHook: false
+clientLogForwarder.ts:186 [useUnifiedWebSocket] Component 'contest-data-hook' registered but WebSocket not yet fully initialized
+clientLogForwarder.ts:186 [EdgeToEdgeTicker] Fetching fresh contests via REST API
+clientLogForwarder.ts:186 [useSystemSettings] WebSocket not connected, deferring initial settings request.
+clientLogForwarder.ts:186 [useUnifiedWebSocket] Component 'contest-data-hook' registered but WebSocket not yet fully initialized
+clientLogForwarder.ts:186 [LandingPage] Initial load - using cached contests: 10
+clientLogForwarder.ts:186 [LandingPage] Fetching fresh contests via REST API
+clientLogForwarder.ts:186 [LandingPage] Using cached contests data.
+clientLogForwarder.ts:186 [LandingPage] Loading contests via REST API immediately (no waiting!)
+clientLogForwarder.ts:186 [LandingPage] Fallback REST API fetch attempt 1 (WebSocket: disconnected)
+clientLogForwarder.ts:186 [DegenDuel] Launch Protocol ACTIVE {releaseDate: Fri May 30 2025 00:59:00 GMT-0400 (Eastern Daylight Time), releaseISOString: '2025-05-30T04:59:00.000Z', displayFull: 'May 29, 2025', displayShort: 'May 29, 2025', displayTime: '23:59:00', …}
+clientLogForwarder.ts:186 [useUnifiedWebSocket] Component 'terminal-data-qikqg9y' registered but WebSocket not yet fully initialized
+clientLogForwarder.ts:186 [useTerminalData] WebSocket not connected, waiting for connection.
+clientLogForwarder.ts:186 [useUnifiedWebSocket] Component 'token-data-context' registered but WebSocket not yet fully initialized
+clientLogForwarder.ts:186 [AuthDebug:AuthService] 19:43:35.285 Checking authentication status (attempt 1)
+clientLogForwarder.ts:186 [UnifiedWebSocketContext] Setting up singleton instance (initial setup)
+clientLogForwarder.ts:186 PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:186 [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:186 [STORE REHYDRATE] Maintenance response: {status: 200, statusText: 'OK', ok: true, url: 'http://localhost:3010/api/status', headers: {…}}
+clientLogForwarder.ts:186 [AuthDebug:AuthService] 19:43:35.511 User is authenticated {method: 'jwt', userId: 14, wallet: 'BRANCHVDL53igBiYuvrEfZazXJm24qKQJhyXBUm7z7V'}
+clientLogForwarder.ts:186 [AuthDebug:AuthService] 19:43:35.512 Updated store with user: 14 (BRANCHVDL53igBiYuvrEfZazXJm24qKQJhyXBUm7z7V)
+clientLogForwarder.ts:186 [DegenDuel] Launch Protocol ACTIVE {releaseDate: Fri May 30 2025 00:59:00 GMT-0400 (Eastern Daylight Time), releaseISOString: '2025-05-30T04:59:00.000Z', displayFull: 'May 29, 2025', displayShort: 'May 29, 2025', displayTime: '23:59:00', …}
+clientLogForwarder.ts:186 [Terminal] Conversation History State Updated (for linting): [{…}]
+clientLogForwarder.ts:186 PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:186 [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:186 [DegenDuel] Launch Protocol ACTIVE {releaseDate: Fri May 30 2025 00:59:00 GMT-0400 (Eastern Daylight Time), releaseISOString: '2025-05-30T04:59:00.000Z', displayFull: 'May 29, 2025', displayShort: 'May 29, 2025', displayTime: '23:59:00', …}
+clientLogForwarder.ts:186 [AuthDebug:AuthService] 19:43:35.626 Successfully restored session
+clientLogForwarder.ts:186 [AuthDebug:AuthService] 19:43:35.676 Initialization complete.
+hook.js:608 StreamMiddleware - Unknown response id "solflare-detect-metamask"
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+(anonymous) @ inpage.js:1
+write @ inpage.js:1
+I @ inpage.js:12
+(anonymous) @ inpage.js:12
+j.write @ inpage.js:12
+d @ inpage.js:12
+a.emit @ inpage.js:10
+A @ inpage.js:12
+I @ inpage.js:12
+j.push @ inpage.js:12
+_write @ inpage.js:1
+I @ inpage.js:12
+(anonymous) @ inpage.js:12
+j.write @ inpage.js:12
+d @ inpage.js:12
+a.emit @ inpage.js:10
+A @ inpage.js:12
+I @ inpage.js:12
+j.push @ inpage.js:12
+_onData @ inpage.js:1
+_onMessage @ inpage.js:1
+postMessage
+_postMessage @ contentscript.js:1
+_write @ contentscript.js:1
+T @ contentscript.js:55
+(anonymous) @ contentscript.js:55
+_.write @ contentscript.js:55
+h @ contentscript.js:55
+a.emit @ contentscript.js:44
+k @ contentscript.js:55
+T @ contentscript.js:55
+_.push @ contentscript.js:55
+_write @ contentscript.js:1
+T @ contentscript.js:55
+(anonymous) @ contentscript.js:55
+_.write @ contentscript.js:55
+h @ contentscript.js:55
+a.emit @ contentscript.js:44
+k @ contentscript.js:55
+T @ contentscript.js:55
+_.push @ contentscript.js:55
+_write @ contentscript.js:1
+T @ contentscript.js:55
+(anonymous) @ contentscript.js:55
+_.write @ contentscript.js:55
+d @ contentscript.js:44
+a.emit @ contentscript.js:44
+Z @ contentscript.js:44
+Y @ contentscript.js:44
+X.push @ contentscript.js:44
+_onMessage @ contentscript.js:44
+(anonymous) @ contentscript.js:44
+clientLogForwarder.ts:186 [AuthDebug:AuthService] 19:43:35.814 No wsToken token found, requesting from server
+clientLogForwarder.ts:186 [AuthDebug:AuthService] 19:43:35.818 User is authenticated {method: 'jwt', userId: 14, wallet: 'BRANCHVDL53igBiYuvrEfZazXJm24qKQJhyXBUm7z7V'}
+clientLogForwarder.ts:186 [AuthDebug:AuthService] 19:43:35.818 No jwt token found, requesting from server
+clientLogForwarder.ts:186 [STORE REHYDRATE] Response data: {maintenance: false, degraded_services: Array(0)}
+clientLogForwarder.ts:544 [LogForwarder] Remote setting updated verbose client console output to: false (🔧 Admin override still active)
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [EdgeToEdgeTicker] REST API loaded: {total: 10, joinable: 4}
+clientLogForwarder.ts:184 🔧[ADMIN] [DegenDuel] Launch Protocol ACTIVE {releaseDate: Fri May 30 2025 00:59:00 GMT-0400 (Eastern Daylight Time), releaseISOString: '2025-05-30T04:59:00.000Z', displayFull: 'May 29, 2025', displayShort: 'May 29, 2025', displayTime: '23:59:00', …}
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AUTH SYSTEM] Mounting Normalized Auth API (useMigratedAuth.ts). color: black; background-color: #4caf50; padding: 4px 8px; border-radius: 4px; font-weight: bold;
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket not ready for secure interaction, deferring setup.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] REST API loaded: {total: 10, live: 0, pending: 4}
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback REST API data: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback - Live contests: 0
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback - Pending contests: 4
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenManagerService] %c19:43:36.502 %cSet wsToken token in store from source: server color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenManagerService] %c19:43:36.502 %cScheduled refresh for wsToken token in 3537 seconds color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenManagerService] %c19:43:36.629 %cSet jwt token in store from source: server color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenManagerService] %c19:43:36.629 %cScheduled refresh for jwt token in 3537 seconds color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:AuthService] %c19:43:36.685 %cFetching user profile from /users/me color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [useDegenDuelTop30] Successfully fetched 15 tokens
+clientLogForwarder.ts:184 🔧[ADMIN] [useTokenData] REST API loaded 15 tokens with pagination
+clientLogForwarder.ts:184 🔧[ADMIN] [useSystemSettings] WebSocket connected, requesting initial settings.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket ready for secure interaction. Subscribing and requesting notifications.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket ready for secure interaction. Subscribing and requesting notifications.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket ready for secure interaction. Subscribing and requesting notifications.
+clientLogForwarder.ts:184 🔧[ADMIN] [useLaunchEvent] WebSocket connected. Subscribing to LAUNCH_EVENTS and SYSTEM topics
+clientLogForwarder.ts:184 🔧[ADMIN] [useLaunchEvent] Requesting initial countdown data from SYSTEM topic
+clientLogForwarder.ts:184 🔧[ADMIN] [useTokenData] Subscribing to market_data topic for filtered tokens
+clientLogForwarder.ts:184 🔧[ADMIN] [useSystemSettings] WebSocket connected, requesting initial settings.
+clientLogForwarder.ts:184 🔧[ADMIN] [useUnifiedWebSocket] Processing 0 pending messages...
+clientLogForwarder.ts:184 🔧[ADMIN] [useUnifiedWebSocket] Message queue processed.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Measured content width: 2548.8334350585938px, viewport: 1321px, items: 15
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Starting animation - content overflows viewport
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:AuthService] %c19:43:37.087 %cUser profile updated successfully color: #00a8e8; font-weight: bold color: #888 color: #fff {nickname: 'Branch', hasProfileImage: true, wallet: 'BRANCHVDL53igBiYuvrEfZazXJm24qKQJhyXBUm7z7V'}
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Using cached contests data.
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Loading contests via REST API immediately (no waiting!)
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback REST API fetch attempt 1 (WebSocket: connected)
+clientLogForwarder.ts:184 🔧[ADMIN] [useTerminalData] WebSocket connected. Subscribing to AI chat terminal data.
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:43:37.121 %cConnected to unified WebSocket, subscribing to market-data color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Animation check - overflows: true, animating: false
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Starting animation from effect
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, -7.998, 0)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, 0, 0)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Page: /
+clientLogForwarder.ts:184 🔧[ADMIN]   isCompact prop: false
+clientLogForwarder.ts:184 🔧[ADMIN]   Item heights: 32, 32, 32px
+clientLogForwarder.ts:184 🔧[ADMIN]   Font size: 14px
+clientLogForwarder.ts:184 🔧[ADMIN]   Line height: 20px
+clientLogForwarder.ts:184 🔧[ADMIN]   Padding: 4px 12px
+clientLogForwarder.ts:184 🔧[ADMIN]   HTML font-size: 16px
+clientLogForwarder.ts:184 🔧[ADMIN] 🔧 [AUTO-DEV] Starting automatic connectivity diagnostics...
+clientLogForwarder.ts:184 🔧[ADMIN] 🔧 DegenDuel Connectivity Test - Starting...
+clientLogForwarder.ts:184 🔧[ADMIN] ==================================================
+clientLogForwarder.ts:184 🔧[ADMIN] 📋 Configuration:
+clientLogForwarder.ts:184 🔧[ADMIN]    API URL: http://localhost:3010/api
+clientLogForwarder.ts:184 🔧[ADMIN]    WebSocket URL: ws://localhost:3010/api/v69/ws
+clientLogForwarder.ts:184 🔧[ADMIN]    User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36
+clientLogForwarder.ts:184 🔧[ADMIN]    Network Online: true
+clientLogForwarder.ts:184 🔧[ADMIN] 
+clientLogForwarder.ts:184 🔧[ADMIN] 🌐 Test 1: Basic Network Connectivity
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, -7.998, 0)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, 0, 0)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Page: /
+clientLogForwarder.ts:184 🔧[ADMIN]   isCompact prop: false
+clientLogForwarder.ts:184 🔧[ADMIN]   Item heights: 32, 32, 32px
+clientLogForwarder.ts:184 🔧[ADMIN]   Font size: 14px
+clientLogForwarder.ts:184 🔧[ADMIN]   Line height: 20px
+clientLogForwarder.ts:184 🔧[ADMIN]   Padding: 4px 12px
+clientLogForwarder.ts:184 🔧[ADMIN]   HTML font-size: 16px
+clientLogForwarder.ts:184 🔧[ADMIN] [DegenDuel] Launch Protocol ACTIVE {releaseDate: Fri May 30 2025 00:59:00 GMT-0400 (Eastern Daylight Time), releaseISOString: '2025-05-30T04:59:00.000Z', displayFull: 'May 29, 2025', displayShort: 'May 29, 2025', displayTime: '23:59:00', …}
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback REST API data: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback - Live contests: 0
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback - Pending contests: 4
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN]    ✅ Internet connectivity: OK
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN]    ✅ DegenDuel domain: OK
+clientLogForwarder.ts:184 🔧[ADMIN] 🔌 Test 2: API Connectivity
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN]    📡 API Status: 200 OK
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN]    ✅ API Status endpoint: OK
+clientLogForwarder.ts:184 🔧[ADMIN]    📄 Response data: {maintenance: false, degraded_services: Array(0)}
+clientLogForwarder.ts:184 🔧[ADMIN] 🔌 Test 3: WebSocket Connectivity
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN]    ✅ WebSocket: Connected successfully
+clientLogForwarder.ts:184 🔧[ADMIN] 
+clientLogForwarder.ts:184 🔧[ADMIN] ==================================================
+clientLogForwarder.ts:184 🔧[ADMIN] 🔧 DegenDuel Connectivity Test - Complete
+clientLogForwarder.ts:184 🔧[ADMIN] 💡 If issues persist, check:
+clientLogForwarder.ts:184 🔧[ADMIN]    1. Backend server status
+clientLogForwarder.ts:184 🔧[ADMIN]    2. DNS resolution for degenduel.me
+clientLogForwarder.ts:184 🔧[ADMIN]    3. Firewall/network restrictions
+clientLogForwarder.ts:184 🔧[ADMIN]    4. SSL certificate validity
+clientLogForwarder.ts:184 🔧[ADMIN] 
+clientLogForwarder.ts:184 🔧[ADMIN] 💻 To run this test again, type: testDegenDuelConnectivity()
+clientLogForwarder.ts:184 🔧[ADMIN] 🔧 [AUTO-DEV] Automatic connectivity test completed!
+clientLogForwarder.ts:184 🔧[ADMIN] 💡 [AUTO-DEV] This test runs automatically on dev domains. To disable, comment out the auto-run code in main.tsx
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:43:40.665 %cReceived message from unified WebSocket color: #00a8e8; font-weight: bold color: #888 color: #fff {message: {…}}
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:43:40.689 %cProcessing 2090 tokens in chunks. color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:43:43.254 %cFinished processing 2090 tokens in chunks. color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:43:43.375 %cReceived message from unified WebSocket color: #00a8e8; font-weight: bold color: #888 color: #fff {message: {…}}
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:43:43.398 %cProcessing 2090 tokens in chunks. color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:43:45.402 %cFinished processing 2090 tokens in chunks. color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 [Contest WebSocket] Timed out waiting for data
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+(anonymous) @ useContests.ts:374
+hook.js:608 [Contest WebSocket] Timed out waiting for data
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+(anonymous) @ useContests.ts:374
+hook.js:608 [TerminalData WebSocket] Timed out waiting for data
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+(anonymous) @ useTerminalData.ts:159
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 [Notifications] Timed out waiting for data
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+(anonymous) @ useNotifications.ts:194
+hook.js:608 [Notifications] Timed out waiting for data
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+(anonymous) @ useNotifications.ts:194
+hook.js:608 [Notifications] Timed out waiting for data
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+(anonymous) @ useNotifications.ts:194
+hook.js:608 [Wallet WebSocket] Timed out waiting for data
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+(anonymous) @ useWallet.ts:257
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:224
+getRootForUpdatedFiber @ react-dom-client.development.js:3867
+enqueueConcurrentHookUpdate @ react-dom-client.development.js:3820
+dispatchSetStateInternal @ react-dom-client.development.js:6966
+dispatchSetState @ react-dom-client.development.js:6927
+(anonymous) @ useUnifiedWebSocket.ts:129
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:224
+getRootForUpdatedFiber @ react-dom-client.development.js:3867
+enqueueConcurrentHookUpdate @ react-dom-client.development.js:3820
+dispatchSetStateInternal @ react-dom-client.development.js:6966
+dispatchSetState @ react-dom-client.development.js:6927
+(anonymous) @ useUnifiedWebSocket.ts:129
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:224
+getRootForUpdatedFiber @ react-dom-client.development.js:3867
+enqueueConcurrentHookUpdate @ react-dom-client.development.js:3820
+dispatchSetStateInternal @ react-dom-client.development.js:6966
+dispatchSetState @ react-dom-client.development.js:6927
+(anonymous) @ useUnifiedWebSocket.ts:129
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:224
+getRootForUpdatedFiber @ react-dom-client.development.js:3867
+enqueueConcurrentHookUpdate @ react-dom-client.development.js:3820
+dispatchSetStateInternal @ react-dom-client.development.js:6966
+dispatchSetState @ react-dom-client.development.js:6927
+(anonymous) @ useUnifiedWebSocket.ts:129
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:224
+getRootForUpdatedFiber @ react-dom-client.development.js:3867
+enqueueConcurrentHookUpdate @ react-dom-client.development.js:3820
+dispatchSetStateInternal @ react-dom-client.development.js:6966
+dispatchSetState @ react-dom-client.development.js:6927
+(anonymous) @ useUnifiedWebSocket.ts:129
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Measured content width: 2548.8333892822266px, viewport: 1321px, items: 15
+clientLogForwarder.ts:184 🔧[ADMIN] [useLaunchEvent] Unsubscribing from LAUNCH_EVENTS and SYSTEM topics
+clientLogForwarder.ts:184 🔧[ADMIN] [useSystemSettings] WebSocket not connected, deferring initial settings request.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket not ready for secure interaction, deferring setup.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket not ready for secure interaction, deferring setup.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket not ready for secure interaction, deferring setup.
+clientLogForwarder.ts:184 🔧[ADMIN] [useLaunchEvent] WebSocket not connected, deferring subscription.
+clientLogForwarder.ts:184 🔧[ADMIN] [useSystemSettings] WebSocket not connected, deferring initial settings request.
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [useUnifiedWebSocket] Connection not ready (state: reconnecting). Queuing message: {type: 'UNSUBSCRIBE', topics: Array(1)}
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Using cached contests data.
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Loading contests via REST API immediately (no waiting!)
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback REST API fetch attempt 1 (WebSocket: disconnected)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, -437.409, 0)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, 0, 0)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Page: /
+clientLogForwarder.ts:184 🔧[ADMIN]   isCompact prop: false
+clientLogForwarder.ts:184 🔧[ADMIN]   Item heights: 32, 32, 32px
+clientLogForwarder.ts:184 🔧[ADMIN]   Font size: 14px
+clientLogForwarder.ts:184 🔧[ADMIN]   Line height: 20px
+clientLogForwarder.ts:184 🔧[ADMIN]   Padding: 4px 12px
+clientLogForwarder.ts:184 🔧[ADMIN]   HTML font-size: 16px
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback REST API data: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback - Live contests: 0
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback - Pending contests: 4
+clientLogForwarder.ts:184 🔧[ADMIN] [useUnifiedWebSocket] Connection not ready (state: reconnecting). Queuing message: {type: 'UNSUBSCRIBE', topics: Array(1)}
+clientLogForwarder.ts:184 🔧[ADMIN] [useTerminalData] WebSocket not connected, waiting for connection.
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Measured content width: 2548.8334350585938px, viewport: 1321px, items: 15
+clientLogForwarder.ts:184 🔧[ADMIN] [useSystemSettings] WebSocket connected, requesting initial settings.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket ready for secure interaction. Subscribing and requesting notifications.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket ready for secure interaction. Subscribing and requesting notifications.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket ready for secure interaction. Subscribing and requesting notifications.
+clientLogForwarder.ts:184 🔧[ADMIN] [useLaunchEvent] WebSocket connected. Subscribing to LAUNCH_EVENTS and SYSTEM topics
+clientLogForwarder.ts:184 🔧[ADMIN] [useLaunchEvent] Requesting initial countdown data from SYSTEM topic
+clientLogForwarder.ts:184 🔧[ADMIN] [useTokenData] Subscribing to market_data topic for filtered tokens
+clientLogForwarder.ts:184 🔧[ADMIN] [useSystemSettings] WebSocket connected, requesting initial settings.
+clientLogForwarder.ts:184 🔧[ADMIN] [useUnifiedWebSocket] Processing 2 pending messages...
+clientLogForwarder.ts:184 🔧[ADMIN] [useUnifiedWebSocket] Message queue processed.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Using cached contests data.
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Loading contests via REST API immediately (no waiting!)
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback REST API fetch attempt 1 (WebSocket: connected)
+clientLogForwarder.ts:184 🔧[ADMIN] [useTerminalData] WebSocket connected. Subscribing to AI chat terminal data.
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:45:23.776 %cConnected to unified WebSocket, subscribing to market-data color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, -644.157, 0)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, 0, 0)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Page: /
+clientLogForwarder.ts:184 🔧[ADMIN]   isCompact prop: false
+clientLogForwarder.ts:184 🔧[ADMIN]   Item heights: 32, 32, 32px
+clientLogForwarder.ts:184 🔧[ADMIN]   Font size: 14px
+clientLogForwarder.ts:184 🔧[ADMIN]   Line height: 20px
+clientLogForwarder.ts:184 🔧[ADMIN]   Padding: 4px 12px
+clientLogForwarder.ts:184 🔧[ADMIN]   HTML font-size: 16px
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback REST API data: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback - Live contests: 0
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback - Pending contests: 4
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:45:28.080 %cReceived message from unified WebSocket color: #00a8e8; font-weight: bold color: #888 color: #fff {message: {…}}
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:45:28.112 %cProcessing 2090 tokens in chunks. color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:45:31.602 %cFinished processing 2090 tokens in chunks. color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:45:31.986 %cReceived message from unified WebSocket color: #00a8e8; font-weight: bold color: #888 color: #fff {message: {…}}
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:45:32.029 %cProcessing 2090 tokens in chunks. color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 [TerminalData WebSocket] Timed out waiting for data
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+(anonymous) @ useTerminalData.ts:159
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:45:35.277 %cFinished processing 2090 tokens in chunks. color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:224
+getRootForUpdatedFiber @ react-dom-client.development.js:3867
+enqueueConcurrentHookUpdate @ react-dom-client.development.js:3820
+dispatchSetStateInternal @ react-dom-client.development.js:6966
+dispatchSetState @ react-dom-client.development.js:6927
+(anonymous) @ useUnifiedWebSocket.ts:129
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:224
+getRootForUpdatedFiber @ react-dom-client.development.js:3867
+enqueueConcurrentHookUpdate @ react-dom-client.development.js:3820
+dispatchSetStateInternal @ react-dom-client.development.js:6966
+dispatchSetState @ react-dom-client.development.js:6927
+(anonymous) @ useUnifiedWebSocket.ts:129
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:224
+getRootForUpdatedFiber @ react-dom-client.development.js:3867
+enqueueConcurrentHookUpdate @ react-dom-client.development.js:3820
+dispatchSetStateInternal @ react-dom-client.development.js:6966
+dispatchSetState @ react-dom-client.development.js:6927
+(anonymous) @ useUnifiedWebSocket.ts:129
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [useLaunchEvent] Unsubscribing from LAUNCH_EVENTS and SYSTEM topics
+clientLogForwarder.ts:184 🔧[ADMIN] [useSystemSettings] WebSocket not connected, deferring initial settings request.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket not ready for secure interaction, deferring setup.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket not ready for secure interaction, deferring setup.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket not ready for secure interaction, deferring setup.
+clientLogForwarder.ts:184 🔧[ADMIN] [useLaunchEvent] WebSocket not connected, deferring subscription.
+clientLogForwarder.ts:184 🔧[ADMIN] [useSystemSettings] WebSocket not connected, deferring initial settings request.
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Measured content width: 2548.8334350585938px, viewport: 1321px, items: 15
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, -2453.65, 0)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, 0, 0)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Page: /
+clientLogForwarder.ts:184 🔧[ADMIN]   isCompact prop: false
+clientLogForwarder.ts:184 🔧[ADMIN]   Item heights: 32, 32, 32px
+clientLogForwarder.ts:184 🔧[ADMIN]   Font size: 14px
+clientLogForwarder.ts:184 🔧[ADMIN]   Line height: 20px
+clientLogForwarder.ts:184 🔧[ADMIN]   Padding: 4px 12px
+clientLogForwarder.ts:184 🔧[ADMIN]   HTML font-size: 16px
+clientLogForwarder.ts:184 🔧[ADMIN] [useUnifiedWebSocket] Connection not ready (state: disconnected). Queuing message: {type: 'UNSUBSCRIBE', topics: Array(1)}
+clientLogForwarder.ts:184 🔧[ADMIN] [useUnifiedWebSocket] Connection not ready (state: disconnected). Queuing message: {type: 'UNSUBSCRIBE', topics: Array(1)}
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Using cached contests data.
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Loading contests via REST API immediately (no waiting!)
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback REST API fetch attempt 1 (WebSocket: disconnected)
+clientLogForwarder.ts:184 🔧[ADMIN] [useTerminalData] WebSocket not connected, waiting for connection.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback REST API data: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback - Live contests: 0
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback - Pending contests: 4
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Measured content width: 2548.833267211914px, viewport: 1321px, items: 15
+clientLogForwarder.ts:184 🔧[ADMIN] [useSystemSettings] WebSocket connected, requesting initial settings.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket ready for secure interaction. Subscribing and requesting notifications.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket ready for secure interaction. Subscribing and requesting notifications.
+clientLogForwarder.ts:184 🔧[ADMIN] [useNotifications] WebSocket ready for secure interaction. Subscribing and requesting notifications.
+clientLogForwarder.ts:184 🔧[ADMIN] [useLaunchEvent] WebSocket connected. Subscribing to LAUNCH_EVENTS and SYSTEM topics
+clientLogForwarder.ts:184 🔧[ADMIN] [useLaunchEvent] Requesting initial countdown data from SYSTEM topic
+clientLogForwarder.ts:184 🔧[ADMIN] [useTokenData] Subscribing to market_data topic for filtered tokens
+clientLogForwarder.ts:184 🔧[ADMIN] [useSystemSettings] WebSocket connected, requesting initial settings.
+clientLogForwarder.ts:184 🔧[ADMIN] [useUnifiedWebSocket] Processing 2 pending messages...
+clientLogForwarder.ts:184 🔧[ADMIN] [useUnifiedWebSocket] Message queue processed.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Using cached contests data.
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Loading contests via REST API immediately (no waiting!)
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback REST API fetch attempt 1 (WebSocket: connected)
+clientLogForwarder.ts:184 🔧[ADMIN] [useTerminalData] WebSocket connected. Subscribing to AI chat terminal data.
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:46:30.045 %cConnected to unified WebSocket, subscribing to market-data color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, -82.3191, 0)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, 0, 0)
+clientLogForwarder.ts:184 🔧[ADMIN] [UnifiedTicker] Page: /
+clientLogForwarder.ts:184 🔧[ADMIN]   isCompact prop: false
+clientLogForwarder.ts:184 🔧[ADMIN]   Item heights: 32, 32, 32px
+clientLogForwarder.ts:184 🔧[ADMIN]   Font size: 14px
+clientLogForwarder.ts:184 🔧[ADMIN]   Line height: 20px
+clientLogForwarder.ts:184 🔧[ADMIN]   Padding: 4px 12px
+clientLogForwarder.ts:184 🔧[ADMIN]   HTML font-size: 16px
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback REST API data: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback - Live contests: 0
+clientLogForwarder.ts:184 🔧[ADMIN] [LandingPage] Fallback - Pending contests: 4
+clientLogForwarder.ts:184 🔧[ADMIN] PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:46:34.384 %cReceived message from unified WebSocket color: #00a8e8; font-weight: bold color: #888 color: #fff {message: {…}}
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:46:34.411 %cProcessing 2090 tokens in chunks. color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:46:37.351 %cFinished processing 2090 tokens in chunks. color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:46:38.147 %cReceived message from unified WebSocket color: #00a8e8; font-weight: bold color: #888 color: #fff {message: {…}}
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:46:38.177 %cProcessing 2090 tokens in chunks. color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 [TerminalData WebSocket] Timed out waiting for data
+overrideMethod @ hook.js:608
+console.warn @ clientLogForwarder.ts:205
+(anonymous) @ useTerminalData.ts:159
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] %c[AuthDebug:TokenData] %c19:46:41.238 %cFinished processing 2090 tokens in chunks. color: #00a8e8; font-weight: bold color: #888 color: #fff
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:224
+getRootForUpdatedFiber @ react-dom-client.development.js:3867
+enqueueConcurrentHookUpdate @ react-dom-client.development.js:3820
+dispatchSetStateInternal @ react-dom-client.development.js:6966
+dispatchSetState @ react-dom-client.development.js:6927
+(anonymous) @ useUnifiedWebSocket.ts:129
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:224
+getRootForUpdatedFiber @ react-dom-client.development.js:3867
+enqueueConcurrentHookUpdate @ react-dom-client.development.js:3820
+dispatchSetStateInternal @ react-dom-client.development.js:6966
+dispatchSetState @ react-dom-client.development.js:6927
+(anonymous) @ useUnifiedWebSocket.ts:129
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:224
+getRootForUpdatedFiber @ react-dom-client.development.js:3867
+enqueueConcurrentHookUpdate @ react-dom-client.development.js:3820
+dispatchSetStateInternal @ react-dom-client.development.js:6966
+dispatchSetState @ react-dom-client.development.js:6927
+(anonymous) @ useUnifiedWebSocket.ts:129
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+hook.js:608 Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:224
+getRootForUpdatedFiber @ react-dom-client.development.js:3867
+enqueueConcurrentHookUpdate @ react-dom-client.development.js:3820
+dispatchSetStateInternal @ react-dom-client.development.js:6966
+dispatchSetState @ react-dom-client.development.js:6927
+(anonymous) @ useUnifiedWebSocket.ts:129
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
+clientLogForwarder.ts:184 🔧[ADMIN] [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false

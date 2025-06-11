@@ -20,7 +20,6 @@
  */
 
 import { API_URL } from "../config/config";
-import { useTerminalData } from "../hooks/websocket";
 
 // Minimal interface for AI chat terminal data only
 export interface ChatTerminalData {
@@ -104,8 +103,8 @@ export interface TerminalData {
   commands: Record<string, string>;
 }
 
-// Export the hook for components that want to use the WebSocket
-export { useTerminalData }; // TODO: WHAT IS THIS????????????
+// The WebSocket hook is no longer exported from this service.
+// Components should use the hook directly from the hooks directory if needed.
 
 // Minimal fallback data if API completely fails (contains only placeholders)
 const DEFAULT_TERMINAL_DATA: TerminalData = {

@@ -65,8 +65,30 @@ const currentFeatures = [
     animation: <TradingCompetitionsAnimation />,
     isUpcoming: false
   },
+
+  // 2 - 1v1 Duels
+  {
+    title: "1v1 Duels",
+    description: "Challenge anyone to head-to-head trading battles with custom stakes and competition parameters.",
+    extendedDescription: 
+      "Challenge anyone to head-to-head trading battles. Set custom stakes and competition parameters for your private duels.\n\nPerfect for settling debates about who's the better trader. Send invite links directly to opponents and prove your skills in direct competition.",
+    icon: (
+      <svg
+        className="w-6 h-6"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d="M16 8L20 12L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M8 8L4 12L8 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M14 4L10 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+    //animation: <OneVsOneDuelsAnimation />, // (needs to be generated 5/23/25)
+    isUpcoming: true
+  },
   
-  // 2 - Degen Dividends
+  // 3 - Degen Dividends
   {
     title: "Degen Dividends",
     description: "Half of all platform profits go to token holders through daily Solana rewards sent automatically to your wallet.",
@@ -139,91 +161,7 @@ const currentFeatures = [
     isUpcoming: false
   },
   
-  // 4 - Instant SOL Settlement
-  {
-    title: "Instant SOL Settlement",
-    description: "Contest winnings are automatically distributed to winners' wallets seconds after competition ends.",
-    extendedDescription: 
-      "Final standings are calculated and prize distributions processed immediately after competition end. Winners receive rewards directly to their connected wallets with no manual claims required.\n\nTransaction verification uses a dual-signature system for maximum security while maintaining near-instantaneous settlement times regardless of competition size.",
-    icon: (
-      <svg
-        className="w-6 h-6"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M13 3L5 13H12L11 21L19 11H12L13 3Z"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    ),
-    animation: <InstantSettlementAnimation />,
-    isUpcoming: false
-  },
-
-  // 5 - 1v1 Duels
-  {
-    title: "1v1 Duels",
-    description: "Challenge anyone to head-to-head trading battles with custom stakes and competition parameters.",
-    extendedDescription: 
-      "Challenge anyone to head-to-head trading battles. Set custom stakes and competition parameters for your private duels.\n\nPerfect for settling debates about who's the better trader. Send invite links directly to opponents and prove your skills in direct competition.",
-    icon: (
-      <svg
-        className="w-6 h-6"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path d="M16 8L20 12L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8 8L4 12L8 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M14 4L10 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-    ),
-    //animation: <OneVsOneDuelsAnimation />, // (needs to be generated 5/23/25)
-    isUpcoming: false
-  },
-
-];
-
-// Upcoming features with "SOON" tag
-const upcomingFeatures = [
-  // 6 - Advanced Analytics
-  {
-    title: "Advanced Analytics",
-    description: "AI-powered analytics help improve your trading performance with comprehensive metrics and visualizations.",
-    extendedDescription:
-      "Track your trading performance across competitions with detailed metrics including win rate, average ROI, drawdown statistics, and sentiment analysis.\n\nExport historical data in multiple formats, create custom dashboards, and compare your performance against market benchmarks or other traders through percentile rankings.",
-    icon: (
-      <svg
-        className="w-6 h-6"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M21 21H4C3.44772 21 3 20.5523 3 20V3"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-        <path
-          d="M7 14L11 10L14 13L18 9"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    ),
-    animation: <AdvancedAnalyticsAnimation />,
-    isUpcoming: true
-  },
-  
-  // 7 - Bring Your Own Agent
+  // 4 - Bring Your Own Agent
   {
     title: "Bring Your Own Agent",
     description: "Deploy custom AI trading agents to compete in specialized contests using ElizaOS, Virtuals, and other frameworks.",
@@ -244,8 +182,8 @@ const upcomingFeatures = [
     //animation: <BringYourOwnAgentAnimation />, // (needs to be generated 5/23/25)
     isUpcoming: true
   },
-  
-  // 8 - Degen Reputation System
+
+  // 5 - Degen Reputation
   {
     title: "Degen Reputation",
     description: "Build your Degen Rep through competitions and achievements to unlock exclusive platform benefits.",
@@ -291,12 +229,12 @@ const upcomingFeatures = [
     isUpcoming: true
   },
 
-  // 9 - DegenDuel MCP
+  // 6 - Advanced Analytics
   {
-    title: "DegenDuel MCP",
-    description: "Connect Claude Desktop, Cursor, and Windsurf to DegenDuel for AI-powered trading insights and analysis.",
+    title: "Advanced Analytics",
+    description: "AI-powered analytics help improve your trading performance with comprehensive metrics and visualizations.",
     extendedDescription:
-      "Connect Claude Desktop, Cursor, and Windsurf to DegenDuel for AI-powered trading insights. Get real-time market intelligence through your favorite AI assistants.\n\nQuick setup: Install the package, generate your secure token at /mcp-portal, add config to your AI client, and start asking for trading insights and portfolio analysis.",
+      "Track your trading performance across competitions with detailed metrics including win rate, average ROI, drawdown statistics, and sentiment analysis.\n\nExport historical data in multiple formats, create custom dashboards, and compare your performance against market benchmarks or other traders through percentile rankings.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -305,51 +243,30 @@ const upcomingFeatures = [
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"
+          d="M21 21H4C3.44772 21 3 20.5523 3 20V3"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M7 14L11 10L14 13L18 9"
           stroke="currentColor"
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
       </svg>
     ),
+    animation: <AdvancedAnalyticsAnimation />,
     isUpcoming: true
   },
 
-  // 10 - DegenDuel RPC
+  // 7 - Instant SOL Settlement
   {
-    title: "DegenDuel RPC",
-    description: "High-performance RPC endpoint for developers building trading bots and applications with direct API access.",
-    extendedDescription:
-      "Low-latency access to our trading infrastructure through comprehensive REST and WebSocket APIs. Build custom trading bots, portfolio management tools, and third-party integrations.\n\nFeatures include real-time market data streaming, portfolio management, contest participation, and advanced order management with sub-100ms response times.",
-    icon: (
-      <svg
-        className="w-6 h-6"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M8 21L16 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M12 17V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M6 7H6.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M10 7H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M6 10H6.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M10 10H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M6 13H6.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M10 13H18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-    isUpcoming: true
-  },
-
-  // 11 - Discord Bot
-  {
-    title: "Discord Bot",
-    description: "Discord integration for contest notifications, leaderboards, and community features directly in your server.",
-    extendedDescription:
-      "Brings the full platform experience to your Discord server. Get real-time contest notifications, view live leaderboards, check portfolio performance, and receive automated prize announcements.\n\nSetup custom alerts for price movements, contest starts, and achievement unlocks. Supports slash commands for quick portfolio checks and contest participation directly from Discord.",
+    title: "Instant SOL Settlement",
+    description: "Contest winnings are automatically distributed to winners' wallets seconds after competition ends.",
+    extendedDescription: 
+      "Final standings are calculated and prize distributions processed immediately after competition end. Winners receive rewards directly to their connected wallets with no manual claims required.\n\nTransaction verification uses a dual-signature system for maximum security while maintaining near-instantaneous settlement times regardless of competition size.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -358,39 +275,22 @@ const upcomingFeatures = [
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          d="M8 12L16 12"
+          d="M13 3L5 13H12L11 21L19 11H12L13 3Z"
           stroke="currentColor"
           strokeWidth="1.5"
           strokeLinecap="round"
+          strokeLinejoin="round"
         />
-        <path
-          d="M8 8L16 8"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-        <path
-          d="M8 16L13 16"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-        <rect
-          x="3"
-          y="4"
-          width="18"
-          height="16"
-          rx="2"
-          stroke="currentColor"
-          strokeWidth="1.5"
-        />
-        <circle cx="18.5" cy="7.5" r="2.5" fill="currentColor" />
       </svg>
     ),
-    isUpcoming: true
+    animation: <InstantSettlementAnimation />,
+    isUpcoming: false
   },
 
 ];
+
+// Upcoming features with "SOON" tag
+const upcomingFeatures: typeof currentFeatures = [];
 
 // Hook for reduced motion preference
 const useReducedMotion = () => {
@@ -457,7 +357,7 @@ export const FeatureList: React.FC = () => {
       animate="visible"
     >
       {/* Features grid with responsive layout */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {allFeatures.map((feature) => (
           <motion.div
             key={feature.title}

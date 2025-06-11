@@ -44,8 +44,24 @@ axiosInstance.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    // Check if it's a 401 error and not a request to the refresh endpoint itself
-    if (error.response?.status === 401 && originalRequest.url !== '/auth/refresh' && !originalRequest._retry) {
+    // Skip token refresh for auth-related endpoints
+    const authEndpoints = ['/auth/refresh', '/auth/challenge', '/auth/verify-wallet', '/auth/status', '/auth/login', '/auth/logout'];
+    const isAuthEndpoint = authEndpoints.some(endpoint => originalRequest.url?.includes(endpoint));
+    
+    // Check if it's a 401 error and not an auth endpoint
+    if (error.response?.status === 401 && !isAuthEndpoint && !originalRequest._retry) {
+      
+      // Only attempt refresh if we have tokens stored (i.e., user was previously authenticated)
+      // This prevents refresh attempts when user is not logged in
+      const hasStoredTokens = document.cookie.includes('token=') || 
+                              document.cookie.includes('jwt=') || 
+                              document.cookie.includes('r_session=') ||
+                              localStorage.getItem('degenduel-storage')?.includes('"jwt"');
+      
+      if (!hasStoredTokens) {
+        // No tokens stored, user is not authenticated, don't try to refresh
+        return Promise.reject(error);
+      }
 
       // Prevent multiple refresh attempts concurrently
       if (isRefreshing) {
@@ -74,10 +90,15 @@ axiosInstance.interceptors.response.use(
         console.error('[Axios Interceptor] Token refresh failed.', refreshError?.response?.data || refreshError);
         // Process queue without passing token
         processQueue(refreshError);
-        // Trigger logout
-        // Using authService directly might cause circular dependency issues.
-        // Consider an event emitter or state management action instead.
-        authService.logout();
+        
+        // Only logout if we had tokens before (i.e., user was authenticated)
+        if (hasStoredTokens) {
+          // Trigger logout
+          // Using authService directly might cause circular dependency issues.
+          // Consider an event emitter or state management action instead.
+          authService.logout();
+        }
+        
         // Reject the original request's promise with the refresh error
         return Promise.reject(refreshError);
       } finally {

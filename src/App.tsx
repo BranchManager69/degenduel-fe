@@ -39,9 +39,9 @@ import {
 } from "@solana/wallet-adapter-wallets";
 
 // Other providers of dubious quality:
+import { Toaster } from "react-hot-toast";
 import { ToastListener, ToastProvider } from "./components/toast";
 import { TokenDataProvider } from "./contexts/TokenDataContext";
-import { Toaster } from "react-hot-toast";
 
 // Components
 
@@ -63,6 +63,7 @@ import { UiDebugPanel } from "./components/debug/ui/UiDebugPanel";
 import { EdgeToEdgeTicker } from "./components/layout/EdgeToEdgeTicker";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
+import { ImportantNotice } from "./components/layout/ImportantNotice";
 import { WalletBalanceTicker } from "./components/layout/WalletBalanceTicker";
 import { InviteWelcomeModal } from "./components/modals/InviteWelcomeModal";
 import { AdminRoute } from "./components/routes/AdminRoute";
@@ -136,7 +137,6 @@ const MyContestsPage = lazy(() => import('./pages/authenticated/MyContestsPage')
 const MyPortfoliosPage = lazy(() => import('./pages/authenticated/MyPortfoliosPage'));
 const NotificationsPage = lazy(() => import('./pages/authenticated/NotificationsPage'));
 const TokenSelection = lazy(() => import('./pages/public/contests/PortfolioTokenSelectionPage').then(module => ({ default: module.TokenSelection })));
-// const TokenSelection = lazy(() => import('./pages/authenticated/PortfolioTokenSelectionSimplified').then(module => ({ default: module.PortfolioTokenSelectionSimplified })));
 const PrivateProfilePage = lazy(() => import('./pages/authenticated/PrivateProfilePage').then(module => ({ default: module.PrivateProfilePage })));
 const WalletPage = lazy(() => import('./pages/authenticated/WalletPage'));
 
@@ -387,8 +387,11 @@ const AppContent: React.FC = () => {
       {/* EdgeToEdgeTicker */}
       <EdgeToEdgeTicker />
       
+      {/* ImportantNotice - global site-wide notice */}
+      <ImportantNotice />
+      
       {/* WalletBalanceTicker */}
-      {user && <WalletBalanceTicker isCompact={true} />}
+      <WalletBalanceTicker isCompact={true} />
       
       {/* ServerDownBanner (?) */}
       {/* <ServerDownBanner /> */}

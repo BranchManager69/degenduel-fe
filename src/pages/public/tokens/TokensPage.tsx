@@ -95,6 +95,12 @@ export const TokensPage: React.FC = () => {
   // DUEL token data state
   const [duelToken, setDuelToken] = useState<Token | null>(null);
   
+  // NEW: Separate featured vs paginated data for stability
+  const [featuredTokens, setFeaturedTokens] = useState<Token[]>([]);
+  const [paginatedTokens, setPaginatedTokens] = useState<Token[]>([]);
+  const [featuredLoaded, setFeaturedLoaded] = useState(false);
+  const [lastProcessedCount, setLastProcessedCount] = useState(0);
+  
   // Fetch DUEL token data
   useEffect(() => {
     const fetchDuelToken = async () => {
@@ -123,18 +129,39 @@ export const TokensPage: React.FC = () => {
     fetchDuelToken();
   }, []);
 
-  // Apply client-side sorting when user selects a sort option
+  // NEW: Separate featured tokens from paginated tokens for stability
+  useEffect(() => {
+    if (allTokens.length > 0 && !featuredLoaded) {
+      // FREEZE the first 12 tokens as featured (never changes after initial load)
+      const featured = allTokens.slice(0, 12);
+      setFeaturedTokens(featured);
+      setFeaturedLoaded(true);
+      
+      // Rest go to paginated section (can be sorted and updated)
+      setPaginatedTokens(allTokens.slice(12));
+      setLastProcessedCount(allTokens.length);
+      console.log('[TokensPage] Initial load - Featured:', featured.length, 'Paginated:', allTokens.slice(12).length);
+    } else if (featuredLoaded && allTokens.length > lastProcessedCount) {
+      // APPEND only NEW tokens to paginated section
+      const newTokens = allTokens.slice(lastProcessedCount);
+      setPaginatedTokens(prev => [...prev, ...newTokens]);
+      setLastProcessedCount(allTokens.length);
+      console.log('[TokensPage] Appended', newTokens.length, 'new tokens. Total paginated:', paginatedTokens.length + newTokens.length);
+    }
+  }, [allTokens, featuredLoaded, lastProcessedCount, paginatedTokens.length]);
+
+  // Apply client-side sorting ONLY to paginated tokens (not featured)
   const visibleTokens = useMemo(() => {
-    if (!allTokens || allTokens.length === 0) return [];
+    if (!paginatedTokens || paginatedTokens.length === 0) return [];
     
     let sortedTokens: Token[];
     
-    // If using default backend sort, return as-is
+    // If using default backend sort, return paginated tokens as-is
     if (sortField === "degenduelScore") {
-      sortedTokens = allTokens;
+      sortedTokens = paginatedTokens;
     } else {
-      // Apply client-side sorting
-      sortedTokens = [...allTokens].sort((a, b) => {
+      // Apply client-side sorting ONLY to paginated section
+      sortedTokens = [...paginatedTokens].sort((a, b) => {
         let compareValue = 0;
         
         switch (sortField) {
@@ -159,13 +186,13 @@ export const TokensPage: React.FC = () => {
       });
     }
     
-    // Prepend DUEL token if we have it (and it's not already in the list)
-    if (duelToken && !sortedTokens.some(t => t.contractAddress === duelToken.contractAddress)) {
+    // Prepend DUEL token to paginated section only if not already in featured
+    if (duelToken && !featuredTokens.some(t => t.contractAddress === duelToken.contractAddress)) {
       return [duelToken, ...sortedTokens];
     }
     
     return sortedTokens;
-  }, [allTokens, sortField, sortDirection, duelToken]);
+  }, [paginatedTokens, sortField, sortDirection, duelToken, featuredTokens]);
 
   // Check if there are more tokens to load from server
   const hasMoreTokens = pagination?.hasMore ?? false;
@@ -266,7 +293,7 @@ export const TokensPage: React.FC = () => {
               <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 text-xs font-mono">
                 <div className="text-blue-300">📊 Pagination Debug:</div>
                 <div className="text-blue-200 mt-1">
-                  Loaded: {allTokens.length} | Total: {pagination.total} | 
+                  Featured: {featuredTokens.length} | Paginated: {paginatedTokens.length} | Total: {pagination.total} | 
                   Offset: {pagination.offset} | HasMore: {pagination.hasMore ? '✅' : '❌'}
                 </div>
               </div>
@@ -354,6 +381,7 @@ export const TokensPage: React.FC = () => {
             <>
               <CreativeTokensGrid
                 tokens={visibleTokens}
+                featuredTokens={featuredTokens}
                 selectedTokenSymbol={null}
                 onTokenClick={handleTokenClick}
               />
@@ -376,7 +404,7 @@ export const TokensPage: React.FC = () => {
                       </div>
                     ) : (
                       <div className="text-xs text-gray-500">
-                        Scroll for more • {allTokens.length} tokens loaded
+                        Scroll for more • {featuredTokens.length + paginatedTokens.length} tokens loaded
                       </div>
                     )}
                   </div>

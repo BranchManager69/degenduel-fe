@@ -28,6 +28,7 @@ interface SolanaConnectionContextType {
   rpcEndpoint: string;
   // Whether the connection is using a high-volume tier
   isHighVolumeTier: boolean;
+  isAdministrator: boolean;
 }
 
 // Create the context with a default value using the public endpoint
@@ -41,11 +42,12 @@ const SolanaConnectionContext = createContext<SolanaConnectionContextType>({
   connectionTier: 'public',
   rpcEndpoint: `${window.location.origin}/api/solana-rpc/public`,
   isHighVolumeTier: false,
+  isAdministrator: false,
 });
 
 // Provider component
 export const SolanaConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth(); 
+  const { user } = useAuth();
   
   const connectionInfo = useMemo(() => {
     const isAdministrator = user?.role === 'admin' || user?.role === 'superadmin';
@@ -73,7 +75,8 @@ export const SolanaConnectionProvider: React.FC<{ children: React.ReactNode }> =
       connection,
       connectionTier: tier,
       rpcEndpoint: endpoint,
-      isHighVolumeTier: tier === 'admin'
+      isHighVolumeTier: tier === 'admin',
+      isAdministrator,
     };
   }, [user]);
   

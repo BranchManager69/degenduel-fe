@@ -42,7 +42,7 @@ export const WalletBalanceTicker: React.FC<WalletBalanceTickerProps> = ({
     if (walletAddress && isAdapterConnected) {
       refreshWallet();
     }
-  }, [walletAddress, isAdapterConnected, refreshWallet]);
+  }, [walletAddress, isAdapterConnected]);
   
   // No need for manual formatting anymore, AnimatedNumber handles it
   
@@ -79,7 +79,7 @@ export const WalletBalanceTicker: React.FC<WalletBalanceTickerProps> = ({
   if (isLoading || (isAdapterConnected && !walletAddress && !balance)) { // Show loading if adapter connected but address/balance not yet resolved
     return (
       <div className={containerClasses}>
-        <div className={`animate-pulse bg-dark-300/50 ${isCompact ? 'h-0' : 'h-8'}`} />
+        <div className={`animate-pulse bg-dark-300/50 ${isCompact ? 'h-6' : 'h-8'}`} />
       </div>
     );
   }
@@ -94,7 +94,7 @@ export const WalletBalanceTicker: React.FC<WalletBalanceTickerProps> = ({
     
     return (
       <div className={containerClasses}>
-        <div className={`flex items-center justify-center space-x-3 ${isCompact ? 'h-0' : 'h-8'}`}>
+        <div className={`flex items-center justify-center space-x-3 ${isCompact ? 'h-6' : 'h-8'}`}>
           <span className="font-mono text-red-400">
             <span className="animate-ping inline-block h-2 w-2 rounded-full bg-red-500 opacity-75 mr-2"></span>
             {displayError}
@@ -115,9 +115,9 @@ export const WalletBalanceTicker: React.FC<WalletBalanceTickerProps> = ({
   // Handle no balances (adapter connected, but balance data isn't available from WebSocket yet)
   if (!balance) {
     return (
-      <div className={containerClasses}>
-        <div className={`flex items-center justify-center ${isCompact ? 'h-6' : 'h-8'}`}>
-          <span className="text-gray-400">Connect wallet to view balances</span>
+      <div className={containerClasses} style={{ backgroundColor: 'red', visibility: 'visible', display: 'block', opacity: 1 }}>
+        <div className={`flex items-center justify-center ${isCompact ? 'h-6' : 'h-8'}`} style={{ backgroundColor: 'blue', color: 'white' }}>
+          <span className="text-white">WALLET TICKER TEST - Connect wallet to view balances</span>
         </div>
       </div>
     );

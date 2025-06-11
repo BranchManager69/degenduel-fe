@@ -1,6 +1,6 @@
-import { createApiClient } from "./utils";
 import { useStore } from "../../store/useStore";
 import { PortfolioResponse } from "../../types/index";
+import { createApiClient } from "./utils";
 
 export const portfolio = {
   get: async (contestId: number): Promise<PortfolioResponse> => {
@@ -24,6 +24,20 @@ export const portfolio = {
       return { tokens: [] };
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // Transform backend format to frontend format
+    if (data.portfolio && Array.isArray(data.portfolio)) {
+      return {
+        tokens: data.portfolio.map((item: any) => ({
+          symbol: item.token?.symbol || '',
+          contractAddress: item.token?.address || '',
+          weight: item.weight || 0
+        }))
+      };
+    }
+
+    // Fallback for empty or unexpected format
+    return { tokens: [] };
   },
 };

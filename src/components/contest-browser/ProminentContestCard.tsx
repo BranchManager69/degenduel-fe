@@ -1,13 +1,13 @@
 import { motion } from "framer-motion";
-import React, { useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { getContestImageUrl } from "../../lib/imageUtils";
 import { cn, formatCurrency } from "../../lib/utils";
 import { Contest, ContestStatus } from "../../types/index";
-import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ContestButton } from "../landing/contests-preview/ContestButton";
 import { CountdownTimer } from "../ui/CountdownTimer";
 import { ShareContestButton } from "./ShareContestButton";
+import { useStore } from "../../store/useStore";
 
 // Global cache to prevent repeated 404 warnings for the same URLs
 const warned404URLs = new Set<string>();
@@ -17,6 +17,27 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
     warned404URLs.clear();
   });
+}
+
+// Throttle function for performance
+function throttle<T extends (...args: any[]) => any>(func: T, delay: number): T {
+  let lastCall = 0;
+  let timeout: NodeJS.Timeout | null = null;
+  
+  return ((...args: Parameters<T>) => {
+    const now = Date.now();
+    
+    if (now - lastCall >= delay) {
+      lastCall = now;
+      func(...args);
+    } else if (!timeout) {
+      timeout = setTimeout(() => {
+        lastCall = Date.now();
+        func(...args);
+        timeout = null;
+      }, delay - (now - lastCall));
+    }
+  }) as T;
 }
 
 interface ProminentContestCardProps {
@@ -32,20 +53,21 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
   featuredLabel = "🏆 CONTEST OF THE WEEK",
   className
 }) => {
-  // TODO: Component needs cleanup:
-  // - Make action buttons (Details, Enter, Share) more uniform in size/style
-  // - Further reduce height to better match regular cards
-  // - Consider responsive adjustments for mobile
+  // Performance mode from store
+  const performanceMode = useStore(state => state.performanceMode);
+  
+  // State management
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [imageBlurhash, setImageBlurhash] = useState(false);
   
-  // Mouse position tracking for enhanced parallax effect
+  // Mouse position tracking for parallax effect (disabled in performance mode)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   
-  // Ref to the card element for tracking relative mouse position
+  // Refs
   const cardRef = useRef<HTMLDivElement>(null);
+  const isInViewport = useRef(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Calculate actual status based on timestamps
   const now = new Date();
@@ -66,151 +88,166 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
     }
   }
   
-  // Mouse move handler for enhanced parallax effect
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  // Lazy loading setup with Intersection Observer
+  useEffect(() => {
     if (!cardRef.current) return;
     
-    // Get card dimensions and position
-    const rect = cardRef.current.getBoundingClientRect();
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            isInViewport.current = true;
+            // Load image when in viewport
+            if (cardRef.current) {
+              cardRef.current.classList.add('in-viewport');
+            }
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '50px' }
+    );
     
-    // Calculate mouse position relative to card center (values from -0.5 to 0.5)
+    observerRef.current.observe(cardRef.current);
+    
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
+  
+  // Throttled mouse move handler for parallax effect
+  const handleMouseMoveInternal = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current || performanceMode) return;
+    
+    const rect = cardRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
     
-    // Update mouse position state
     setMousePosition({ x, y });
-  };
+  }, [performanceMode]);
+  
+  // Throttle mouse move to 60fps (16ms)
+  const handleMouseMove = useCallback(
+    throttle(handleMouseMoveInternal, 16),
+    [handleMouseMoveInternal]
+  );
   
   // Mouse enter/leave handlers
-  const handleMouseEnter = () => setIsHovering(true);
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    // Reset to center position when not hovering
-    setMousePosition({ x: 0, y: 0 });
-  };
+  const handleMouseEnter = useCallback(() => {
+    if (!performanceMode) {
+      setIsHovering(true);
+    }
+  }, [performanceMode]);
+  
+  const handleMouseLeave = useCallback(() => {
+    if (!performanceMode) {
+      setIsHovering(false);
+      setMousePosition({ x: 0, y: 0 });
+    }
+  }, [performanceMode]);
 
   return (
-    <div className="relative"> {/* Removed crown spacing */}
+    <div className="relative">
       <motion.div
         ref={cardRef}
         onClick={onClick}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className={cn("group relative bg-gradient-to-br from-dark-200/90 via-purple-900/20 to-dark-300/90 backdrop-blur-md border-2 border-purple-800/60 hover:border-purple-700/80 transform transition-all duration-500 hover:scale-[1.02] rounded-xl overflow-visible w-full max-w-full cursor-pointer", className)}
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      whileHover={{ 
-        boxShadow: "0 25px 50px -12px rgba(153, 51, 255, 0.25), 0 0 30px rgba(153, 51, 255, 0.1)",
-        transition: { duration: 0.3 }
-      }}
-    >
-      {/* Enhanced Glow Effects - Adding DegenDuel Purple */}
-      <div className="absolute -inset-[2px] bg-gradient-to-r from-amber-400/30 via-purple-500/25 to-amber-600/30 rounded-xl blur-lg opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-      <div className="absolute -inset-[1px] bg-gradient-to-r from-amber-400/40 via-purple-400/30 to-amber-600/40 rounded-xl blur-sm opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+        onMouseMove={!performanceMode ? handleMouseMove : undefined}
+        onMouseEnter={!performanceMode ? handleMouseEnter : undefined}
+        onMouseLeave={!performanceMode ? handleMouseLeave : undefined}
+        className={cn(
+          "group relative bg-gradient-to-br from-dark-200/90 via-purple-900/20 to-dark-300/90 backdrop-blur-md border-2 border-purple-800/60 hover:border-purple-700/80 transform transition-all duration-500 hover:scale-[1.02] rounded-xl overflow-visible w-full max-w-full cursor-pointer",
+          "will-change-transform", // GPU acceleration
+          className
+        )}
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        whileHover={!performanceMode ? { 
+          boxShadow: "0 25px 50px -12px rgba(153, 51, 255, 0.25), 0 0 30px rgba(153, 51, 255, 0.1)",
+          transition: { duration: 0.3 }
+        } : undefined}
+        style={{
+          transform: performanceMode ? undefined : 'translateZ(0)', // Force GPU layer
+        }}
+      >
+      {/* Simplified Glow Effects - only on hover, reduced layers */}
+      {!performanceMode && (
+        <div className="absolute -inset-[1px] bg-gradient-to-r from-amber-400/20 via-purple-500/15 to-amber-600/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      )}
       
-      {/* Animated Background Pattern */}
+      {/* Simplified Background Pattern - static in performance mode */}
       <div className="absolute inset-0 overflow-hidden rounded-xl">
-        <div className="absolute inset-0 opacity-30">
-          {/* Dynamic grid pattern */}
+        <div className="absolute inset-0 opacity-20">
+          {/* Static grid pattern */}
           <div
             className="absolute inset-0"
             style={{
-              backgroundImage: `
-                linear-gradient(to right, rgba(153, 51, 255, 0.1) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(153, 51, 255, 0.1) 1px, transparent 1px)
-              `,
+              backgroundImage: `linear-gradient(to right, rgba(153, 51, 255, 0.05) 1px, transparent 1px)`,
               backgroundSize: '32px 32px'
             }}
           />
           
-          {/* Animated energy waves - Enhanced with Purple */}
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/8 to-transparent"
-            animate={{ x: ["-100%", "100%"] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-          />
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/8 to-transparent"
-            animate={{ y: ["-100%", "100%"] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear", delay: 1 }}
-          />
+          {/* Single animated wave - CSS animation instead of Framer Motion */}
+          {!performanceMode && (
+            <div 
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/5 to-transparent animate-slide-x"
+              style={{
+                willChange: 'transform',
+              }}
+            />
+          )}
         </div>
       </div>
 
-      {/* Contest Image with Enhanced Parallax Effect */}
-      {getContestImageUrl(contest.image_url) && (
-        <div className="absolute inset-0 overflow-hidden rounded-xl" style={{clipPath: 'inset(0 0 0 0 round 12px)'}}>
-          {/* Loading state */}
-          {!imageLoaded && !imageError && !imageBlurhash && (
-            <div className="absolute inset-0 flex items-center justify-center bg-dark-300/50 z-10">
-              <LoadingSpinner size="lg" />
-            </div>
-          )}
-          
-          {/* Progressive loading effect */}
+      {/* Contest Image with Optimized Loading */}
+      {getContestImageUrl(contest.image_url) && isInViewport.current && (
+        <div className="absolute inset-0 overflow-hidden rounded-xl">
+          {/* Simple loading placeholder */}
           {!imageLoaded && !imageError && (
-            <motion.div
-              initial={{ opacity: 0, filter: "blur(30px)" }}
-              animate={{ opacity: 0.2, filter: "blur(15px)" }}
-              transition={{ duration: 0.8 }}
-              className="absolute inset-0 bg-gradient-to-br from-dark-300 to-dark-400"
-              onAnimationComplete={() => setImageBlurhash(true)}
-            />
+            <div className="absolute inset-0 bg-dark-300/30 animate-pulse" />
           )}
           
-          {/* Actual image with enhanced parallax */}
+          {/* Optimized image with simplified parallax */}
           {!imageError && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={imageLoaded ? { opacity: 0.25 } : { opacity: 0 }}
-              transition={{ duration: 1.2 }}
-              className="absolute inset-0"
+            <div 
+              className="absolute inset-0 transition-opacity duration-700"
               style={{ 
-                perspective: "1500px",
-                perspectiveOrigin: "center"
+                opacity: imageLoaded ? 0.25 : 0,
+                willChange: 'opacity'
               }}
             >
-              <motion.div
+              <div
+                className="w-full h-full transition-transform duration-300 ease-out"
                 style={{
-                  width: "100%",
-                  height: "100%",
-                  transform: isHovering ? 
-                    `scale(1.15) translateX(${mousePosition.x * 15}px) translateY(${mousePosition.y * 15}px) rotateX(${mousePosition.y * 2}deg) rotateY(${mousePosition.x * 2}deg)` : 
-                    "scale(1.08)",
-                  transition: "transform 0.4s ease-out"
+                  transform: !performanceMode && isHovering ? 
+                    `scale(1.1) translateX(${mousePosition.x * 10}px) translateY(${mousePosition.y * 10}px)` : 
+                    "scale(1.05)",
+                  willChange: 'transform'
                 }}
               >
-                <motion.img
+                <img
                   src={getContestImageUrl(contest.image_url)}
                   alt={contest.name}
-                  onLoad={() => {
-                    setTimeout(() => setImageLoaded(true), 200);
-                  }}
+                  loading="lazy"
+                  onLoad={() => setImageLoaded(true)}
                   onError={(e) => {
                     const url = getContestImageUrl(contest.image_url);
-                    // Only warn once per URL to prevent spam
                     if (url && !warned404URLs.has(url)) {
                       console.warn(`Contest image not found: ${url}`);
                       warned404URLs.add(url);
                     }
-                    // Set fallback image source
                     const target = e.target as HTMLImageElement;
                     target.src = '/images/contests/placeholder.png';
                     setImageError(true);
                   }}
-                  initial={{ scale: 1.3, filter: "blur(12px)" }}
-                  animate={{ filter: "blur(0px)" }}
-                  transition={{ filter: { duration: 1.5 } }}
                   className="w-full h-full object-cover"
                 />
-              </motion.div>
+              </div>
               
-              {/* Enhanced gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-dark-200/95 via-dark-200/85 to-dark-200/40" />
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-900/20 via-transparent to-purple-900/20" />
-            </motion.div>
+              {/* Simplified gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-dark-200/90 via-dark-200/70 to-transparent" />
+            </div>
           )}
         </div>
       )}
@@ -220,140 +257,216 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-br from-dark-300/60 to-dark-400/60 rounded-xl" />
       )}
 
-      {/* Featured Label Banner */}
+      {/* Featured Label Banner - Simplified */}
       <div className="absolute top-0 left-0 right-0 z-30">
         <motion.div
           className="relative bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-black text-center py-3 px-6 rounded-t-xl"
           initial={{ y: -50 }}
           animate={{ y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
         >
-          {/* Banner glow */}
-          <div className="absolute -inset-[1px] bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-600 rounded-t-xl blur-sm opacity-50" />
-          
           {/* Banner content */}
           <div className="relative z-10 flex items-center justify-center gap-3">
-            <motion.span
-              className="text-lg font-black uppercase tracking-wider text-black"
-              animate={{ 
-                textShadow: [
-                  "0 0 10px rgba(0,0,0,0.3)",
-                  "0 0 20px rgba(0,0,0,0.5)",
-                  "0 0 10px rgba(0,0,0,0.3)"
-                ]
-              }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
+            <span className="text-lg font-black uppercase tracking-wider text-black drop-shadow-md">
               {featuredLabel}
-            </motion.span>
+            </span>
           </div>
           
-          {/* Animated shine effect */}
-          <motion.div 
-            className="absolute inset-0 overflow-hidden rounded-t-xl"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <motion.div 
-              className="w-[30%] h-full bg-gradient-to-r from-transparent via-purple-400/30 to-transparent"
-              animate={{ x: ["-30%", "130%"] }}
-              transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-            />
-          </motion.div>
+          {/* Simple shine effect - CSS animation */}
+          {!performanceMode && (
+            <div className="absolute inset-0 overflow-hidden rounded-t-xl">
+              <div 
+                className="w-[30%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shine"
+                style={{ willChange: 'transform' }}
+              />
+            </div>
+          )}
         </motion.div>
-        
       </div>
 
 
       {/* Main Content Area */}
       <div className="relative p-6 pt-16 space-y-4 z-20">
-        {/* Title and Timer Section */}
-        <div className="space-y-3">
+        {/* Title Section */}
+        <div className="space-y-2">
           <motion.h2
-            className="text-3xl md:text-4xl font-black text-white leading-tight"
+            className="text-xl sm:text-2xl font-bold text-gray-100 leading-tight group-hover:text-brand-300 transition-colors"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            style={{
-              textShadow: "0 0 20px rgba(153, 51, 255, 0.5), 0 2px 4px rgba(0,0,0,0.8)"
-            }}
           >
             {contest.name}
           </motion.h2>
           
           <motion.div
-            className="flex items-center gap-2 text-lg"
+            className="text-sm font-medium text-brand-300"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <span className="text-gray-400">
-              {hasEnded ? "Contest Ended" : hasStarted ? "Ends in" : "Starts in"}
-            </span>
-            <span className="text-xl font-bold text-white">
-              <CountdownTimer
-                targetDate={hasStarted ? contest.end_time : contest.start_time}
-                onComplete={() => console.log("Prominent timer completed")}
-                showSeconds={true}
-              />
-            </span>
+            {hasEnded ? "Contest Ended" : hasStarted ? "Ends in " : "Starts in "}
+            <CountdownTimer
+              targetDate={hasStarted ? contest.end_time : contest.start_time}
+              onComplete={() => console.log("Prominent timer completed")}
+              showSeconds={true}
+            />
           </motion.div>
         </div>
 
         {/* Description */}
         <motion.div
-          className="space-y-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.6 }}
         >
-          <p className="text-lg text-gray-300 leading-relaxed max-w-2xl">
+          <p className="text-xs sm:text-sm text-gray-400 line-clamp-2 sm:line-clamp-3">
             {contest.description || "An epic trading competition awaits. Join the battle and prove your trading prowess."}
           </p>
         </motion.div>
 
         {/* Compact Stats Row */}
         <motion.div
-          className="flex flex-wrap gap-4"
+          className="flex flex-col gap-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
         >
-          {/* Entry Fee & Prize Pool - Simplified */}
-          <div className="flex-1 min-w-[300px]">
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col">
-                <span className="text-xs font-medium text-amber-300 uppercase tracking-wide">Entry</span>
-                {Number(contest.entry_fee) === 0 ? (
-                  <span className="text-lg font-bold text-green-400 uppercase tracking-wide">FREE</span>
-                ) : (
-                  <span className="text-lg font-bold text-white">{formatCurrency(Number(contest.entry_fee))}</span>
-                )}
+          {/* Entry Fee & Prize Pool Section */}
+          <div className="flex-1">
+            <div className="grid grid-cols-2 gap-4">
+              {/* Entry Fee */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-blue-300 uppercase tracking-wider">Entry Fee</span>
+                  <div className="flex-1 h-px bg-gradient-to-r from-blue-400/30 to-transparent"></div>
+                </div>
+                <div className="relative group">
+                  
+                  {Number(contest.entry_fee) === 0 ? (
+                    <div className="relative text-center">
+                      <span className="text-lg font-bold text-green-400 uppercase tracking-wide whitespace-nowrap">FREE</span>
+                      <div className="text-xs text-green-300/60 whitespace-nowrap">No cost to enter</div>
+                    </div>
+                  ) : (
+                    <div className="relative text-center">
+                      <span className="text-lg font-bold text-blue-300 whitespace-nowrap">{formatCurrency(Number(contest.entry_fee))}</span>
+                      <div className="text-xs text-blue-300/60 whitespace-nowrap">Entry cost</div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="w-px h-8 bg-amber-400/30" />
-              <div className="flex flex-col">
-                <span className="text-xs font-medium text-amber-300 uppercase tracking-wide">Prize</span>
-                <span className="text-xl font-bold text-amber-300">
-                  {formatCurrency(Number(contest.total_prize_pool || contest.prize_pool || "0"))}
-                </span>
+
+              {/* Prize Pool */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-amber-300 uppercase tracking-wider">Prize Pool</span>
+                  {Number(contest.entry_fee) > 0 && (
+                    <div className="relative group/tooltip">
+                      <svg className="w-3 h-3 text-amber-400/60 hover:text-amber-300 transition-colors cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                      </svg>
+                      
+                      {/* Enhanced Tooltip */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        <div className="bg-dark-200/95 backdrop-blur-md border border-amber-500/30 rounded-lg px-4 py-3 text-sm text-gray-200 whitespace-nowrap shadow-2xl">
+                          <div className="relative">
+                            <span className="block font-bold text-amber-300 mb-1">Maximum Prize Pool</span>
+                            <span className="block text-gray-300">with a full roster of competitors.</span>
+                            <span className="block text-amber-200">The more players, the bigger the rewards!</span>
+                          </div>
+                          {/* Enhanced Arrow */}
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
+                            <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-dark-200/95"></div>
+                            <div className="absolute -top-[9px] -left-[8px] w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-amber-500/30"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex-1 h-px bg-gradient-to-r from-amber-400/30 to-transparent"></div>
+                </div>
+                <div className="relative group">
+                  
+                  <div className="relative flex items-center justify-between">
+                    <div className="text-center flex-1">
+                      <span className="text-lg font-bold text-amber-300 whitespace-nowrap">
+                        {formatCurrency(
+                          Number(contest.entry_fee) > 0 
+                            ? Number(contest.entry_fee) * contest.max_participants
+                            : Number(contest.prize_pool || "0")
+                        )}
+                      </span>
+                      <div className="text-xs text-amber-300/60 whitespace-nowrap">Maximum potential</div>
+                    </div>
+                    {displayStatus !== "cancelled" && Number(contest.entry_fee) > 0 && (
+                      <div className="text-right">
+                        <span className="text-xs font-mono text-amber-400/80 bg-amber-500/10 px-1.5 py-0.5 rounded whitespace-nowrap">
+                          {contest.max_participants}x
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Players - Simplified */}
-          <div className="flex-1 min-w-[150px]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-amber-300 uppercase tracking-wide">Players</span>
-              <span className="text-lg font-bold text-white">
-                {contest.participant_count}/{contest.max_participants}
-              </span>
+          {/* Players Progress Section */}
+          <div className="w-full">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-purple-300 uppercase tracking-wider">Competition</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-purple-400/30 to-transparent"></div>
+              </div>
+              
+              {/* Compact Players Display */}
+              <div className="relative group">
+                
+                <div className="relative">
+                  {/* Enhanced Progress Bar with Text Inside */}
+                  <div className="relative h-8 bg-black/60 rounded-full overflow-hidden">
+                    {/* Background pattern */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-gray-900 to-black/80"></div>
+                    
+                    {/* Progress fill */}
+                    <div
+                      className="absolute inset-0 bg-gradient-to-r from-purple-700 via-purple-600 to-purple-700 rounded-full transition-all duration-500 ease-out"
+                      style={{
+                        width: `${(contest.participant_count / contest.max_participants) * 100}%`,
+                      }}
+                    >
+                      {/* Animated shine on progress bar */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    </div>
+                    
+                    {/* Text inside progress bar */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm font-bold text-white drop-shadow-lg">
+                        {contest.participant_count}/{contest.max_participants}
+                      </span>
+                    </div>
+                    
+                  </div>
+                  
+                  {/* Status indicator - only for special statuses */}
+                  {(contest.participant_count === contest.max_participants || contest.participant_count > contest.max_participants * 0.8) && (
+                    <div className="mt-2 text-center">
+                      {contest.participant_count === contest.max_participants ? (
+                        <span className="text-xs font-bold text-green-400 uppercase tracking-wide">Contest Full</span>
+                      ) : (
+                        <span className="text-xs font-bold text-yellow-400 uppercase tracking-wide">Filling Fast</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>
 
         {/* Action Buttons */}
         <motion.div
-          className="flex flex-row gap-2 pt-4"
+          className="flex flex-row gap-4 pt-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.9 }}
@@ -388,18 +501,10 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
         </div>
       </div>
 
-      {/* Enhanced Hover Effects */}
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-br from-brand-400/0 via-brand-400/0 to-purple-500/0 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none"
-        animate={isHovering ? {
-          background: [
-            "linear-gradient(135deg, rgba(153,51,255,0) 0%, rgba(153,51,255,0) 50%, rgba(128,0,255,0) 100%)",
-            "linear-gradient(135deg, rgba(153,51,255,0.1) 0%, rgba(153,51,255,0.05) 50%, rgba(128,0,255,0.1) 100%)",
-            "linear-gradient(135deg, rgba(153,51,255,0) 0%, rgba(153,51,255,0) 50%, rgba(128,0,255,0) 100%)"
-          ]
-        } : {}}
-        transition={{ duration: 2, repeat: Infinity }}
-      />
+      {/* Simple Hover Effect */}
+      {!performanceMode && (
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-400/0 to-purple-500/0 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none" />
+      )}
     </motion.div>
     </div>
   );

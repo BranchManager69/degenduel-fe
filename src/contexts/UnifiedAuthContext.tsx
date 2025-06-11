@@ -16,6 +16,7 @@
  */
 
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { useWallet } from "@solana/wallet-adapter-react";
 import { AuthEventType, AuthMethod, authService, TokenType } from '../services';
 import { User } from '../types/user';
 
@@ -126,6 +127,21 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
         
         // Update auth method statuses
         updateMethodStatuses(user);
+        
+        // If authenticated, fetch full profile data
+        if (user) {
+          // Fetch profile in the background without blocking
+          authService.fetchAndUpdateUserProfile().then(success => {
+            if (success) {
+              // Re-get the updated user
+              const updatedUser = authService.getUser();
+              if (updatedUser) {
+                setStatus(prev => ({ ...prev, user: updatedUser }));
+                updateMethodStatuses(updatedUser);
+              }
+            }
+          });
+        }
       } catch (error) {
         setStatus({
           loading: false,
@@ -153,6 +169,23 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
       
       // Update method statuses
       updateMethodStatuses(user);
+      
+      // If this is a login event (user went from null to authenticated), fetch profile
+      if (user && event.type === AuthEventType.LOGIN) {
+        // Small delay to ensure auth is fully established
+        setTimeout(() => {
+          authService.fetchAndUpdateUserProfile().then(success => {
+            if (success) {
+              // Re-get the updated user
+              const updatedUser = authService.getUser();
+              if (updatedUser) {
+                setStatus(prev => ({ ...prev, user: updatedUser }));
+                updateMethodStatuses(updatedUser);
+              }
+            }
+          });
+        }, 500);
+      }
     };
     
     const authErrorListener = (event: any) => {
@@ -180,6 +213,38 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
       unsubscribeError();
     };
   }, []);
+
+  // WALLET DISCONNECT MONITORING - Prevents split-brain authentication
+  // 
+  // Problem: Users authenticated via wallet can appear "logged in" even after their wallet
+  // disconnects (e.g., after 24 hours, browser restart, etc.). This creates a "split-brain"
+  // state where:
+  // - User session state says "authenticated" (JWT still valid)
+  // - Wallet adapter state says "disconnected" 
+  // - Result: User appears logged in but can't perform wallet operations
+  //
+  // Solution: Monitor wallet connection state and auto-logout wallet-authenticated users
+  // when their wallet disconnects. This keeps the two auth systems synchronized.
+  //
+  // Note: This ONLY affects users who authenticated via wallet. Social auth users 
+  // (Twitter, Discord, etc.) are unaffected by wallet disconnection.
+  const { connected: walletConnected } = useWallet();
+  
+  useEffect(() => {
+    // Only auto-logout if ALL these conditions are met:
+    // 1. Wallet is currently disconnected (!walletConnected)
+    // 2. User appears authenticated (status.isAuthenticated) 
+    // 3. User originally authenticated via wallet (auth_method === 'wallet')
+    //
+    // This prevents accidentally logging out social auth users when wallet disconnects
+    if (!walletConnected && 
+        status.isAuthenticated && 
+        status.user?.auth_method === 'wallet') {
+      
+      console.log('[UnifiedAuthContext] Wallet disconnected for wallet-authenticated user - triggering logout to prevent split-brain auth state');
+      authService.logout();
+    }
+  }, [walletConnected, status.isAuthenticated, status.user?.auth_method]);
   
   // Determine active auth method from user object (is this really the best way to do this?)
   const determineActiveMethod = (user: User): AuthMethod | null => {

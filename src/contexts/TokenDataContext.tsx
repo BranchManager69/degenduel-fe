@@ -1,4 +1,3 @@
-
 /**
  * We should probably remake this from scratch.
  * 
@@ -37,6 +36,27 @@ export const TokenDataProvider: React.FC<{ children: React.ReactNode }> = ({
   const [lastUpdate, setLastUpdate] = useState<Date | null>(new Date());
   const [error, setError] = useState<string | null>(null);
   
+  const processTokensInChunks = (tokenData: Token[]) => {
+    let index = 0;
+    const chunkSize = 100; // Process 100 tokens at a time
+
+    function processChunk() {
+      const chunk = tokenData.slice(index, index + chunkSize);
+      if (chunk.length > 0) {
+        setTokens(prevTokens => [...prevTokens, ...chunk]);
+        index += chunkSize;
+        requestAnimationFrame(processChunk);
+      } else {
+        setLastUpdate(new Date());
+        authDebug('TokenData', `Finished processing ${tokenData.length} tokens in chunks.`);
+      }
+    }
+    
+    // Start with a clean slate
+    setTokens([]);
+    requestAnimationFrame(processChunk);
+  };
+  
   // Use the unified WebSocket hook instead of creating a separate connection
   const {
     isConnected,
@@ -51,9 +71,8 @@ export const TokenDataProvider: React.FC<{ children: React.ReactNode }> = ({
       if (message.type === 'DATA' && message.topic === 'market-data') {
         if (message.data && Array.isArray(message.data)) {
           // Bulk token update
-          setTokens(message.data);
-          setLastUpdate(new Date());
-          authDebug('TokenData', `Updated ${message.data.length} tokens`);
+          authDebug('TokenData', `Processing ${message.data.length} tokens in chunks.`);
+          processTokensInChunks(message.data);
         } else if (message.data && message.data.symbol) {
           // Single token update
           setTokens(prev => 
@@ -78,13 +97,14 @@ export const TokenDataProvider: React.FC<{ children: React.ReactNode }> = ({
     if (isConnected) {
       authDebug('TokenData', 'Connected to unified WebSocket, subscribing to market-data');
       
-      // Subscribe to market data
+      // Subscribe to market data for real-time updates
       subscribe(['market-data']);
       
-      // Request initial token data
-      request('market-data', 'getTokens');
+      // DO NOT request initial data here. This should be handled by components
+      // that need the data, preferably via a paginated REST API for the initial load.
+      // request('market-data', 'getTokens'); // <--- This was the cause of the duplicate load
     }
-  }, [isConnected, subscribe, request]);
+  }, [isConnected, subscribe]);
   
   // Refresh function
   const refresh = () => {

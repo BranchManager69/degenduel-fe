@@ -9,9 +9,13 @@
  * This hook depends on the WebSocketManager component being mounted in the application
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useStore } from '../../store/useStore';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { ConnectionState, DDExtendedMessageType } from './types';
+
+// This file implements a hook (useUnifiedWebSocket) that allows components to interact
+// with a single, shared WebSocket connection. It uses a module-level singleton (`instance`)
+// to hold the connection details and a pub/sub model (`listeners`) to notify
+// components when the connection state changes, forcing them to re-render.
 
 // Interface for the WebSocket instance that the hook can access
 interface WebSocketInstance {
@@ -24,33 +28,60 @@ interface WebSocketInstance {
 // Singleton instance set by the WebSocketManager or WebSocketContext
 let instance: WebSocketInstance | null = null;
 
-// Track which component IDs have already logged warnings to reduce console spam
-const loggedInstanceWarnings = new Set<string>();
+// Queue for messages sent before the connection is ready
+const pendingMessages: any[] = [];
+let isProcessingQueue = false;
 
-// Create a default instance to prevent "WebSocketManager not initialized" errors
-// This ensures hooks will work even before the main WebSocket connection is ready
+// --- Pub/Sub for instance updates ---
+const listeners = new Set<() => void>();
+const subscribeToUpdates = (callback: () => void) => {
+  listeners.add(callback);
+  return () => {
+    listeners.delete(callback);
+  };
+};
+const notifyListeners = () => {
+  listeners.forEach(listener => listener());
+};
+// ---
+
+const processMessageQueue = () => {
+  if (isProcessingQueue || !instance || instance.connectionState !== ConnectionState.AUTHENTICATED) {
+    return;
+  }
+  isProcessingQueue = true;
+  console.log(`[useUnifiedWebSocket] Processing ${pendingMessages.length} pending messages...`);
+  while (pendingMessages.length > 0) {
+    const message = pendingMessages.shift();
+    if (message) {
+      instance.sendMessage(message);
+    }
+  }
+  isProcessingQueue = false;
+  console.log('[useUnifiedWebSocket] Message queue processed.');
+};
+
+// Create a default instance to use before the real one is set up.
+// This prevents crashes in components that use the hook during initial render.
 if (!instance) {
   instance = {
-    registerListener: (id: string, _types: DDExtendedMessageType[], _callback: (message: any) => void) => {
+    registerListener: (id: string) => {
       console.log(`[useUnifiedWebSocket] Component '${id}' registered but WebSocket not yet fully initialized`);
-      return () => { }; // No-op cleanup
+      return () => { };
     },
-    sendMessage: () => {
-      console.log("[useUnifiedWebSocket] Attempted to send message before initialization");
-      return false;
+    sendMessage: (message: any) => {
+      console.log("[useUnifiedWebSocket] Connection not ready. Queuing message:", message);
+      pendingMessages.push(message);
+      return true;
     },
     connectionState: ConnectionState.CONNECTING,
     connectionError: null
   };
-  console.log('[useUnifiedWebSocket] Created default instance with state:', ConnectionState.CONNECTING);
 }
 
-// Function to set up the singleton instance
 /**
- * @param registerFn - Function to register a listener
- * @param sendFn - Function to send a message
- * @param state - Connection state
- * @param error - Connection error
+ * Called by the WebSocket context provider to update the singleton instance
+ * with the real connection details and state.
  */
 export const setupWebSocketInstance = (
   registerFn: (id: string, types: DDExtendedMessageType[], callback: (message: any) => void) => () => void,
@@ -58,12 +89,20 @@ export const setupWebSocketInstance = (
   state: ConnectionState,
   error: string | null
 ) => {
+  const wasConnected = instance?.connectionState === ConnectionState.AUTHENTICATED;
+
   instance = {
     registerListener: registerFn,
     sendMessage: sendFn,
     connectionState: state,
     connectionError: error
   };
+
+  notifyListeners(); // Notify all subscribed components of the state change.
+
+  if (state === ConnectionState.AUTHENTICATED && !wasConnected) {
+    processMessageQueue();
+  }
 };
 
 // Helper interface for subscription messages
@@ -93,126 +132,81 @@ export function useUnifiedWebSocket<T = any>(
   onMessage: (message: T) => void,
   topics?: string[]
 ) {
-  // Use ref to store the latest onMessage callback to avoid re-registrations
+  const [, forceUpdate] = useReducer(x => x + 1, 0);
+
+  useEffect(() => {
+    // Subscribe to instance updates on mount and unsubscribe on unmount.
+    const unsubscribe = subscribeToUpdates(forceUpdate);
+    return unsubscribe;
+  }, []);
+
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
 
-  // Stable message handler that uses the ref
   const stableMessageHandler = useCallback((message: any) => {
-    // If topics are provided, only forward messages with matching topics
     if (topics && message.topic && !topics.includes(message.topic)) {
-      return; // Skip messages with non-matching topics
+      return;
     }
-    // Call onMessage with the data using the ref
     onMessageRef.current(message as T);
-  }, [topics]); // Only depend on topics, not onMessage
+  }, [topics]);
 
-  // Effect for registration - FIXED: Removed onMessage from dependencies
   useEffect(() => {
-    if (!instance) {
-      console.error("WebSocketManager: Cannot register listener - WebSocketManager not initialized");
-      return () => { };
+    if (instance) {
+      return instance.registerListener(id, types, stableMessageHandler);
     }
+    // This return is for the case where instance is null, satisfying TypeScript.
+    return () => { };
+  }, [id, types, stableMessageHandler]);
 
-    // Use the registerListener with the stable message handler
-    const unregister = instance.registerListener(id, types, stableMessageHandler);
-
-    // Clean up on unmount
-    return unregister;
-  }, [id, types, topics, stableMessageHandler]); // FIXED: Removed onMessage, added stableMessageHandler
-
-  // We should always have an instance now with our default initialization
-  // But just in case, add an extra safety check with much friendlier messaging
-  if (!instance) {
-    // Only log once per component ID
-    if (!loggedInstanceWarnings.has(id)) {
-      console.log(`WebSocket: Component '${id}' waiting for WebSocket to fully initialize`);
-      loggedInstanceWarnings.add(id);
+  const sendMessage = useCallback((message: any) => {
+    if (!instance || (instance.connectionState !== ConnectionState.AUTHENTICATED && instance.connectionState !== ConnectionState.CONNECTED)) {
+      console.log(`[useUnifiedWebSocket] Connection not ready (state: ${instance?.connectionState}). Queuing message:`, message);
+      pendingMessages.push(message);
+      return true;
     }
+    return instance.sendMessage(message);
+  }, []);
 
-    // Return a benign fallback that won't crash components
-    return {
-      sendMessage: () => false,
-      isConnected: false,
-      isAuthenticated: false,
-      connectionState: ConnectionState.CONNECTING,
-      error: "Connecting...",
-      subscribe: () => false,
-      unsubscribe: () => false,
-      request: () => false
-    };
-  }
-
-  // Helper for subscribing to topics - FIXED: Wrapped in useCallback
   const subscribe = useCallback((topicsToSubscribe: string[]) => {
-    if (!instance || topicsToSubscribe.length === 0) return false;
-
+    if (topicsToSubscribe.length === 0) return false;
     const message: SubscriptionMessage = {
       type: DDExtendedMessageType.SUBSCRIBE,
       topics: topicsToSubscribe
     };
+    return sendMessage(message);
+  }, [sendMessage]);
 
-    // Add auth token if available
-    const user = useStore.getState().user;
-    if (user?.wsToken || user?.jwt) {
-      message.authToken = user.wsToken || user.jwt;
-    }
-
-    return instance.sendMessage(message);
-  }, []); // Empty dependency array since instance is stable
-
-  // Helper for unsubscribing from topics - FIXED: Wrapped in useCallback
   const unsubscribe = useCallback((topicsToUnsubscribe: string[]) => {
-    if (!instance || topicsToUnsubscribe.length === 0) return false;
-
-    return instance.sendMessage({
+    if (topicsToUnsubscribe.length === 0) return false;
+    return sendMessage({
       type: DDExtendedMessageType.UNSUBSCRIBE,
       topics: topicsToUnsubscribe
     });
-  }, []); // Empty dependency array since instance is stable
+  }, [sendMessage]);
 
-  // Helper for making requests - FIXED: Wrapped in useCallback
   const request = useCallback((topic: string, action: string, params: any = {}) => {
-    if (!instance) return false;
-
     const requestMessage: any = {
       type: DDExtendedMessageType.REQUEST,
       topic,
       action,
       ...params
     };
+    return sendMessage(requestMessage);
+  }, [sendMessage]);
 
-    return instance.sendMessage(requestMessage);
-  }, []); // Empty dependency array since instance is stable
+  const connectionState = instance?.connectionState ?? ConnectionState.CONNECTING;
+  const connectionError = instance?.connectionError ?? null;
 
-  // Return functions for interacting with the WebSocket - MEMOIZED to prevent infinite loops
-  return useMemo(() => {
-    if (!instance) {
-      return {
-        sendMessage: () => false,
-        isConnected: false,
-        isAuthenticated: false,
-        connectionState: ConnectionState.CONNECTING,
-        error: "Connecting...",
-        subscribe: () => false,
-        unsubscribe: () => false,
-        request: () => false
-      };
-    }
-
-    return {
-      sendMessage: (message: any) => instance!.sendMessage(message),
-      isConnected: instance!.connectionState === ConnectionState.CONNECTED ||
-        instance!.connectionState === ConnectionState.AUTHENTICATED,
-      isAuthenticated: instance!.connectionState === ConnectionState.AUTHENTICATED,
-      connectionState: instance!.connectionState,
-      error: instance!.connectionError,
-      // Add higher-level methods
-      subscribe,
-      unsubscribe,
-      request
-    };
-  }, [instance, subscribe, unsubscribe, request]);
+  return useMemo(() => ({
+    sendMessage,
+    isConnected: connectionState === ConnectionState.CONNECTED || connectionState === ConnectionState.AUTHENTICATED,
+    isAuthenticated: connectionState === ConnectionState.AUTHENTICATED,
+    connectionState,
+    error: connectionError,
+    subscribe,
+    unsubscribe,
+    request
+  }), [connectionState, connectionError, sendMessage, subscribe, unsubscribe, request]);
 }
 
 export default useUnifiedWebSocket;

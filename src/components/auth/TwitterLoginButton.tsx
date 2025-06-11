@@ -53,6 +53,35 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
 
   const actualIsTwitterLinked = isTwitterLinked();
 
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    authDebug('TwitterBtn', 'Checking URL parameters in button component', { 
+      params: Object.fromEntries(urlParams.entries()), linkMode, hasUser: !!user
+    });
+    if (!linkMode && !user && urlParams.get("twitter") === "pending") {
+      authDebug('TwitterBtn', 'Found twitter=pending parameter, showing informative toast');
+      toast("Almost there! Connect your wallet to complete Twitter login", {
+        duration: 5000,
+        icon: "ℹ️"
+      });
+    }
+    if (urlParams.get("twitter_linked") === "true") {
+      authDebug('TwitterBtn', 'Found twitter_linked=true parameter, showing success toast');
+      toast.success("Twitter account linked successfully!");
+      const storedRedirectPath = localStorage.getItem("auth_redirect_path");
+      authDebug('TwitterBtn', 'Checking for stored redirect path', { hasStoredPath: !!storedRedirectPath, path: storedRedirectPath || 'none' });
+      const url = new URL(window.location.href);
+      url.searchParams.delete("twitter_linked");
+      window.history.replaceState({}, "", url);
+      authDebug('TwitterBtn', 'Removed twitter_linked parameter from URL');
+      
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+    }
+  }, [user, linkMode, onSuccess]);
+
   const handleTwitterAuth = async () => {
     authDebug('TwitterBtn', 'Twitter button clicked', { linkMode, hasUser: !!user });
     if (onClick) onClick();
@@ -142,35 +171,6 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
   if (linkMode && actualIsTwitterLinked) {
     return null;
   }
-
-  React.useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    authDebug('TwitterBtn', 'Checking URL parameters in button component', { 
-      params: Object.fromEntries(urlParams.entries()), linkMode, hasUser: !!user
-    });
-    if (!linkMode && !user && urlParams.get("twitter") === "pending") {
-      authDebug('TwitterBtn', 'Found twitter=pending parameter, showing informative toast');
-      toast("Almost there! Connect your wallet to complete Twitter login", {
-        duration: 5000,
-        icon: "ℹ️"
-      });
-    }
-    if (urlParams.get("twitter_linked") === "true") {
-      authDebug('TwitterBtn', 'Found twitter_linked=true parameter, showing success toast');
-      toast.success("Twitter account linked successfully!");
-      const storedRedirectPath = localStorage.getItem("auth_redirect_path");
-      authDebug('TwitterBtn', 'Checking for stored redirect path', { hasStoredPath: !!storedRedirectPath, path: storedRedirectPath || 'none' });
-      const url = new URL(window.location.href);
-      url.searchParams.delete("twitter_linked");
-      window.history.replaceState({}, "", url);
-      authDebug('TwitterBtn', 'Removed twitter_linked parameter from URL');
-      
-      // Call onSuccess callback if provided
-      if (onSuccess) {
-        onSuccess();
-      }
-    }
-  }, [user, linkMode, onSuccess]);
 
   return (
     <Button

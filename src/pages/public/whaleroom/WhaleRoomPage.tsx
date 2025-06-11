@@ -34,7 +34,7 @@ interface TableSort {
 export const WhaleRoomPage: React.FC = () => {
   const { user } = useMigratedAuth();
   
-  // Server-side whale status verification (secure and unhackable)
+  // FIXED: Pass authentication state to useWhaleStatus hook
   const {
     isWhale,
     currentBalance,
@@ -43,7 +43,10 @@ export const WhaleRoomPage: React.FC = () => {
     isLoading: whaleStatusLoading,
     error: whaleStatusError,
     forceRefresh: refreshWhaleStatus
-  } = useWhaleStatus();
+  } = useWhaleStatus({
+    isAuthenticated: !!user?.wallet_address,
+    userId: user?.wallet_address
+  });
 
   // Optional: Enhanced display with wallet performance data (doesn't affect access)
   const { performanceData } = useWalletProfitability(user?.wallet_address);

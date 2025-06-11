@@ -20,7 +20,6 @@ import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
 import { useNotifications } from "../../hooks/websocket/topic-hooks/useNotifications";
 import { useStore } from "../../store/useStore";
 // import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
-import { SimpleWalletButton } from "../auth";
 import MiniLogo from "../logo/MiniLogo";
 import NanoLogo from "../logo/NanoLogo";
 import { CompactBalance } from "../ui/CompactBalance";
@@ -191,18 +190,21 @@ export const Header: React.FC = () => {
                   </motion.div>
                 ) : (
                   <motion.div 
-                    key="login-btn-consolidated"
+                    key="login-btn"
                     initial={{ opacity: 0, x: 10 }} 
                     animate={{ opacity: 1, x: 0 }} 
                     exit={{ opacity: 0, x: 10 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <SimpleWalletButton 
-                      onLoginComplete={() => {
-                        console.log("[Header] Login complete callback triggered from SimpleWalletButton");
-                      }}
-                      isCompact={isCompact}
-                    />
+                    <Link
+                      to="/login"
+                      className={`inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white 
+                        bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 
+                        rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-brand-500/25
+                        ${isCompact ? 'h-8 text-xs' : 'h-10'}`}
+                    >
+                      Login
+                    </Link>
                   </motion.div>
                 )}
               </AnimatePresence>

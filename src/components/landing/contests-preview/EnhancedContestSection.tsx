@@ -1,10 +1,10 @@
-import { motion } from "framer-motion";
 import React from "react";
 
 // Import both card types
 import type { Contest } from "../../../types/index";
 import { ContestCard } from "../../contest-browser/ContestCard";
 import { ProminentContestCard } from "../../contest-browser/ProminentContestCard";
+import { useStore } from "../../../store/useStore";
 
 interface EnhancedContestSectionProps {
   title: string;
@@ -25,6 +25,7 @@ export const EnhancedContestSection: React.FC<EnhancedContestSectionProps> = ({
   featuredLabel = "🏆 CONTEST OF THE WEEK",
   isFeatureSection = false
 }) => {
+  const performanceMode = useStore(state => state.performanceMode);
   // Don't render the active contests section if there are no active contests
   if (type === "active" && contests.length === 0 && !loading) {
     return null;
@@ -33,63 +34,38 @@ export const EnhancedContestSection: React.FC<EnhancedContestSectionProps> = ({
   // For feature section, show prominent card if provided
   if (isFeatureSection && featuredContest) {
     return (
-      <section className="relative py-16">
-        {/* Enhanced cosmic effects for featured section */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {/* Enhanced solar flares for featured */}
-          <div className="absolute -top-[300px] left-[5%] w-[800px] h-[800px] bg-gradient-to-r from-brand-500/10 via-purple-500/15 to-transparent rounded-full blur-[150px] animate-pulse-slow" />
-          <div
-            className="absolute -bottom-[400px] right-[0%] w-[1000px] h-[1000px] bg-gradient-to-l from-brand-500/10 via-purple-500/15 to-transparent rounded-full blur-[180px] animate-pulse-slow"
-            style={{ animationDelay: "-3s" }}
-          />
+      <section className="relative py-6">
+        {/* Simplified cosmic effects for featured section */}
+        {!performanceMode && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {/* Simple gradient glow */}
+            <div className="absolute -top-[200px] left-[5%] w-[600px] h-[600px] bg-gradient-to-r from-brand-500/5 to-transparent rounded-full blur-3xl" />
+            <div className="absolute -bottom-[200px] right-[0%] w-[600px] h-[600px] bg-gradient-to-l from-purple-500/5 to-transparent rounded-full blur-3xl" />
 
-          {/* Enhanced star field */}
-          <div className="absolute inset-0">
-            {Array(12).fill(null).map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute rounded-full"
-                style={{
-                  width: Math.random() * 4 + 2 + 'px',
-                  height: Math.random() * 4 + 2 + 'px',
-                  backgroundColor: i % 3 === 0 ? 'rgba(153, 51, 255, 0.6)' : i % 3 === 1 ? 'rgba(255, 255, 255, 0.8)' : 'rgba(128, 0, 255, 0.6)',
-                  top: `${Math.random() * 100}%`,
-                  left: `${Math.random() * 100}%`,
-                  boxShadow: `0 0 8px ${i % 3 === 0 ? 'rgba(153, 51, 255, 0.6)' : i % 3 === 1 ? 'rgba(255, 255, 255, 0.8)' : 'rgba(128, 0, 255, 0.6)'}`
-                }}
-                animate={{
-                  opacity: [0.4, 1, 0.4],
-                  scale: [1, 1.5, 1],
-                  y: [0, -20, 0]
-                }}
-                transition={{
-                  duration: Math.random() * 4 + 3,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: Math.random() * 3
-                }}
-              />
-            ))}
+            {/* Simple static stars */}
+            <div className="absolute inset-0">
+              {Array(6).fill(null).map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute rounded-full animate-pulse"
+                  style={{
+                    width: '2px',
+                    height: '2px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                    top: `${(i * 16) + 10}%`,
+                    left: `${(i * 15) + 20}%`,
+                    animationDelay: `${i * 0.5}s`,
+                    animationDuration: '3s'
+                  }}
+                />
+              ))}
+            </div>
           </div>
-
-          {/* Enhanced energy waves for featured */}
-          <div className="absolute inset-0">
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/8 to-transparent"
-              animate={{ x: ["-100%", "100%"] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-            />
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/8 to-transparent"
-              animate={{ y: ["-100%", "100%"] }}
-              transition={{ duration: 8, repeat: Infinity, ease: "linear", delay: 2 }}
-            />
-          </div>
-        </div>
+        )}
 
         <div className="relative">
           {/* Featured Contest Card */}
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-2xl mx-auto">
             <ProminentContestCard 
               contest={featuredContest} 
               featuredLabel={featuredLabel}
@@ -138,66 +114,14 @@ export const EnhancedContestSection: React.FC<EnhancedContestSectionProps> = ({
 
   return (
     <section className="relative py-12">
-      {/* Cosmic effects container */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Solar flares */}
-        <div className="absolute -top-[200px] left-[10%] w-[600px] h-[600px] bg-gradient-to-r from-brand-500/5 via-purple-500/10 to-transparent rounded-full blur-[100px] animate-pulse-slow" />
-        <div
-          className="absolute -bottom-[300px] right-[5%] w-[800px] h-[800px] bg-gradient-to-l from-brand-500/5 via-purple-500/10 to-transparent rounded-full blur-[120px] animate-pulse-slow"
-          style={{ animationDelay: "-2s" }}
-        />
-
-        {/* Star field - multiple layers for parallax effect */}
-        <div
-          className="absolute inset-0 animate-float"
-          style={{ animationDuration: "15s" }}
-        >
-          <div
-            className="absolute h-1 w-1 bg-white/20 rounded-full top-[10%] left-[25%] animate-sparkle"
-            style={{ animationDelay: "-3s" }}
-          />
-          <div
-            className="absolute h-1 w-1 bg-white/30 rounded-full top-[30%] left-[65%] animate-sparkle"
-            style={{ animationDelay: "-1s" }}
-          />
-          <div
-            className="absolute h-1 w-1 bg-white/20 rounded-full top-[70%] left-[15%] animate-sparkle"
-            style={{ animationDelay: "-4s" }}
-          />
-          <div
-            className="absolute h-1 w-1 bg-white/30 rounded-full top-[80%] left-[85%] animate-sparkle"
-            style={{ animationDelay: "-2s" }}
-          />
+      {/* Simplified effects container */}
+      {!performanceMode && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Simple gradient background */}
+          <div className="absolute -top-[100px] left-[10%] w-[400px] h-[400px] bg-gradient-to-r from-brand-500/3 to-transparent rounded-full blur-3xl" />
+          <div className="absolute -bottom-[100px] right-[5%] w-[400px] h-[400px] bg-gradient-to-l from-purple-500/3 to-transparent rounded-full blur-3xl" />
         </div>
-
-        {/* Cosmic dust streams */}
-        <div className="absolute inset-0">
-          <div
-            className="absolute h-[1px] w-[200px] bg-brand-400/10 blur-sm animate-random-slide"
-            style={{ animationDuration: "20s", top: "30%" }}
-          />
-          <div
-            className="absolute h-[1px] w-[300px] bg-purple-400/10 blur-sm animate-random-slide-reverse"
-            style={{ animationDuration: "25s", top: "60%" }}
-          />
-          <div
-            className="absolute h-[1px] w-[250px] bg-brand-400/10 blur-sm animate-random-slide"
-            style={{ animationDuration: "22s", top: "80%" }}
-          />
-        </div>
-
-        {/* Energy waves */}
-        <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/5 to-transparent animate-scan-fast opacity-20"
-            style={{ animationDuration: "8s" }}
-          />
-          <div
-            className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-scan-vertical opacity-20"
-            style={{ animationDuration: "12s" }}
-          />
-        </div>
-      </div>
+      )}
 
       <div className="relative">
         {/* Section Header with cosmic glow */}

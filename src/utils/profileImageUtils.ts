@@ -4,7 +4,6 @@
  * Helper functions for handling profile image URLs from the backend
  */
 
-import { API_URL } from '../config/config';
 
 /**
  * Get the full URL for a profile image
