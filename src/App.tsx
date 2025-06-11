@@ -63,7 +63,7 @@ import { UiDebugPanel } from "./components/debug/ui/UiDebugPanel";
 import { EdgeToEdgeTicker } from "./components/layout/EdgeToEdgeTicker";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
-import { ImportantNotice } from "./components/layout/ImportantNotice";
+import { SystemNotice } from "./components/layout/SystemNotice";
 import { WalletBalanceTicker } from "./components/layout/WalletBalanceTicker";
 import { InviteWelcomeModal } from "./components/modals/InviteWelcomeModal";
 import { AdminRoute } from "./components/routes/AdminRoute";
@@ -387,8 +387,8 @@ const AppContent: React.FC = () => {
       {/* EdgeToEdgeTicker */}
       <EdgeToEdgeTicker />
       
-      {/* ImportantNotice - global site-wide notice */}
-      <ImportantNotice />
+      {/* SystemNotice - global site-wide notice from API */}
+      <SystemNotice />
       
       {/* WalletBalanceTicker */}
       <WalletBalanceTicker isCompact={true} />

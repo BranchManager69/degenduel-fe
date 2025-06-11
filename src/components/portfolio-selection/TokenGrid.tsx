@@ -87,77 +87,97 @@ export const TokenGrid: React.FC<TokenGridProps> = ({
       console.log("🔍 TokenGrid: Removing token from selection");
       onTokenSelect(tokenAddress, 0); // Remove token
     } else {
-              console.log("🔍 TokenGrid: Adding token to selection with 10% weight");
-        onTokenSelect(tokenAddress, 10); // Add token with default weight
+            console.log("🔍 TokenGrid: Adding token to selection with 10% weight");
+      onTokenSelect(tokenAddress, 10); // Add token with default weight
     }
   }, [selectedTokens, onTokenSelect]);
 
 
   // Render card view with enhanced PortfolioOptimizedTokenCard
-  const renderCardView = () => (
-    <div className="relative" ref={containerRef}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-        {visibleTokens.map((token) => {
-          const tokenAddress = TokenHelpers.getAddress(token);
-          return (
-            <PortfolioOptimizedTokenCard
-              key={tokenAddress}
-              token={token}
-              isSelected={selectedTokens.has(tokenAddress)}
-              weight={selectedTokens.get(tokenAddress) || 0}
-              onSelect={() => handleCardClick(token)}
-              onWeightChange={(weight: number) => onTokenSelect(tokenAddress, weight)}
-            />
-          );
-        })}
-      </div>
+  const renderCardView = () => {
+    // Calculate total allocated percentage
+    const totalAllocated = Array.from(selectedTokens.values()).reduce((sum, weight) => sum + weight, 0);
+    
+    return (
+      <div className="relative" ref={containerRef}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+          {visibleTokens.map((token) => {
+            const tokenAddress = TokenHelpers.getAddress(token);
+            const currentWeight = selectedTokens.get(tokenAddress) || 0;
+            // Calculate remaining allocation (excluding current token's weight)
+            const remainingAllocation = 100 - (totalAllocated - currentWeight);
+            
+            return (
+              <PortfolioOptimizedTokenCard
+                key={tokenAddress}
+                token={token}
+                isSelected={selectedTokens.has(tokenAddress)}
+                weight={currentWeight}
+                onSelect={() => handleCardClick(token)}
+                onWeightChange={(weight: number) => onTokenSelect(tokenAddress, weight)}
+                remainingAllocation={Math.max(0, remainingAllocation)}
+              />
+            );
+          })}
+        </div>
       
-      {/* Infinity scroll loading indicator */}
-      {visibleCount < filteredTokens.length && (
-        <div className="h-20 flex items-center justify-center mt-4">
-          <div className="text-center">
-            <div className="w-6 h-6 border-2 border-emerald-500/50 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <div className="text-xs text-gray-400 font-mono">
-              Showing {visibleCount}/{filteredTokens.length} tokens • Scroll for more
+        {/* Infinity scroll loading indicator */}
+        {visibleCount < filteredTokens.length && (
+          <div className="h-20 flex items-center justify-center mt-4">
+            <div className="text-center">
+              <div className="w-6 h-6 border-2 border-emerald-500/50 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+              <div className="text-xs text-gray-400 font-mono">
+                Showing {visibleCount}/{filteredTokens.length} tokens • Scroll for more
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        )}
+      </div>
+    );
+  };
   
   // Render list view with virtual scrolling
-  const renderListView = () => (
-    <div className="relative" ref={containerRef}>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-        {visibleTokens.map(token => {
-          const tokenAddress = TokenHelpers.getAddress(token);
-          return (
-            <TokenListItem
-              key={tokenAddress}
-              token={token}
-              isSelected={selectedTokens.has(tokenAddress)}
-              weight={selectedTokens.get(tokenAddress) || 0}
-              onSelect={() => handleCardClick(token)}
-              onWeightChange={(weight: number) => onTokenSelect(tokenAddress, weight)}
-            />
-          );
-        })}
-      </div>
-      
-      {/* Infinity scroll loading indicator for list view */}
-      {visibleCount < filteredTokens.length && (
-        <div className="h-20 flex items-center justify-center mt-4">
-          <div className="text-center">
-            <div className="w-6 h-6 border-2 border-emerald-500/50 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <div className="text-xs text-gray-400 font-mono">
-              Showing {visibleCount}/{filteredTokens.length} tokens • Scroll for more
+  const renderListView = () => {
+    // Calculate total allocated percentage
+    const totalAllocated = Array.from(selectedTokens.values()).reduce((sum, weight) => sum + weight, 0);
+    
+    return (
+      <div className="relative" ref={containerRef}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          {visibleTokens.map(token => {
+            const tokenAddress = TokenHelpers.getAddress(token);
+            const currentWeight = selectedTokens.get(tokenAddress) || 0;
+            // Calculate remaining allocation (excluding current token's weight)
+            const remainingAllocation = 100 - (totalAllocated - currentWeight);
+            
+            return (
+              <TokenListItem
+                key={tokenAddress}
+                token={token}
+                isSelected={selectedTokens.has(tokenAddress)}
+                weight={currentWeight}
+                onSelect={() => handleCardClick(token)}
+                onWeightChange={(weight: number) => onTokenSelect(tokenAddress, weight)}
+                remainingAllocation={Math.max(0, remainingAllocation)}
+              />
+            );
+          })}
+        </div>
+        
+        {/* Infinity scroll loading indicator for list view */}
+        {visibleCount < filteredTokens.length && (
+          <div className="h-20 flex items-center justify-center mt-4">
+            <div className="text-center">
+              <div className="w-6 h-6 border-2 border-emerald-500/50 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+              <div className="text-xs text-gray-400 font-mono">
+                Showing {visibleCount}/{filteredTokens.length} tokens • Scroll for more
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        )}
+      </div>
+    );
+  };
   
   return viewMode === 'card' ? renderCardView() : renderListView();
 };

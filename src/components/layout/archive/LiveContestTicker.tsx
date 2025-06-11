@@ -214,7 +214,7 @@ export const LiveContestTicker: React.FC<Props> = ({
                     title={contest.description}
                   >
                     {/* Hover background effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 animate-data-stream rounded" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 animate-data-stream-responsive rounded" />
 
                     {/* Status-based Contest Indicator */}
                     {contest.status === "active" ? (

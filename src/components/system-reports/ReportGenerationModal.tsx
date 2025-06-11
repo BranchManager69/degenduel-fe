@@ -171,7 +171,7 @@ export const ReportGenerationModal: React.FC<ReportGenerationModalProps> = ({
                 className="px-5 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 disabled:opacity-50 transition-all duration-200 ease-out transform hover:-translate-y-1 shadow-lg hover:shadow-brand-500/20 relative group overflow-hidden"
                 disabled={isGenerating}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/30 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/30 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
                 <span className="relative flex items-center">
                   {isGenerating ? (
                     <>

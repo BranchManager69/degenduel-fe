@@ -6,11 +6,15 @@ import { Card, CardContent, CardHeader } from "../ui/Card";
 interface PortfolioSummaryProps {
   selectedTokens: Map<string, number>;
   tokens: Token[];
+  onWeightChange?: (contractAddress: string, newWeight: number) => void;
+  onRemoveToken?: (contractAddress: string) => void;
 }
 
 export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
   selectedTokens,
   tokens,
+  onWeightChange,
+  onRemoveToken,
 }) => {
   const totalWeight = Array.from(selectedTokens.values()).reduce(
     (sum, weight) => sum + weight,
@@ -57,30 +61,76 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
                 return (
                   <div
                     key={contractAddress}
-                    className="flex justify-between items-center p-2 rounded bg-dark-300/50 hover:bg-dark-300/70 transition-colors"
+                    className="flex items-center p-2 rounded bg-dark-300/50 hover:bg-dark-300/70 transition-colors group"
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        {token?.images?.imageUrl && (
-                          <img
-                            src={token.images.imageUrl}
-                            alt=""
-                            className="w-5 h-5 rounded-full"
-                          />
-                        )}
-                        <div className="min-w-0">
-                          <span className="font-medium text-sm sm:text-base text-gray-200">
-                            {token?.symbol || "Unknown"}
-                          </span>
-                          <span className="text-xs sm:text-sm text-gray-400 ml-2 truncate">
-                            {token?.name}
-                          </span>
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-2 flex-1">
+                      {token?.image_url && (
+                        <img
+                          src={token.image_url}
+                          alt=""
+                          className="w-4 h-4 rounded-full flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <span className="font-medium text-xs text-gray-200">
+                        {token?.symbol || "Unknown"}
+                      </span>
                     </div>
-                    <span className="text-xs sm:text-sm font-medium text-brand-400 ml-2 flex-shrink-0">
-                      {weight}%
-                    </span>
+                    
+                    {/* Weight Controls - Way to the right */}
+                    <div className="flex items-center gap-1 ml-auto flex-shrink-0">
+                      {onWeightChange && (
+                        <>
+                          <button
+                            onClick={() => {
+                              const newWeight = Math.max(0, weight - 5);
+                              if (newWeight === 0 && onRemoveToken) {
+                                onRemoveToken(contractAddress);
+                              } else {
+                                onWeightChange(contractAddress, newWeight);
+                              }
+                            }}
+                            className="w-6 h-6 flex items-center justify-center rounded bg-dark-400/50 hover:bg-orange-500/20 text-gray-400 hover:text-orange-400 transition-colors text-xs"
+                            title="Decrease weight by 5%"
+                          >
+                            −
+                          </button>
+                          
+                          <span className="text-sm font-medium text-brand-400 min-w-[35px] text-center">
+                            {weight}%
+                          </span>
+                          
+                          <button
+                            onClick={() => {
+                              const newWeight = Math.min(100, weight + 5);
+                              onWeightChange(contractAddress, newWeight);
+                            }}
+                            className="w-6 h-6 flex items-center justify-center rounded bg-dark-400/50 hover:bg-green-500/20 text-gray-400 hover:text-green-400 transition-colors text-xs"
+                            title="Increase weight by 5%"
+                          >
+                            +
+                          </button>
+                        </>
+                      )}
+                      
+                      {onRemoveToken && (
+                        <button
+                          onClick={() => onRemoveToken(contractAddress)}
+                          className="w-6 h-6 flex items-center justify-center rounded bg-dark-400/50 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors opacity-0 group-hover:opacity-100 ml-2"
+                          title="Remove token"
+                        >
+                          ×
+                        </button>
+                      )}
+                      
+                      {!onWeightChange && !onRemoveToken && (
+                        <span className="text-sm font-medium text-brand-400 flex-shrink-0">
+                          {weight}%
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               },

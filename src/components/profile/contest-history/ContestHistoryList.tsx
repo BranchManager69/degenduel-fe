@@ -60,24 +60,50 @@ export const ContestHistoryList: React.FC<ContestHistoryListProps> = ({
                 )}
               </div>
               <p className="text-sm text-gray-400">
-                {entry.status === "pending" ? "Starts" : "Ended"}{" "}
-                {formatDistanceToNow(new Date(entry.status === "pending" ? entry.start_time : entry.end_time), {
-                  addSuffix: true,
-                })}
+                {entry.status === "pending" ? "Starts" : 
+                 entry.status === "active" ? "Ends" : "Ended"}{" "}
+                {formatDistanceToNow(
+                  new Date(
+                    entry.status === "pending" ? entry.start_time : 
+                    entry.status === "active" ? entry.end_time : 
+                    entry.end_time
+                  ), 
+                  { addSuffix: true }
+                )}
               </p>
             </div>
             <div className="text-right">
-              <div
-                className={`text-lg font-medium ${
-                  entry.portfolio_return >= 0
-                    ? "text-green-400"
-                    : "text-red-400"
-                }`}
-              >
-                {entry.portfolio_return >= 0 ? "+" : ""}
-                {entry.portfolio_return.toFixed(2)}%
-              </div>
-              <p className="text-sm text-gray-400">Rank: #{entry.rank}</p>
+              {entry.status === "pending" ? (
+                <div className="text-lg font-medium text-gray-400">
+                  Not Started
+                </div>
+              ) : (
+                <div
+                  className={`text-lg font-medium ${
+                    !isNaN(entry.portfolio_return) && entry.portfolio_return >= 0
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }`}
+                >
+                  {!isNaN(entry.portfolio_return) ? (
+                    <>
+                      {entry.portfolio_return >= 0 ? "+" : ""}
+                      {entry.portfolio_return.toFixed(2)}%
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </div>
+              )}
+              <p className="text-sm text-gray-400">
+                {entry.status === "pending" ? (
+                  "Waiting to start"
+                ) : !isNaN(entry.rank) && entry.rank > 0 ? (
+                  `Rank: #${entry.rank}`
+                ) : (
+                  "No rank"
+                )}
+              </p>
             </div>
           </div>
         </Link>

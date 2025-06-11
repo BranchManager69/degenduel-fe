@@ -105,7 +105,7 @@ const SocialAccountsPanel = () => {
   );
 
   return (
-    <Card className="border border-brand-500/20 bg-dark-300/50 backdrop-blur-sm relative overflow-hidden">
+    <Card className="bg-dark-300/50 backdrop-blur-sm relative overflow-hidden">
       {/* Gradient background effect */}
       <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 via-transparent to-brand-800/5" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(153,51,255,0.15),transparent_70%)]" />
@@ -128,12 +128,12 @@ const SocialAccountsPanel = () => {
         ) : (
           <>
             {/* Twitter Account */}
-            <div className="flex items-center justify-between p-4 border border-brand-500/20 rounded-lg bg-dark-400/30 hover:bg-dark-400/40 transition-all duration-300 group relative overflow-hidden">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-dark-400/30 hover:bg-dark-400/40 transition-all duration-300 group relative overflow-hidden">
               {/* Hover effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-500/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
 
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-dark-500/60 rounded-full border border-brand-500/20 shadow-lg">
+                <div className="p-2 bg-dark-500/60 rounded-full shadow-lg">
                   <FaTwitter className="text-[#1DA1F2] text-xl" />
                 </div>
                 <div>
@@ -171,21 +171,21 @@ const SocialAccountsPanel = () => {
             </div>
 
             {/* Discord and Passkey Integration */}
-            <div className="border border-brand-500/20 rounded-lg p-4 bg-dark-400/10">
+            <div className="rounded-lg p-4 bg-dark-400/10">
               <h4 className="text-white font-medium mb-3">Additional Account Links</h4>
               <p className="text-gray-400 text-sm mb-4">
                 Link Discord and Passkey for faster login options
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {/* Discord - Coming Soon */}
-                <div className="p-3 border border-dashed border-gray-600 rounded-lg text-center">
+                <div className="p-3 rounded-lg text-center bg-gray-800/30">
                   <div className="text-[#5865F2] mb-1">🎮</div>
                   <div className="text-xs text-gray-400">Discord</div>
                   <div className="text-xs text-gray-500">Coming Soon</div>
                 </div>
                 
                 {/* Passkey - Coming Soon */}
-                <div className="p-3 border border-dashed border-gray-600 rounded-lg text-center">
+                <div className="p-3 rounded-lg text-center bg-gray-800/30">
                   <div className="text-blue-400 mb-1">🔐</div>
                   <div className="text-xs text-gray-400">Passkey</div>
                   <div className="text-xs text-gray-500">Coming Soon</div>

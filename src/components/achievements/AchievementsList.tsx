@@ -29,11 +29,9 @@ export const AchievementsList: React.FC<AchievementsListProps> = memo(({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
+    <div className="divide-y divide-dark-300/20">
       {achievements.map((achievement) => (
-        <div key={achievement.achievement}>
-          <AchievementCard achievement={achievement} />
-        </div>
+        <AchievementCard key={achievement.achievement} achievement={achievement} />
       ))}
     </div>
   );

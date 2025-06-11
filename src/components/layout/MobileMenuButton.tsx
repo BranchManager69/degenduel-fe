@@ -11,19 +11,20 @@
  */
 
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../store/useStore";
 import { SimpleWalletButton, TwitterLoginButton, DiscordLoginButton, TelegramLoginButton, BiometricAuthButton } from "../auth";
 import { CompactBalance } from "../ui/CompactBalance";
+import { getFullImageUrl } from "../../utils/profileImageUtils";
 
 // Import shared menu components and configuration
 import { getMenuItems } from './menu/menuConfig';
 import { NotificationsDropdown } from './menu/NotificationsDropdown';
 import {
-    MenuBackdrop,
+    // MenuBackdrop,
     MenuDivider,
     SectionHeader
 } from './menu/SharedMenuComponents';
@@ -33,6 +34,7 @@ interface MobileMenuButtonProps {
   isCompact?: boolean;
   onDisconnect?: () => void;
   unreadNotifications?: number;
+  onMenuToggle?: (isOpen: boolean) => void;
 }
 
 export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
@@ -40,8 +42,14 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
   isCompact = false,
   onDisconnect,
   unreadNotifications = 0,
+  onMenuToggle,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  
+  // Notify parent when menu state changes
+  useEffect(() => {
+    onMenuToggle?.(isOpen);
+  }, [isOpen, onMenuToggle]);
   // Use store directly to check user authentication
   const { user, disconnectWallet } = useStore();
   const { isAdministrator, isSuperAdmin } = useMigratedAuth();
@@ -68,11 +76,30 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
   };
 
   const profileImageUrl = useMemo(() => {
-    if (!user || imageError || !user?.profile_image?.url) {
+    if (!user || imageError) {
       return "/assets/media/default/profile_pic.png";
     }
-    return user.profile_image.thumbnail_url || user.profile_image.url;
-  }, [user, user?.profile_image, imageError]);
+    
+    // Try multiple profile image sources in order of preference
+    let imageUrl = null;
+    
+    // 1. Try profile_image_url (string field)
+    if (user.profile_image_url) {
+      imageUrl = getFullImageUrl(user.profile_image_url);
+    }
+    
+    // 2. Try profile_image.url (object field)
+    if (!imageUrl && user.profile_image?.url) {
+      imageUrl = getFullImageUrl(user.profile_image.url);
+    }
+    
+    // 3. Try avatar_url (alternative field)
+    if (!imageUrl && user.avatar_url) {
+      imageUrl = getFullImageUrl(user.avatar_url);
+    }
+    
+    return imageUrl || "/assets/media/default/profile_pic.png";
+  }, [user, imageError]);
 
   const displayName = useMemo(() => {
     if (!user) return "";
@@ -228,8 +255,8 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
 
   return (
     <div className={`relative ${className}`}>
-      {/* Header Menu Controls - Row Layout for Balances, Profile and Notifications */}
-      <div className="flex items-center space-x-1">
+        {/* Header Menu Controls - Row Layout for Balances, Profile and Notifications */}
+        <div className="flex items-center space-x-1">
         {/* Compact Balance Display (only for logged in users) */}
         {user && (
           <CompactBalance 
@@ -250,9 +277,9 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`relative flex items-center justify-center transition-all duration-300 group overflow-hidden
-            ${isCompact ? "w-8 h-8" : "w-9 h-9"}
+            ${isCompact ? "w-9 h-9" : "w-10 h-10"}
             rounded-full border ${buttonStyles.border} ${buttonStyles.hover.border}
-            ${buttonStyles.hover.glow} z-50`}
+            ${buttonStyles.hover.glow} z-[60]`}
           aria-label="User menu"
           aria-expanded={isOpen}
           aria-haspopup="true"
@@ -328,13 +355,6 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Use the shared MenuBackdrop component with mobile-specific settings */}
-            <MenuBackdrop 
-              isOpen={isOpen} 
-              onClose={() => setIsOpen(false)} 
-              isMobile={true}
-            />
-
             {/* Menu */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -10 }}
@@ -342,7 +362,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               className={`absolute right-0 mt-2 w-56 max-h-[85vh] overflow-y-auto bg-dark-200/95 border border-gray-700/30 
-                rounded-lg shadow-lg shadow-black/50 z-50 origin-top-right backdrop-blur-xl`}
+                rounded-lg shadow-lg shadow-black/50 z-[60] origin-top-right backdrop-blur-xl`}
               role="menu"
               aria-orientation="vertical"
               aria-labelledby="mobile-menu-button"

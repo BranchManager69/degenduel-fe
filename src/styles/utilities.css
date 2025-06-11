@@ -189,6 +189,26 @@
   }
 }
 
+/* Slow natural data stream animation */
+@keyframes data-stream-slow {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Fast hover data stream animation */
+@keyframes data-stream-fast {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
 /* Shine effect for progress bars */
 @keyframes shine {
   0% {
@@ -211,6 +231,16 @@
 
 .animate-scan-fast {
   animation: scan-fast 2s ease-in-out infinite;
+}
+
+/* Data stream animation classes with hover speed change */
+.animate-data-stream-responsive {
+  animation: data-stream-slow 15s linear infinite;
+  transition: animation-duration 0.3s ease;
+}
+
+.animate-data-stream-responsive:hover {
+  animation: data-stream-fast 3s linear infinite;
 }
 
 /* Apply to entire site with auto-hide behavior */

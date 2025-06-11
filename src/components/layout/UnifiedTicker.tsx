@@ -86,7 +86,7 @@ export const UnifiedTicker: React.FC<Props> = ({
   
   // State
   const [currentContests, setCurrentContests] = useState<Contest[]>(initialContests);
-  const [activeTab, setActiveTab] = useState<"all" | "contests" | "tokens">("tokens");
+  const [activeTab, setActiveTab] = useState<"all" | "contests" | "tokens">("all");
   const [viewportWidth, setViewportWidth] = useState<number>(0);
   const [tabsWidth, setTabsWidth] = useState(160);
   const [measurementNonce, setMeasurementNonce] = useState(0);
@@ -281,6 +281,7 @@ export const UnifiedTicker: React.FC<Props> = ({
         const contestKey = contest.id ? `contest-${contest.id}` : `contest-idx-${index}`;
         const contestImageUrl = getContestImageUrl(contest.image_url);
         const currentItemIndex = globalItemIndex++;
+        const isNumeroUno = contest.name.toLowerCase().includes('numero uno');
         
         return (
           <div
@@ -291,7 +292,11 @@ export const UnifiedTicker: React.FC<Props> = ({
                 navigate(`/contests/${contest.id}`);
               }
             }}
-            className="relative inline-flex items-center rounded-lg cursor-pointer hover:bg-brand-500/20 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden border border-black/20 bg-brand-500/10"
+            className={`relative inline-flex items-center rounded-lg cursor-pointer hover:bg-brand-500/20 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden ${
+              isNumeroUno 
+                ? 'border-2 border-yellow-400 bg-brand-500/10 shadow-[0_0_20px_rgba(251,191,36,0.5)]' 
+                : 'border border-black/20 bg-brand-500/10'
+            }`}
             style={{
               '--contest-px': isCompact ? '8px' : '12px',
               '--contest-py': isCompact ? '2px' : '4px',
@@ -324,8 +329,8 @@ export const UnifiedTicker: React.FC<Props> = ({
                     isCompact ? 'text-[10px]' : 'text-sm'
                   }`}
                   style={{
-                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
-                    WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
+                    textShadow: '4px 4px 8px rgba(0, 0, 0, 1), 2px 2px 16px rgba(0, 0, 0, 0.9), 0px 0px 20px rgba(0, 0, 0, 0.8), 0px 0px 32px rgba(0, 0, 0, 0.7)',
+                    WebkitTextStroke: '1px rgba(0, 0, 0, 0.8)',
                     paintOrder: 'stroke fill'
                   }}
                 >
@@ -334,12 +339,12 @@ export const UnifiedTicker: React.FC<Props> = ({
               </div>
               <div className="flex items-center flex-shrink-0">
                 <span 
-                  className={`flex-shrink-0 font-medium text-white ${
+                  className={`flex-shrink-0 font-medium text-purple-400 ${
                     isCompact ? 'text-[9px] ml-1' : 'text-sm ml-2'
                   }`}
                   style={{
-                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
-                    WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
+                    textShadow: '4px 4px 8px rgba(0, 0, 0, 1), 2px 2px 16px rgba(0, 0, 0, 0.9), 0px 0px 20px rgba(0, 0, 0, 0.8), 0px 0px 32px rgba(0, 0, 0, 0.7)',
+                    WebkitTextStroke: '1px rgba(0, 0, 0, 0.8)',
                     paintOrder: 'stroke fill'
                   }}
                 >
@@ -422,49 +427,49 @@ export const UnifiedTicker: React.FC<Props> = ({
               })
             } as any}
           >
-            {/* Dark overlay for better text readability */}
-            {token.header_image_url && (
-              <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px]" />
-            )}
+            {/* Dark overlay for better text readability with token icon */}
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px]">
+              <img 
+                src={logoUrl} 
+                alt={token.symbol} 
+                className="absolute rounded-full object-cover transition-all duration-300 ease-out"
+                style={{
+                  '--logo-size': isCompact ? '36px' : '48px',
+                  width: 'var(--logo-size)',
+                  height: 'var(--logo-size)',
+                  left: isCompact ? '-8px' : '-12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  filter: 'blur(0.5px) contrast(1.1) saturate(0.9) brightness(1.0)',
+                  maskImage: 'radial-gradient(circle, black 70%, transparent 100%)',
+                  WebkitMaskImage: 'radial-gradient(circle, black 70%, transparent 100%)',
+                  boxShadow: '0 0 20px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.4)'
+                } as any}
+              />
+            </div>
             
             {/* Content with higher z-index */}
             <div className="relative z-10 flex items-center justify-between w-full h-full px-0.5">
-              <div className="flex items-center flex-shrink-0 max-w-[60%]">
-                <img 
-                  src={logoUrl} 
-                  alt={token.symbol} 
-                  className="rounded-full object-cover flex-shrink-0 transition-all duration-300 ease-out"
-                  style={{
-                    '--logo-size': isCompact ? '36px' : '48px', // Much bigger - will overflow the container
-                    '--logo-margin': isCompact ? '4px' : '8px',
-                    width: 'var(--logo-size)',
-                    height: 'var(--logo-size)',
-                    marginRight: 'var(--logo-margin)',
-                    filter: 'blur(0.5px) contrast(1.1) saturate(0.9) brightness(1.0)',
-                    maskImage: 'radial-gradient(circle, black 70%, transparent 100%)',
-                    WebkitMaskImage: 'radial-gradient(circle, black 70%, transparent 100%)',
-                    boxShadow: '0 0 20px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.4)'
-                  } as any}
-                />
+              <div className="flex items-center flex-shrink-0" style={{ maxWidth: isCompact ? '65%' : '70%', paddingLeft: isCompact ? '14px' : '18px' }}>
                 <span 
                   className="font-medium text-white transition-all duration-300 ease-out"
                   style={{
                     '--text-size': isCompact ? '10px' : '14px',
                     fontSize: 'var(--text-size)',
-                    textShadow: '2px 2px 4px rgba(0, 0, 0, 0.95), 1px 1px 8px rgba(0, 0, 0, 0.8), 0px 0px 12px rgba(0, 0, 0, 0.6)',
-                    WebkitTextStroke: '0.8px rgba(0, 0, 0, 0.7)',
+                    textShadow: '4px 4px 8px rgba(0, 0, 0, 1), 2px 2px 16px rgba(0, 0, 0, 0.9), 0px 0px 20px rgba(0, 0, 0, 0.8), 0px 0px 32px rgba(0, 0, 0, 0.7)',
+                    WebkitTextStroke: '1px rgba(0, 0, 0, 0.8)',
                     paintOrder: 'stroke fill'
                   } as any}
                 >
-                  {token.symbol.length > 10 ? `${token.symbol.substring(0, 8)}..` : token.symbol}
+                  {token.symbol}
                 </span>
               </div>
-              <div className="flex items-center flex-shrink-0">
+              <div className="flex items-center flex-shrink-0 min-w-0">
                 {isDegenDuelToken && degenToken ? (
                   <>
                     <span 
                       className={`text-brand-400 font-bold flex-shrink-0 ${
-                        isCompact ? 'text-[10px] ml-1' : 'text-xs ml-1.5'
+                        isCompact ? 'text-[10px] ml-1.5' : 'text-xs ml-2'
                       }`}
                       style={{
                         textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
@@ -490,13 +495,14 @@ export const UnifiedTicker: React.FC<Props> = ({
                 ) : (
                   <span 
                     className={`flex-shrink-0 font-medium ${changeData.colorClass} ${
-                      isCompact ? 'text-[9px] ml-0.5' : 'text-xs ml-1.5'
+                      isCompact ? 'text-[10px] ml-1.5' : 'text-xs ml-2'
                     }`}
                     style={{
-                      textShadow: '2px 2px 4px rgba(0, 0, 0, 0.95), 1px 1px 8px rgba(0, 0, 0, 0.8), 0px 0px 12px rgba(0, 0, 0, 0.6)',
-                      WebkitTextStroke: '0.8px rgba(0, 0, 0, 0.7)',
-                      paintOrder: 'stroke fill'
-                    }}
+                      textShadow: '4px 4px 8px rgba(0, 0, 0, 1), 2px 2px 16px rgba(0, 0, 0, 0.9), 0px 0px 20px rgba(0, 0, 0, 0.8), 0px 0px 32px rgba(0, 0, 0, 0.7)',
+                      WebkitTextStroke: '1px rgba(0, 0, 0, 0.8)',
+                      paintOrder: 'stroke fill',
+                      minWidth: 'fit-content'
+                    } as any}
                   >
                     {isCompact ? 
                       changeData.text.replace('.0', '') : // Remove .0 decimals in compact mode

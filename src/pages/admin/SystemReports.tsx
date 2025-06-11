@@ -106,7 +106,7 @@ export const SystemReports: React.FC = () => {
           onClick={() => setIsGenerationModalOpen(true)}
           className="bg-brand-500 hover:bg-brand-600 text-white px-6 py-2.5 rounded-md shadow-lg transition-all duration-200 ease-out transform hover:-translate-y-1 hover:shadow-brand-500/20 relative overflow-hidden group"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/30 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/30 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
           <span className="relative flex items-center font-medium">
             Generate Report
             <svg
@@ -273,7 +273,7 @@ export const SystemReports: React.FC = () => {
                     onClick={() => handleReportClick(report)}
                     className="hover:bg-dark-300/40 cursor-pointer group transition-colors relative"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
                     <td className="px-6 py-4 whitespace-nowrap text-gray-200 font-mono text-sm">
                       {formatTimestamp(report.timestamp)}
                     </td>

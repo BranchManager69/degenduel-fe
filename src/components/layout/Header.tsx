@@ -13,7 +13,7 @@
  */
 
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useScrollHeader } from "../../hooks/ui/useScrollHeader";
@@ -25,10 +25,12 @@ import NanoLogo from "../logo/NanoLogo";
 import { CompactBalance } from "../ui/CompactBalance";
 import { MobileMenuButton } from './MobileMenuButton'; // TEMP
 import { UserMenu } from './user-menu/UserMenu';
+// import { MenuBackdrop } from './menu/SharedMenuComponents';
 
 
 export const Header: React.FC = () => {
   const { isCompact } = useScrollHeader(50);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // (why?) Get the store error message and clear the error
   const storeErrorMessage = useStore(state => state.error?.message || null);
@@ -83,6 +85,7 @@ export const Header: React.FC = () => {
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${headerHeight}
       ${isCompact ? 'bg-dark-200/30 backdrop-blur-lg' : 'bg-dark-200/30 backdrop-blur-lg'}
+      ${isMobileMenuOpen ? 'backdrop-blur-[8px] bg-dark-200/60' : ''}
       `}
       onClick={(e) => e.stopPropagation()}
     >
@@ -217,6 +220,7 @@ export const Header: React.FC = () => {
                 isCompact={isCompact}
                 onDisconnect={() => logout && logout()}
                 unreadNotifications={unreadCount}
+                onMenuToggle={setIsMobileMenuOpen}
               />
             </div>
 

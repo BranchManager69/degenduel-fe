@@ -235,7 +235,7 @@ const EdgeToEdgeTicker: React.FC = () => {
           .animate-shine { animation: shine 2s linear infinite; }
           .animate-cyber-scan { animation: cyber-scan 3s linear infinite; }
           .animate-scan-fast { animation: scan-fast 2s linear infinite; }
-          .animate-data-stream { animation: data-stream 3s linear infinite; }
+          .animate-data-stream-responsive { animation: data-stream 3s linear infinite; }
           .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
           .animate-cyber-pulse { animation: cyber-pulse 2s ease-in-out infinite; }
           .animate-float { animation: float 3s ease-in-out infinite; }

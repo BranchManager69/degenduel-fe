@@ -301,7 +301,7 @@ const AmmSimulation: React.FC = () => {
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center relative group">
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream" />
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
         <h1 className="text-3xl font-bold text-gray-100 mb-2 group-hover:animate-glitch">
           AMM Simulator
         </h1>
@@ -316,7 +316,7 @@ const AmmSimulation: React.FC = () => {
         <div className="lg:col-span-1">
           <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg hover:border-brand-400/20 transition-colors group relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+            <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream-responsive opacity-0 group-hover:opacity-100" />
             <div className="p-6 relative">
               <h2 className="text-xl font-bold text-gray-100 mb-4 group-hover:animate-glitch">
                 Simulation Parameters
@@ -337,7 +337,7 @@ const AmmSimulation: React.FC = () => {
                           : "text-gray-400 hover:text-gray-200 hover:bg-dark-300/50"
                       }`}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream-responsive" />
                     <span className="relative group-hover:animate-glitch capitalize">
                       {group}
                     </span>
@@ -388,7 +388,7 @@ const AmmSimulation: React.FC = () => {
           {/* Market Cap Chart */}
           <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg p-6 hover:border-brand-400/20 transition-colors group relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+            <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream-responsive opacity-0 group-hover:opacity-100" />
             <div className="relative">
               <h3 className="text-lg font-bold text-gray-100 mb-4 group-hover:animate-glitch">
                 Market Cap & Price
@@ -462,7 +462,7 @@ const AmmSimulation: React.FC = () => {
           {/* Liquidity Chart */}
           <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg p-6 hover:border-brand-400/20 transition-colors group relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream opacity-0 group-hover:opacity-100" />
+            <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-dark-300/20 to-dark-300/0 animate-data-stream-responsive opacity-0 group-hover:opacity-100" />
             <div className="relative">
               <h3 className="text-lg font-bold text-gray-100 mb-4 group-hover:animate-glitch">
                 Liquidity & Sales

@@ -1,8 +1,8 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { FaCoins } from "react-icons/fa";
 import { Token, TokenHelpers } from "../../types";
 import { formatNumber, formatPercentage, formatTokenPrice } from "../../utils/format";
 import { CopyToClipboard } from "../common/CopyToClipboard";
+import { applyTokenImageOverrides } from "../../config/tokenImageOverrides";
 
 // Helper function to get a color based on token symbol
 const getTokenColor = (symbol: string): string => {
@@ -26,6 +26,7 @@ interface PortfolioOptimizedTokenCardProps {
   weight: number;
   onSelect: () => void;
   onWeightChange: (weight: number) => void;
+  remainingAllocation?: number;
 }
 
 /**
@@ -44,47 +45,18 @@ export const PortfolioOptimizedTokenCard: React.FC<PortfolioOptimizedTokenCardPr
   isSelected,
   weight,
   onSelect,
-  onWeightChange
+  onWeightChange,
+  remainingAllocation = 0
 }) => {
   const [showDetails, setShowDetails] = useState(false);
-  const [isEditingWeight, setIsEditingWeight] = useState(false);
-  const [tempWeight, setTempWeight] = useState(weight.toString());
+
+  // Apply frontend image overrides
+  const enhancedToken = useMemo(() => applyTokenImageOverrides(token), [token]);
 
   // Handle card click - select/deselect token
   const handleCardClick = useCallback(() => {
     onSelect();
   }, [onSelect]);
-
-  // Sync tempWeight with weight prop
-  React.useEffect(() => {
-    setTempWeight(weight.toString());
-  }, [weight]);
-
-  // Handle weight slider change
-  const handleWeightChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation();
-    onWeightChange(Number(e.target.value));
-  }, [onWeightChange]);
-
-  // Handle in-line weight editing
-  const handleWeightEdit = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isSelected) {
-      setIsEditingWeight(true);
-      setTempWeight(weight.toString());
-    }
-  }, [isSelected, weight]);
-
-  const handleWeightSubmit = useCallback(() => {
-    const newWeight = Math.max(0, Math.min(100, parseInt(tempWeight) || 0));
-    onWeightChange(newWeight);
-    setIsEditingWeight(false);
-  }, [tempWeight, onWeightChange]);
-
-  const handleWeightCancel = useCallback(() => {
-    setTempWeight(weight.toString());
-    setIsEditingWeight(false);
-  }, [weight]);
 
   // Toggle details view
   const handleDetailsToggle = useCallback((e: React.MouseEvent) => {
@@ -94,13 +66,13 @@ export const PortfolioOptimizedTokenCard: React.FC<PortfolioOptimizedTokenCardPr
 
   // Prioritize high-res banner image for background
   const bannerUrl = useMemo(() => {
-    return token.header_image_url || token.images?.headerImage || null;
-  }, [token.header_image_url, token.images]);
+    return enhancedToken.header_image_url || enhancedToken.images?.headerImage || null;
+  }, [enhancedToken.header_image_url, enhancedToken.images]);
   
   // Fallback logo for overlay
   const logoUrl = useMemo(() => {
-    return token.image_url || token.images?.imageUrl || null;
-  }, [token.image_url, token.images]);
+    return enhancedToken.image_url || enhancedToken.images?.imageUrl || '/images/tokens/default.png';
+  }, [enhancedToken.image_url, enhancedToken.images]);
   
   // Calculate intelligent metrics using TokenHelpers
   const metrics = useMemo(() => {
@@ -204,16 +176,15 @@ export const PortfolioOptimizedTokenCard: React.FC<PortfolioOptimizedTokenCardPr
             <div className="absolute inset-0 overflow-hidden">
               {bannerUrl ? (
                 <div
-                  className="absolute inset-0 bg-cover bg-center transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                  className="absolute inset-0 bg-cover animate-slow-scan transform group-hover:scale-110 group-hover:translate-y-[-2px] transition-all duration-700 ease-out"
                   style={{
                     backgroundImage: `url(${bannerUrl})`,
-                    backgroundPosition: 'center 30%',
-                    backgroundSize: 'cover'
+                    backgroundSize: 'cover' // Fill the entire card height and width
                   }}
                 />
               ) : (
                 <div 
-                  className="absolute inset-0 transform group-hover:scale-105 transition-transform duration-700" 
+                  className="absolute inset-0 transform group-hover:scale-110 group-hover:translate-y-[-2px] transition-all duration-700 ease-out" 
                   style={{
                     background: `linear-gradient(135deg, ${token.color || getTokenColor(token.symbol)} 0%, rgba(18, 16, 25, 0.8) 100%)`,
                   }}
@@ -223,15 +194,22 @@ export const PortfolioOptimizedTokenCard: React.FC<PortfolioOptimizedTokenCardPr
               {/* Smart gradient overlay - adapts to trend and selection */}
               <div className={`absolute inset-0 transition-all duration-500 ${
                 isSelected
-                  ? 'bg-gradient-to-t from-brand-900/90 via-black/60 to-black/20'
+                  ? 'bg-gradient-to-t from-brand-900/30 via-black/60 to-black/20'
                   : metrics.trend === 'up' 
-                    ? 'bg-gradient-to-t from-green-900/80 via-black/60 to-black/20'
-                    : 'bg-gradient-to-t from-red-900/80 via-black/60 to-black/20'
+                    ? 'bg-gradient-to-t from-green-900/20 via-black/60 to-black/20'
+                    : 'bg-gradient-to-t from-red-900/20 via-black/60 to-black/20'
               }`} />
+              
+              {/* Selection slide effect */}
+              <div 
+                className={`absolute inset-0 bg-gradient-to-r from-brand-500/30 via-brand-400/20 to-transparent transition-transform duration-500 ease-out ${
+                  isSelected ? 'translate-x-0' : '-translate-x-full'
+                }`}
+              />
               
               {/* Selection pulse effect */}
               {isSelected && (
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-500/20 to-transparent animate-pulse" />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-500/10 to-transparent animate-pulse" />
               )}
               
               {/* Data pulse overlay based on activity */}
@@ -240,86 +218,67 @@ export const PortfolioOptimizedTokenCard: React.FC<PortfolioOptimizedTokenCardPr
               )}
             </div>
 
+
             {/* COMPACT DATA OVERLAY */}
-            <div className="absolute inset-0 p-3 flex flex-col justify-between">
+            <div className="absolute inset-0 p-3 flex flex-col justify-between" style={{ zIndex: 10 }}>
               
-              {/* TOP ROW - Selection Status & Momentum */}
+              {/* TOP ROW - Selection Status & Details */}
               <div className="flex justify-between items-start">
-                {/* Enhanced Selection Indicator with In-line Editing */}
+                {/* Enhanced Selection Indicator with Larger Weight Display */}
                 <div className={`
-                  bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1 border transition-all duration-300
+                  bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2 border transition-all duration-300
                   ${isSelected 
                     ? 'border-emerald-500/50 ring-1 ring-emerald-500/30' 
                     : 'border-gray-500/30'
                   }
                 `}>
-                  <div className="flex items-center space-x-1">
-                    <div className={`w-2 h-2 rounded-full transition-colors ${
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full transition-colors ${
                       isSelected ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'
                     }`} />
                     {isSelected ? (
-                      isEditingWeight ? (
-                        <div className="flex items-center gap-1 bg-emerald-500/30 rounded border border-emerald-400/40 px-1">
-                          <input
-                            type="number"
-                            value={tempWeight}
-                            onChange={(e) => setTempWeight(e.target.value)}
-                            className="w-8 bg-transparent text-emerald-200 text-xs font-bold text-center focus:outline-none"
-                            min="0"
-                            max="100"
-                            autoFocus
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <span className="text-emerald-200 text-xs">%</span>
-                          <button
-                            onClick={handleWeightSubmit}
-                            className="text-emerald-200 hover:text-emerald-100 text-xs"
-                          >
-                            ✓
-                          </button>
-                          <button
-                            onClick={handleWeightCancel}
-                            className="text-emerald-300 hover:text-emerald-200 text-xs"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={handleWeightEdit}
-                          className="text-xs font-mono text-emerald-300 hover:text-emerald-200 transition-colors"
-                        >
-                          {weight}%
-                        </button>
-                      )
+                      <span className="text-sm font-bold text-emerald-300">
+                        {weight}%
+                      </span>
                     ) : (
-                      <span className="text-xs font-mono text-gray-400">
+                      <span className="text-sm font-mono text-gray-400">
                         SELECT
                       </span>
                     )}
                   </div>
                 </div>
                 
-                {/* Details Toggle Button */}
-                <button
-                  onClick={handleDetailsToggle}
-                  className="bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1 border border-gray-500/30 hover:border-white/50 transition-colors"
-                >
-                  <span className="text-white text-xs">
-                    {showDetails ? '📊' : 'ℹ️'}
-                  </span>
-                </button>
+                {/* Token Logo - only show if we have a real token image */}
+                {logoUrl && !logoUrl.includes('default.png') && (
+                  <button
+                    onClick={handleDetailsToggle}
+                    className="w-8 h-8 bg-black/70 backdrop-blur-sm rounded-full border border-gray-500/30 hover:border-white/50 transition-colors overflow-hidden"
+                  >
+                    <img 
+                      src={logoUrl} 
+                      alt={token.symbol} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Hide the button entirely if image fails to load
+                        const button = (e.target as HTMLImageElement).closest('button');
+                        if (button) {
+                          button.style.display = 'none';
+                        }
+                      }}
+                    />
+                  </button>
+                )}
               </div>
               
-              {/* MIDDLE ROW - Logo + Symbol */}
-              <div className="flex items-center space-x-3">
-                {logoUrl && (
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-black/40 backdrop-blur-sm border border-white/20">
-                    <img src={logoUrl} alt={token.symbol} className="w-full h-full object-cover" />
-                  </div>
-                )}
+              {/* MIDDLE ROW - Symbol Only */}
+              <div className="flex items-center">
                 <div>
-                  <h3 className="text-2xl font-bold text-white drop-shadow-lg">{token.symbol}</h3>
+                  <h3 className={`${token.symbol.length >= 9 ? 'text-xl' : 'text-2xl'} font-bold text-white`} style={{ 
+                    textShadow: '6px 6px 12px rgba(0,0,0,1), -4px -4px 8px rgba(0,0,0,1), 3px 3px 6px rgba(0,0,0,1), 0px 0px 10px rgba(0,0,0,0.9)', 
+                    WebkitTextStroke: '1.5px rgba(0,0,0,0.7)' 
+                  }}>
+                    {token.symbol}
+                  </h3>
                   {token.tags && token.tags.length > 0 && (
                     <div className="flex space-x-1 mt-1">
                       {token.tags.slice(0, 2).map((tag, i) => (
@@ -332,104 +291,49 @@ export const PortfolioOptimizedTokenCard: React.FC<PortfolioOptimizedTokenCardPr
                 </div>
               </div>
               
-              {/* BOTTOM ROW - Price & Performance */}
+              {/* BOTTOM ROW - Market Cap & Price/Performance */}
               <div className="space-y-2">
-                {/* Price with trend arrow */}
-                <div className="flex items-center justify-between">
-                  <div className="text-lg font-bold text-white">{formatTokenPrice(TokenHelpers.getPrice(token))}</div>
-                  <div className={`flex items-center ${metrics.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                    <div className={`text-sm font-mono ${TokenHelpers.getPriceChange(token) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {TokenHelpers.getPriceChange(token) >= 0 ? '↗' : '↘'} {formatPercentage(TokenHelpers.getPriceChange(token), false)}
-                    </div>
+                {/* Percentage change - top right */}
+                <div className="flex items-center justify-end">
+                  <div className={`text-sm font-bold font-sans ${TokenHelpers.getPriceChange(token) >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ 
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
+                  }}>
+                    {TokenHelpers.getPriceChange(token) >= 0 ? '↗' : '↘'} {formatPercentage(TokenHelpers.getPriceChange(token), false)}
                   </div>
                 </div>
                 
-                {/* Market Cap */}
+                {/* Market Cap (left) + Price (right) */}
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-gray-300">MCap: ${formatNumber(TokenHelpers.getMarketCap(token), 'short')}</div>
-                  <div className="flex items-center space-x-1">
-                    {/* Activity indicators */}
-                    {(() => {
-                      const transactions = TokenHelpers.getTransactions(token);
-                      const tx5m = transactions?.m5;
-                      return tx5m && (
-                        <div className="flex items-center space-x-1">
-                          <div className={`w-1 h-3 rounded-full ${
-                            tx5m.buys > tx5m.sells ? 'bg-green-400' : 'bg-gray-600'
-                          }`}></div>
-                          <div className={`w-1 h-3 rounded-full ${
-                            tx5m.sells > tx5m.buys ? 'bg-red-400' : 'bg-gray-600'
-                          }`}></div>
-                        </div>
-                      );
-                    })()}
-                  </div>
+                  <div className="text-xs text-gray-300 whitespace-nowrap" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' }}>${formatNumber(TokenHelpers.getMarketCap(token), 'short')} MC</div>
+                  <div className="text-base font-bold text-white" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' }}>{formatTokenPrice(TokenHelpers.getPrice(token))}</div>
                 </div>
               </div>
             </div>
 
-            {/* PORTFOLIO WEIGHT SLIDER - Enhanced Design */}
+            {/* PORTFOLIO WEIGHT MAX BUTTON */}
             <div
               className={`absolute bottom-0 left-0 right-0 transform transition-all duration-300 ease-out overflow-hidden ${
                 isSelected
-                  ? "h-16 opacity-100 translate-y-0"
+                  ? "h-8 opacity-100 translate-y-0"
                   : "h-0 opacity-0 translate-y-2"
               }`}
             >
               <div
-                className="bg-black/70 backdrop-blur-sm p-3 border-t border-brand-500/30"
+                className="bg-black/70 backdrop-blur-sm p-2"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-medium text-brand-300 flex items-center gap-1">
-                    <FaCoins size={10} className="text-brand-400" />
-                    Portfolio Weight
-                  </label>
-                  <span className="text-sm font-bold text-brand-400 tabular-nums">
-                    {weight}%
-                  </span>
-                </div>
-
-                {/* Enhanced Slider */}
-                <div className="relative">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value={weight}
-                    onChange={handleWeightChange}
-                    className="w-full h-2 bg-gradient-to-r from-dark-400 via-brand-500/30 to-dark-400 rounded-full appearance-none cursor-pointer
-                      focus:outline-none focus:ring-2 focus:ring-brand-500/50
-                      [&::-webkit-slider-thumb]:appearance-none
-                      [&::-webkit-slider-thumb]:w-4
-                      [&::-webkit-slider-thumb]:h-4
-                      [&::-webkit-slider-thumb]:rounded-full
-                      [&::-webkit-slider-thumb]:bg-gradient-to-r
-                      [&::-webkit-slider-thumb]:from-brand-400
-                      [&::-webkit-slider-thumb]:to-brand-500
-                      [&::-webkit-slider-thumb]:hover:from-brand-300
-                      [&::-webkit-slider-thumb]:hover:to-brand-400
-                      [&::-webkit-slider-thumb]:transition-colors
-                      [&::-webkit-slider-thumb]:cursor-pointer
-                      [&::-webkit-slider-thumb]:border-2
-                      [&::-webkit-slider-thumb]:border-white/30
-                      [&::-webkit-slider-thumb]:shadow-lg
-                      [&::-webkit-slider-thumb]:shadow-brand-500/50
-                      [&::-moz-range-thumb]:w-4
-                      [&::-moz-range-thumb]:h-4
-                      [&::-moz-range-thumb]:rounded-full
-                      [&::-moz-range-thumb]:bg-gradient-to-r
-                      [&::-moz-range-thumb]:from-brand-400
-                      [&::-moz-range-thumb]:to-brand-500
-                      [&::-moz-range-thumb]:hover:from-brand-300
-                      [&::-moz-range-thumb]:hover:to-brand-400
-                      [&::-moz-range-thumb]:transition-colors
-                      [&::-moz-range-thumb]:cursor-pointer
-                      [&::-moz-range-thumb]:border-2
-                      [&::-moz-range-thumb]:border-white/30
-                      [&::-moz-range-thumb]:shadow-lg"
-                  />
+                <div className="flex justify-center">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const maxWeight = weight + remainingAllocation;
+                      onWeightChange(maxWeight);
+                    }}
+                    className="px-4 py-1 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-md shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
+                    disabled={remainingAllocation <= 0}
+                  >
+                    Max
+                  </button>
                 </div>
               </div>
             </div>

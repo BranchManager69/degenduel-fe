@@ -208,3 +208,17 @@ body {
     }
   }
 }
+
+/* Token Card Animations */
+@keyframes slowScan {
+  0% { 
+    background-position: left center; 
+  }
+  100% { 
+    background-position: right center; 
+  }
+}
+
+.animate-slow-scan {
+  animation: slowScan 12s ease-in-out infinite alternate;
+}

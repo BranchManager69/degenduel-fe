@@ -176,10 +176,11 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
     <Button
       onClick={handleTwitterAuth}
       variant={linkMode ? "outline" : "secondary"}
-      className={`flex items-center justify-center gap-2 font-bold ${className}`}
+      className={`flex items-center justify-center gap-2 font-bold ${linkMode ? '!border !border-gray-600/50 hover:!border-gray-500' : ''} ${className}`}
       aria-label={linkMode ? "Link Twitter Account" : "Login with Twitter"}
       disabled={isLoading || isProcessing}
     >
+      {!iconOnly && linkMode && <span className="mr-2">Link</span>}
       {isLoading || isProcessing ? (
         <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full" />
       ) : (
@@ -187,7 +188,7 @@ const TwitterLoginButton: React.FC<TwitterLoginButtonProps> = ({
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
         </svg>
       )}
-      {!iconOnly && (linkMode ? "Link X" : "X")}
+      {!iconOnly && !linkMode && "X"}
     </Button>
   );
 };

@@ -93,6 +93,9 @@ export const Terminal = ({
   isInitiallyMinimized = true,
 }: TerminalProps) => {
   
+  // Get user authentication state
+  const { user } = useStore();
+  
   // We no longer need to set window.contractAddress as it's now fetched from the API
   //   This is kept for backward compatibility (WHICH WE DONT EVEN FUCKING WANT) but will be phased out
   //useEffect(() => {
@@ -599,6 +602,9 @@ export const Terminal = ({
           conversationId: conversationId,
           streaming: true, // Enable streaming to receive UI actions
           structured_output: true, // Enable dynamic UI generation
+          // Add user authentication for terminal functions
+          userId: user?.wallet_address || 'anonymous',
+          userRole: user?.role || 'user',
           ui_context: {
             page: pageContext.page,
             pageType: pageContext.pageType,
@@ -609,7 +615,16 @@ export const Terminal = ({
             current_year: new Date().getFullYear(),
             platform: 'DegenDuel',
             environment: process.env.NODE_ENV || 'production',
-            pageSpecificContext: pageContext.specificContext
+            pageSpecificContext: pageContext.specificContext,
+            // User authentication context
+            user: user ? {
+              wallet_address: user.wallet_address,
+              role: user.role,
+              nickname: user.nickname,
+              is_authenticated: true
+            } : {
+              is_authenticated: false
+            }
           },
           // Enhanced tool configuration with current context
           tools: [
@@ -623,6 +638,11 @@ export const Terminal = ({
               enabled: true,
               description: "Generate dynamic UI components",
               available_components: Object.keys(COMPONENT_METADATA)
+            },
+            {
+              type: "file_search",
+              enabled: true,
+              description: "Search DegenDuel knowledge base and documentation"
             }
           ],
           onChunk: (chunk: string) => {

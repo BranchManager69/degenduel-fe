@@ -294,18 +294,60 @@ export interface Token {
 
 // Search Token interface (for /api/tokens/search endpoint)
 export interface SearchToken {
+  id: number;
   address: string;
   symbol: string | null;
   name: string | null;
   image_url: string | null;
+  header_image_url?: string | null;
+  open_graph_image_url?: string | null;
+  color?: string;
+  decimals: number;
+  description?: string | null;
+  tags?: string[];
+  total_supply?: number;
+  priority_score?: number;
+  degenduel_score?: string;
+  first_seen_on_jupiter_at?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  current_price: string | null;
-  market_cap: string | null;
-  volume_24h: string | null;
-  change_24h: string | null;
+  price: number;
+  change_24h: number;
+  market_cap: number;
+  fdv?: number;
+  liquidity?: number;
+  volume_24h: number;
   price_updated_at: string | null;
+  priceChanges?: {
+    h1: number;
+    h6: number;
+    m5: number;
+    h24: number;
+  };
+  volumes?: {
+    h1: number;
+    h6: number;
+    m5: number;
+    h24: number;
+  };
+  transactions?: {
+    h1: { buys: number; sells: number };
+    h6: { buys: number; sells: number };
+    m5: { buys: number; sells: number };
+    h24: { buys: number; sells: number };
+  };
+  pairCreatedAt?: string;
+  socials?: {
+    telegram?: string;
+    twitter?: string;
+    discord?: string;
+    website?: string;
+  };
+  websites?: Array<{
+    label: string;
+    url: string;
+  }>;
 }
 
 // Token search response

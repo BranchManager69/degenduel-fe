@@ -126,7 +126,7 @@ export const LivePriceTicker: React.FC<Props> = ({
                   title={`${token.name} (${token.symbol})`}
                 >
                   {/* Hover background effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyber-400/0 via-cyber-400/5 to-cyber-400/0 opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 animate-data-stream rounded" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyber-400/0 via-cyber-400/5 to-cyber-400/0 opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 animate-data-stream-responsive rounded" />
                   
                   {/* Token Symbol */}
                   <span className="font-mono text-cyber-400 group-hover/item:text-cyber-300 font-medium transition-colors">

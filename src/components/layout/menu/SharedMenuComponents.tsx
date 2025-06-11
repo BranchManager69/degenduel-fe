@@ -212,7 +212,7 @@ export const MenuBackdrop: React.FC<{
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-      className={`fixed inset-0 ${topPosition} z-40 ${
+      className={`fixed inset-0 ${topPosition} z-[55] ${
         isMobile 
           ? 'bg-black/60 backdrop-blur-[2px]' 
           : 'bg-black/20 backdrop-blur-[1px]'

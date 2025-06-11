@@ -4,10 +4,10 @@ import { Buffer } from "buffer";
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
-    Connection,
-    PublicKey,
-    SystemProgram,
-    Transaction,
+  Connection,
+  PublicKey,
+  SystemProgram,
+  Transaction,
 } from "@solana/web3.js";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -21,9 +21,10 @@ import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Skeleton } from "../../../components/ui/Skeleton";
 import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
+import { useScrollFooter } from "../../../hooks/ui/useScrollFooter";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
-import { Contest, SearchToken, TokenHelpers } from "../../../types/index";
+import { Contest, SearchToken, Token, TokenHelpers } from "../../../types/index";
 
 // Declare Buffer on window type
 declare global {
@@ -91,7 +92,7 @@ function TokenCardSkeleton() {
 function ErrorFallback({ error }: { error: Error }) {
   return (
     <div className="text-center p-4 relative group">
-      <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 via-red-500/5 to-red-500/10 animate-data-stream opacity-0 group-hover:opacity-100" />
+      <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 via-red-500/5 to-red-500/10 animate-data-stream-responsive opacity-0 group-hover:opacity-100" />
       <h2 className="text-xl font-bold text-red-400 mb-2 group-hover:animate-glitch">
         Something went wrong:
       </h2>
@@ -104,6 +105,26 @@ function ErrorFallback({ error }: { error: Error }) {
 
 export const TokenSelection: React.FC = () => {
   console.log("🏗️ PortfolioTokenSelectionPage: Component rendering");
+  
+  // Helper function to parse Decimal.js objects from backend
+  const parseDecimalValue = (decimalObj: any): number => {
+    if (typeof decimalObj === 'string' || typeof decimalObj === 'number') {
+      return parseFloat(decimalObj.toString());
+    }
+    if (decimalObj && typeof decimalObj === 'object' && decimalObj.d && Array.isArray(decimalObj.d)) {
+      // This is a Decimal.js object: { s: sign, e: exponent, d: digits_array }
+      const digits = decimalObj.d.join('');
+      const sign = decimalObj.s === 1 ? '' : '-';
+      const exponent = decimalObj.e || 0;
+      
+      if (digits === '0') return 0;
+      
+      const baseNumber = parseFloat(digits);
+      const result = baseNumber * Math.pow(10, exponent - digits.length + 1);
+      return parseFloat(sign + result);
+    }
+    return 0;
+  };
   
   const { id: contestId } = useParams();
   const navigate = useNavigate();
@@ -140,6 +161,10 @@ export const TokenSelection: React.FC = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [hasExistingPortfolio, setHasExistingPortfolio] = useState(false);
   const user = useStore((state) => state.user);
+  const [locallyAddedTokens, setLocallyAddedTokens] = useState<Token[]>([]);
+  
+  // Get footer state for dynamic positioning
+  const { isCompact } = useScrollFooter(50);
   
   // Infinite scroll state
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -247,6 +272,71 @@ export const TokenSelection: React.FC = () => {
             setSelectedTokens(existingPortfolio);
             console.error("✅✅✅ LOADED EXISTING PORTFOLIO WITH", existingPortfolio.size, "TOKENS ✅✅✅");
             
+            // ============================================================================
+            // FETCH MISSING TOKENS FROM EXISTING PORTFOLIO
+            // ============================================================================
+            // Check if any portfolio tokens are not in the current loaded token list
+            const loadedTokenAddresses = new Set(tokens.map(t => TokenHelpers.getAddress(t)));
+            const missingTokenAddresses: string[] = [];
+            
+            for (const [contractAddress] of existingPortfolio) {
+              if (!loadedTokenAddresses.has(contractAddress)) {
+                missingTokenAddresses.push(contractAddress);
+              }
+            }
+            
+            if (missingTokenAddresses.length > 0) {
+              console.log("🔍 Found missing tokens in portfolio, fetching data for:", missingTokenAddresses);
+              
+              // Fetch data for missing tokens
+              try {
+                // We'll search for each missing token to get its data
+                const missingTokensData: Token[] = [];
+                
+                for (const address of missingTokenAddresses) {
+                  try {
+                    // Search by contract address to get token data
+                    const searchResponse = await fetch(
+                      `/api/tokens/search?search=${encodeURIComponent(address)}&limit=1`
+                    );
+                    
+                    if (searchResponse.ok) {
+                      const searchData = await searchResponse.json();
+                      if (searchData.tokens && searchData.tokens.length > 0) {
+                        const searchToken = searchData.tokens[0];
+                        
+                        // Convert SearchToken to Token format
+                        const tokenForGrid: Token = {
+                          id: Date.now() + Math.random(),
+                          address: searchToken.address,
+                          contractAddress: searchToken.address,
+                          symbol: searchToken.symbol || 'UNKNOWN',
+                          name: searchToken.name || 'Unknown Token',
+                          decimals: searchToken.decimals || 9,
+                          image_url: searchToken.image_url || '',
+                          price: searchToken.price || 0,
+                          market_cap: searchToken.market_cap || 0,
+                          volume_24h: searchToken.volume_24h || 0,
+                          change_24h: searchToken.change_24h || 0,
+                        };
+                        
+                        missingTokensData.push(tokenForGrid);
+                      }
+                    }
+                  } catch (err) {
+                    console.error(`Failed to fetch data for token ${address}:`, err);
+                  }
+                }
+                
+                if (missingTokensData.length > 0) {
+                  console.log("✅ Successfully fetched data for", missingTokensData.length, "missing tokens");
+                  setLocallyAddedTokens(prev => [...missingTokensData, ...prev]);
+                }
+              } catch (error) {
+                console.error("Failed to fetch missing token data:", error);
+              }
+            }
+            
           } catch (portfolioError: any) {
             console.error("⚠️⚠️⚠️ PORTFOLIO FETCH FAILED (USER IN CONTEST BUT NO PORTFOLIO YET) ⚠️⚠️⚠️", portfolioError);
             // User is in contest but no portfolio yet - that's fine
@@ -268,7 +358,7 @@ export const TokenSelection: React.FC = () => {
     };
 
     checkParticipationAndPortfolio();
-  }, [contestId, user?.wallet_address]);
+  }, [contestId, user?.wallet_address, tokens]);
 
   useEffect(() => {
     console.log("Current contest state:", {
@@ -278,18 +368,31 @@ export const TokenSelection: React.FC = () => {
     });
   }, [contestId, contest]);
 
+  // Combine tokens from the hook with locally added ones from search
+  const allDisplayableTokens = useMemo(() => {
+    const combined = [...locallyAddedTokens, ...tokens];
+    const tokenMap = new Map<string, Token>();
+    for (const token of combined) {
+        const address = TokenHelpers.getAddress(token);
+        if (address && !tokenMap.has(address)) {
+            tokenMap.set(address, token);
+        }
+    }
+    return Array.from(tokenMap.values());
+  }, [tokens, locallyAddedTokens]);
+
   // Smart token ordering: selected tokens first, then rest with progressive loading
   const memoizedTokens = useMemo(() => {
-    console.log("🔄 PortfolioTokenSelectionPage: Processing tokens, count:", tokens.length);
+    console.log("🔄 PortfolioTokenSelectionPage: Processing tokens, count:", allDisplayableTokens.length);
     
     // Get selected token addresses
     const selectedAddresses = Array.from(selectedTokens.keys());
     
     // Split tokens: selected ones first, then unselected
-    const selectedTokensList = tokens.filter(token => 
+    const selectedTokensList = allDisplayableTokens.filter(token => 
       selectedAddresses.includes(TokenHelpers.getAddress(token))
     );
-    const unselectedTokensList = tokens.filter(token => 
+    const unselectedTokensList = allDisplayableTokens.filter(token => 
       !selectedAddresses.includes(TokenHelpers.getAddress(token))
     );
     
@@ -303,7 +406,7 @@ export const TokenSelection: React.FC = () => {
     });
     
     return orderedTokens;
-  }, [tokens, selectedTokens]);
+  }, [allDisplayableTokens, selectedTokens]);
 
   // Sort state for this page only
   const [sortBy, setSortBy] = useState<'default' | 'marketCap' | 'volume' | 'change24h' | 'price'>('volume');
@@ -387,6 +490,17 @@ export const TokenSelection: React.FC = () => {
   }, [selectedTokens, sortedTokens, contest?.name]);
 
   const handleSubmit = async () => {
+    // BROWSING USERS: Check authentication first before anything else
+    if (!user?.wallet_address) {
+      console.log("User not authenticated, redirecting to login");
+      toast.error("Please log in to enter contests", { duration: 4000 });
+      
+      // Navigate to login with return URL to come back here
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      navigate(`/login?returnUrl=${returnUrl}`);
+      return;
+    }
+
     if (!contest || !contestId || contestId === 'undefined' || contestId === 'null') {
       console.error("Submit failed: Missing contest data:", {
         contest,
@@ -404,22 +518,8 @@ export const TokenSelection: React.FC = () => {
       return;
     }
 
-    // BROWSING USERS: Redirect to login with return URL
-    if (!user?.wallet_address) {
-      console.log("User not authenticated, redirecting to login");
-      toast.error("Please log in to enter contests", { duration: 4000 });
-      
-      // Reset loading state immediately (don't leave button disabled)
-      setIsLoading(false);
-      
-      // Navigate to login with return URL to come back here
-      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-      navigate(`/login?returnUrl=${returnUrl}`);
-      return;
-    }
-
     // Check if this is a free contest
-    const entryFee = Number(contest.entry_fee);
+    const entryFee = parseDecimalValue(contest.entry_fee);
     const isFreeContest = entryFee === 0;
 
     console.log("Contest entry details:", {
@@ -747,10 +847,25 @@ export const TokenSelection: React.FC = () => {
       }
 
       // Handle all other errors normally
+      let friendlyErrorMsg = errorMsg;
+      
+      // Make error messages more user-friendly
+      if (errorMsg.includes("update portfolio") || errorMsg.includes("Failed to update portfolio")) {
+        friendlyErrorMsg = user?.wallet_address ? 
+          "Unable to save your portfolio. Please try again." : 
+          "Please log in to save your portfolio.";
+      } else if (errorMsg.includes("enter contest") || errorMsg.includes("Failed to enter contest")) {
+        friendlyErrorMsg = user?.wallet_address ? 
+          "Unable to enter the contest. Please try again." : 
+          "Please log in to enter contests.";
+      } else if (errorMsg.includes("authentication") || errorMsg.includes("unauthorized")) {
+        friendlyErrorMsg = "Please log in to continue.";
+      }
+
       setTransactionState({
         status: "error",
         message: "Error entering contest",
-        error: errorMsg,
+        error: friendlyErrorMsg,
         signature: confirmedSignature || transactionState.signature,
       });
 
@@ -761,7 +876,7 @@ export const TokenSelection: React.FC = () => {
         timestamp: new Date().toISOString(),
       });
 
-      toast.error(errorMsg, { duration: 5000 });
+      toast.error(friendlyErrorMsg, { duration: 5000 });
     } finally {
       setIsLoading(false);
     }
@@ -953,7 +1068,7 @@ export const TokenSelection: React.FC = () => {
   // Handle token search selection with smart weight calculation and top positioning
   const handleTokenSearchSelect = useCallback((token: SearchToken, customWeight?: number) => {
     // Find if this token exists in our current token list
-    const existingToken = memoizedTokens.find(t => t.contractAddress === token.address);
+    const existingToken = memoizedTokens.find(t => TokenHelpers.getAddress(t) === token.address);
     if (existingToken) {
       // Check if token is already selected
       if (selectedTokens.has(token.address)) {
@@ -999,6 +1114,13 @@ export const TokenSelection: React.FC = () => {
       // Token not in current data - add it from search data if possible
       console.log('Token not found in current token list, attempting to add from search data:', token);
       
+      // A token without an address is not selectable. This check narrows the type.
+      if (!token.address) {
+        console.error("Cannot add a token without an address:", token);
+        toast.error("Cannot add a token without a valid address.");
+        return;
+      }
+      
       // Check if already selected by address
       if (selectedTokens.has(token.address)) {
         toast.error(`${token.symbol} is already in your portfolio`, { duration: 3000 });
@@ -1023,11 +1145,37 @@ export const TokenSelection: React.FC = () => {
         return;
       }
       
-      // Add the token even if not in current list (it will appear when data loads)
-      handleTokenSelect(token.address);
+      // ============================================================================
+      // SEARCH TOKEN SELECTION - FIXED
+      // ============================================================================
+      // We convert SearchToken to a Token object for compatibility.
+      const newTokenForGrid: Token = {
+        id: Date.now() + Math.random(), // Temporary unique ID for display
+        address: token.address,
+        contractAddress: token.address,
+        symbol: token.symbol || 'UNKNOWN',
+        name: token.name || 'Unknown Token',
+        decimals: token.decimals || 9,
+        image_url: token.image_url || '',
+        price: token.price || 0,
+        market_cap: token.market_cap || 0,
+        volume_24h: token.volume_24h || 0,
+        change_24h: token.change_24h || 0,
+      };
+      setLocallyAddedTokens(prev => [newTokenForGrid, ...prev]);
       
-      toast.success(`Added ${token.symbol} with ${defaultWeight}% weight - will appear when data loads`, { 
-        duration: 4000 
+      // Add the token to selectedTokens (this part works correctly)
+      const newSelectedTokens = new Map(selectedTokens);
+      newSelectedTokens.set(token.address, defaultWeight);
+      setSelectedTokens(newSelectedTokens);
+      
+      // Scroll to top 
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+      
+      toast.success(`Added ${token.symbol} with ${defaultWeight}% weight`, { 
+        duration: 3000 
       });
     }
   }, [memoizedTokens, handleTokenSelect, selectedTokens]);
@@ -1385,9 +1533,9 @@ export const TokenSelection: React.FC = () => {
             </div>
 
             {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 pb-24 lg:pb-0">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-8 pb-24 lg:pb-0">
               {/* Token Selection Area - Different card styling */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-3">
                 <Card className="bg-dark-200/30 backdrop-blur-sm border-emerald-500/20 hover:border-emerald-400/30 transition-colors group relative overflow-hidden">
                   {/* Different gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/5 via-transparent to-emerald-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -1410,22 +1558,9 @@ export const TokenSelection: React.FC = () => {
                         viewMode={viewMode}
                         onViewModeChange={setViewMode}
                         onTokenSearchSelect={handleTokenSearchSelect}
+                        sortBy={sortBy}
+                        onSortChange={setSortBy}
                       />
-                      
-                      {/* Sort dropdown */}
-                      <div className="flex justify-end">
-                        <select
-                          value={sortBy}
-                          onChange={(e) => setSortBy(e.target.value as any)}
-                          className="px-3 py-2 bg-dark-200/50 border border-emerald-500/30 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-400"
-                        >
-                          <option value="default">🔥 Trending</option>
-                          <option value="marketCap">Market Cap</option>
-                          <option value="volume">Volume</option>
-                          <option value="change24h">24h Change</option>
-                          <option value="price">Price</option>
-                        </select>
-                      </div>
                     </div>
 
                     {/* Enhanced Token Grid - Visual rich cards with infinite scroll */}
@@ -1450,7 +1585,7 @@ export const TokenSelection: React.FC = () => {
               </div>
 
               {/* Portfolio Summary - Different styling */}
-              <div className="hidden lg:block">
+              <div className="hidden lg:block lg:col-span-2">
                 <div className="sticky top-4">
                   <Card className="bg-dark-200/30 backdrop-blur-sm border-emerald-500/20 hover:border-emerald-400/30 transition-colors group relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/5 via-transparent to-emerald-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -1459,9 +1594,38 @@ export const TokenSelection: React.FC = () => {
                       <h2 className="text-lg sm:text-xl font-bold text-emerald-400 mb-4 font-mono">
                         PORTFOLIO.DEPLOY
                       </h2>
+                      
+                      {/* Contest Type Indicator - Moved here */}
+                      {contest && (() => {
+                        const entryFeeValue = parseDecimalValue(contest.entry_fee);
+                        const isFree = entryFeeValue === 0;
+                        
+                        return (
+                          <div className={`mb-4 p-3 rounded-lg border ${isFree ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-brand-500/10 border-brand-500/30'}`}>
+                            <div className="flex items-center gap-3 text-sm">
+                              <div className={`flex items-center justify-center w-5 h-5 rounded-full ${isFree ? 'bg-emerald-500/20' : 'bg-brand-500/20'}`}>
+                                <span className={`text-xs ${isFree ? 'text-emerald-400' : 'text-brand-400'}`}>
+                                  {isFree ? '✓' : '$'}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <span className={`font-medium ${isFree ? 'text-emerald-300' : 'text-brand-300'}`}>
+                                  {isFree ? 'Free Contest' : 'Paid Contest'}
+                                </span>
+                                <span className="text-gray-400 ml-2">
+                                  {isFree ? 'No entry fee required' : `${entryFeeValue} SOL entry fee`}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      
                       <PortfolioSummary
                         selectedTokens={selectedTokens}
                         tokens={sortedTokens}
+                        onWeightChange={handleWeightChange}
+                        onRemoveToken={(contractAddress) => handleTokenSelect(contractAddress)}
                       />
 
                       <div className="mt-4 sm:mt-6">
@@ -1554,21 +1718,6 @@ export const TokenSelection: React.FC = () => {
                           </div>
                         )}
 
-                        {/* Contest Type Indicator */}
-                        {contest && (
-                          <div className="mb-4 p-2 rounded-lg bg-dark-300/30 border border-gray-600/30">
-                            <div className="flex items-center gap-2 text-xs font-mono">
-                              <div className={`w-2 h-2 rounded-full ${Number(contest.entry_fee) === 0 ? 'bg-emerald-400' : 'bg-brand-400'}`} />
-                              <span className="text-gray-300">
-                                {Number(contest.entry_fee) === 0 ? 'FREE CONTEST' : 'PAID CONTEST'}
-                              </span>
-                              <span className="text-gray-500">•</span>
-                              <span className="text-gray-400">
-                                {Number(contest.entry_fee) === 0 ? 'No payment required' : `${contest.entry_fee} SOL entry fee`}
-                              </span>
-                            </div>
-                          </div>
-                        )}
 
                         {transactionState.status === "success" ? (
                           <div className="space-y-4">
@@ -1614,36 +1763,41 @@ export const TokenSelection: React.FC = () => {
                             </div>
                           </div>
                         ) : (
-                          <Button
-                            onClick={handlePreviewPortfolio}
-                            disabled={
-                              loadingEntryStatus ||
-                              portfolioValidation !== null ||
-                              isLoading ||
-                              transactionState.status !== "idle"
-                            }
-                            className="w-full relative group overflow-hidden text-sm sm:text-base py-3 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-emerald-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <span className="relative flex items-center justify-center font-medium font-mono">
-                              {isLoading ? (
-                                <div>
-                                  [DEPLOYING...]
+                          <>
+                            {portfolioValidation && (
+                              <div className="mb-3 p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                                <div className="flex items-center justify-center gap-2 text-xs text-orange-300">
+                                  <span className="text-orange-400">⚡</span>
+                                  <span className="font-medium">{portfolioValidation}</span>
                                 </div>
-                              ) : user?.wallet_address ? (
-                                (console.log("Button render state:", { hasExistingPortfolio, user: user?.wallet_address }), 
-                                hasExistingPortfolio ? "[UPDATE.PORTFOLIO]" : "[PREVIEW.PORTFOLIO]")
-                              ) : (
-                                "[BUILD.PORTFOLIO]"
-                              )}
-                            </span>
-                          </Button>
-                        )}
-
-                        {portfolioValidation && (
-                          <p className="mt-2 text-xs sm:text-sm text-red-400 text-center font-mono">
-                            ERROR: {portfolioValidation}
-                          </p>
+                              </div>
+                            )}
+                            
+                            <Button
+                              onClick={handlePreviewPortfolio}
+                              disabled={
+                                loadingEntryStatus ||
+                                portfolioValidation !== null ||
+                                isLoading ||
+                                transactionState.status !== "idle"
+                              }
+                              className="w-full relative group overflow-hidden text-sm sm:text-base py-3 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-emerald-500/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                              <span className="relative flex items-center justify-center font-medium font-mono">
+                                {isLoading ? (
+                                  <div>
+                                    [DEPLOYING...]
+                                  </div>
+                                ) : user?.wallet_address ? (
+                                  (console.log("Button render state:", { hasExistingPortfolio, user: user?.wallet_address }), 
+                                  hasExistingPortfolio ? "[UPDATE.PORTFOLIO]" : "[PREVIEW.PORTFOLIO]")
+                                ) : (
+                                  "[BUILD.PORTFOLIO]"
+                                )}
+                              </span>
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -1653,8 +1807,10 @@ export const TokenSelection: React.FC = () => {
             </div>
 
             {/* Floating Submit Button for Mobile - Different styling */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-dark-100 to-transparent">
-              <div className="max-w-md mx-auto">
+            <div 
+              className="lg:hidden fixed left-0 right-0 px-4 bg-gradient-to-t from-dark-100 to-transparent z-50 transition-all duration-300 max-w-md mx-auto"
+              style={{ bottom: isCompact ? '48px' : '88px' }}
+            >
                 {transactionState.status === "success" ? (
                   <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
                     <div className="flex items-center justify-center mb-2">
@@ -1717,14 +1873,16 @@ export const TokenSelection: React.FC = () => {
                     </Button>
                     <div className="mt-2 h-8">
                       {portfolioValidation && (
-                        <p className="text-xs text-red-400 text-center font-mono bg-dark-100/95 rounded-lg py-2">
-                          ERROR: {portfolioValidation}
-                        </p>
+                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg py-2 px-3">
+                          <div className="flex items-center justify-center gap-2 text-xs text-orange-300">
+                            <span className="text-orange-400">⚡</span>
+                            <span className="font-medium">{portfolioValidation}</span>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </>
                 )}
-              </div>
             </div>
           </div>
         </div>

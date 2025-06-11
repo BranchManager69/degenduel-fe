@@ -2104,7 +2104,83 @@ export const ddApi = {
         throw new Error(error.message || "Failed to fetch portfolio");
       }
 
-      return response.json();
+      const data = await response.json();
+
+      // Handle the actual backend response format
+      if (data.success && data.portfolio) {
+        // Transform backend format to frontend format
+        const tokens = data.portfolio.map((item: any) => ({
+          contractAddress: item.token?.address || item.tokens?.address,
+          weight: item.weight
+        }));
+        
+        return { tokens };
+      }
+      
+      // Fallback for unexpected format
+      console.warn('[portfolio.get] Unexpected response format:', data);
+      return { tokens: [] };
+    },
+
+    // NEW: Get all portfolios for a user in a single request
+    getAllUserPortfolios: async (
+      walletAddress: string,
+      options?: {
+        limit?: number;
+        offset?: number;
+        includeTokens?: boolean;
+        includePerformance?: boolean;
+      }
+    ) => {
+      try {
+        const params = new URLSearchParams();
+        params.append('limit', String(options?.limit || 50));
+        params.append('offset', String(options?.offset || 0));
+        params.append('include_tokens', String(options?.includeTokens !== false)); // Default true
+        params.append('include_performance', String(options?.includePerformance || false));
+
+        const api = createApiClient();
+        const response = await api.fetch(
+          `/portfolios/user/${encodeURIComponent(walletAddress)}?${params.toString()}`
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to fetch user portfolios");
+        }
+
+        return await response.json();
+      } catch (error: any) {
+        logError("portfolio.getAllUserPortfolios", error, { walletAddress, options });
+        throw error;
+      }
+    },
+
+    // NEW: Batch get specific contest portfolios
+    getBatchPortfolios: async (
+      contestIds: number[],
+      includeTokens: boolean = true
+    ) => {
+      try {
+        const api = createApiClient();
+        const response = await api.fetch('/portfolios/batch', {
+          method: 'POST',
+          body: JSON.stringify({
+            contest_ids: contestIds,
+            include_tokens: includeTokens
+          })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to fetch batch portfolios");
+        }
+
+        return await response.json();
+      } catch (error: any) {
+        logError("portfolio.getBatchPortfolios", error, { contestIds, includeTokens });
+        throw error;
+      }
     },
   },
 
