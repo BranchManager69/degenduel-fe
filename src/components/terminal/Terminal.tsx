@@ -598,7 +598,7 @@ export const Terminal = ({
         const pageContext = getPageContext();
         
         const requestOptions = { 
-          context: 'ui_terminal' as const, 
+          context: 'terminal' as const, 
           conversationId: conversationId,
           streaming: true, // Enable streaming to receive UI actions
           structured_output: true, // Enable dynamic UI generation

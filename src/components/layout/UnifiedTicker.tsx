@@ -329,8 +329,8 @@ export const UnifiedTicker: React.FC<Props> = ({
                     isCompact ? 'text-[10px]' : 'text-sm'
                   }`}
                   style={{
-                    textShadow: '4px 4px 8px rgba(0, 0, 0, 1), 2px 2px 16px rgba(0, 0, 0, 0.9), 0px 0px 20px rgba(0, 0, 0, 0.8), 0px 0px 32px rgba(0, 0, 0, 0.7)',
-                    WebkitTextStroke: '1px rgba(0, 0, 0, 0.8)',
+                    textShadow: '1px 1px 2px rgba(0, 0, 0, 0.6), 0px 0px 6px rgba(0, 0, 0, 0.4)',
+                    WebkitTextStroke: '0.3px rgba(0, 0, 0, 0.4)',
                     paintOrder: 'stroke fill'
                   }}
                 >
