@@ -17,6 +17,7 @@ import { useWallet as useSolanaWalletAdapter } from "@solana/wallet-adapter-reac
 import React, { useEffect, useMemo } from "react";
 import { useWallet as useCustomDegenWallet } from "../../hooks/websocket/topic-hooks/useWallet"; // Your custom hook
 import { AnimatedNumber } from "../ui/AnimatedNumber";
+// import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
 interface WalletBalanceTickerProps {
   isCompact?: boolean;
@@ -34,7 +35,7 @@ export const WalletBalanceTicker: React.FC<WalletBalanceTickerProps> = ({
     balance,
     isLoading,
     refreshWallet,
-    error
+    error: _error
   } = useCustomDegenWallet(walletAddress ? walletAddress : undefined); // Explicitly pass undefined if walletAddress is null
 
   // Effect to refresh wallet data when the connected wallet address changes
@@ -84,43 +85,11 @@ export const WalletBalanceTicker: React.FC<WalletBalanceTickerProps> = ({
     );
   }
   
-  // Handle adapter not connected or WebSocket errors
-  if (!isAdapterConnected || error) {
-    // Clean up error messages for production
-    const isProduction = import.meta.env.PROD || window.location.hostname === 'degenduel.me';
-    const displayError = error 
-      ? (isProduction ? "Wallet data unavailable" : "WALLET DATA ERROR")
-      : (isProduction ? "Connect wallet" : "WALLET NOT CONNECTED");
-    
-    return (
-      <div className={containerClasses}>
-        <div className={`flex items-center justify-center space-x-3 ${isCompact ? 'h-6' : 'h-8'}`}>
-          <span className="font-mono text-red-400">
-            <span className="animate-ping inline-block h-2 w-2 rounded-full bg-red-500 opacity-75 mr-2"></span>
-            {displayError}
-          </span>
-          {error && (
-            <button 
-              onClick={refreshWallet}
-              className="bg-red-900/30 hover:bg-red-800/30 border border-red-500/20 rounded text-[10px] px-1.5 py-0.5 flex items-center justify-center text-red-300"
-            >
-              RETRY
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // Remove the WALLET NOT CONNECTED display - just skip to rendering or show nothing
   
-  // Handle no balances (adapter connected, but balance data isn't available from WebSocket yet)
+  // Handle no balances - return null to hide the ticker
   if (!balance) {
-    return (
-      <div className={containerClasses} style={{ backgroundColor: 'red', visibility: 'visible', display: 'block', opacity: 1 }}>
-        <div className={`flex items-center justify-center ${isCompact ? 'h-6' : 'h-8'}`} style={{ backgroundColor: 'blue', color: 'white' }}>
-          <span className="text-white">WALLET TICKER TEST - Connect wallet to view balances</span>
-        </div>
-      </div>
-    );
+    return null;
   }
   
   return (

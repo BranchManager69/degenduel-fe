@@ -149,6 +149,7 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
         name: formData.name,
         description: formData.description,
         entry_fee: formatEntryFee(formData.entry_fee),
+        stake: formatEntryFee(formData.entry_fee), // Backend might expect 'stake' instead of 'entry_fee'
         start_time: formatDateTime(formData.start_time),
         end_time: formatDateTime(formData.end_time),
         challenged_wallet: formData.opponent_wallet,
@@ -160,6 +161,8 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
           tokenTypesAllowed: [],
           startingPortfolioValue: formData.settings.startingPortfolioValue,
         },
+        // Add empty transaction_signature for now if backend requires it
+        transaction_signature: null
       };
 
       console.log("Creating challenge...", challengePayload);

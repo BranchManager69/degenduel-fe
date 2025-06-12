@@ -33,6 +33,8 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
   TrustWalletAdapter
 } from "@solana/wallet-adapter-wallets";
 
@@ -62,7 +64,7 @@ import { EdgeToEdgeTicker } from "./components/layout/EdgeToEdgeTicker";
 import { Footer } from "./components/layout/Footer";
 import { Header } from "./components/layout/Header";
 import { SystemNotice } from "./components/layout/SystemNotice";
-import { WalletBalanceTicker } from "./components/layout/WalletBalanceTicker";
+// import { WalletBalanceTicker } from "./components/layout/WalletBalanceTicker";
 import { InviteWelcomeModal } from "./components/modals/InviteWelcomeModal";
 import { AdminRoute } from "./components/routes/AdminRoute";
 import { AuthenticatedRoute } from "./components/routes/AuthenticatedRoute";
@@ -203,9 +205,9 @@ const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ child
   // Remove PhantomWalletAdapter and SolflareWalletAdapter - they're handled by Wallet Standard
   const wallets: Adapter[] = useMemo(
     () => [
-      // new PhantomWalletAdapter(), // REMOVED - handled by Wallet Standard
-      // new SolflareWalletAdapter(), // REMOVED - handled by Wallet Standard  
-      new TrustWalletAdapter(),
+        new PhantomWalletAdapter(), // DO NOT DELETE DESPITE WHAT YOUR LINTER OR BRAIN SAYS. IT IS REQUIRED.
+        new SolflareWalletAdapter(), // DO NOT DELETE DESPITE WHAT YOUR LINTER OR BRAIN SAYS. IT IS REQUIRED.
+        new TrustWalletAdapter(),
     ],
     []
   );
@@ -383,8 +385,7 @@ const AppContent: React.FC = () => {
       {/* SystemNotice - global site-wide notice from API */}
       <SystemNotice />
       
-      {/* WalletBalanceTicker */}
-      <WalletBalanceTicker isCompact={true} />
+      {/* WalletBalanceTicker - Removed per user request */}
       
       {/* ServerDownBanner (?) */}
       {/* <ServerDownBanner /> */}

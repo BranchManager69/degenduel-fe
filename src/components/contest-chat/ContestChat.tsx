@@ -18,6 +18,7 @@ import { useCustomToast } from "../../components/toast";
 import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
 import { ChatMessage, ChatParticipant, useContestChat } from '../../hooks/websocket/topic-hooks/useContestChat';
 import { ChatInput } from './ChatInput';
+import { aiService } from '../../services/ai';
 
 // Default contest chat profile picture URL
 const DEFAULT_PROFILE_PICTURE = "https://api.dicebear.com/7.x/avataaars/svg?seed=";
@@ -33,36 +34,8 @@ interface AITip {
   id: string;
   text: string;
   source: "market-insight" | "trading-tip" | "sentiment" | "news";
+  timestamp?: string;
 }
-
-// AI agent tips and insights
-const AI_TIPS: AITip[] = [
-  {
-    id: "tip1",
-    text: "SOL showing strong momentum, volume increasing 37% in the last hour.",
-    source: "market-insight"
-  },
-  {
-    id: "tip2",
-    text: "Most profitable portfolios have diversified between 3-5 assets in this contest.",
-    source: "trading-tip"
-  },
-  {
-    id: "tip3",
-    text: "Market sentiment shifting bullish on Layer 1s after recent price action.",
-    source: "sentiment"
-  },
-  {
-    id: "tip4",
-    text: "BREAKING: Federal Reserve hints at possible rate cut in upcoming meeting.",
-    source: "news"
-  },
-  {
-    id: "tip5",
-    text: "AI analysis shows consolidation pattern forming on BTC, potential breakout within 24hrs.",
-    source: "market-insight"
-  }
-];
 
 // Configuration for sender badges based on role or type
 const badgeConfig = {
@@ -99,6 +72,9 @@ export const ContestChat: React.FC<ContestChatProps> = ({
   const [showParticipants, setShowParticipants] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [showAiPanel, setShowAiPanel] = useState(false);
+  const [aiTips, setAiTips] = useState<AITip[]>([]);
+  const [_isAiThinking, setIsAiThinking] = useState(false);
+  const [aiConversationId, setAiConversationId] = useState<string | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef(0);
@@ -243,6 +219,80 @@ export const ContestChat: React.FC<ContestChatProps> = ({
     }
   };
 
+  // Handle AI Assistant interactions
+  const askAI = async (question?: string) => {
+    setIsAiThinking(true);
+    
+    try {
+      // Build context for AI
+      const contestContext = `I'm in a DegenDuel contest (ID: ${contestId}) with ${participants.length} participants. `;
+      const recentMessages = messages.slice(-10).map(m => `${m.username}: ${m.message}`).join('\n');
+      
+      const prompt = question || "Give me a real-time market insight or trading tip for this contest.";
+      
+      const response = await aiService.chat([
+        {
+          role: "system",
+          content: `You are DegenDuel AI, a trading assistant for crypto contests. Provide real-time insights, market analysis, and trading tips. Keep responses concise and actionable. Current contest context: ${contestContext}. Recent chat: ${recentMessages}`
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ], {
+        conversationId: aiConversationId || undefined,
+        context: 'trading',
+        streaming: true,
+        onChunk: (chunk: string) => {
+          // Could show typing indicator here
+          console.log('[AI Assistant] Streaming chunk:', chunk);
+        }
+      });
+      
+      if (response.content) {
+        // Determine the type of response
+        let source: AITip['source'] = 'market-insight';
+        if (response.content.toLowerCase().includes('tip')) {
+          source = 'trading-tip';
+        } else if (response.content.toLowerCase().includes('sentiment')) {
+          source = 'sentiment';
+        } else if (response.content.toLowerCase().includes('news') || response.content.toLowerCase().includes('breaking')) {
+          source = 'news';
+        }
+        
+        // Add AI response as a tip
+        const newTip: AITip = {
+          id: `ai-tip-${Date.now()}`,
+          text: response.content,
+          source,
+          timestamp: new Date().toISOString()
+        };
+        
+        setAiTips(prev => [...prev.slice(-4), newTip]); // Keep last 5 tips
+        
+        // Store conversation ID for follow-ups
+        if (response.conversationId) {
+          setAiConversationId(response.conversationId);
+        }
+        
+        // Also send as a chat message from AI
+        sendMessage(`[AI Insight] ${response.content}`);
+      }
+    } catch (error) {
+      console.error('[AI Assistant] Error:', error);
+      addToast("error", "AI Assistant is temporarily unavailable", "AI Error");
+    } finally {
+      setIsAiThinking(false);
+    }
+  };
+  
+  // Trigger AI when panel opens
+  useEffect(() => {
+    if (showAiPanel && aiTips.length === 0) {
+      askAI();
+    }
+  }, [showAiPanel]);
+
   return (
     <div
       className={`contest-chat flex flex-col h-full bg-gray-900 rounded-lg shadow-lg overflow-hidden ${className}`}
@@ -349,7 +399,7 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                 </p>
                 
                 <div className="space-y-2">
-                  {AI_TIPS.map(tip => (
+                  {aiTips.map((tip: AITip) => (
                     <div 
                       key={tip.id} 
                       className="p-2 rounded-md border border-cyber-500/20 bg-cyber-900/20 text-xs text-gray-300"

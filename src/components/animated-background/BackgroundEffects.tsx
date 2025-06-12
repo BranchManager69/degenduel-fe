@@ -174,12 +174,12 @@ export const BackgroundEffects: React.FC = () => {
   return (
     <>
       {/* Single shared dark background */}
-      <div className="fixed inset-0 bg-black/40 z-0" style={{ zIndex: 0 }} />
+      <div className="fixed inset-0 bg-black/40" style={{ zIndex: -2 }} />
 
       {/* BACKGROUND LAYER GROUP (All visual effects) */}
       <div 
         className="fixed inset-0 pointer-events-none" 
-        style={{ zIndex: 1 }}>
+        style={{ zIndex: -1 }}>
         {/* =================================================== */}
         {/* STANDARD VISUALIZATIONS                             */}
         {/* =================================================== */}

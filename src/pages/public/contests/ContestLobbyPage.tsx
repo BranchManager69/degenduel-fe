@@ -21,9 +21,8 @@ import { ParticipantsList } from "../../../components/contest-detail/Participant
 import { PortfolioPerformance } from "../../../components/contest-lobby/PortfolioPerformance";
 import { ReferralProgressCard } from "../../../components/contest-lobby/ReferralProgressCard";
 import { ShareContestButton } from "../../../components/contest-lobby/ShareContestButton";
-import { TokenPerformance } from "../../../components/contest-lobby/TokenPerformance";
-import { PerformanceChart } from "../../../components/contest-results/PerformanceChart";
-import { MultiParticipantChart } from "../../../components/contest-lobby/MultiParticipantChart";
+// Removed unused imports - using lightweight endpoint now
+import { MultiParticipantChartV2 } from "../../../components/contest-lobby/MultiParticipantChartV2";
 import { LiveTradeActivity } from "../../../components/contest-lobby/LiveTradeActivity";
 import { EnhancedPortfolioDisplay } from "../../../components/contest-lobby/EnhancedPortfolioDisplay";
 import { Badge } from "../../../components/ui/Badge";
@@ -33,18 +32,19 @@ import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/use
 import { formatCurrency } from "../../../lib/utils";
 import { ContestViewData } from "../../../types";
 import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
+import { useStore } from "../../../store/useStore";
 
 // Helper function to transform LeaderboardEntry to Participant format
 const transformLeaderboardToParticipant = (entry: any): any => ({
-  wallet_address: entry.wallet_address || entry.userId,
-  nickname: entry.nickname || entry.username,
-  profile_image_url: entry.profile_image_url || entry.profilePictureUrl,
+  wallet_address: entry.wallet_address,
+  nickname: entry.nickname,
+  profile_image_url: entry.profile_image_url,
   rank: entry.rank,
-  portfolio_value: entry.portfolio_value || entry.portfolioValue,
-  performance_percentage: entry.performance_percentage || entry.performancePercentage,
-  prize_awarded: entry.prize_awarded || entry.prizeAwarded,
-  is_current_user: entry.is_current_user || entry.isCurrentUser,
-  is_ai_agent: entry.is_ai_agent || entry.isAiAgent,
+  portfolio_value: entry.portfolio_value,
+  performance_percentage: entry.performance_percentage,
+  prize_awarded: entry.prize_awarded,
+  is_current_user: entry.is_current_user || entry.wallet_address === useStore.getState().user?.wallet_address,
+  is_ai_agent: entry.is_ai_agent || false,
   is_banned: false
 });
 
@@ -75,23 +75,18 @@ export const ContestLobby: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Use participants endpoint for richer data (includes user levels, experience, etc.)
-        const response = await fetch(`/api/contests/${contestId}/participants`);
+        // Use the new lightweight /live endpoint
+        const response = await fetch(`/api/contests/${contestId}/live`);
         if (!response.ok) {
           throw new Error(`Failed to fetch contest data: ${response.status}`);
         }
         const data = await response.json();
         
-        // Get contest info from a separate call since participants endpoint doesn't include contest details
-        const contestResponse = await fetch(`/api/contests/${contestId}`);
-        const contestData = contestResponse.ok ? await contestResponse.json() : null;
-        
-        // Transform the participants response to match expected ContestViewData structure
-        const participants = data.contest_participants || data.participants || [];
+        // Transform the response to match expected ContestViewData structure
         const viewData: ContestViewData = {
-          contest: contestData || { id: contestId, name: "Contest", status: "pending", participant_count: participants.length },
-          leaderboard: participants,
-          currentUserPerformance: participants.find((entry: any) => entry.is_current_user) || null
+          contest: data.contest,
+          leaderboard: data.leaderboard || [],
+          currentUserPerformance: data.leaderboard.find((entry: any) => entry.wallet_address === _user?.wallet_address) || null
         };
         
         setContestViewData(viewData);
@@ -199,33 +194,14 @@ export const ContestLobby: React.FC = () => {
     }
 
     return {
-      tokens: currentUserPerformance.tokens.map(token => {
-        const quantity = parseFloat(token.quantity);
-        const currentValue = parseFloat(token.currentValueContribution);
-        
-        return {
-          token: {
-            name: token.name,
-            symbol: token.symbol,
-            price: quantity > 0 ? currentValue / quantity : 0,
-            image: token.imageUrl,
-          },
-          amount: quantity,
-          initialValue: parseFloat(token.initialValueContribution),
-          currentValue: currentValue,
-        };
-      }),
-      totalValue: parseFloat(currentUserPerformance.portfolioValue),
-      totalChange: parseFloat(currentUserPerformance.performancePercentage),
+      tokens: [], // The lightweight endpoint doesn't include individual tokens
+      totalValue: parseFloat((currentUserPerformance as any).portfolio_value || '0'),
+      totalChange: parseFloat((currentUserPerformance as any).performance_percentage || '0'),
     };
   }, [currentUserPerformance]);
 
-  const performanceChartData = useMemo(() => {
-    return currentUserPerformance?.historicalPerformance.map(dp => ({
-      timestamp: dp.timestamp,
-      value: parseFloat(dp.value),
-    })) || [];
-  }, [currentUserPerformance?.historicalPerformance]);
+  // Performance chart data not available with lightweight endpoint
+  // Would need separate API call if needed
 
   // --- Loading and Error States --- 
   if (isLoading) {
@@ -554,35 +530,8 @@ export const ContestLobby: React.FC = () => {
                       </SilentErrorBoundary>
                     )}
                     
-                    {/* Token Performance Cards */}
-                    {currentUserPerformance?.tokens.map((token, index) => {
-                      const quantity = parseFloat(token.quantity);
-                      const currentValue = parseFloat(token.currentValueContribution);
-                      const price = quantity > 0 ? currentValue / quantity : 0;
-                      
-                      return (
-                        <SilentErrorBoundary key={token.symbol}>
-                          <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.1 + (index * 0.1) }}
-                            className="relative group overflow-hidden rounded-lg"
-                          >
-                            <TokenPerformance 
-                              token={{
-                                name: token.name,
-                                symbol: token.symbol,
-                                price: price,
-                                imageUrl: token.imageUrl 
-                              }}
-                              amount={quantity}
-                              initialValue={parseFloat(token.initialValueContribution)}
-                              currentValue={currentValue}
-                            />
-                          </motion.div>
-                        </SilentErrorBoundary>
-                      );
-                    })}
+                    {/* Token Performance Cards - Not available with lightweight endpoint */}
+                    {/* TODO: Add separate endpoint for detailed portfolio data if needed */}
                   </div>
                 </div>
               )}
@@ -596,21 +545,10 @@ export const ContestLobby: React.FC = () => {
                       transition={{ delay: 0.1 }}
                       className="bg-dark-200/50 backdrop-blur-sm p-4 rounded-lg border border-dark-300"
                     >
-                      {currentUserPerformance && performanceChartData.length > 0 ? (
-                        <PerformanceChart 
-                          data={performanceChartData} 
-                          interactive={true}
-                          highlightColor={
-                            (currentUserPerformance?.performancePercentage && parseFloat(currentUserPerformance.performancePercentage) >= 0) 
-                              ? "#10b981"
-                              : "#ef4444"
-                          }
-                        />
-                      ) : (
-                        <div className="text-center py-10 text-gray-500">
-                          <p>Performance data is not yet available or still loading.</p>
-                        </div>
-                      )}
+                      <div className="text-center py-10 text-gray-500">
+                        <p>Performance chart data requires detailed portfolio endpoint.</p>
+                        <p className="text-sm mt-2">Current performance: {(currentUserPerformance as any)?.performance_percentage || '0.00'}%</p>
+                      </div>
                     </motion.div>
                   </div>
                   
@@ -643,14 +581,15 @@ export const ContestLobby: React.FC = () => {
                   >
                     <h2 className="text-xl font-bold text-gray-100 mb-4">Multi-Participant Performance Chart</h2>
                     {contestIdFromParams && leaderboardEntries.length > 0 ? (
-                      <MultiParticipantChart
+                      <MultiParticipantChartV2
                         contestId={contestIdFromParams}
                         participants={leaderboardEntries.map(entry => ({
                           wallet_address: entry.wallet_address,
                           nickname: entry.nickname,
                           is_current_user: entry.is_current_user
                         }))}
-                        timeInterval="15m"
+                        timeInterval="1h"
+                        maxParticipants={10}
                       />
                     ) : (
                       <div className="text-center py-10 text-gray-500">

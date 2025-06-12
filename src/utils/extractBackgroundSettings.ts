@@ -13,16 +13,16 @@ import { SYSTEM_SETTINGS as DEFAULT_SETTINGS } from "../config/config";
 
 interface SystemSettings {
   background_scene?:
-    | string
-    | {
-        enabled: boolean;
-        scenes: Array<{
-          name: string;
-          enabled: boolean;
-          zIndex: number;
-          blendMode: string;
-        }>;
-      };
+  | string
+  | {
+    enabled: boolean;
+    scenes: Array<{
+      name: string;
+      enabled: boolean;
+      zIndex: number;
+      blendMode: string;
+    }>;
+  };
   [key: string]: any;
 }
 
@@ -39,8 +39,8 @@ export function extractBackgroundSettings(
 ) {
   // If no settings provided, use defaults
   if (!systemSettings) {
-    // No background_scene found in global system settings
-    if (!hasLoggedBackgroundWarning) {
+    // No background_scene found in global system settings (dev only warning)
+    if (!hasLoggedBackgroundWarning && import.meta.env.DEV) {
       console.warn(
         "No background_scene in global system settings! Falling back to local default.",
       );
@@ -67,8 +67,10 @@ export function extractBackgroundSettings(
 
     // If parsing failed or value is missing, return defaults
     if (!backgroundScene) {
-      // No background_scene is found in global system settings
-      console.warn("No background scene settings found, using defaults");
+      // No background_scene is found in global system settings (dev only warning)
+      if (import.meta.env.DEV) {
+        console.warn("No background scene settings found, using defaults");
+      }
       // Return local default background_scene settings
       return DEFAULT_SETTINGS.BACKGROUND_SCENE;
     }

@@ -232,29 +232,31 @@ export function useWallet(walletAddress?: string) {
   const hasSubscribedWalletRef = useRef(false);
   const componentId = useMemo(() => `wallet-${Math.random().toString(36).substr(2, 9)}`, []);
 
-  // Add debugging for auth state mismatches (non-invasive)
+  // Add debugging for auth state mismatches (dev only)
   useEffect(() => {
-    const debugAuthState = () => {
-      console.group('🔍 [Wallet Auth Debug] Current Authentication State');
-      console.log('Frontend Auth:', {
-        isConnected: ws.isConnected,
-        isAuthenticated: ws.isAuthenticated,
-        isReadyForSecureInteraction: ws.isReadyForSecureInteraction,
-        connectionState: ws.connectionState,
-        hasConnectionError: !!ws.connectionError
-      });
+    if (process.env.NODE_ENV === 'development') {
+      const debugAuthState = () => {
+        console.group('🔍 [Wallet Auth Debug] Current Authentication State');
+        console.log('Frontend Auth:', {
+          isConnected: ws.isConnected,
+          isAuthenticated: ws.isAuthenticated,
+          isReadyForSecureInteraction: ws.isReadyForSecureInteraction,
+          connectionState: ws.connectionState,
+          hasConnectionError: !!ws.connectionError
+        });
 
-      // Check if there's a mismatch between frontend and WebSocket auth
-      if (ws.isConnected && !ws.isReadyForSecureInteraction) {
-        console.warn('🚨 POTENTIAL GHOST AUTH: Connected but not ready for secure interaction');
-        console.log('This might indicate the user appears authenticated but WebSocket auth failed');
-      }
+        // Check if there's a mismatch between frontend and WebSocket auth
+        if (ws.isConnected && !ws.isReadyForSecureInteraction) {
+          console.warn('🚨 POTENTIAL GHOST AUTH: Connected but not ready for secure interaction');
+          console.log('This might indicate the user appears authenticated but WebSocket auth failed');
+        }
 
-      console.groupEnd();
-    };
+        console.groupEnd();
+      };
 
-    // Debug on state changes
-    debugAuthState();
+      // Debug on state changes
+      debugAuthState();
+    }
   }, [ws.isConnected, ws.isAuthenticated, ws.isReadyForSecureInteraction, ws.connectionState]);
 
   useEffect(() => {
