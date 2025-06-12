@@ -875,7 +875,7 @@ export const UnifiedWebSocketProvider: React.FC<{
   const isAuthenticated = connectionState === ConnectionState.AUTHENTICATED;
   const isReadyForSecureInteraction = isAuthenticated;
   
-  // Add debugging for ghost authentication states (non-invasive)
+  // Debug auth state mismatches (enhanced)
   useEffect(() => {
     if (isConnected) {
       const frontendAuthState = authService.isAuthenticated();
@@ -888,25 +888,27 @@ export const UnifiedWebSocketProvider: React.FC<{
         isAuthenticated,
         isReadyForSecureInteraction
       });
-      console.log('Frontend Auth State:', {
+      console.log('Frontend State:', {
         isAuthenticated: frontendAuthState,
-        hasUser: !!frontendUser,
-        userWallet: frontendUser?.wallet_address,
-        hasJWT: !!frontendUser?.jwt,
-        hasSessionToken: !!frontendUser?.session_token
+        user: frontendUser ? { id: frontendUser.id, method: frontendUser.auth_method } : null
       });
       
-      // Detect potential ghost auth scenarios
-      if (frontendAuthState && !isAuthenticated && isConnected) {
-        console.warn('🚨 GHOST AUTH DETECTED: Frontend thinks user is authenticated, but WebSocket auth failed');
-        console.log('💡 This could mean:');
-        console.log('   - JWT token expired but frontend hasn\'t refreshed');
-        console.log('   - WebSocket auth handshake failed');
-        console.log('   - Token mismatch between frontend and WebSocket');
-      }
-      
-      if (!frontendAuthState && isAuthenticated) {
-        console.warn('🚨 REVERSE GHOST AUTH: WebSocket authenticated but frontend thinks user is not');
+      // Detect ghost authentication: Frontend says authenticated but WebSocket says not
+      if (frontendAuthState && frontendUser && !isAuthenticated && connectionState === ConnectionState.CONNECTED) {
+        console.warn('🚨 GHOST AUTH DETECTED: Frontend authenticated but WebSocket not authenticated');
+        console.log('This usually happens when:');
+        console.log('- Wallet was disconnected but JWT is still valid');
+        console.log('- WebSocket auth token expired');
+        console.log('- Server-side session was invalidated');
+        
+        // Auto-fix: Try to refresh authentication
+        console.log('Attempting to refresh authentication...');
+        authService.checkAuth().then(() => {
+          console.log('Auth refresh completed');
+        }).catch((error) => {
+          console.error('Auth refresh failed, logging out:', error);
+          authService.logout();
+        });
       }
       
       console.groupEnd();
@@ -924,9 +926,11 @@ export const UnifiedWebSocketProvider: React.FC<{
       registerListener,
       sendMessage,
       connectionState,
-      connectionError
+      connectionError,
+      subscribe, // Pass the context's deduplication-aware subscribe method
+      unsubscribe // Pass the context's deduplication-aware unsubscribe method
     );
-  }, [connectionState, connectionError]);
+  }, [connectionState, connectionError, subscribe, unsubscribe]);
   
   // Create context value
   const contextValue: UnifiedWebSocketContextType = {

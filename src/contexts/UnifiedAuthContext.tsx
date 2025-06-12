@@ -228,12 +228,53 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
   //
   // Note: This ONLY affects users who authenticated via wallet. Social auth users 
   // (Twitter, Discord, etc.) are unaffected by wallet disconnection.
-  const { connected: walletConnected, publicKey, wallet } = useWallet();
+  
+  // Only try to access wallet context if we have a wallet-authenticated user
+  const shouldMonitorWallet = status.isAuthenticated && status.user?.auth_method === 'wallet';
+  
+  // Always call useWallet (hooks must be called unconditionally)
+  // but handle the case where WalletProvider isn't available yet
+  let walletState = { connected: false, publicKey: null as any, wallet: null as any };
+  let walletContextAvailable = false;
+  
+  try {
+    const walletContext = useWallet();
+    
+    // Check if we have a proper wallet context before accessing properties
+    // The wallet adapter logs errors when accessing properties without a provider
+    // We can detect this by checking if the context has the expected structure
+    const hasValidContext = walletContext && typeof walletContext === 'object';
+    
+    if (hasValidContext) {
+      // Safely access properties - if they throw, we'll catch it
+      try {
+        walletState = {
+          connected: walletContext.connected || false,
+          publicKey: walletContext.publicKey, 
+          wallet: walletContext.wallet
+        };
+        walletContextAvailable = true;
+      } catch (propertyError) {
+        // Properties threw an error - WalletProvider not properly initialized
+        walletContextAvailable = false;
+      }
+    }
+  } catch (error) {
+    // WalletProvider not available - this is expected during initial renders
+    walletContextAvailable = false;
+  }
   
   // Enhanced wallet disconnect detection
   useEffect(() => {
-    // Only monitor wallet-authenticated users
-    if (!status.isAuthenticated || status.user?.auth_method !== 'wallet') {
+    // Only monitor if we should be monitoring and wallet context is available
+    if (!shouldMonitorWallet || !walletContextAvailable) {
+      return;
+    }
+    
+    const { connected: walletConnected, publicKey, wallet } = walletState;
+    
+    // Skip if wallet context values aren't properly initialized
+    if (walletConnected === undefined || publicKey === undefined || wallet === undefined) {
       return;
     }
     
@@ -246,7 +287,7 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
     
     // Additional check: Verify the current wallet matches the authenticated wallet
     const authenticatedWallet = status.user?.wallet_address;
-    const currentWallet = publicKey?.toBase58();
+    const currentWallet = publicKey?.toBase58?.();
     const walletMismatch = authenticatedWallet && currentWallet && authenticatedWallet !== currentWallet;
     
     if (isWalletDisconnected || walletMismatch) {
@@ -265,11 +306,11 @@ export const UnifiedAuthProvider: React.FC<{ children: ReactNode }> = ({ childre
       authService.logout();
     }
   }, [
-    walletConnected, 
-    publicKey, 
-    wallet, 
-    status.isAuthenticated, 
-    status.user?.auth_method, 
+    shouldMonitorWallet,
+    walletContextAvailable,
+    walletState.connected, 
+    walletState.publicKey, 
+    walletState.wallet, 
     status.user?.wallet_address
   ]);
   

@@ -51,7 +51,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
           'json-stable-stringify': path.resolve(__dirname, 'node_modules/json-stable-stringify/index.js'),
           'rtcpeerconnection-shim': path.resolve(__dirname, 'node_modules/rtcpeerconnection-shim/rtcpeerconnection.js'),
           'sdp': path.resolve(__dirname, 'node_modules/sdp/sdp.js'),
-          // Add buffer polyfill for Solana dependencies - removed due to path resolution issues
+          // Add buffer polyfill for Solana dependencies
+          'buffer': 'buffer',
         }
       },
       server: {
@@ -210,6 +211,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
           "@telegram-apps/bridge", // ???
           "bowser",
           "base64url",
+          "buffer", // Added for Solana dependencies
           "color",
           "pino",
           "socket.io-parser",
@@ -289,7 +291,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
         'json-stable-stringify': path.resolve(__dirname, 'node_modules/json-stable-stringify/index.js'),
         'rtcpeerconnection-shim': path.resolve(__dirname, 'node_modules/rtcpeerconnection-shim/rtcpeerconnection.js'),
         'sdp': path.resolve(__dirname, 'node_modules/sdp/sdp.js'),
-        // Add buffer polyfill for Solana dependencies - removed due to path resolution issues
+        // Add buffer polyfill for Solana dependencies
+        'buffer': 'buffer',
       }
     },
     server: {
@@ -465,8 +468,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
         "@telegram-apps/bridge", // ???
         "bowser", // Added bowser here
         "base64url", // Added base64url here
-        // "buffer", // Removed - causing path resolution issues
-        // "process", // Removed - causing path resolution issues
+        "buffer", // Re-added for Solana dependencies
       ],
       exclude: [
         "@react-three/fiber",

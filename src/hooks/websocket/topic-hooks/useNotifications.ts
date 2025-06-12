@@ -62,7 +62,19 @@ export function useNotifications() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  const ws = useWebSocket(); // Use the context hook
+  // Try to get WebSocket context - if not available, just return safe defaults
+  let ws: any = null;
+  let contextAvailable = false;
+
+  try {
+    ws = useWebSocket();
+    contextAvailable = true;
+    console.log('[useNotifications] WebSocket context available');
+  } catch (error) {
+    // Context not available yet - this is normal during app startup
+    console.log('[useNotifications] WebSocket context not available yet');
+    contextAvailable = false;
+  }
 
   // Message handler for WebSocket messages
   const handleMessage = useCallback((message: any) => {
@@ -153,16 +165,18 @@ export function useNotifications() {
 
   // Effect for WebSocket listener registration
   useEffect(() => {
-    if (ws && ws.registerListener) {
-      const unregister = ws.registerListener(
-        'notifications-hook',
-        [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
-        handleMessage,
-        [DDWebSocketTopic.USER, DDWebSocketTopic.SYSTEM]
-      );
-      return unregister;
+    if (!contextAvailable || !ws?.registerListener) {
+      return;
     }
-  }, [ws, handleMessage]);
+
+    const unregister = ws.registerListener(
+      'notifications-hook',
+      [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
+      handleMessage,
+      [DDWebSocketTopic.USER, DDWebSocketTopic.SYSTEM]
+    );
+    return unregister;
+  }, [contextAvailable, ws, handleMessage]);
 
   // Update unread count whenever notifications change
   useEffect(() => {
@@ -175,6 +189,13 @@ export function useNotifications() {
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | undefined;
+
+    // Don't do anything if WebSocket context isn't available
+    if (!contextAvailable || !ws) {
+      console.log('[useNotifications] WebSocket context not available, deferring setup.');
+      hasSubscribedRef.current = false;
+      return;
+    }
 
     if (ws.isReadyForSecureInteraction && !hasSubscribedRef.current) {
       console.log('[useNotifications] WebSocket ready for secure interaction. Subscribing and requesting notifications.');
@@ -204,17 +225,17 @@ export function useNotifications() {
     // Cleanup function
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
-      if (hasSubscribedRef.current) {
+      if (hasSubscribedRef.current && contextAvailable && ws) {
         ws.unsubscribe([DDWebSocketTopic.USER]);
         hasSubscribedRef.current = false;
       }
     };
-  }, [ws.isReadyForSecureInteraction]); // Remove unstable dependencies
+  }, [contextAvailable, ws?.isReadyForSecureInteraction]); // Simplified dependencies
 
   // Helper methods for managing notifications
   const markAsRead = useCallback((notificationId: string) => {
-    if (!ws.isReadyForSecureInteraction) { // Guard with isReadyForSecureInteraction
-      console.warn('[Notifications] Cannot mark notification as read: WebSocket not ready for secure interaction.');
+    if (!contextAvailable || !ws?.isReadyForSecureInteraction) {
+      console.warn('[Notifications] Cannot mark notification as read: WebSocket not ready.');
       return;
     }
 
@@ -235,11 +256,11 @@ export function useNotifications() {
       notificationId,
       timestamp: new Date().toISOString()
     });
-  }, [ws.isReadyForSecureInteraction, ws.request]);
+  }, [contextAvailable, ws]);
 
   const markAllAsRead = useCallback(() => {
-    if (!ws.isReadyForSecureInteraction) { // Guard with isReadyForSecureInteraction
-      console.warn('[Notifications] Cannot mark all notifications as read: WebSocket not ready for secure interaction.');
+    if (!contextAvailable || !ws?.isReadyForSecureInteraction) {
+      console.warn('[Notifications] Cannot mark all notifications as read: WebSocket not ready.');
       return;
     }
 
@@ -255,11 +276,11 @@ export function useNotifications() {
       message: 'Marking all notifications as read',
       timestamp: new Date().toISOString()
     });
-  }, [ws.isReadyForSecureInteraction, ws.request]);
+  }, [contextAvailable, ws]);
 
   const refreshNotifications = useCallback(() => {
-    if (!ws.isReadyForSecureInteraction) { // Guard with isReadyForSecureInteraction
-      console.warn('[Notifications] Cannot refresh: WebSocket not ready for secure interaction.');
+    if (!contextAvailable || !ws?.isReadyForSecureInteraction) {
+      console.warn('[Notifications] Cannot refresh: WebSocket not ready.');
       setIsLoading(false); // Ensure loading is false if we can't proceed
       return;
     }
@@ -273,26 +294,26 @@ export function useNotifications() {
 
     const refreshTimeoutId = setTimeout(() => {
       // Only clear loading if still waiting and connection is stable
-      if (isLoading && ws.isReadyForSecureInteraction) {
+      if (isLoading && contextAvailable && ws?.isReadyForSecureInteraction) {
         console.warn('[Notifications] Refresh timed out waiting for data');
         setIsLoading(false);
       }
     }, 15000);
     return () => clearTimeout(refreshTimeoutId);
-  }, [ws.isReadyForSecureInteraction, ws.request, isLoading]); // isLoading is a dependency here
+  }, [contextAvailable, ws, isLoading]);
 
   return {
     notifications,
     unreadCount,
-    isConnected: ws.isConnected, // Expose general connectivity
-    isReadyForSecureInteraction: ws.isReadyForSecureInteraction, // Expose secure readiness
-    isLoading,
-    error: ws.connectionError, // Use connectionError
+    isConnected: contextAvailable ? (ws?.isConnected || false) : false,
+    isReadyForSecureInteraction: contextAvailable ? (ws?.isReadyForSecureInteraction || false) : false,
+    isLoading: contextAvailable ? isLoading : false, // Don't show loading if context isn't available
+    error: contextAvailable ? (ws?.connectionError || null) : 'WebSocket context not available',
     lastUpdate,
     markAsRead,
     markAllAsRead,
     refreshNotifications,
-    connect: () => ws.isReadyForSecureInteraction && ws.subscribe([DDWebSocketTopic.USER, DDWebSocketTopic.SYSTEM]), // connect is now conditional
-    close: () => ws.isReadyForSecureInteraction && ws.unsubscribe([DDWebSocketTopic.USER, DDWebSocketTopic.SYSTEM]) // close is now conditional
+    connect: () => contextAvailable && ws?.isReadyForSecureInteraction && ws.subscribe([DDWebSocketTopic.USER, DDWebSocketTopic.SYSTEM]),
+    close: () => contextAvailable && ws?.isReadyForSecureInteraction && ws.unsubscribe([DDWebSocketTopic.USER, DDWebSocketTopic.SYSTEM])
   };
 }

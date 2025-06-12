@@ -204,12 +204,12 @@ export function useSolanaWalletData(walletAddress?: string): {
 
     // Process instructions
     tx.transaction.message.instructions.forEach(ix => {
-      if ('parsed' in ix && ix.parsed && 'type' in ix.parsed) {
+      if ('parsed' in ix && ix.parsed && typeof ix.parsed === 'object' && ix.parsed !== null && 'type' in ix.parsed) {
         // Handle SPL token transfers
         if (ix.parsed.type === 'transfer') {
-          if (role === 'sender' && ix.parsed.info.source) {
+          if (role === 'sender' && ix.parsed.info?.source) {
             addresses.add(ix.parsed.info.source);
-          } else if (role === 'receiver' && ix.parsed.info.destination) {
+          } else if (role === 'receiver' && ix.parsed.info?.destination) {
             addresses.add(ix.parsed.info.destination);
           }
         }
@@ -220,11 +220,11 @@ export function useSolanaWalletData(walletAddress?: string): {
     if (tx.meta && tx.meta.innerInstructions) {
       tx.meta.innerInstructions.forEach(inner => {
         inner.instructions.forEach(ix => {
-          if ('parsed' in ix && ix.parsed && 'type' in ix.parsed) {
+          if ('parsed' in ix && ix.parsed && typeof ix.parsed === 'object' && ix.parsed !== null && 'type' in ix.parsed) {
             if (ix.parsed.type === 'transfer') {
-              if (role === 'sender' && ix.parsed.info.source) {
+              if (role === 'sender' && ix.parsed.info?.source) {
                 addresses.add(ix.parsed.info.source);
-              } else if (role === 'receiver' && ix.parsed.info.destination) {
+              } else if (role === 'receiver' && ix.parsed.info?.destination) {
                 addresses.add(ix.parsed.info.destination);
               }
             }

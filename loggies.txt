@@ -1,19 +1,10 @@
-hook.js:608 Module "buffer" has been externalized for browser compatibility. Cannot access "buffer.Buffer" in client code. See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
-overrideMethod @ hook.js:608
-get @ browser-external:buffer:9
-(anonymous) @ bn.js:56
-node_modules/bn.js/lib/bn.js @ bn.js:3548
-__require2 @ chunk-RZ55PUNP.js:17
-node_modules/@solana/web3.js/lib/index.browser.esm.js @ index.ts:24
-__init @ chunk-RZ55PUNP.js:14
-(anonymous) @ @solana_web3__js.js:85Understand this warning
-config.ts:175 [Config] Release date from environment variables: {env_var: '2025-05-29T23:59:00-05:00', parsed_date: Fri May 30 2025 00:59:00 GMT-0400 (Eastern Daylight Time), display_full: 'May 29, 2025', display_short: 'May 29, 2025', display_time: '23:59:00'}
+[Config] Release date from environment variables: {env_var: '2025-05-29T23:59:00-05:00', parsed_date: Fri May 30 2025 00:59:00 GMT-0400 (Eastern Daylight Time), display_full: 'May 29, 2025', display_short: 'May 29, 2025', display_time: '23:59:00'}
 config.ts:218 ⚔️ DegenDuel client configuration successful:
 config.ts:220 Using: {environment: 'development', apiUrl: 'http://localhost:3010/api', wsUrl: 'ws://localhost:3010', port: '3006', hostname: 'localhost', …}
-useStore.ts:566 [STORE REHYDRATE] Starting maintenance check {origin: 'http://localhost:3010', apiUrl: 'http://localhost:3010/api', timestamp: '2025-06-11T23:17:59.382Z', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'}
-config.ts:43 [AuthDebug:AuthService] 23:17:59.383 Initializing and restoring session...
-config.ts:43 [AuthDebug:AuthService] 23:17:59.383 Found stored JWT token, attempting to restore session
-config.ts:43 [AuthDebug:AuthService] 23:17:59.383 Checking authentication status (attempt 1)
+useStore.ts:566 [STORE REHYDRATE] Starting maintenance check {origin: 'http://localhost:3010', apiUrl: 'http://localhost:3010/api', timestamp: '2025-06-11T23:24:00.245Z', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb…KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'}
+config.ts:43 [AuthDebug:AuthService] 23:24:00.245 Initializing and restoring session...
+config.ts:43 [AuthDebug:AuthService] 23:24:00.245 Found stored JWT token, attempting to restore session
+config.ts:43 [AuthDebug:AuthService] 23:24:00.246 Checking authentication status (attempt 1)
 index.ts:4 API_URL configuration in use: {environment: 'development', apiUrl: 'http://localhost:3010/api'}
 wsMonitor.ts:45 [WSMonitor] WebSocket connection tracking initialized
 wsMonitor.ts:56 [WSMonitor] WebSocket connection attempt tracking initialized
@@ -29,9 +20,9 @@ node_modules/elliptic/lib/elliptic/utils.js @ utils.js:4
 __require2 @ chunk-RZ55PUNP.js:17
 node_modules/elliptic/lib/elliptic.js @ elliptic.js:6
 __require2 @ chunk-RZ55PUNP.js:17
-(anonymous) @ chunk-XSH3FX7L.js?v=4215ff62:10195Understand this warning
+(anonymous) @ chunk-P7YXZYVS.js?v=b5e858ef:10195Understand this warning
 useSolanaWalletData.ts:22 [Solana] DegenDuel RPC: http://localhost:3010/api/solana-rpc
-config.ts:43 [AuthDebug:BiometricAuth] 23:17:59.419 WebAuthn is available in this browser
+config.ts:43 [AuthDebug:BiometricAuth] 23:24:00.283 WebAuthn is available in this browser
 clientLogForwarder.ts:181 [LogForwarder] Initializing with console overrides. Verbose client console: true + 🔧 ADMIN OVERRIDE ACTIVE
 clientLogForwarder.ts:540 [LogForwarder] Fetching remote client logging setting from /api/v1/settings/client-logging-status
 clientLogForwarder.ts:189 🔧 [AUTO-DEV] Development environment detected - running connectivity test automatically!
@@ -43,7 +34,7 @@ issueWarning @ lit-html.ts:233
 hook.js:608 Error: You have tried to read "publicKey" on a WalletContext without providing one. Make sure to render a WalletProvider as an ancestor of the component that uses WalletContext.
     at logMissingProviderError (useWallet.ts:90:19)
     at Object.get (useWallet.ts:84:9)
-    at UnifiedAuthProvider (UnifiedAuthContext.tsx:231:39)
+    at UnifiedAuthProvider (UnifiedAuthContext.tsx:244:32)
     at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
     at renderWithHooks (react-dom-client.development.js:5529:22)
     at updateFunctionComponent (react-dom-client.development.js:8897:19)
@@ -55,7 +46,7 @@ overrideMethod @ hook.js:608
 console.error @ clientLogForwarder.ts:229
 logMissingProviderError @ useWallet.ts:94
 get @ useWallet.ts:84
-UnifiedAuthProvider @ UnifiedAuthContext.tsx:231
+UnifiedAuthProvider @ UnifiedAuthContext.tsx:244
 react-stack-bottom-frame @ react-dom-client.development.js:23863
 renderWithHooks @ react-dom-client.development.js:5529
 updateFunctionComponent @ react-dom-client.development.js:8897
@@ -101,7 +92,7 @@ exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
 hook.js:608 Error: You have tried to read "wallet" on a WalletContext without providing one. Make sure to render a WalletProvider as an ancestor of the component that uses WalletContext.
     at logMissingProviderError (useWallet.ts:90:19)
     at Object.get (useWallet.ts:78:9)
-    at UnifiedAuthProvider (UnifiedAuthContext.tsx:231:50)
+    at UnifiedAuthProvider (UnifiedAuthContext.tsx:245:29)
     at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
     at renderWithHooks (react-dom-client.development.js:5529:22)
     at updateFunctionComponent (react-dom-client.development.js:8897:19)
@@ -113,7 +104,7 @@ overrideMethod @ hook.js:608
 console.error @ clientLogForwarder.ts:229
 logMissingProviderError @ useWallet.ts:94
 get @ useWallet.ts:78
-UnifiedAuthProvider @ UnifiedAuthContext.tsx:231
+UnifiedAuthProvider @ UnifiedAuthContext.tsx:245
 react-stack-bottom-frame @ react-dom-client.development.js:23863
 renderWithHooks @ react-dom-client.development.js:5529
 updateFunctionComponent @ react-dom-client.development.js:8897
@@ -364,27 +355,20 @@ clientLogForwarder.ts:189 [useTokenData] Loading initial token data via REST API
 clientLogForwarder.ts:189 [useTokenData] Loading tokens via REST API for immediate display
 clientLogForwarder.ts:189 [useDegenDuelTop30] Fetching 15 DegenDuel Top tokens
 clientLogForwarder.ts:189 [UnifiedTicker] Animation check - overflows: false, animating: false
-clientLogForwarder.ts:189 [EdgeToEdgeTicker] Page: /, isCompact: false, compactOverrideProp: undefined, isCompactFromHook: false
+clientLogForwarder.ts:189 [EdgeToEdgeTicker] Page: /contests, isCompact: false, compactOverrideProp: undefined, isCompactFromHook: false
 clientLogForwarder.ts:189 [useUnifiedWebSocket] Component 'contest-data-hook' registered but WebSocket not yet fully initialized
 clientLogForwarder.ts:189 [EdgeToEdgeTicker] Fetching fresh contests via REST API
 useWallet.ts:238 🔍 [Wallet Auth Debug] Current Authentication State
 clientLogForwarder.ts:189 Frontend Auth: {isConnected: false, isAuthenticated: false, isReadyForSecureInteraction: false, connectionState: 'disconnected', hasConnectionError: false}
 clientLogForwarder.ts:189 [useWallet] WebSocket not ready for secure interaction, deferring wallet setup.
-clientLogForwarder.ts:189 [useSystemSettings] WebSocket not connected, deferring initial settings request.
-clientLogForwarder.ts:189 [useUnifiedWebSocket] Component 'contest-data-hook' registered but WebSocket not yet fully initialized
-clientLogForwarder.ts:189 [LandingPage] Initial load - using cached contests: 10
-clientLogForwarder.ts:189 [LandingPage] Fetching fresh contests via REST API
-clientLogForwarder.ts:189 [LandingPage] Using cached contests data.
-clientLogForwarder.ts:189 [LandingPage] Loading contests via REST API immediately (no waiting!)
-clientLogForwarder.ts:189 [LandingPage] Fallback REST API fetch attempt 1 (WebSocket: disconnected)
 clientLogForwarder.ts:189 [DegenDuel] Launch Protocol ACTIVE {releaseDate: Fri May 30 2025 00:59:00 GMT-0400 (Eastern Daylight Time), releaseISOString: '2025-05-30T04:59:00.000Z', displayFull: 'May 29, 2025', displayShort: 'May 29, 2025', displayTime: '23:59:00', …}
 clientLogForwarder.ts:189 [useUnifiedWebSocket] Component 'token-data-context' registered but WebSocket not yet fully initialized
-clientLogForwarder.ts:189 [AuthDebug:AuthService] 23:17:59.649 Checking authentication status (attempt 1)
+clientLogForwarder.ts:189 [AuthDebug:AuthService] 23:24:00.454 Checking authentication status (attempt 1)
 clientLogForwarder.ts:189 [UnifiedWebSocketContext] Setting up singleton instance (initial setup)
 hook.js:608 Error: You have tried to read "publicKey" on a WalletContext without providing one. Make sure to render a WalletProvider as an ancestor of the component that uses WalletContext.
     at logMissingProviderError (useWallet.ts:90:19)
     at Object.get (useWallet.ts:84:9)
-    at UnifiedAuthProvider (UnifiedAuthContext.tsx:231:39)
+    at UnifiedAuthProvider (UnifiedAuthContext.tsx:244:32)
     at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
     at renderWithHooks (react-dom-client.development.js:5529:22)
     at updateFunctionComponent (react-dom-client.development.js:8897:19)
@@ -396,7 +380,7 @@ overrideMethod @ hook.js:608
 console.error @ clientLogForwarder.ts:229
 logMissingProviderError @ useWallet.ts:94
 get @ useWallet.ts:84
-UnifiedAuthProvider @ UnifiedAuthContext.tsx:231
+UnifiedAuthProvider @ UnifiedAuthContext.tsx:244
 react-stack-bottom-frame @ react-dom-client.development.js:23863
 renderWithHooks @ react-dom-client.development.js:5529
 updateFunctionComponent @ react-dom-client.development.js:8897
@@ -442,7 +426,7 @@ exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
 hook.js:608 Error: You have tried to read "wallet" on a WalletContext without providing one. Make sure to render a WalletProvider as an ancestor of the component that uses WalletContext.
     at logMissingProviderError (useWallet.ts:90:19)
     at Object.get (useWallet.ts:78:9)
-    at UnifiedAuthProvider (UnifiedAuthContext.tsx:231:50)
+    at UnifiedAuthProvider (UnifiedAuthContext.tsx:245:29)
     at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
     at renderWithHooks (react-dom-client.development.js:5529:22)
     at updateFunctionComponent (react-dom-client.development.js:8897:19)
@@ -454,7 +438,7 @@ overrideMethod @ hook.js:608
 console.error @ clientLogForwarder.ts:229
 logMissingProviderError @ useWallet.ts:94
 get @ useWallet.ts:78
-UnifiedAuthProvider @ UnifiedAuthContext.tsx:231
+UnifiedAuthProvider @ UnifiedAuthContext.tsx:245
 react-stack-bottom-frame @ react-dom-client.development.js:23863
 renderWithHooks @ react-dom-client.development.js:5529
 updateFunctionComponent @ react-dom-client.development.js:8897
@@ -500,9 +484,9 @@ exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
 clientLogForwarder.ts:189 PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
 clientLogForwarder.ts:189 [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
 clientLogForwarder.ts:189 [STORE REHYDRATE] Maintenance response: {status: 200, statusText: 'OK', ok: true, url: 'http://localhost:3010/api/status', headers: {…}}
-clientLogForwarder.ts:189 [AuthDebug:AuthService] 23:17:59.906 User is authenticated {method: 'jwt', userId: 14, wallet: 'BRANCHVDL53igBiYuvrEfZazXJm24qKQJhyXBUm7z7V'}
-clientLogForwarder.ts:189 [AuthDebug:AuthService] 23:17:59.907 Updated store with user: 14 (BRANCHVDL53igBiYuvrEfZazXJm24qKQJhyXBUm7z7V)
-clientLogForwarder.ts:189 [useWallet] Component unmounting, cleaning up subscriptions for component ID: wallet-pl97pf5mk
+clientLogForwarder.ts:189 [AuthDebug:AuthService] 23:24:00.544 User is authenticated {method: 'jwt', userId: 14, wallet: 'BRANCHVDL53igBiYuvrEfZazXJm24qKQJhyXBUm7z7V'}
+clientLogForwarder.ts:189 [AuthDebug:AuthService] 23:24:00.544 Updated store with user: 14 (BRANCHVDL53igBiYuvrEfZazXJm24qKQJhyXBUm7z7V)
+clientLogForwarder.ts:189 [useWallet] Component unmounting, cleaning up subscriptions for component ID: wallet-tezxcqlel
 useWallet.ts:238 🔍 [Wallet Auth Debug] Current Authentication State
 clientLogForwarder.ts:189 Frontend Auth: {isConnected: false, isAuthenticated: false, isReadyForSecureInteraction: false, connectionState: 'connecting', hasConnectionError: false}
 clientLogForwarder.ts:189 [DegenDuel] Launch Protocol ACTIVE {releaseDate: Fri May 30 2025 00:59:00 GMT-0400 (Eastern Daylight Time), releaseISOString: '2025-05-30T04:59:00.000Z', displayFull: 'May 29, 2025', displayShort: 'May 29, 2025', displayTime: '23:59:00', …}
@@ -510,7 +494,7 @@ clientLogForwarder.ts:189 [Terminal] Conversation History State Updated (for lin
 hook.js:608 Error: You have tried to read "publicKey" on a WalletContext without providing one. Make sure to render a WalletProvider as an ancestor of the component that uses WalletContext.
     at logMissingProviderError (useWallet.ts:90:19)
     at Object.get (useWallet.ts:84:9)
-    at UnifiedAuthProvider (UnifiedAuthContext.tsx:231:39)
+    at UnifiedAuthProvider (UnifiedAuthContext.tsx:244:32)
     at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
     at renderWithHooks (react-dom-client.development.js:5529:22)
     at updateFunctionComponent (react-dom-client.development.js:8897:19)
@@ -522,7 +506,7 @@ overrideMethod @ hook.js:608
 console.error @ clientLogForwarder.ts:229
 logMissingProviderError @ useWallet.ts:94
 get @ useWallet.ts:84
-UnifiedAuthProvider @ UnifiedAuthContext.tsx:231
+UnifiedAuthProvider @ UnifiedAuthContext.tsx:244
 react-stack-bottom-frame @ react-dom-client.development.js:23863
 renderWithHooks @ react-dom-client.development.js:5529
 updateFunctionComponent @ react-dom-client.development.js:8897
@@ -570,7 +554,7 @@ exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
 hook.js:608 Error: You have tried to read "wallet" on a WalletContext without providing one. Make sure to render a WalletProvider as an ancestor of the component that uses WalletContext.
     at logMissingProviderError (useWallet.ts:90:19)
     at Object.get (useWallet.ts:78:9)
-    at UnifiedAuthProvider (UnifiedAuthContext.tsx:231:50)
+    at UnifiedAuthProvider (UnifiedAuthContext.tsx:245:29)
     at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
     at renderWithHooks (react-dom-client.development.js:5529:22)
     at updateFunctionComponent (react-dom-client.development.js:8897:19)
@@ -582,7 +566,7 @@ overrideMethod @ hook.js:608
 console.error @ clientLogForwarder.ts:229
 logMissingProviderError @ useWallet.ts:94
 get @ useWallet.ts:78
-UnifiedAuthProvider @ UnifiedAuthContext.tsx:231
+UnifiedAuthProvider @ UnifiedAuthContext.tsx:245
 react-stack-bottom-frame @ react-dom-client.development.js:23863
 renderWithHooks @ react-dom-client.development.js:5529
 updateFunctionComponent @ react-dom-client.development.js:8897
@@ -630,16 +614,8 @@ exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
 clientLogForwarder.ts:189 PERFORMANCE OPTIMIZATION: Only CyberGrid (CSS-based) is enabled. Three.js components will not be loaded or initialized.
 clientLogForwarder.ts:189 [Terminal] Rendering state - Minimized: true Current Size: middle Passed Prop Size: middle HasUnread: false
 clientLogForwarder.ts:189 [DegenDuel] Launch Protocol ACTIVE {releaseDate: Fri May 30 2025 00:59:00 GMT-0400 (Eastern Daylight Time), releaseISOString: '2025-05-30T04:59:00.000Z', displayFull: 'May 29, 2025', displayShort: 'May 29, 2025', displayTime: '23:59:00', …}
-clientLogForwarder.ts:189 [AuthDebug:AuthService] 23:18:00.004 Successfully restored session
-clientLogForwarder.ts:189 [AuthDebug:AuthService] 23:18:00.036 Initialization complete.
-2clientLogForwarder.ts:189 [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, 0, 0)
-clientLogForwarder.ts:189 [UnifiedTicker] Page: /
-clientLogForwarder.ts:189   isCompact prop: false
-clientLogForwarder.ts:189   Item heights: 32, 32, 32px
-clientLogForwarder.ts:189   Font size: 14px
-clientLogForwarder.ts:189   Line height: 20px
-clientLogForwarder.ts:189   Padding: 4px 12px
-clientLogForwarder.ts:189   HTML font-size: 16px
+clientLogForwarder.ts:189 [AuthDebug:AuthService] 23:24:00.607 Successfully restored session
+clientLogForwarder.ts:189 [AuthDebug:AuthService] 23:24:00.613 Initialization complete.
 hook.js:608 StreamMiddleware - Unknown response id "solflare-detect-metamask"
 overrideMethod @ hook.js:608
 console.warn @ clientLogForwarder.ts:210
@@ -695,7 +671,14 @@ Y @ contentscript.js:44
 X.push @ contentscript.js:44
 _onMessage @ contentscript.js:44
 (anonymous) @ contentscript.js:44Understand this warning
-clientLogForwarder.ts:189 [AuthDebug:AuthService] 23:18:00.166 No wsToken token found, requesting from server
+2clientLogForwarder.ts:189 [UnifiedTicker] Found transform on parent: matrix(1, 0, 0, 1, 0, 0)
+clientLogForwarder.ts:189 [UnifiedTicker] Page: /contests
+clientLogForwarder.ts:189   isCompact prop: false
+clientLogForwarder.ts:189   Item heights: 32, 32, 32px
+clientLogForwarder.ts:189   Font size: 14px
+clientLogForwarder.ts:189   Line height: 20px
+clientLogForwarder.ts:189   Padding: 4px 12px
+clientLogForwarder.ts:189   HTML font-size: 16px
 solanaActionsContentScript.js:27 Uncaught (in promise) TypeError: Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.
     at solanaActionsContentScript.js:27:41730
 (anonymous) @ solanaActionsContentScript.js:27
@@ -706,13 +689,12 @@ q6 @ solanaActionsContentScript.js:1214
 await in q6
 (anonymous) @ solanaActionsContentScript.js:1214
 (anonymous) @ solanaActionsContentScript.js:1214Understand this error
-clientLogForwarder.ts:189 [STORE REHYDRATE] Response data: {maintenance: false, degraded_services: Array(0)}
 clientLogForwarder.ts:549 [LogForwarder] Remote setting updated verbose client console output to: false (🔧 Admin override still active)
 useWallet.ts:238 🔍 [Wallet Auth Debug] Current Authentication State
 hook.js:608 Error: You have tried to read "publicKey" on a WalletContext without providing one. Make sure to render a WalletProvider as an ancestor of the component that uses WalletContext.
     at logMissingProviderError (useWallet.ts:90:19)
     at Object.get (useWallet.ts:84:9)
-    at UnifiedAuthProvider (UnifiedAuthContext.tsx:231:39)
+    at UnifiedAuthProvider (UnifiedAuthContext.tsx:244:32)
     at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
     at renderWithHooks (react-dom-client.development.js:5529:22)
     at updateFunctionComponent (react-dom-client.development.js:8897:19)
@@ -724,7 +706,7 @@ overrideMethod @ hook.js:608
 console.error @ clientLogForwarder.ts:229
 logMissingProviderError @ useWallet.ts:94
 get @ useWallet.ts:84
-UnifiedAuthProvider @ UnifiedAuthContext.tsx:231
+UnifiedAuthProvider @ UnifiedAuthContext.tsx:244
 react-stack-bottom-frame @ react-dom-client.development.js:23863
 renderWithHooks @ react-dom-client.development.js:5529
 updateFunctionComponent @ react-dom-client.development.js:8897
@@ -734,14 +716,43 @@ performUnitOfWork @ react-dom-client.development.js:15132
 workLoopSync @ react-dom-client.development.js:14956
 renderRootSync @ react-dom-client.development.js:14936
 performWorkOnRoot @ react-dom-client.development.js:14419
-performSyncWorkOnRoot @ react-dom-client.development.js:16231
-flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:16079
-processRootScheduleInMicrotask @ react-dom-client.development.js:16116
-(anonymous) @ react-dom-client.development.js:16250Understand this error
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<UnifiedAuthProvider>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+AppProvidersAndContent @ App.tsx:281
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<AppProvidersAndContent>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+App @ App.tsx:270
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<App>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+(anonymous) @ main.tsx:31Understand this error
 hook.js:608 Error: You have tried to read "wallet" on a WalletContext without providing one. Make sure to render a WalletProvider as an ancestor of the component that uses WalletContext.
     at logMissingProviderError (useWallet.ts:90:19)
     at Object.get (useWallet.ts:78:9)
-    at UnifiedAuthProvider (UnifiedAuthContext.tsx:231:50)
+    at UnifiedAuthProvider (UnifiedAuthContext.tsx:245:29)
     at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
     at renderWithHooks (react-dom-client.development.js:5529:22)
     at updateFunctionComponent (react-dom-client.development.js:8897:19)
@@ -753,7 +764,7 @@ overrideMethod @ hook.js:608
 console.error @ clientLogForwarder.ts:229
 logMissingProviderError @ useWallet.ts:94
 get @ useWallet.ts:78
-UnifiedAuthProvider @ UnifiedAuthContext.tsx:231
+UnifiedAuthProvider @ UnifiedAuthContext.tsx:245
 react-stack-bottom-frame @ react-dom-client.development.js:23863
 renderWithHooks @ react-dom-client.development.js:5529
 updateFunctionComponent @ react-dom-client.development.js:8897
@@ -763,10 +774,39 @@ performUnitOfWork @ react-dom-client.development.js:15132
 workLoopSync @ react-dom-client.development.js:14956
 renderRootSync @ react-dom-client.development.js:14936
 performWorkOnRoot @ react-dom-client.development.js:14419
-performSyncWorkOnRoot @ react-dom-client.development.js:16231
-flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:16079
-processRootScheduleInMicrotask @ react-dom-client.development.js:16116
-(anonymous) @ react-dom-client.development.js:16250Understand this error
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<UnifiedAuthProvider>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+AppProvidersAndContent @ App.tsx:281
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<AppProvidersAndContent>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+App @ App.tsx:270
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45
+<App>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:346
+(anonymous) @ main.tsx:31Understand this error
 useWallet.ts:238 🔍 [Wallet Auth Debug] Current Authentication State
 UnifiedWebSocketContext.tsx:884 🔍 [WebSocket Auth Debug] Authentication State Check
 UnifiedWebSocketContext.tsx:643 🔗 [WebSocket] Subscribing to 1 topics
@@ -777,7 +817,7 @@ UnifiedWebSocketContext.tsx:643 🔗 [WebSocket] Subscribing to 2 topics
 hook.js:608 Error: You have tried to read "publicKey" on a WalletContext without providing one. Make sure to render a WalletProvider as an ancestor of the component that uses WalletContext.
     at logMissingProviderError (useWallet.ts:90:19)
     at Object.get (useWallet.ts:84:9)
-    at UnifiedAuthProvider (UnifiedAuthContext.tsx:231:39)
+    at UnifiedAuthProvider (UnifiedAuthContext.tsx:244:32)
     at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
     at renderWithHooks (react-dom-client.development.js:5529:22)
     at updateFunctionComponent (react-dom-client.development.js:8897:19)
@@ -789,7 +829,7 @@ overrideMethod @ hook.js:608
 console.error @ clientLogForwarder.ts:229
 logMissingProviderError @ useWallet.ts:94
 get @ useWallet.ts:84
-UnifiedAuthProvider @ UnifiedAuthContext.tsx:231
+UnifiedAuthProvider @ UnifiedAuthContext.tsx:244
 react-stack-bottom-frame @ react-dom-client.development.js:23863
 renderWithHooks @ react-dom-client.development.js:5529
 updateFunctionComponent @ react-dom-client.development.js:8897
@@ -804,7 +844,7 @@ performWorkUntilDeadline @ scheduler.development.js:45Understand this error
 hook.js:608 Error: You have tried to read "wallet" on a WalletContext without providing one. Make sure to render a WalletProvider as an ancestor of the component that uses WalletContext.
     at logMissingProviderError (useWallet.ts:90:19)
     at Object.get (useWallet.ts:78:9)
-    at UnifiedAuthProvider (UnifiedAuthContext.tsx:231:50)
+    at UnifiedAuthProvider (UnifiedAuthContext.tsx:245:29)
     at react-stack-bottom-frame (react-dom-client.development.js:23863:20)
     at renderWithHooks (react-dom-client.development.js:5529:22)
     at updateFunctionComponent (react-dom-client.development.js:8897:19)
@@ -812,3 +852,19 @@ hook.js:608 Error: You have tried to read "wallet" on a WalletContext without pr
     at runWithFiberInDEV (react-dom-client.development.js:1519:30)
     at performUnitOfWork (react-dom-client.development.js:15132:22)
     at workLoopSync (react-dom-client.development.js:14956:41)
+overrideMethod @ hook.js:608
+console.error @ clientLogForwarder.ts:229
+logMissingProviderError @ useWallet.ts:94
+get @ useWallet.ts:78
+UnifiedAuthProvider @ UnifiedAuthContext.tsx:245
+react-stack-bottom-frame @ react-dom-client.development.js:23863
+renderWithHooks @ react-dom-client.development.js:5529
+updateFunctionComponent @ react-dom-client.development.js:8897
+beginWork @ react-dom-client.development.js:10522
+runWithFiberInDEV @ react-dom-client.development.js:1519
+performUnitOfWork @ react-dom-client.development.js:15132
+workLoopSync @ react-dom-client.development.js:14956
+renderRootSync @ react-dom-client.development.js:14936
+performWorkOnRoot @ react-dom-client.development.js:14419
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16216
+performWorkUntilDeadline @ scheduler.development.js:45Understand this error
