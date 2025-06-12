@@ -17,9 +17,11 @@ import { useSolanaConnection } from '../../contexts/SolanaConnectionContext';
 import { useStore } from '../../store/useStore';
 
 // Config
-import { config } from '../../config/config';
+import { config, NODE_ENV } from '../../config/config';
 const DEGENDUEL_RPC_BASE_URL = config.SOLANA.RPC_BASE_URL;
-console.log('[Solana] DegenDuel RPC:', DEGENDUEL_RPC_BASE_URL);
+if (NODE_ENV === 'development') {
+  console.log('[Solana] DegenDuel RPC:', DEGENDUEL_RPC_BASE_URL);
+}
 
 export interface SolanaTransaction {
   signature: string;

@@ -17,7 +17,7 @@
 import { create } from "zustand";
 import { persist, PersistOptions } from "zustand/middleware";
 import { SkyDuelState } from "../components/admin/skyduel/types";
-import { API_URL, DDAPI_DEBUG_MODE } from "../config/config";
+import { API_URL, DDAPI_DEBUG_MODE, NODE_ENV } from "../config/config";
 import { WebSocketState } from "../hooks/utilities/legacy/useWebSocketMonitor";
 import { Contest, Token, User, WalletError } from "../types/index";
 
@@ -562,7 +562,7 @@ const persistConfig: StorePersist = {
       // console.log("[STORE REHYDRATE] Starting onRehydrateStorage."); // Optional: keep for debugging
 
       try {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && NODE_ENV === 'development') {
           console.log("[STORE REHYDRATE] Starting maintenance check", {
             origin: window.location.origin,
             apiUrl: API_URL,
@@ -582,35 +582,45 @@ const persistConfig: StorePersist = {
           signal: AbortSignal.timeout(10000), // 10 second timeout
         });
 
-        console.log("[STORE REHYDRATE] Maintenance response:", {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok,
-          url: response.url,
-          headers: Object.fromEntries(response.headers.entries())
-        });
+        if (NODE_ENV === 'development') {
+          console.log("[STORE REHYDRATE] Maintenance response:", {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            url: response.url,
+            headers: Object.fromEntries(response.headers.entries())
+          });
+        }
 
         if (response.status === 503) {
-          console.log("[STORE REHYDRATE] Setting maintenance mode to TRUE (503)");
+          if (NODE_ENV === 'development') {
+            console.log("[STORE REHYDRATE] Setting maintenance mode to TRUE (503)");
+          }
           state.setMaintenanceMode(true);
         } else if (response.ok) {
           const data = await response.json();
-          console.log("[STORE REHYDRATE] Response data:", data);
+          if (NODE_ENV === 'development') {
+            console.log("[STORE REHYDRATE] Response data:", data);
+          }
 
           if (
             state.setMaintenanceMode &&
             typeof state.setMaintenanceMode === "function"
           ) {
             if (data.maintenance !== state.maintenanceMode) {
-              console.log("[STORE REHYDRATE] Updating maintenance mode:", {
-                from: state.maintenanceMode,
-                to: Boolean(data.maintenance)
-              });
+              if (NODE_ENV === 'development') {
+                console.log("[STORE REHYDRATE] Updating maintenance mode:", {
+                  from: state.maintenanceMode,
+                  to: Boolean(data.maintenance)
+                });
+              }
               state.setMaintenanceMode(Boolean(data.maintenance));
             }
           }
         } else {
-          console.warn("[STORE REHYDRATE] Unexpected response status:", response.status);
+          if (NODE_ENV === 'development') {
+            console.warn("[STORE REHYDRATE] Unexpected response status:", response.status);
+          }
         }
       } catch (error) {
         const errorDetails = {

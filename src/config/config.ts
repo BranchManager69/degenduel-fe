@@ -171,14 +171,16 @@ const RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL = import.meta.env.VITE_RELEASE_DATE_
 const RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT = import.meta.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT || 'Dec 31, 2025';
 const RELEASE_DATE_DISPLAY_LAUNCH_TIME = import.meta.env.VITE_RELEASE_DATE_DISPLAY_LAUNCH_TIME || '23:59:59'; // 11:59 PM EST
 
-// Debug log to see what environment variables are being used at build time
-console.log('[Config] Release date from environment variables:', {
-  env_var: import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME,
-  parsed_date: RELEASE_DATE_TOKEN_LAUNCH_DATETIME,
-  display_full: RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL,
-  display_short: RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT,
-  display_time: RELEASE_DATE_DISPLAY_LAUNCH_TIME
-});
+// Debug log to see what environment variables are being used at build time (dev only)
+if (NODE_ENV === 'development') {
+  console.log('[Config] Release date from environment variables:', {
+    env_var: import.meta.env.VITE_RELEASE_DATE_TOKEN_LAUNCH_DATETIME,
+    parsed_date: RELEASE_DATE_TOKEN_LAUNCH_DATETIME,
+    display_full: RELEASE_DATE_DISPLAY_LAUNCH_DATE_FULL,
+    display_short: RELEASE_DATE_DISPLAY_LAUNCH_DATE_SHORT,
+    display_time: RELEASE_DATE_DISPLAY_LAUNCH_TIME
+  });
+}
 const RELEASE_DATE_PRE_LAUNCH_COUNTDOWN_START = new Date(RELEASE_DATE_TOKEN_LAUNCH_DATETIME.getTime() - ((60 * 60 * 1000) * Number(import.meta.env.VITE_RELEASE_DATE_PRE_LAUNCH_COUNTDOWN_HOURS) || 6)); // hours before token launch
 const RELEASE_DATE_END_OF_LAUNCH_PARTY_FESTIVITIES = new Date(RELEASE_DATE_TOKEN_LAUNCH_DATETIME.getTime() + ((60 * 60 * 1000) * Number(import.meta.env.VITE_RELEASE_DATE_END_OF_LAUNCH_PARTY_FESTIVITIES_HOURS) || 1)); // hours after token launch
 
@@ -214,9 +216,9 @@ export const config = {
   }
 };
 
-// Log successful config export
-console.log("⚔️ DegenDuel client configuration successful:");
+// Log successful config export (dev only)
 if (NODE_ENV === "development") {
+  console.log("⚔️ DegenDuel client configuration successful:");
   console.log("Using:", {
     environment: NODE_ENV,
     apiUrl: API_URL,
@@ -224,11 +226,6 @@ if (NODE_ENV === "development") {
     port: PORT_CONFIG,
     hostname: window.location.hostname,
     featureFlags: FEATURE_FLAGS,
-  });
-} else {
-  console.log("Using:", {
-    environment: NODE_ENV,
-    hostname: window.location.hostname,
   });
 }
 

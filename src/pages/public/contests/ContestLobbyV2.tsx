@@ -10,7 +10,7 @@
  */
 
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
@@ -24,54 +24,154 @@ import { Button } from "../../../components/ui/Button";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/useContestParticipants";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
-import { usePortfolio } from "../../../hooks/websocket/topic-hooks/usePortfolio";
+import { useWebSocket } from "../../../contexts/UnifiedWebSocketContext";
+// Removed usePortfolio - implementing manual portfolio fetching
 import { formatCurrency } from "../../../lib/utils";
 import { ContestViewData, SearchToken } from "../../../types";
 import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
+import { useToast } from "../../../components/toast";
 
 // Trading Panel Component
 const TradingPanel: React.FC<{
   contestId: string;
   portfolio: any;
   onTradeComplete: () => void;
-}> = ({ contestId, onTradeComplete }) => {
+}> = ({ contestId, portfolio, onTradeComplete }) => {
+  const { user } = useMigratedAuth();
+  const toast = useToast();
   const [selectedToken, setSelectedToken] = useState<SearchToken | null>(null);
   const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY');
   const [weight, setWeight] = useState<number>(10);
   const [isTrading, setIsTrading] = useState(false);
+  const [showPortfolio, setShowPortfolio] = useState(true);
+
+  // Log portfolio data to debug
+  useEffect(() => {
+    console.log('[TradingPanel] Portfolio prop received:', portfolio);
+  }, [portfolio]);
 
   const executeTrade = async () => {
-    if (!selectedToken) return;
+    if (!selectedToken || !user) return;
     
     setIsTrading(true);
     try {
-      const response = await fetch(`/api/contests/${contestId}/trades`, {
+      const authToken = localStorage.getItem('authToken') || localStorage.getItem('dd_token');
+      if (!authToken) {
+        throw new Error('Authentication required');
+      }
+
+      // Use the portfolio trades endpoint from backend docs
+      const response = await fetch(`/api/portfolio/${contestId}/trades`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
+          wallet_address: user.wallet_address,
           token_id: selectedToken.id,
-          type: tradeType,
+          type: tradeType.toUpperCase(),
           new_weight: weight
         })
       });
 
       if (response.ok) {
+        const result = await response.json();
+        console.log('[TradingPanel] Trade executed:', result);
+        
+        // Success feedback
+        toast.success(`${tradeType} ${selectedToken.symbol} - ${weight}% of portfolio`);
+        
+        // Reset and refresh
         onTradeComplete();
         setSelectedToken(null);
         setWeight(10);
+      } else {
+        const error = await response.text();
+        throw new Error(error || 'Trade execution failed');
       }
     } catch (error) {
-      console.error('Trade failed:', error);
+      console.error('[TradingPanel] Trade failed:', error);
+      toast.error(error instanceof Error ? error.message : 'Trade failed');
     } finally {
       setIsTrading(false);
     }
   };
 
   return (
-    <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
-      <h3 className="text-lg font-semibold text-gray-100 mb-4">Trade Tokens</h3>
+    <div className="space-y-6">
+      {/* Current Portfolio */}
+      {portfolio ? (
+        portfolio.tokens && portfolio.tokens.length > 0 ? (
+        <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-100">Current Portfolio</h3>
+            <button
+              onClick={() => setShowPortfolio(!showPortfolio)}
+              className="text-sm text-gray-400 hover:text-gray-300"
+            >
+              {showPortfolio ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          
+          {showPortfolio && (
+            <div className="space-y-3">
+              {portfolio.tokens.map((token: any) => (
+                <div key={token.token_id || token.address} className="flex items-center justify-between p-3 bg-dark-300/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {token.image_url && (
+                      <img src={token.image_url} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                    )}
+                    <div>
+                      <div className="font-medium text-gray-100">{token.symbol}</div>
+                      <div className="text-xs text-gray-400">{token.name}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-gray-100">{token.weight}%</div>
+                    <div className="text-xs text-gray-400">
+                      Value: {formatCurrency(parseFloat(token.current_value || '0'))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              <div className="pt-3 border-t border-dark-300">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Total Portfolio Value</span>
+                  <span className="font-mono font-bold text-gray-100">
+                    {formatCurrency(parseFloat(portfolio.total_value || '0'))}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
+          <h3 className="text-lg font-semibold text-gray-100 mb-4">Current Portfolio</h3>
+          <div className="text-center py-8 text-gray-400">
+            <div className="text-5xl mb-3">📊</div>
+            <p className="text-lg">No portfolio yet</p>
+            <p className="text-sm mt-2">Start trading to build your portfolio!</p>
+          </div>
+        </div>
+      )
+    ) : (
+      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
+        <h3 className="text-lg font-semibold text-gray-100 mb-4">Current Portfolio</h3>
+        <div className="text-center py-8 text-gray-400">
+          <div className="animate-pulse">
+            <div className="h-8 bg-dark-300 rounded w-1/2 mx-auto mb-3"></div>
+            <div className="h-4 bg-dark-300 rounded w-3/4 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    )}
+      
+      {/* Trading Interface */}
+      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
+        <h3 className="text-lg font-semibold text-gray-100 mb-4">Trade Tokens</h3>
       
       {/* Token Search */}
       <div className="mb-4">
@@ -145,6 +245,7 @@ const TradingPanel: React.FC<{
           </Button>
         </>
       )}
+      </div>
     </div>
   );
 };
@@ -153,19 +254,32 @@ const TradingPanel: React.FC<{
 const MultiParticipantChart: React.FC<{ contestId: string }> = ({ contestId }) => {
   const [chartData, setChartData] = useState<any>(null);
   const [timeRange, setTimeRange] = useState<number>(24);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchChartData = async () => {
+      setIsLoading(true);
       try {
+        const authToken = localStorage.getItem('authToken') || localStorage.getItem('dd_token');
+        const headers: HeadersInit = {};
+        
+        if (authToken) {
+          headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        
         const response = await fetch(
-          `/api/contests/${contestId}/leaderboard-chart?hours=${timeRange}&top=10`
+          `/api/contests/${contestId}/leaderboard-chart?hours=${timeRange}&top=10`,
+          { headers }
         );
+        
         if (response.ok) {
           const data = await response.json();
           setChartData(data);
         }
       } catch (error) {
-        console.error('Failed to fetch chart data:', error);
+        console.error('[MultiParticipantChart] Failed to fetch chart data:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -193,9 +307,47 @@ const MultiParticipantChart: React.FC<{ contestId: string }> = ({ contestId }) =
         </div>
       </div>
 
-      {chartData ? (
+      {isLoading ? (
         <div className="h-64 bg-dark-300/30 rounded-lg flex items-center justify-center">
-          <p className="text-gray-400">Chart visualization coming soon...</p>
+          <LoadingSpinner size="sm" />
+        </div>
+      ) : chartData ? (
+        <div className="h-64 bg-dark-300/30 rounded-lg p-4">
+          {chartData.data && chartData.data.length > 0 ? (
+            <div className="space-y-2">
+              <div className="text-xs text-gray-400 mb-2">
+                Top {chartData.data.length} Participants Performance
+              </div>
+              {/* Simple performance bars */}
+              {chartData.data.slice(0, 5).map((participant: any, index: number) => (
+                <div key={participant.wallet} className="flex items-center gap-2">
+                  <div className="w-20 text-xs text-gray-400 truncate">
+                    {participant.nickname || `Player ${index + 1}`}
+                  </div>
+                  <div className="flex-1 bg-dark-400 rounded-full h-6 relative overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-500 ${
+                        index === 0 ? 'bg-yellow-500' :
+                        index === 1 ? 'bg-gray-400' :
+                        index === 2 ? 'bg-orange-600' :
+                        'bg-brand-500'
+                      }`}
+                      style={{ width: `${Math.max(10, (parseFloat(participant.performance) + 100) / 2)}%` }}
+                    >
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-dark-100">
+                        {participant.performance}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="text-xs text-gray-500 mt-2">
+                Chart updates every 5 minutes
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-400 text-center">No performance data yet</p>
+          )}
         </div>
       ) : (
         <div className="h-64 bg-dark-300/30 rounded-lg flex items-center justify-center">
@@ -206,19 +358,6 @@ const MultiParticipantChart: React.FC<{ contestId: string }> = ({ contestId }) =
   );
 };
 
-// Helper function to transform LeaderboardEntry to Participant format
-const transformLeaderboardToParticipant = (entry: any): any => ({
-  wallet_address: entry.wallet_address || entry.userId,
-  nickname: entry.nickname || entry.username,
-  profile_image_url: entry.profile_image_url || entry.profilePictureUrl,
-  rank: entry.rank,
-  portfolio_value: entry.portfolio_value || entry.portfolioValue,
-  performance_percentage: entry.performance_percentage || entry.performancePercentage,
-  prize_awarded: entry.prize_awarded || entry.prizeAwarded,
-  is_current_user: entry.is_current_user || entry.isCurrentUser,
-  is_ai_agent: entry.is_ai_agent || entry.isAiAgent,
-  is_banned: false
-});
 
 // Main Contest Lobby V2 Component
 export const ContestLobbyV2: React.FC = () => {
@@ -236,7 +375,58 @@ export const ContestLobbyV2: React.FC = () => {
   // WebSocket hooks
   const { contestViewData: wsUpdatedData } = useContestViewUpdates(contestIdFromParams || null, contestViewData);
   const { participants } = useContestParticipants(contestIdFromParams ? parseInt(contestIdFromParams) : null);
-  const { portfolio, refreshPortfolio } = usePortfolio(contestIdFromParams);
+  const [portfolio, setPortfolio] = useState<any>(null);
+  const [_portfolioLoading, setPortfolioLoading] = useState(false);
+  
+  // Fetch portfolio data
+  const fetchPortfolio = useCallback(async () => {
+    if (!contestIdFromParams || !user?.wallet_address) {
+      console.log('[ContestLobbyV2] Cannot fetch portfolio - missing data:', {
+        contestId: contestIdFromParams,
+        userWallet: user?.wallet_address
+      });
+      return;
+    }
+    
+    setPortfolioLoading(true);
+    try {
+      const authToken = localStorage.getItem('authToken') || localStorage.getItem('dd_token');
+      if (!authToken) {
+        console.error('[ContestLobbyV2] No auth token found');
+        return;
+      }
+      
+      const response = await fetch(
+        `/api/contests/${contestIdFromParams}/portfolio/${user.wallet_address}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[ContestLobbyV2] Portfolio data fetched:', data);
+        setPortfolio(data);
+      } else {
+        console.error('[ContestLobbyV2] Portfolio fetch failed:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('[ContestLobbyV2] Failed to fetch portfolio:', error);
+    } finally {
+      setPortfolioLoading(false);
+    }
+  }, [contestIdFromParams, user?.wallet_address]);
+  
+  // Fetch portfolio on mount and when user changes
+  useEffect(() => {
+    fetchPortfolio();
+  }, [fetchPortfolio]);
+  
+  const refreshPortfolio = useCallback(() => {
+    fetchPortfolio();
+  }, [fetchPortfolio]);
 
   // Initial data fetch via REST
   useEffect(() => {
@@ -251,25 +441,26 @@ export const ContestLobbyV2: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/contests/${contestId}/participants`);
+        // Use the lightweight /live endpoint that includes contest details
+        const response = await fetch(`/api/contests/${contestId}/live`);
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('[ContestLobbyV2] Participants data:', data);
+        console.log('[ContestLobbyV2] Contest live data:', data);
         
-        // Transform data to match expected format
-        if (data && typeof data === 'object') {
-          const transformedData: ContestViewData = {
-            contest: data.contest || { id: parseInt(contestId), name: 'Contest', status: 'active' },
-            leaderboard: (data.participants || []).map(transformLeaderboardToParticipant),
-            currentUserPerformance: data.user_data || null
-          };
-          
-          setContestViewData(transformedData);
-        }
+        // The /live endpoint returns data in the expected ContestViewData format
+        const viewData: ContestViewData = {
+          contest: data.contest,
+          leaderboard: data.leaderboard || [],
+          currentUserPerformance: data.leaderboard?.find((entry: any) => 
+            entry.wallet_address === user?.wallet_address || entry.userId === user?.wallet_address
+          ) || null
+        };
+        
+        setContestViewData(viewData);
       } catch (err) {
         console.error('[ContestLobbyV2] Error fetching contest data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load contest data');
@@ -287,6 +478,112 @@ export const ContestLobbyV2: React.FC = () => {
       setContestViewData(wsUpdatedData);
     }
   }, [wsUpdatedData]);
+
+  // Get WebSocket instance
+  const ws = useWebSocket();
+
+  // Set up WebSocket listeners for real-time updates
+  useEffect(() => {
+    if (!contestIdFromParams || !ws.isConnected) return;
+
+    // Subscribe to relevant topics from the WebSocket inventory
+    const subscribeToTopics = () => {
+      // These topics are from the WebSocket inventory document
+      ws.subscribe(['contest', 'contest-participants', 'portfolio', 'market-data']);
+    };
+
+    // Handle trade executed events (from WebSocket inventory line 266)
+    const handleTradeExecuted = (message: any) => {
+      if (message.contestId === parseInt(contestIdFromParams)) {
+        console.log('[ContestLobbyV2] Trade executed:', message);
+        // Refresh portfolio after trade
+        refreshPortfolio();
+      }
+    };
+
+    // Handle portfolio updates (from WebSocket inventory line 264)
+    const handlePortfolioUpdate = (message: any) => {
+      console.log('[ContestLobbyV2] Portfolio updated:', message);
+      refreshPortfolio();
+    };
+
+    // Handle contest activity (from WebSocket inventory line 90)
+    const handleContestActivity = (message: any) => {
+      if (message.contestId === parseInt(contestIdFromParams)) {
+        console.log('[ContestLobbyV2] Contest activity:', message);
+        // Refresh contest view data
+        const fetchData = async () => {
+          setIsLoading(true);
+          try {
+            const response = await fetch(`/api/contests/${contestIdFromParams}/live`);
+            if (response.ok) {
+              const data = await response.json();
+              const viewData: ContestViewData = {
+                contest: data.contest,
+                leaderboard: data.leaderboard || [],
+                currentUserPerformance: data.leaderboard?.find((entry: any) => 
+                  entry.wallet_address === user?.wallet_address
+                ) || null
+              };
+              setContestViewData(viewData);
+            }
+          } catch (err) {
+            console.error('[ContestLobbyV2] Error refreshing contest data:', err);
+          } finally {
+            setIsLoading(false);
+          }
+        };
+        fetchData();
+      }
+    };
+
+    // Register listeners for specific message types from the WebSocket inventory
+    const unregisterTrade = ws.registerListener(
+      `contest-trade-${contestIdFromParams}`,
+      ['DATA'] as any[],
+      (message) => {
+        // Check for TRADE_EXECUTED messages
+        if (message.type === 'TRADE_EXECUTED' || (message.type === 'DATA' && message.subtype === 'TRADE_EXECUTED')) {
+          handleTradeExecuted(message);
+        }
+      },
+      ['contest', 'portfolio']
+    );
+
+    const unregisterPortfolio = ws.registerListener(
+      `contest-portfolio-${contestIdFromParams}`,
+      ['DATA'] as any[],
+      (message) => {
+        // Check for PORTFOLIO_UPDATED messages
+        if (message.type === 'PORTFOLIO_UPDATED' || (message.type === 'DATA' && message.subtype === 'PORTFOLIO_UPDATED')) {
+          handlePortfolioUpdate(message);
+        }
+      },
+      ['portfolio']
+    );
+
+    const unregisterContest = ws.registerListener(
+      `contest-activity-${contestIdFromParams}`,
+      ['DATA'] as any[],
+      (message) => {
+        // Check for contest activity
+        if (message.type === 'CONTEST_ACTIVITY' || (message.type === 'DATA' && message.data?.type === 'CONTEST_ACTIVITY')) {
+          handleContestActivity(message.data || message);
+        }
+      },
+      ['contest']
+    );
+
+    // Subscribe to topics
+    subscribeToTopics();
+
+    // Cleanup
+    return () => {
+      unregisterTrade();
+      unregisterPortfolio();
+      unregisterContest();
+    };
+  }, [contestIdFromParams, ws.isConnected, ws.subscribe, ws.registerListener, refreshPortfolio, user?.wallet_address]);
 
   // Setup OG meta tags - use useMemo to prevent infinite re-renders
   const contestForMeta = useMemo(() => contestViewData?.contest, [contestViewData?.contest?.id, contestViewData?.contest?.name]);
@@ -380,7 +677,16 @@ export const ContestLobbyV2: React.FC = () => {
                   >
                     {contest.status === 'active' ? 'LIVE' : contest.status.toUpperCase()}
                   </Badge>
+                  {(contest as any).contest_code && (
+                    <span className="text-xs text-gray-500 font-mono">
+                      {(contest as any).contest_code}
+                    </span>
+                  )}
                 </h1>
+                
+                {contest.description && (
+                  <p className="text-sm text-gray-400 mt-1">{contest.description}</p>
+                )}
                 
                 <div className="flex items-center gap-4 mt-2 text-sm">
                   <span className="text-gray-400">
@@ -389,8 +695,16 @@ export const ContestLobbyV2: React.FC = () => {
                     </span>
                   </span>
                   <span className="text-gray-400">
+                    Entry Fee: <span className="text-gray-200 font-mono">
+                      {formatCurrency(contest.entryFee || 0)}
+                    </span>
+                  </span>
+                  <span className="text-gray-400">
                     Participants: <span className="text-gray-200 font-bold">
                       {participants.length}
+                      {contest.settings?.maxParticipants && (
+                        <span className="text-gray-500">/{contest.settings.maxParticipants}</span>
+                      )}
                     </span>
                   </span>
                   {userPerformance && (
@@ -411,7 +725,11 @@ export const ContestLobbyV2: React.FC = () => {
                   {contest.status === 'active' ? 'Ends In' : 'Starts In'}
                 </div>
                 <ContestTimer 
-                  endTime={new Date(contest.endTime || Date.now() + 3600000)}
+                  endTime={new Date(
+                    contest.status === 'active' 
+                      ? (contest.endTime || Date.now() + 3600000)
+                      : (contest.startTime || Date.now() + 3600000)
+                  )}
                   showDate={false}
                 />
               </div>
@@ -465,14 +783,91 @@ export const ContestLobbyV2: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-6">
+                    {/* Prize Distribution Card */}
+                    <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-dark-300">
+                      <h3 className="text-sm font-medium text-gray-400 mb-3">Prize Distribution</h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-yellow-400 flex items-center gap-1">
+                            <span className="text-lg">🥇</span> 1st Place
+                          </span>
+                          <span className="font-mono font-bold text-yellow-400">
+                            {formatCurrency(parseFloat(contest.prizePool || '0') * 0.5)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-300 flex items-center gap-1">
+                            <span className="text-lg">🥈</span> 2nd Place
+                          </span>
+                          <span className="font-mono font-bold text-gray-300">
+                            {formatCurrency(parseFloat(contest.prizePool || '0') * 0.3)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-orange-600 flex items-center gap-1">
+                            <span className="text-lg">🥉</span> 3rd Place
+                          </span>
+                          <span className="font-mono font-bold text-orange-600">
+                            {formatCurrency(parseFloat(contest.prizePool || '0') * 0.2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Contest Stats Card */}
+                    <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-dark-300">
+                      <h3 className="text-sm font-medium text-gray-400 mb-3">Contest Stats</h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Total Volume</span>
+                          <span className="font-mono text-gray-200">
+                            {formatCurrency(participants.length * parseFloat(contest.entryFee || '0'))}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Avg Performance</span>
+                          <span className="font-mono text-gray-200">
+                            {participants.length > 0 
+                              ? (participants.reduce((acc, p) => acc + parseFloat(p.performance_percentage || '0'), 0) / participants.length).toFixed(2)
+                              : '0.00'}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Duration</span>
+                          <span className="font-mono text-gray-200">
+                            {contest.endTime && contest.startTime 
+                              ? Math.round((new Date(contest.endTime).getTime() - new Date(contest.startTime).getTime()) / 3600000) + 'h'
+                              : 'N/A'}
+                          </span>
+                        </div>
+                        {contest.settings?.tokenTypesAllowed && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Allowed Tokens</span>
+                            <span className="text-gray-200">
+                              {contest.settings.tokenTypesAllowed.join(', ')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
                     <ParticipantsList 
                       participants={participants.slice(0, 10)} 
                       contestStatus="live"
                     />
+                    
                     {userPerformance && (
                       <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-dark-300">
                         <h3 className="text-sm font-medium text-gray-400 mb-3">Your Performance</h3>
                         <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Rank</span>
+                            <span className={`font-mono font-bold ${
+                              userPerformance.rank && userPerformance.rank <= 3 ? 'text-yellow-400' : 'text-gray-200'
+                            }`}>
+                              #{userPerformance.rank || 'N/A'}
+                            </span>
+                          </div>
                           <div className="flex justify-between">
                             <span className="text-gray-400">Portfolio Value</span>
                             <span className="font-mono font-bold text-gray-200">
@@ -489,6 +884,14 @@ export const ContestLobbyV2: React.FC = () => {
                               {userPerformance.performance_percentage || '0'}%
                             </span>
                           </div>
+                          {userPerformance.prize_awarded && parseFloat(userPerformance.prize_awarded) > 0 && (
+                            <div className="flex justify-between pt-2 border-t border-dark-300">
+                              <span className="text-gray-400">Prize Won</span>
+                              <span className="font-mono font-bold text-yellow-400">
+                                {formatCurrency(parseFloat(userPerformance.prize_awarded))}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

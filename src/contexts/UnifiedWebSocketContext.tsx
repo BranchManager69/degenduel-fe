@@ -640,10 +640,12 @@ export const UnifiedWebSocketProvider: React.FC<{
         return;
       }
       
-      console.group(`🔗 [WebSocket] Subscribing to ${finalTopics.length} topics`);
-      console.log('Topics:', finalTopics);
-      console.log('Component:', componentId || 'unknown');
-      console.groupEnd();
+      if (process.env.NODE_ENV === 'development') {
+        console.group(`🔗 [WebSocket] Subscribing to ${finalTopics.length} topics`);
+        console.log('Topics:', finalTopics);
+        console.log('Component:', componentId || 'unknown');
+        console.groupEnd();
+      }
       
       // Create the base message with only new topics
       const createSubscribeMessage = (authToken?: string) => {
@@ -881,44 +883,49 @@ export const UnifiedWebSocketProvider: React.FC<{
       const frontendAuthState = authService.isAuthenticated();
       const frontendUser = authService.getUser();
       
-      console.group('🔍 [WebSocket Auth Debug] Authentication State Check');
-      console.log('WebSocket State:', {
-        connectionState,
-        isConnected,
-        isAuthenticated,
-        isReadyForSecureInteraction
-      });
-      console.log('Frontend State:', {
-        isAuthenticated: frontendAuthState,
-        user: frontendUser ? { id: frontendUser.id, method: frontendUser.auth_method } : null
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.group('🔍 [WebSocket Auth Debug] Authentication State Check');
+        console.log('WebSocket State:', {
+          connectionState,
+          isConnected,
+          isAuthenticated,
+          isReadyForSecureInteraction
+        });
+        console.log('Frontend State:', {
+          isAuthenticated: frontendAuthState,
+          user: frontendUser ? { id: frontendUser.id, method: frontendUser.auth_method } : null
+        });
+        console.groupEnd();
+      }
       
       // Detect ghost authentication: Frontend says authenticated but WebSocket says not
       if (frontendAuthState && frontendUser && !isAuthenticated && connectionState === ConnectionState.CONNECTED) {
-        console.warn('🚨 GHOST AUTH DETECTED: Frontend authenticated but WebSocket not authenticated');
-        console.log('This usually happens when:');
-        console.log('- Wallet was disconnected but JWT is still valid');
-        console.log('- WebSocket auth token expired');
-        console.log('- Server-side session was invalidated');
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('🚨 GHOST AUTH DETECTED: Frontend authenticated but WebSocket not authenticated');
+          console.log('This usually happens when:');
+          console.log('- Wallet was disconnected but JWT is still valid');
+          console.log('- WebSocket auth token expired');
+          console.log('- Server-side session was invalidated');
+          console.log('Attempting to refresh authentication...');
+        }
         
         // Auto-fix: Try to refresh authentication
-        console.log('Attempting to refresh authentication...');
         authService.checkAuth().then(() => {
-          console.log('Auth refresh completed');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Auth refresh completed');
+          }
         }).catch((error) => {
           console.error('Auth refresh failed, logging out:', error);
           authService.logout();
         });
       }
-      
-      console.groupEnd();
     }
   }, [connectionState, isConnected, isAuthenticated]);
   
   // Setup the singleton instance for useUnifiedWebSocket hook (only log once)
   const hasLoggedSetup = useRef(false);
   useEffect(() => {
-    if (!hasLoggedSetup.current) {
+    if (!hasLoggedSetup.current && process.env.NODE_ENV === 'development') {
       console.log('[UnifiedWebSocketContext] Setting up singleton instance (initial setup)');
       hasLoggedSetup.current = true;
     }
