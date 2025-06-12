@@ -174,6 +174,14 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           } as ContestSettings,
         };
 
+        // Validate required fields before sending
+        const requiredFields = ['name', 'description', 'contest_code', 'entry_fee', 'prize_pool', 'start_time', 'end_time', 'allowed_buckets', 'min_participants', 'max_participants'];
+        const missingFields = requiredFields.filter(field => !contestDataPayload[field as keyof typeof contestDataPayload]);
+        
+        if (missingFields.length > 0) {
+          throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+        }
+
         // Create the contest
         console.log("Creating contest...", {
           contestData: contestDataPayload,
@@ -181,6 +189,16 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           maxAttempts,
           timestamp: new Date().toISOString(),
           userRole,
+          validationCheck: {
+            hasAllRequiredFields: missingFields.length === 0,
+            entryFeeFormat: contestDataPayload.entry_fee,
+            prizePoolFormat: contestDataPayload.prize_pool,
+            timeFormats: {
+              start: contestDataPayload.start_time,
+              end: contestDataPayload.end_time,
+              deadline: contestDataPayload.entry_deadline
+            }
+          }
         });
 
         const response = await ddApi.contests.create(contestDataPayload);

@@ -11,6 +11,10 @@
  * @updated 2025-05-08
  */
 
+// Buffer polyfill for browser compatibility with Solana dependencies
+import { Buffer } from 'buffer';
+(globalThis as any).Buffer = Buffer;
+
 import ReactDOM from "react-dom/client";
 
 import { App } from "./App";

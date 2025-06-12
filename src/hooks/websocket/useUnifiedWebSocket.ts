@@ -23,6 +23,9 @@ interface WebSocketInstance {
   sendMessage: (message: any) => boolean;
   connectionState: ConnectionState;
   connectionError: string | null;
+  // Context's deduplication-aware methods
+  contextSubscribe?: (topics: string[], componentId?: string) => boolean;
+  contextUnsubscribe?: (topics: string[], componentId?: string) => boolean;
 }
 
 // Singleton instance set by the WebSocketManager or WebSocketContext
@@ -75,7 +78,9 @@ if (!instance) {
       return true;
     },
     connectionState: ConnectionState.CONNECTING,
-    connectionError: null
+    connectionError: null,
+    contextSubscribe: undefined,
+    contextUnsubscribe: undefined
   };
 }
 
@@ -87,7 +92,10 @@ export const setupWebSocketInstance = (
   registerFn: (id: string, types: DDExtendedMessageType[], callback: (message: any) => void) => () => void,
   sendFn: (message: any) => boolean,
   state: ConnectionState,
-  error: string | null
+  error: string | null,
+  // Add the context's subscribe/unsubscribe methods to prevent bypassing deduplication
+  subscribeFn?: (topics: string[], componentId?: string) => boolean,
+  unsubscribeFn?: (topics: string[], componentId?: string) => boolean
 ) => {
   const wasConnected = instance?.connectionState === ConnectionState.AUTHENTICATED;
 
@@ -95,7 +103,10 @@ export const setupWebSocketInstance = (
     registerListener: registerFn,
     sendMessage: sendFn,
     connectionState: state,
-    connectionError: error
+    connectionError: error,
+    // Store the context's subscribe/unsubscribe methods
+    contextSubscribe: subscribeFn,
+    contextUnsubscribe: unsubscribeFn
   };
 
   notifyListeners(); // Notify all subscribed components of the state change.
@@ -167,22 +178,36 @@ export function useUnifiedWebSocket<T = any>(
     return instance.sendMessage(message);
   }, []);
 
-  const subscribe = useCallback((topicsToSubscribe: string[], _componentId?: string) => {
+  const subscribe = useCallback((topicsToSubscribe: string[], componentId?: string) => {
     if (topicsToSubscribe.length === 0) return false;
+
+    // Use context's deduplication-aware subscribe method if available
+    if (instance?.contextSubscribe) {
+      return instance.contextSubscribe(topicsToSubscribe, componentId || id);
+    }
+
+    // Fallback to direct message (for backward compatibility)
     const message: SubscriptionMessage = {
       type: DDExtendedMessageType.SUBSCRIBE,
       topics: topicsToSubscribe
     };
     return sendMessage(message);
-  }, [sendMessage]);
+  }, [sendMessage, id]);
 
-  const unsubscribe = useCallback((topicsToUnsubscribe: string[], _componentId?: string) => {
+  const unsubscribe = useCallback((topicsToUnsubscribe: string[], componentId?: string) => {
     if (topicsToUnsubscribe.length === 0) return false;
+
+    // Use context's deduplication-aware unsubscribe method if available
+    if (instance?.contextUnsubscribe) {
+      return instance.contextUnsubscribe(topicsToUnsubscribe, componentId || id);
+    }
+
+    // Fallback to direct message (for backward compatibility)
     return sendMessage({
       type: DDExtendedMessageType.UNSUBSCRIBE,
       topics: topicsToUnsubscribe
     });
-  }, [sendMessage]);
+  }, [sendMessage, id]);
 
   const request = useCallback((topic: string, action: string, params: any = {}) => {
     const requestMessage: any = {

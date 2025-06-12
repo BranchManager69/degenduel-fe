@@ -1829,22 +1829,33 @@ export const ddApi = {
         const responseText = await response.text();
         console.log("API Raw Response:", responseText);
 
-        let errorData;
+        let responseData;
         try {
-          errorData = responseText ? JSON.parse(responseText) : {};
+          responseData = responseText ? JSON.parse(responseText) : {};
         } catch (e) {
           console.error("Failed to parse response:", responseText);
+          throw new Error(`Server returned invalid JSON: ${responseText}`);
         }
 
         if (!response.ok) {
-          throw new Error(
-            errorData?.message ||
-            errorData?.error ||
-            `Failed to create contest: ${response.status} ${response.statusText}`,
-          );
+          // Extract more detailed error information
+          const errorMessage = responseData?.message || 
+                             responseData?.error || 
+                             responseData?.details?.message ||
+                             responseData?.details?.error ||
+                             `Failed to create contest: ${response.status} ${response.statusText}`;
+          
+          console.error("Contest creation failed:", {
+            status: response.status,
+            statusText: response.statusText,
+            responseData,
+            errorMessage
+          });
+          
+          throw new Error(errorMessage);
         }
 
-        return errorData;
+        return responseData;
       } catch (error) {
         console.error("Failed to create contest:", {
           error,

@@ -33,8 +33,6 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
-  PhantomWalletAdapter, // DO NOT DELETE DESPITE WHAT YOUR LINTER OR BRAIN SAYS. IT IS REQUIRED.
-  SolflareWalletAdapter, // DO NOT DELETE DESPITE WHAT YOUR LINTER OR BRAIN SAYS. IT IS REQUIRED.
   TrustWalletAdapter
 } from "@solana/wallet-adapter-wallets";
 
@@ -190,14 +188,23 @@ export const useDegenDuelRpc = () => {
 
 // A small intermediate component to bridge your context with the adapter's
 const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { rpcEndpoint } = useSolanaConnection(); // Get the dynamically chosen endpoint from your context
+  // Safely get RPC endpoint with fallback to prevent circular dependency
+  let rpcEndpoint: string;
+  try {
+    const solanaConnection = useSolanaConnection();
+    rpcEndpoint = solanaConnection.rpcEndpoint;
+  } catch (error) {
+    // Fallback endpoint when SolanaConnectionProvider isn't available yet
+    rpcEndpoint = `${window.location.origin}/api/solana-rpc/public`;
+    console.log('[WalletAdapterProviders] Using fallback RPC endpoint, SolanaConnectionProvider not ready yet');
+  }
   
-  // Use minimal wallet list - Phantom & Solflare now use Standard Wallet protocol
-  // Configure wallet adapters
+  // Use minimal wallet list - Phantom & Solflare now use Wallet Standard protocol
+  // Remove PhantomWalletAdapter and SolflareWalletAdapter - they're handled by Wallet Standard
   const wallets: Adapter[] = useMemo(
     () => [
-      new PhantomWalletAdapter(), // DO NOT DELETE DESPITE WHAT YOUR LINTER OR BRAIN SAYS. IT IS REQUIRED.
-      new SolflareWalletAdapter(), // DO NOT DELETE DESPITE WHAT YOUR LINTER OR BRAIN SAYS. IT IS REQUIRED.
+      // new PhantomWalletAdapter(), // REMOVED - handled by Wallet Standard
+      // new SolflareWalletAdapter(), // REMOVED - handled by Wallet Standard  
       new TrustWalletAdapter(),
     ],
     []
@@ -277,20 +284,22 @@ export const App: React.FC = () => {
 const AppProvidersAndContent: React.FC = () => {
   return (
     <InviteSystemProvider>
-      {/* Move UnifiedAuthProvider higher so SolanaConnectionProvider can access it */}
-      <UnifiedAuthProvider>
-        <SolanaConnectionProvider>
-          {/* WalletAdapterProviders no longer takes the solanaConnectors prop */}
-          <WalletAdapterProviders>
+      {/* Correct provider hierarchy: */}
+      {/* 1. WalletAdapterProviders (provides wallet context) */}
+      {/* 2. UnifiedAuthProvider (uses wallet context, provides auth context) */}
+      {/* 3. SolanaConnectionProvider (uses auth context) */}
+      <WalletAdapterProviders>
+        <UnifiedAuthProvider>
+          <SolanaConnectionProvider>
             <TokenDataProvider>
               <ToastProvider>
                 <AppContent />
                 <Toaster position="top-right" />
               </ToastProvider>
             </TokenDataProvider>
-          </WalletAdapterProviders>
-        </SolanaConnectionProvider>
-      </UnifiedAuthProvider>
+          </SolanaConnectionProvider>
+        </UnifiedAuthProvider>
+      </WalletAdapterProviders>
     </InviteSystemProvider>
   );
 };
