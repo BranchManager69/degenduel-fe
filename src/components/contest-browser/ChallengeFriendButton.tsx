@@ -1,32 +1,22 @@
 import React from "react";
-import { toast } from "react-hot-toast";
 import { ChallengeCreationModal } from "./ChallengeCreationModal";
-import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
 interface ChallengeFriendButtonProps {
   onChallengeCreated?: () => void;
   className?: string;
+  userRole: 'admin' | 'user';
+  availableCredits?: number;
 }
 
 export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
   onChallengeCreated,
   className = "",
+  userRole,
+  availableCredits,
 }) => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const { isAdministrator } = useMigratedAuth();
 
   const handleOpenModal = () => {
-    if (!isAdministrator) {
-      toast.error("Friend challenges are coming soon", {
-        duration: 3000,
-        style: {
-          background: '#1f2937',
-          color: '#f3f4f6',
-          border: '1px solid #374151'
-        }
-      });
-      return;
-    }
     setIsModalOpen(true);
   };
 
@@ -43,8 +33,7 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
     <>
       <button
         onClick={handleOpenModal}
-        disabled={!isAdministrator}
-        className={`group relative px-6 py-2.5 overflow-hidden rounded-lg bg-dark-300 border border-dark-200 hover:bg-dark-200 hover:border-dark-100 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
+        className={`group relative px-6 py-2.5 overflow-hidden rounded-lg bg-dark-300 border border-dark-200 hover:bg-dark-200 hover:border-dark-100 transition-all duration-300 ${className}`}
       >
         {/* Subtle shimmer effect */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
@@ -70,6 +59,8 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSuccess={handleChallengeSuccess}
+        userRole={userRole}
+        availableCredits={availableCredits}
       />
     </>
   );

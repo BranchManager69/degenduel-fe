@@ -28,7 +28,7 @@ interface TokenData {
 
 // Topic subscriptions (looks outdated)
 interface TopicSubscriptions {
-  'market-data': boolean;
+  'market_data': boolean;
   'portfolio': boolean;
   'system': boolean;
   'contest': boolean;
@@ -53,7 +53,7 @@ const WebSocketAPIGuide: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [tokens, setTokens] = useState<Record<string, TokenData>>({});
   const [topicSubscriptions, setTopicSubscriptions] = useState<TopicSubscriptions>({
-    'market-data': true,
+    'market_data': true,
     'portfolio': false,
     'system': true,
     'contest': false,
@@ -66,7 +66,7 @@ const WebSocketAPIGuide: React.FC = () => {
   const [manualMessage, setManualMessage] = useState<string>(
 `{
   "type": "REQUEST",
-  "topic": "market-data",
+  "topic": "market_data",
   "action": "getToken",
   "symbol": "SOL"
 }`);
@@ -159,7 +159,7 @@ const WebSocketAPIGuide: React.FC = () => {
       addMessage(formattedMessage, 'incoming', topicClass);
       
       // Process token data if present
-      if (message.type === MESSAGE_TYPES.DATA && message.topic === 'market-data') {
+      if (message.type === MESSAGE_TYPES.DATA && message.topic === 'market_data') {
         processTokenData(message);
       }
     } catch (error) {
@@ -634,7 +634,7 @@ const WebSocketAPIGuide: React.FC = () => {
                 <h5 className="font-bold text-sm text-purple-200 mb-1">SUBSCRIBE</h5>
                 <pre className="bg-dark-300/50 p-3 rounded border-l-4 border-purple-500/50 text-xs font-mono overflow-x-auto">{`{
   "type": "SUBSCRIBE",
-  "topics": ["market-data", "system"]
+  "topics": ["market_data", "system"]
 }`}</pre>
               </div>
               
@@ -650,7 +650,7 @@ const WebSocketAPIGuide: React.FC = () => {
                 <h5 className="font-bold text-sm text-purple-200 mb-1">REQUEST</h5>
                 <pre className="bg-dark-300/50 p-3 rounded border-l-4 border-purple-500/50 text-xs font-mono overflow-x-auto">{`{
   "type": "REQUEST",
-  "topic": "market-data",
+  "topic": "market_data",
   "action": "getToken",
   "symbol": "btc",
   "requestId": "123"
@@ -680,7 +680,7 @@ const WebSocketAPIGuide: React.FC = () => {
                 </thead>
                 <tbody className="text-sm">
                   <tr className="border-b border-gray-700/50">
-                    <td className="py-2 px-4 font-mono">market-data</td>
+                    <td className="py-2 px-4 font-mono">market_data</td>
                     <td className="py-2 px-4">No</td>
                   </tr>
                   <tr className="border-b border-gray-700/50">
@@ -724,7 +724,7 @@ const WebSocketAPIGuide: React.FC = () => {
               <h5 className="font-bold text-sm text-purple-200 mb-1">DATA</h5>
               <pre className="bg-dark-300/50 p-3 rounded border-l-4 border-purple-500/50 text-xs font-mono overflow-x-auto">{`{
   "type": "DATA",
-  "topic": "market-data",
+  "topic": "market_data",
   "action": "getToken",
   "requestId": "123",
   "data": { /* token data */ },

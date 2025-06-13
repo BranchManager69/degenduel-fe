@@ -317,6 +317,7 @@ export default {
           100: "#1a1625",
           200: "#211d2f",
           300: "#2d2844",
+          400: "#3a3456",
         },
       },
       backgroundImage: {

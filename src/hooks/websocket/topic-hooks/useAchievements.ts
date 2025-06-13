@@ -1,4 +1,7 @@
 /**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * No components are using this hook.
+ * 
  * useAchievements Hook
  * 
  * V69 Standardized WebSocket Hook for Achievements
@@ -82,6 +85,7 @@ interface WebSocketAchievementMessage {
 /**
  * Hook for accessing and managing user achievements with real-time updates
  * Uses the unified WebSocket system
+ * @deprecated This hook is deprecated and will be removed in a future version.
  */
 export function useAchievements() {
   const [state, setState] = useState<AchievementState>(DEFAULT_STATE);

@@ -516,7 +516,7 @@ export const MyPortfoliosPage: React.FC = () => {
                       if (portfolio.status === "completed") {
                         navigate(`/contests/${portfolio.contestId}/results`);
                       } else if (portfolio.status === "active") {
-                        navigate(`/contests/${portfolio.contestId}/lobby`);
+                        navigate(`/contests/${portfolio.contestId}/live`);
                       } else {
                         navigate(
                           `/contests/${portfolio.contestId}/select-tokens`,

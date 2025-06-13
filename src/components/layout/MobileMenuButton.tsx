@@ -278,16 +278,27 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
           onClick={() => setIsOpen(!isOpen)}
           className={`relative flex items-center justify-center transition-all duration-300 group overflow-hidden
             ${isCompact ? "w-9 h-9" : "w-10 h-10"}
-            rounded-full border ${buttonStyles.border} ${buttonStyles.hover.border}
-            ${buttonStyles.hover.glow} z-[60]`}
+            rounded-full ${user ? `border ${buttonStyles.border} ${buttonStyles.hover.border} ${buttonStyles.hover.glow}` : 
+            `bg-gradient-to-r from-purple-600/20 via-purple-700/20 to-purple-800/20
+            border border-purple-500/30 hover:border-purple-400/50
+            hover:from-purple-500/30 hover:via-purple-600/30 hover:to-purple-700/30
+            hover:shadow-[0_0_12px_rgba(127,0,255,0.3)]
+            backdrop-blur-sm`} z-[60]`}
           aria-label="User menu"
           aria-expanded={isOpen}
           aria-haspopup="true"
         >
-          {/* Background gradient */}
-          <div
-            className={`absolute inset-0 bg-gradient-to-r ${buttonStyles.bg} ${buttonStyles.hover.bg} transition-all duration-300`}
-          />
+          {/* Background gradient - only for logged in users */}
+          {user && (
+            <div
+              className={`absolute inset-0 bg-gradient-to-r ${buttonStyles.bg} ${buttonStyles.hover.bg} transition-all duration-300`}
+            />
+          )}
+          
+          {/* Gradient shine effect for non-logged in users */}
+          {!user && (
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+          )}
           {user ? (
             <>
               {/* User Profile Avatar Button */}
@@ -327,7 +338,7 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                   transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                   className={`${
                     isCompact ? "w-2.5" : "w-3"
-                  } h-[2px] bg-gray-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center`}
+                  } h-[2px] bg-purple-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center shadow-[0_0_4px_rgba(127,0,255,0.3)]`}
                 />
                 <motion.div
                   animate={
@@ -336,14 +347,14 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                   transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                   className={`${
                     isCompact ? "w-2" : "w-2.5"
-                  } h-[2px] bg-gray-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}
+                  } h-[2px] bg-purple-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-[0_0_4px_rgba(127,0,255,0.3)]`}
                 />
                 <motion.div
                   animate={isOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }}
                   transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                   className={`${
                     isCompact ? "w-2.5" : "w-3"
-                  } h-[2px] bg-gray-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center`}
+                  } h-[2px] bg-purple-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center shadow-[0_0_4px_rgba(127,0,255,0.3)]`}
                 />
               </div>
             </>

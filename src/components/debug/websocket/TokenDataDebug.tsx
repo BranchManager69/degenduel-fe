@@ -267,7 +267,7 @@ const TokenDataDebug: React.FC = () => {
         <div className="px-3 py-2 text-xs border-t border-gray-700 flex justify-between items-center">
           <div className="flex items-center">
             <span className="text-gray-500 mr-2">Topic:</span>
-            <span className="bg-green-900/60 border border-green-800 rounded-sm px-1.5 text-green-300 font-mono">market-data</span>
+            <span className="bg-green-900/60 border border-green-800 rounded-sm px-1.5 text-green-300 font-mono">market_data</span>
             {wsMonitor.isAuthError ? (
               <span className="ml-2 bg-yellow-900/60 border border-yellow-800 rounded-sm px-1.5 text-yellow-300 font-mono">public</span>
             ) : (

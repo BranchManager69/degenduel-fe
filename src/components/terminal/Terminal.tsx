@@ -142,6 +142,7 @@ export const Terminal = ({
     return sessionStorage.getItem('didi_proactive_shown') === 'true';
   });
   const [lastInteractionTime, setLastInteractionTime] = useState<Date>(new Date());
+  const lastInteractionRef = useRef<Date>(new Date());
   
   // No body scroll lock - let the browser handle cursor-aware scrolling
   
@@ -171,7 +172,7 @@ export const Terminal = ({
       }
     } else if (pathname.includes('/contest') && pathname.includes('/detail')) {
       return "Want tips for building a winning portfolio for this contest? I can help you understand the rules and strategy.";
-    } else if (pathname.includes('/contest') && pathname.includes('/lobby')) {
+    } else if (pathname.includes('/contest') && pathname.includes('/live')) {
       return "I can explain how the contest scoring works or help you understand what you're seeing in the leaderboard.";
     } else if (pathname === '/') {
       return "I can explain any of the market data, hot tokens, or features you see on DegenDuel.";
@@ -771,20 +772,29 @@ export const Terminal = ({
   // Track user interactions to update last interaction time
   useEffect(() => {
     const handleUserInteraction = () => {
-      setLastInteractionTime(new Date());
+      // Update ref immediately (no re-render)
+      lastInteractionRef.current = new Date();
+      
+      // Debounce state updates to prevent excessive re-renders
+      // Only update state if we haven't updated in the last 5 seconds
+      const now = new Date();
+      const timeSinceLastStateUpdate = (now.getTime() - lastInteractionTime.getTime()) / 1000;
+      if (timeSinceLastStateUpdate >= 5) {
+        setLastInteractionTime(now);
+      }
     };
 
     // Listen for various user interactions
     window.addEventListener('click', handleUserInteraction);
     window.addEventListener('keydown', handleUserInteraction);
-    window.addEventListener('scroll', handleUserInteraction);
+    window.addEventListener('scroll', handleUserInteraction, { passive: true });
 
     return () => {
       window.removeEventListener('click', handleUserInteraction);
       window.removeEventListener('keydown', handleUserInteraction);
       window.removeEventListener('scroll', handleUserInteraction);
     };
-  }, []);
+  }, [lastInteractionTime]);
 
   // Proactive message timer
   useEffect(() => {
@@ -795,7 +805,7 @@ export const Terminal = ({
     const timer = setTimeout(() => {
       const now = new Date();
       const timeSincePageLoad = (now.getTime() - pageLoadTime.getTime()) / 1000;
-      const timeSinceLastInteraction = (now.getTime() - lastInteractionTime.getTime()) / 1000;
+      const timeSinceLastInteraction = (now.getTime() - lastInteractionRef.current.getTime()) / 1000;
 
       // Show message after 30 seconds on page AND 10 seconds since last interaction
       if (timeSincePageLoad >= 30 && timeSinceLastInteraction >= 10) {

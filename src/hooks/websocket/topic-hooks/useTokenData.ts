@@ -25,7 +25,7 @@
  * 
  * WEBSOCKET ACTIONS USED:
  * - getDegenDuelRanked: Paginated quality token data
- * - market-data subscription: Real-time price updates
+ * - market_data subscription: Real-time price updates
  * 
  * FALLBACK ENDPOINTS:
  * - REST /api/tokens/trending?format=paginated
@@ -358,7 +358,7 @@ export function useTokenData(
           setHasInitialData(true);
 
           dispatchWebSocketEvent('token_data_websocket_update', {
-            socketType: 'market-data',
+            socketType: 'market_data',
             message: `Received ${updatedTokens.length} token updates via WebSocket`,
             timestamp: new Date().toISOString()
           });

@@ -1,6 +1,8 @@
 /**
  * System Settings WebSocket Hook - V69 Standardized Version
  * 
+ * @deprecated This is a legacy WebSocket hook. Use the modern topic-based hook from '../topic-hooks/useSystemSettings' instead.
+ * 
  * This hook connects to the system settings WebSocket service and provides real-time
  * system settings updates including background scene configuration and other system settings.
  */
@@ -39,6 +41,9 @@ interface SystemSettingsMessage {
   message?: string;
 }
 
+/**
+ * @deprecated Use useSystemSettings from '../topic-hooks/useSystemSettings' instead.
+ */
 export function useSystemSettingsWebSocket() {
   // State management
   const [settings, setSettings] = useState<SystemSettings | null>(null);

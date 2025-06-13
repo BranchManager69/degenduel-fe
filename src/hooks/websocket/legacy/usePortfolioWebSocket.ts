@@ -1,4 +1,7 @@
 /**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * Use hooks/websocket/topic-hooks/usePortfolio.ts instead.
+ * 
  * Portfolio WebSocket Hook - V69 Standardized Version
  * 
  * This hook connects to the portfolio WebSocket service and provides real-time

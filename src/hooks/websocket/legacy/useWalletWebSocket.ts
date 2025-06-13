@@ -1,4 +1,7 @@
 /**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * Use hooks/websocket/topic-hooks/useWallet.ts instead.
+ * 
  * Wallet WebSocket Hook - V69 Standardized Version
  * 
  * This hook connects to the wallet WebSocket service and provides real-time
@@ -64,6 +67,9 @@ interface WalletActivity {
 
 type WalletMessage = WalletUpdate | TransferStarted | TransferComplete | WalletActivity;
 
+/**
+ * @deprecated Use hooks/websocket/topic-hooks/useWallet.ts instead.
+ */
 export function useWalletWebSocket() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const { updateWalletStatus, trackTransfer, updateWalletActivity } = useStore();

@@ -1,6 +1,9 @@
 // src/hooks/auth/useQRCodeAuth.ts
 
 /**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * No components are using this hook.
+ * 
  * Hook for QR code authentication
  * 
  * Provides functionality for QR code-based authentication including
@@ -37,6 +40,10 @@ interface UseQRCodeAuthReturn {
   cancel: () => Promise<void>;
 }
 
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * No components are using this hook.
+ */
 export const useQRCodeAuth = ({
   autoGenerate = true,
   pollInterval = 2000,

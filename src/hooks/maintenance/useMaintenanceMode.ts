@@ -1,6 +1,9 @@
 // src/hooks/maintenance/useMaintenanceMode.ts
 
 /**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * No components are using this hook.
+ * 
  * Maintenance Mode hook
  * 
  * @description This hook is used to manage the maintenance mode state and functionality.

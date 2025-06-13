@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { formatCurrency } from "../../lib/utils";
 import { Badge } from "../ui/Badge";
 import { Card, CardContent, CardHeader } from "../ui/Card";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 // Align with the API's LeaderboardEntry structure from src/types/index.ts
 interface LeaderboardEntry {
@@ -14,16 +15,56 @@ interface LeaderboardEntry {
   isAiAgent?: boolean;
   isCurrentUser?: boolean; // Added from API type
   // prizeAwarded?: string | null; // Available from API, can add if needed for display here
+  sparklineData?: number[]; // Added for mini performance chart
 }
 
 interface LeaderboardProps {
   entries: LeaderboardEntry[];
   className?: string;
+  showSparklines?: boolean;
 }
+
+// Mini sparkline component
+const Sparkline: React.FC<{ data: number[]; color: string }> = ({ data, color }) => {
+  if (!data || data.length < 2) return null;
+  
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  
+  const width = 60;
+  const height = 20;
+  
+  const points = data.map((value, index) => {
+    const x = (index / (data.length - 1)) * width;
+    const y = height - ((value - min) / range) * height;
+    return `${x},${y}`;
+  }).join(' ');
+  
+  return (
+    <svg width={width} height={height} className="inline-block">
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        points={points}
+        className="opacity-70"
+      />
+      <circle
+        cx={width}
+        cy={height - ((data[data.length - 1] - min) / range) * height}
+        r="2"
+        fill={color}
+        className="opacity-90"
+      />
+    </svg>
+  );
+};
 
 export const Leaderboard: React.FC<LeaderboardProps> = ({
   entries: initialEntries,
   className = "",
+  showSparklines = true,
 }) => {
   const [entries, setEntries] = useState<LeaderboardEntry[]>(initialEntries);
 
@@ -139,16 +180,40 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                   </div>
                   
                   <div className="flex items-center space-x-4">
-                    {/* Tiny text-sm numbers! SO SMALL! */}
-                    {/* ParticipantsList uses text-lg font-bold for scores! Much more impactful! */}
-                    {/* This whole right side layout is cramped and unimpressive! */}
-                    <div className="text-sm font-mono text-gray-300">
-                      {formatCurrency(numericPortfolioValue)}
+                    {/* Sparkline for mini performance visualization */}
+                    {showSparklines && entry.sparklineData && (
+                      <div className="hidden sm:block">
+                        <Sparkline 
+                          data={entry.sparklineData} 
+                          color={numericPerformancePercentage >= 0 ? '#10b981' : '#ef4444'}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Portfolio value with trend indicator */}
+                    <div className="flex items-center gap-1">
+                      <div className="text-sm font-mono text-gray-300">
+                        {formatCurrency(numericPortfolioValue)}
+                      </div>
+                      {numericPerformancePercentage >= 0 ? (
+                        <TrendingUp className="w-3 h-3 text-green-400" />
+                      ) : (
+                        <TrendingDown className="w-3 h-3 text-red-400" />
+                      )}
                     </div>
+                    
                     <motion.div
                       className={`text-sm font-medium font-mono ${
                         numericPerformancePercentage >= 0 ? "text-green-400" : "text-red-400"
                       }`}
+                      animate={{
+                        scale: entry.rank <= 3 ? [1, 1.1, 1] : 1
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: entry.rank <= 3 ? Infinity : 0,
+                        repeatDelay: 3
+                      }}
                     >
                       {numericPerformancePercentage >= 0 ? "+" : ""}
                       {numericPerformancePercentage.toFixed(2)}%

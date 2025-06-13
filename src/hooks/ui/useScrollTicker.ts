@@ -7,6 +7,9 @@ interface ScrollTickerState {
 }
 
 /**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * No components are using this hook.
+ * 
  * Custom hook for ticker expansion based on scroll position
  * 
  * @param threshold Scroll threshold after which the ticker expands/contracts

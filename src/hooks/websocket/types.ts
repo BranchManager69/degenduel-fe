@@ -161,7 +161,7 @@ export const SOCKET_TYPES = {
   
   // Market data sockets
   TOKEN_DATA: 'token-data',
-  MARKET_DATA: 'market-data',
+  MARKET_DATA: 'market_data',
   TOKEN_PROFILES: 'token-profiles',
   
   // User data sockets

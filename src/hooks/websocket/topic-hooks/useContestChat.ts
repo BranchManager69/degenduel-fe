@@ -221,7 +221,7 @@ export function useContestChat(contestId: string) {
     `contest-chat-${contestId}`,
     [DDExtendedMessageType.DATA, DDExtendedMessageType.ERROR],
     handleMessage,
-    [TopicType.CONTEST_CHAT, TopicType.SYSTEM]
+    [`${TopicType.CONTEST_CHAT}-${contestId}`, TopicType.CONTEST_CHAT, TopicType.SYSTEM]
   );
 
   // Update connection status
@@ -233,11 +233,12 @@ export function useContestChat(contestId: string) {
   // Subscribe to contest chat when connected
   useEffect(() => {
     if (ws.isConnected && state.isLoading && contestId) {
-      // Subscribe to contest chat topic
-      ws.subscribe([TopicType.CONTEST_CHAT]);
+      // Subscribe to specific contest chat topic (e.g., 'contest-chat-768')
+      const contestChatTopic = `${TopicType.CONTEST_CHAT}-${contestId}`;
+      ws.subscribe([contestChatTopic]);
       
       // Request initial chat messages
-      ws.request(TopicType.CONTEST_CHAT, DDWebSocketActions.GET_MESSAGES, { contestId });
+      ws.request(contestChatTopic, DDWebSocketActions.GET_MESSAGES, { contestId });
       
       dispatchWebSocketEvent('contest_chat_subscribe', {
         socketType: TopicType.CONTEST_CHAT,
@@ -264,7 +265,8 @@ export function useContestChat(contestId: string) {
       return false;
     }
     
-    const requestSent = ws.request(TopicType.CONTEST_CHAT, DDWebSocketActions.SEND_MESSAGE, { 
+    const contestChatTopic = `${TopicType.CONTEST_CHAT}-${contestId}`;
+    const requestSent = ws.request(contestChatTopic, DDWebSocketActions.SEND_MESSAGE, { 
       contestId, 
       message 
     });
@@ -288,7 +290,8 @@ export function useContestChat(contestId: string) {
       return false;
     }
     
-    const requestSent = ws.request(TopicType.CONTEST_CHAT, DDWebSocketActions.PIN_MESSAGE, { 
+    const contestChatTopic = `${TopicType.CONTEST_CHAT}-${contestId}`;
+    const requestSent = ws.request(contestChatTopic, DDWebSocketActions.PIN_MESSAGE, { 
       contestId, 
       messageId,
       pinned
@@ -312,7 +315,8 @@ export function useContestChat(contestId: string) {
       return false;
     }
     
-    const requestSent = ws.request(TopicType.CONTEST_CHAT, DDWebSocketActions.DELETE_MESSAGE, { 
+    const contestChatTopic = `${TopicType.CONTEST_CHAT}-${contestId}`;
+    const requestSent = ws.request(contestChatTopic, DDWebSocketActions.DELETE_MESSAGE, { 
       contestId, 
       messageId 
     });
@@ -337,7 +341,8 @@ export function useContestChat(contestId: string) {
     
     setState(prev => ({ ...prev, isLoading: true, messages: [], participants: [], pinnedMessages: [] }));
     
-    const requestSent = ws.request(TopicType.CONTEST_CHAT, DDWebSocketActions.GET_MESSAGES, { contestId });
+    const contestChatTopic = `${TopicType.CONTEST_CHAT}-${contestId}`;
+    const requestSent = ws.request(contestChatTopic, DDWebSocketActions.GET_MESSAGES, { contestId });
     
     if (requestSent) {
       dispatchWebSocketEvent('contest_chat_refresh', {

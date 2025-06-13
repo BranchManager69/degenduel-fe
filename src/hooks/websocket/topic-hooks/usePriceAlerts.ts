@@ -1,3 +1,8 @@
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * No components are using this hook.
+ */
+
 import { useCallback, useEffect, useRef } from 'react';
 import { useWebSocketTopic } from '../useWebSocketTopic';
 import { MessageType } from '../index';
@@ -61,6 +66,10 @@ interface UsePriceAlertsProps {
   enabled?: boolean;
 }
 
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * No components are using this hook.
+ */
 export const usePriceAlerts = ({
   userId,
   tokenAddresses,
@@ -128,7 +137,7 @@ export const usePriceAlerts = ({
     unsubscribe,
     request
   } = useWebSocketTopic(
-    'market-data',
+    'market_data',
     [MessageType.DATA],
     handleMessage,
     { autoSubscribe: enabled }

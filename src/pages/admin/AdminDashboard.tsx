@@ -367,8 +367,90 @@ export const AdminDashboard: React.FC = () => {
       color: "pink",
       category: "System-Testing"
     },
+    {
+      id: "api-testing",
+      title: "API Testing Dashboard",
+      icon: "🚀",
+      description: "Test admin swap trading and transaction parsing endpoints",
+      link: "/admin/api-testing",
+      color: "cyan",
+      category: "System-Testing",
+      isNew: true
+    },
+    {
+      id: "ai-testing",
+      title: "AI Testing",
+      icon: "🤖",
+      description: "Test AI features and integrations",
+      link: "/admin/ai-testing",
+      color: "purple",
+      category: "System-Testing"
+    },
+    {
+      id: "skyduel",
+      title: "SkyDuel Management",
+      icon: "✈️",
+      description: "Manage SkyDuel game settings and data",
+      link: "/admin/skyduel",
+      color: "sky",
+      category: "System-Testing"
+    },
+    {
+      id: "token-sync-test",
+      title: "Token Sync Testing",
+      icon: "🔄",
+      description: "Test token synchronization processes",
+      link: "/admin/token-sync-test",
+      color: "amber",
+      category: "System-Testing"
+    },
+    {
+      id: "contest-image-browser",
+      title: "Contest Image Browser",
+      icon: "🇺",
+      description: "Browse and manage contest images",
+      link: "/admin/contest-image-browser",
+      color: "pink",
+      category: "Contest"
+    },
 
     // Wallet section
+    {
+      id: "wallet-monitoring",
+      title: "Wallet Monitoring",
+      icon: "💰",
+      description: "Track wallet balances and transactions",
+      link: "/admin/wallet-monitoring",
+      color: "brand",
+      category: "Wallet"
+    },
+    {
+      id: "admin-wallet-dashboard",
+      title: "Admin Wallet Dashboard",
+      icon: "🏦",
+      description: "Manage custodial wallets with bulk operations",
+      link: "/admin/wallet-dashboard",
+      color: "purple",
+      category: "Wallet"
+    },
+    {
+      id: "wallet-management",
+      title: "Wallet Management",
+      icon: "💳",
+      description: "Manage user wallets and permissions",
+      link: "/admin/wallet-management",
+      color: "blue",
+      category: "Wallet"
+    },
+    {
+      id: "liquidity-simulator",
+      title: "Liquidity Simulator",
+      icon: "💧",
+      description: "Simulate token liquidation strategies",
+      link: "/admin/liq-sim",
+      color: "green",
+      category: "Wallet"
+    },
     {
       id: "vanity-wallets",
       title: "Vanity Wallet Management",
@@ -384,7 +466,7 @@ export const AdminDashboard: React.FC = () => {
     <ContestProvider>
       <div data-testid="admin-dashboard">
 
-      <div className="container mx-auto p-6 space-y-6 relative z-10 pb-32">
+      <div className="container mx-auto p-4 sm:p-6 space-y-6 relative z-10 pb-8">
         {/* Header with animated gradient */}
         <div className="flex items-center justify-between">
           <div className="relative group">
@@ -408,7 +490,7 @@ export const AdminDashboard: React.FC = () => {
               placeholder={
                 <div className="animate-pulse bg-dark-200/30 h-16 w-full rounded-lg border border-brand-500/10"></div>
               }
-              rootMargin="150px"
+              rootMargin="75px"
             >
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -518,11 +600,11 @@ export const AdminDashboard: React.FC = () => {
         </AnimatePresence>
 
         {/* Dashboard Layout - main content and admin logs panel */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
           {/* Main content - 75% width on desktop */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-4 lg:space-y-6">
             {/* Maintenance Mode Control */}
-            <div className="bg-dark-200/50 backdrop-blur-lg p-8 rounded-lg border border-brand-500/20 relative overflow-hidden">
+            <div className="bg-dark-200/50 backdrop-blur-lg p-4 sm:p-6 rounded-lg border border-brand-500/20 relative overflow-hidden">
               <div className="relative">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex-1 min-w-0">
@@ -739,19 +821,124 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </Link>
 
-            {/* User Management Section */}
+            {/* All Admin Tools - Unified Container */}
+            <div className="bg-dark-200/50 backdrop-blur-lg p-4 rounded-lg border border-brand-500/20">
+              <h2 className="text-xl font-display mb-4 text-gray-100">Admin Tools</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {adminSections.map((section) => (
+                  <motion.div
+                    key={section.id}
+                    className={`
+                      bg-dark-200/75 backdrop-blur-lg border-2
+                      ${
+                        selectedSection === section.id
+                          ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
+                          : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
+                      }
+                      p-3 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
+                    `}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                  >
+                    <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                    
+                    {section.isNew && (
+                      <div className="absolute -top-2 -right-2 z-10">
+                        <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
+                          NEW
+                        </div>
+                      </div>
+                    )}
+                    
+                    {section.link ? (
+                      <Link to={section.link} className="block h-full">
+                        <div className="flex items-center mb-2">
+                          <div className={`text-xl text-${section.color}-300 mr-2 group-hover:scale-110 transition-transform duration-300`}>
+                            {section.icon}
+                          </div>
+                          <h3 className={`text-sm font-bold text-${section.color}-300 font-display tracking-wide`}>
+                            {section.title}
+                          </h3>
+                        </div>
+                        
+                        <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-2`}></div>
+                        
+                        <p className="text-gray-300 text-xs font-mono">
+                          <span className={`text-${section.color}-200`}>→</span> {section.description}
+                        </p>
+                        
+                        <div className="absolute -bottom-0 -right-0 w-6 h-6">
+                          <div className={`absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                        </div>
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          setSelectedSection(
+                            selectedSection === section.id ? null : section.id,
+                          )
+                        }
+                        data-section-id={section.id}
+                        className="block w-full text-left"
+                      >
+                        <div className="flex items-center mb-2">
+                          <div className={`text-xl text-${section.color}-300 mr-2 group-hover:scale-110 transition-transform duration-300`}>
+                            {section.icon}
+                          </div>
+                          <h3 className={`text-sm font-bold text-${section.color}-300 font-display tracking-wide`}>
+                            {section.title}
+                          </h3>
+                        </div>
+                        
+                        <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-2`}></div>
+                        
+                        <p className="text-gray-300 text-xs font-mono">
+                          <span className={`text-${section.color}-200`}>→</span> {section.description}
+                        </p>
+                        
+                        <div className={`absolute top-3 right-3 text-${section.color}-300 text-sm transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                          ↓
+                        </div>
+                        
+                        <div className="absolute -bottom-0 -right-0 w-6 h-6">
+                          <div className={`absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                        </div>
+                      </button>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+              
+              {/* Expandable Content for selected items */}
+              <AnimatePresence>
+                {selectedSection && adminSections.find(s => s.id === selectedSection)?.component && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-4"
+                  >
+                    <div className="pt-4 border-t border-dark-300">
+                      {adminSections.find(s => s.id === selectedSection)?.component}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* REMOVE ALL OLD SECTIONS - keeping this comment as a marker */}
+            <div style={{ display: 'none' }}>
             <LazyLoad 
               placeholder={
                 <div className="mb-4">
-                  <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="animate-pulse bg-dark-300/30 h-6 w-48 rounded mb-3"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[1, 2, 3].map(i => (
-                      <div key={i} className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-purple-500/10"></div>
+                      <div key={i} className="animate-pulse bg-dark-200/40 h-24 rounded-lg border border-purple-500/10"></div>
                     ))}
                   </div>
                 </div>
               }
-              rootMargin="100px"
+              rootMargin="50px"
             >
               <div className="mb-4">
                 <h2 className="text-xl font-display mb-3 relative group">
@@ -761,7 +948,7 @@ export const AdminDashboard: React.FC = () => {
                   <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-purple-400 to-purple-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {adminSections
                     .filter(section => section.category === "User")
                     .map((section) => (
@@ -863,7 +1050,7 @@ export const AdminDashboard: React.FC = () => {
                           >
                             <div className="pt-4 border-t border-dark-300">
                               <LazyLoad
-                                placeholder={<div className="animate-pulse bg-dark-300/20 h-40 w-full rounded"></div>}
+                                placeholder={<div className="animate-pulse bg-dark-300/20 h-20 w-full rounded"></div>}
                               >
                                 {section.component}
                               </LazyLoad>
@@ -880,15 +1067,15 @@ export const AdminDashboard: React.FC = () => {
             <LazyLoad 
               placeholder={
                 <div className="mb-4">
-                  <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="animate-pulse bg-dark-300/30 h-6 w-48 rounded mb-3"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[1, 2, 3].map(i => (
-                      <div key={i} className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-yellow-500/10"></div>
+                      <div key={i} className="animate-pulse bg-dark-200/40 h-24 rounded-lg border border-yellow-500/10"></div>
                     ))}
                   </div>
                 </div>
               }
-              rootMargin="100px"
+              rootMargin="50px"
             >
               <div className="mb-4">
                 <h2 className="text-xl font-display mb-3 relative group">
@@ -898,7 +1085,7 @@ export const AdminDashboard: React.FC = () => {
                   <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-yellow-400 to-yellow-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {adminSections
                     .filter(section => section.category === "Contest")
                     .map((section) => (
@@ -1000,7 +1187,7 @@ export const AdminDashboard: React.FC = () => {
                           >
                             <div className="pt-4 border-t border-dark-300">
                               <LazyLoad
-                                placeholder={<div className="animate-pulse bg-dark-300/20 h-40 w-full rounded"></div>}
+                                placeholder={<div className="animate-pulse bg-dark-300/20 h-20 w-full rounded"></div>}
                               >
                                 {section.component}
                               </LazyLoad>
@@ -1017,15 +1204,15 @@ export const AdminDashboard: React.FC = () => {
             <LazyLoad 
               placeholder={
                 <div className="mb-4">
-                  <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="animate-pulse bg-dark-300/30 h-6 w-48 rounded mb-3"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[1, 2, 3].map(i => (
-                      <div key={i} className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-green-500/10"></div>
+                      <div key={i} className="animate-pulse bg-dark-200/40 h-24 rounded-lg border border-green-500/10"></div>
                     ))}
                   </div>
                 </div>
               }
-              rootMargin="100px"
+              rootMargin="50px"
             >
               <div className="mb-4">
                 <h2 className="text-xl font-display mb-3 relative group">
@@ -1035,7 +1222,7 @@ export const AdminDashboard: React.FC = () => {
                   <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-green-400 to-green-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Wallet Monitoring Button */}
                   <motion.div
                     className="bg-dark-200/75 backdrop-blur-lg border-2 border-brand-500/40 hover:border-brand-500/60 p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-brand-500/20"
@@ -1218,7 +1405,7 @@ export const AdminDashboard: React.FC = () => {
                           >
                             <div className="pt-4 border-t border-dark-300">
                               <LazyLoad
-                                placeholder={<div className="animate-pulse bg-dark-300/20 h-40 w-full rounded"></div>}
+                                placeholder={<div className="animate-pulse bg-dark-300/20 h-20 w-full rounded"></div>}
                               >
                                 {section.component}
                               </LazyLoad>
@@ -1235,18 +1422,18 @@ export const AdminDashboard: React.FC = () => {
             <LazyLoad 
               placeholder={
                 <div className="mb-4">
-                  <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
+                  <div className="animate-pulse bg-dark-300/30 h-6 w-48 rounded mb-3"></div>
                   <div className="bg-dark-200/30 p-4 rounded-lg">
                     <div className="animate-pulse bg-dark-300/30 h-6 w-36 rounded mb-4"></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {[1, 2, 3].map(i => (
-                        <div key={i} className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-blue-500/10"></div>
+                        <div key={i} className="animate-pulse bg-dark-200/40 h-24 rounded-lg border border-blue-500/10"></div>
                       ))}
                     </div>
                   </div>
                 </div>
               }
-              rootMargin="100px"
+              rootMargin="50px"
             >
               <div className="mb-4">
                 <h2 className="text-xl font-display mb-3 relative group">
@@ -1260,7 +1447,7 @@ export const AdminDashboard: React.FC = () => {
                 <h3 className="font-medium text-gray-300 mb-3 ml-1 font-mono text-sm">
                   <span className="text-blue-400">☰</span> CORE SYSTEM
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                   {adminSections
                     .filter(section => section.category === "System-Core")
                     .map((section) => (
@@ -1362,7 +1549,7 @@ export const AdminDashboard: React.FC = () => {
                           >
                             <div className="pt-4 border-t border-dark-300">
                               <LazyLoad
-                                placeholder={<div className="animate-pulse bg-dark-300/20 h-40 w-full rounded"></div>}
+                                placeholder={<div className="animate-pulse bg-dark-300/20 h-20 w-full rounded"></div>}
                               >
                                 {section.component}
                               </LazyLoad>
@@ -1378,19 +1565,19 @@ export const AdminDashboard: React.FC = () => {
                   placeholder={
                     <div>
                       <div className="animate-pulse bg-dark-300/30 h-6 w-48 rounded mb-4"></div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {[1, 2, 3].map(i => (
-                          <div key={i} className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-blue-500/10"></div>
+                          <div key={i} className="animate-pulse bg-dark-200/40 h-24 rounded-lg border border-blue-500/10"></div>
                         ))}
                       </div>
                     </div>
                   }
-                  rootMargin="150px"
+                  rootMargin="75px"
                 >
                   <h3 className="font-medium text-gray-300 mb-3 ml-1 font-mono text-sm">
                     <span className="text-blue-400">⚡</span> TESTING & PLAYGROUND
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {adminSections
                       .filter(section => section.category === "System-Testing")
                       .map((section) => (
@@ -1492,7 +1679,7 @@ export const AdminDashboard: React.FC = () => {
                             >
                               <div className="pt-4 border-t border-dark-300">
                                 <LazyLoad
-                                  placeholder={<div className="animate-pulse bg-dark-300/20 h-40 w-full rounded"></div>}
+                                  placeholder={<div className="animate-pulse bg-dark-300/20 h-20 w-full rounded"></div>}
                                 >
                                   {section.component}
                                 </LazyLoad>
@@ -1510,13 +1697,13 @@ export const AdminDashboard: React.FC = () => {
             <LazyLoad 
               placeholder={
                 <div className="mb-4">
-                  <div className="animate-pulse bg-dark-300/30 h-8 w-48 rounded mb-6"></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="animate-pulse bg-dark-300/30 h-6 w-48 rounded mb-3"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-indigo-500/10"></div>
                   </div>
                 </div>
               }
-              rootMargin="100px"
+              rootMargin="50px"
             >
               <div className="mb-4">
                 <h2 className="text-xl font-display mb-3 relative group">
@@ -1526,7 +1713,7 @@ export const AdminDashboard: React.FC = () => {
                   <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-indigo-400 to-indigo-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {adminSections
                     .filter(section => section.category === "Wallet")
                     .map((section) => (
@@ -1620,7 +1807,7 @@ export const AdminDashboard: React.FC = () => {
                           >
                             <div className="pt-4 border-t border-dark-300">
                               <LazyLoad
-                                placeholder={<div className="animate-pulse bg-dark-300/20 h-40 w-full rounded"></div>}
+                                placeholder={<div className="animate-pulse bg-dark-300/20 h-20 w-full rounded"></div>}
                               >
                                 {section.component}
                               </LazyLoad>
@@ -1632,11 +1819,12 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
             </LazyLoad>
+            </div>
           </div>
 
           {/* Admin Logs Panel & Token Discovery - 25% width on desktop, full width on mobile */}
           <div className="lg:col-span-1">
-            <div className="sticky top-6 space-y-6 max-h-screen overflow-y-auto">
+            <div className="sticky top-6 space-y-4 lg:space-y-6 max-h-screen overflow-y-auto">
               <LazyLoad
                 placeholder={
                   <div className="animate-pulse">

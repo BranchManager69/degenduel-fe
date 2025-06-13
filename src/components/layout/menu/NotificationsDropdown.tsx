@@ -28,8 +28,20 @@ export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
     isLoading, 
     error, 
     markAsRead, 
-    markAllAsRead
+    markAllAsRead,
+    isConnected,
+    isAuthenticated
   } = useNotifications();
+
+  // Debug logging
+  console.log('[NotificationsDropdown] State:', {
+    notifications: notifications?.length || 0,
+    isLoading,
+    error,
+    isConnected,
+    isAuthenticated,
+    unreadCount
+  });
 
   // Close dropdown when clicking outside
   const closeDropdown = () => {

@@ -180,10 +180,10 @@ export const PublicUserSearch: React.FC<PublicUserSearchProps> = ({
                 {variant !== "minimal" && (
                   <div className="text-right text-xs">
                     <div className="text-gray-400">
-                      Contests: <span className="text-gray-100">{user.total_contests}</span>
+                      Joined: <span className="text-gray-100">{user._count.contest_participants}</span>
                     </div>
                     <div className="text-gray-400">
-                      XP: <span className="text-gray-100">{user.experience_points}</span>
+                      Created: <span className="text-gray-100">{user._count.created_contests}</span>
                     </div>
                   </div>
                 )}
