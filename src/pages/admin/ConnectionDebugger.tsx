@@ -20,7 +20,7 @@ const WebSocketDashboard: React.FC = () => {
   // NOTE: The unified system uses topic-based subscriptions through one connection
   const websocketTopics = [
     {
-      type: "market-data",
+      type: "market_data",
       description: "Real-time market data for tokens",
       authRequired: false,
     },
@@ -547,7 +547,7 @@ const EXAMPLE_PAYLOADS: Record<string, Record<string, any>> = {
 
 // UNIFIED WEBSOCKET TOPICS - All use single connection with topic subscriptions
 const UNIFIED_TOPICS = {
-  "market-data": {
+  "market_data": {
     description: "Real-time market data for tokens",
     authRequired: false,
     messageTypes: ["MARKET_PRICE", "MARKET_VOLUME", "MARKET_SENTIMENT", "TOKEN_UPDATE"],

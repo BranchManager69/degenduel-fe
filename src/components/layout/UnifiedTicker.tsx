@@ -16,7 +16,6 @@ import { AlertTriangle, Loader2, WifiOff } from "lucide-react";
 import React, { ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
-import { useDegenDuelTop30 } from "../../hooks/websocket/topic-hooks/useDegenDuelTop30";
 import { useLaunchEvent } from "../../hooks/websocket/topic-hooks/useLaunchEvent";
 import { getContestImageUrl } from "../../lib/imageUtils";
 import { useStore } from "../../store/useStore";
@@ -28,7 +27,6 @@ interface Props {
   loading: boolean;
   isCompact?: boolean;
   maxTokens?: number;
-  enableDegenDuelTop30?: boolean; // Enable DegenDuel Top 30 for premium token data
 }
 
 // const TICKER_DEBUG_MODE = false;
@@ -40,7 +38,6 @@ export const UnifiedTicker: React.FC<Props> = ({
   loading: contestsLoadingProp = true,
   isCompact = false,
   maxTokens = 20,
-  enableDegenDuelTop30 = false,
 }) => {
   const { maintenanceMode } = useStore();
   const navigate = useNavigate();
@@ -51,17 +48,9 @@ export const UnifiedTicker: React.FC<Props> = ({
   
   // We'll add the debug effect later after originalTickerItems is defined
   
-  // OPTIMIZED: Only run the hook we actually need to prevent data conflicts!
-  const standardTokenData = useStandardizedTokenData("all", "change", {}, 5, maxTokens);
-  const degenDuelData = useDegenDuelTop30({
-    limit: maxTokens,
-    refreshInterval: enableDegenDuelTop30 ? 30000 : 0,
-    includeSparklines: false
-  });
-
-  // Select data source based on enableDegenDuelTop30 prop - only use what we need
+  // Use standardized token data
   const { tokens: finalTokens, isLoading: finalTokensLoading, isConnected: finalDataConnected } = 
-    enableDegenDuelTop30 ? degenDuelData : standardTokenData;
+    useStandardizedTokenData("all", "change", {}, 5, maxTokens);
 
   // Helper functions
   const formatTimeUntilStart = (startTime: string): string => {
@@ -388,10 +377,6 @@ export const UnifiedTicker: React.FC<Props> = ({
         };
         
         const changeData = formatPercentageChange(change24h);
-        
-        // Check if this is a DegenDuel token with enhanced data
-        const isDegenDuelToken = enableDegenDuelTop30 && 'degenduel_score' in token;
-        const degenToken = isDegenDuelToken ? token as any : null;
 
         return (
           <div
@@ -403,9 +388,7 @@ export const UnifiedTicker: React.FC<Props> = ({
                 if (address) navigate(`/tokens/${address}`);
               }
             }}
-            className={`relative inline-flex items-center rounded-lg cursor-pointer hover:bg-cyber-500/20 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden border border-black/20 ${
-              isDegenDuelToken ? 'bg-gradient-to-r from-brand-500/10 to-cyber-500/10' : 'bg-cyber-500/10'
-            }`}
+            className="relative inline-flex items-center rounded-lg cursor-pointer hover:bg-cyber-500/20 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden border border-black/20 bg-cyber-500/10"
             style={{
               '--token-px': isCompact ? '6px' : '12px',
               '--token-py': isCompact ? '2px' : '4px', 
@@ -465,51 +448,22 @@ export const UnifiedTicker: React.FC<Props> = ({
                 </span>
               </div>
               <div className="flex items-center flex-shrink-0 min-w-0">
-                {isDegenDuelToken && degenToken ? (
-                  <>
-                    <span 
-                      className={`text-brand-400 font-bold flex-shrink-0 ${
-                        isCompact ? 'text-[10px] ml-1.5' : 'text-xs ml-2'
-                      }`}
-                      style={{
-                        textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
-                        WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
-                        paintOrder: 'stroke fill'
-                      }}
-                    >
-                      #{degenToken.trend_rank}
-                    </span>
-                    {!isCompact && (
-                      <span 
-                        className="text-gray-200 flex-shrink-0 text-xs ml-1.5"
-                        style={{
-                          textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9), 0px 0px 6px rgba(0, 0, 0, 0.7)',
-                          WebkitTextStroke: '0.5px rgba(0, 0, 0, 0.5)',
-                          paintOrder: 'stroke fill'
-                        }}
-                      >
-                        {degenToken.degenduel_score.toFixed(0)}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <span 
-                    className={`flex-shrink-0 font-medium ${changeData.colorClass} ${
-                      isCompact ? 'text-[10px] ml-1.5' : 'text-xs ml-2'
-                    }`}
-                    style={{
-                      textShadow: '4px 4px 8px rgba(0, 0, 0, 1), 2px 2px 16px rgba(0, 0, 0, 0.9), 0px 0px 20px rgba(0, 0, 0, 0.8), 0px 0px 32px rgba(0, 0, 0, 0.7)',
-                      WebkitTextStroke: '1px rgba(0, 0, 0, 0.8)',
-                      paintOrder: 'stroke fill',
-                      minWidth: 'fit-content'
-                    } as any}
-                  >
-                    {isCompact ? 
-                      changeData.text.replace('.0', '') : // Remove .0 decimals in compact mode
-                      changeData.text
-                    }
-                  </span>
-                )}
+                <span 
+                  className={`flex-shrink-0 font-medium ${changeData.colorClass} ${
+                    isCompact ? 'text-[10px] ml-1.5' : 'text-xs ml-2'
+                  }`}
+                  style={{
+                    textShadow: '4px 4px 8px rgba(0, 0, 0, 1), 2px 2px 16px rgba(0, 0, 0, 0.9), 0px 0px 20px rgba(0, 0, 0, 0.8), 0px 0px 32px rgba(0, 0, 0, 0.7)',
+                    WebkitTextStroke: '1px rgba(0, 0, 0, 0.8)',
+                    paintOrder: 'stroke fill',
+                    minWidth: 'fit-content'
+                  } as any}
+                >
+                  {isCompact ? 
+                    changeData.text.replace('.0', '') : // Remove .0 decimals in compact mode
+                    changeData.text
+                  }
+                </span>
               </div>
             </div>
           </div>
@@ -538,7 +492,7 @@ export const UnifiedTicker: React.FC<Props> = ({
     if (items.length === 0 && !isOverallLoading) {
       const message = !finalDataConnected ? "NOT CONNECTED" : 
                     activeTab === "contests" ? "NO HOT DUELS" :
-                    activeTab === "tokens" ? (enableDegenDuelTop30 ? "DD TOP 30 QUIET" : "TRENCHES QUIET") :
+                    activeTab === "tokens" ? "TRENCHES QUIET" :
                     "TRENCHES ASLEEP";
       const icon = !finalDataConnected ? <WifiOff className="w-3 h-3 mr-1.5 text-orange-400" /> : 
                    <AlertTriangle className="w-3 h-3 mr-1.5 text-yellow-400" />;
@@ -935,7 +889,7 @@ export const UnifiedTicker: React.FC<Props> = ({
               : "text-gray-400 hover:text-gray-300"
           }`}
         >
-          {enableDegenDuelTop30 ? "DD TOP 30" : "GAINS"}
+          GAINS
         </motion.button>
       </AnimatePresence>
     </div>

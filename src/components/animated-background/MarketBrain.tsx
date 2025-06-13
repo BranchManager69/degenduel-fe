@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
-import { useTokenData } from "../../contexts/TokenDataContext";
+import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
 
 interface MarketNode {
   symbol: string;
@@ -38,7 +38,7 @@ export const MarketBrain: React.FC = () => {
   const [connections] = useState<Connection[]>([]);
   const [particles, setParticles] = useState<Particle[]>([]);
   const mousePosition = useRef({ x: 0, y: 0 });
-  const { tokens, isConnected, lastUpdate } = useTokenData();
+  const { tokens, isConnected, lastUpdate } = useStandardizedTokenData("all", "volume", {}, 20, 50);
   const prevTokensRef = useRef<
     Record<string, { price: string; volume24h: string }>
   >({});

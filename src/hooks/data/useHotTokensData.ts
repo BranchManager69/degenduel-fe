@@ -1,6 +1,9 @@
 // src/hooks/data/useHotTokensData.ts
 
 /**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * No components are using this hook. Use useStandardizedTokenData instead.
+ * 
  * Hook for fetching optimized hot tokens data specifically for ticker display
  * Uses new backend getHotTokens endpoint for maximum performance
  * 
@@ -51,6 +54,10 @@ const DEFAULT_FILTERS: HotTokensFilters = {
   dataFreshness: 300 // 5 minutes
 };
 
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * No components are using this hook. Use useStandardizedTokenData instead.
+ */
 export const useHotTokensData = (options: UseHotTokensDataOptions = {}) => {
   const {
     limit = 20,
@@ -89,7 +96,7 @@ export const useHotTokensData = (options: UseHotTokensDataOptions = {}) => {
         setError(null);
       }
     },
-    ['market-data'] // Fixed: Use kebab-case topic name that backend expects
+    ['market_data'] // Use underscore format for consistency
   );
 
   // Request parameters
@@ -114,7 +121,7 @@ export const useHotTokensData = (options: UseHotTokensDataOptions = {}) => {
       }
       
       // Request hot tokens using the unified WebSocket request method
-      const success = request('market-data', 'getHotTokens', requestParams);
+      const success = request('market_data', 'getHotTokens', requestParams);
       
       if (!success) {
         throw new Error('Failed to send hot tokens request');
@@ -143,8 +150,8 @@ export const useHotTokensData = (options: UseHotTokensDataOptions = {}) => {
     if (!isConnected || !enableSubscription) return;
 
     try {
-      // Subscribe to the market-data topic for hot tokens updates
-      const success = subscribe(['market-data']);
+      // Subscribe to the market_data topic for hot tokens updates
+      const success = subscribe(['market_data']);
       
       if (!success) {
         console.error('useHotTokensData: Failed to subscribe to hot tokens');
@@ -197,4 +204,5 @@ export const useHotTokensData = (options: UseHotTokensDataOptions = {}) => {
   ]);
 };
 
+/** @deprecated Use useStandardizedTokenData instead */
 export default useHotTokensData;

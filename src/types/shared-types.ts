@@ -29,7 +29,7 @@ export interface DDWebSocketMessage {
 }
 
 export enum DDWebSocketTopic {
-  MARKET_DATA = 'market-data',
+  MARKET_DATA = 'market_data',
   PORTFOLIO = 'portfolio',
   SYSTEM = 'system',
   CONTEST = 'contest', 

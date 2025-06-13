@@ -35,11 +35,11 @@ console.log('\n2. Testing WebSocket for real-time updates...');
 const ws = new WebSocket('wss://degenduel.me/api/v69/ws');
 
 ws.on('open', () => {
-  console.log('WebSocket connected! Subscribing to market-data...');
+  console.log('WebSocket connected! Subscribing to market_data...');
   
   const subscribe = {
     type: 'SUBSCRIBE',
-    topics: ['market-data']
+    topics: ['market_data']
   };
   
   console.log('Sending:', JSON.stringify(subscribe, null, 2));
@@ -50,7 +50,7 @@ ws.on('open', () => {
     console.log('\n3. Testing deprecated getDegenDuelRanked (for comparison)...');
     const request = {
       type: 'REQUEST',
-      topic: 'market-data',
+      topic: 'market_data',
       action: 'getDegenDuelRanked',
       requestId: crypto.randomUUID(),
       data: {
@@ -74,7 +74,7 @@ ws.on('message', (data) => {
   
   if (message.type === 'ACKNOWLEDGMENT') {
     console.log('Subscription acknowledged');
-  } else if (message.type === 'DATA' && message.topic === 'market-data') {
+  } else if (message.type === 'DATA' && message.topic === 'market_data') {
     // Real-time broadcast
     if (message.data && Array.isArray(message.data)) {
       console.log('Broadcast update received');

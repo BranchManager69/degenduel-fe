@@ -81,11 +81,11 @@ export const ContestBrowser: React.FC = () => {
       settings: {
         difficulty: (contest as any).difficulty || 'guppy',
         maxParticipants: null,
-        minParticipants: 2,
+        minParticipants: 3,
         tokenTypesAllowed: [],
         startingPortfolioValue: '1000'
       },
-      min_participants: 2,
+      min_participants: 3,
       max_participants: 100,
       // Debug: Check all possible participation field names
       is_participating: (contest as any).joined || (contest as any).participating || (contest as any).is_participating || false,
@@ -391,16 +391,19 @@ export const ContestBrowser: React.FC = () => {
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
             </h1>
-            {isAuthenticated && (
-              <div className="flex gap-3">
-                <CreateContestButton
-                  onCreateClick={() => setIsCreateModalOpen(true)}
-                />
-                <ChallengeFriendButton
-                  onChallengeCreated={handleManualRefresh}
-                />
-              </div>
-            )}
+            <div className="flex gap-3">
+              <CreateContestButton
+                onCreateClick={() => setIsCreateModalOpen(true)}
+              />
+              <ChallengeFriendButton
+                onChallengeCreated={() => {
+                  handleManualRefresh();
+                  fetchUserCredits(); // Refresh credits after challenge creation
+                }}
+                userRole={isAdministrator ? "admin" : "user"}
+                availableCredits={availableCredits}
+              />
+            </div>
             
             {/* WebSocket Connection Status */}
             <div className="flex items-center gap-2 text-xs">

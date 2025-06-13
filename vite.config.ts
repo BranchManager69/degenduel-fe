@@ -153,7 +153,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
             changeOrigin: true,
             secure: true,
           },
-          "^/api/v69/ws/market-data": {
+          "^/api/v69/ws/market_data": {
             target: "wss://degenduel.me", // MANUAL OVERRIDE
             ws: true,
             changeOrigin: true,
@@ -385,7 +385,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
         //   secure: true,
         //   cookieDomainRewrite: "localhost",
         // },
-        // "/api/v69/ws/market-data": {
+        // "/api/v69/ws/market_data": {
         //   target: isDev ? "wss://dev.degenduel.me" : "wss://degenduel.me",
         //   ws: true,
         //   changeOrigin: true,

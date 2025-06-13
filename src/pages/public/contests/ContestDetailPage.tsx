@@ -283,6 +283,7 @@ export const ContestDetails: React.FC = () => {
       console.log("Contest data (detailed):", {
         participant_count: data.participant_count,
         contest_participants: data.contest_participants,
+        participants: data.participants,
         raw_data: data,
       });
 
@@ -324,8 +325,8 @@ export const ContestDetails: React.FC = () => {
             : [],
           difficulty: data.settings?.difficulty || "guppy",
         },
-        participants: Array.isArray(data.contest_participants)
-          ? data.contest_participants.map(
+        participants: Array.isArray(data.contest_participants || data.participants)
+          ? (data.contest_participants || data.participants).map(
               (p: ContestParticipant): LegacyParticipant => {
                 // Extract address from participant and users object  
                 const address = p.wallet_address || "";
@@ -490,7 +491,7 @@ export const ContestDetails: React.FC = () => {
       } else if (contestStatus === "live") {
         // Navigate to lobby/live view for active contests
         console.log("Navigating to contest lobby page");
-        navigate(`/contests/${contest.id}/lobby`);
+        navigate(`/contests/${contest.id}/live`);
         return;
       } else {
         // For upcoming contests, allow portfolio modification

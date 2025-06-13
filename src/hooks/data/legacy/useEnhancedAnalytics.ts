@@ -4,6 +4,12 @@ import { useStore } from "../../../store/useStore";
 // We'll need to update this once the analytics WebSocket is properly set up
 // import { useAnalyticsWebSocket } from './useAnalyticsWebSocket';
 
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * Use hooks/websocket/topic-hooks/useAnalytics.ts instead.
+ * This implementation exists as a duplicate of the one in analytics/legacy/.
+ */
+
 interface AnalyticsState {
   activeUsers: number;
   usersByZone: Record<string, number>;
@@ -72,6 +78,10 @@ interface ExtendedStore {
       };
 }
 
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * Use hooks/websocket/topic-hooks/useAnalytics.ts instead.
+ */
 export const useEnhancedAnalytics = () => {
   const store = useStore() as unknown as ExtendedStore;
   // Get properties from the extended store

@@ -169,6 +169,32 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         isMobile={false}
       />
       
+      {/* Mobile Menu Button - For non-logged in users */}
+      {!user && (
+        <div className="md:hidden">
+          <button
+            className="relative flex items-center justify-center transition-all duration-300 group overflow-hidden
+              w-10 h-10
+              rounded-full bg-gradient-to-r from-purple-600/20 via-purple-700/20 to-purple-800/20
+              border border-purple-500/30 hover:border-purple-400/50
+              hover:from-purple-500/30 hover:via-purple-600/30 hover:to-purple-700/30
+              hover:shadow-[0_0_12px_rgba(127,0,255,0.3)]
+              backdrop-blur-sm z-[60]"
+            aria-label="Navigation menu"
+          >
+            {/* Gradient shine effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+            
+            {/* Hamburger Icon */}
+            <div className="flex flex-col gap-[3px] items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] w-4">
+              <div className="w-3 h-[2px] bg-purple-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center" />
+              <div className="w-2.5 h-[2px] bg-purple-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]" />
+              <div className="w-3 h-[2px] bg-purple-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center" />
+            </div>
+          </button>
+        </div>
+      )}
+      
       {/* User Menu */}
       <Menu as="div" className="relative">
         {({ open }) => (
@@ -260,8 +286,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               leaveTo="transform opacity-0 scale-95"
             >
               <Menu.Items 
-                className="absolute right-0 mt-1 w-56 origin-top-right bg-dark-200/95 backdrop-blur-sm border border-brand-500/20 rounded-lg shadow-lg overflow-hidden z-50"
                 static
+                className="absolute right-0 mt-1 w-56 origin-top-right bg-dark-200/95 backdrop-blur-sm border border-gray-700/50 rounded-lg shadow-lg overflow-hidden z-50"
+                style={{ isolation: 'isolate' }}
               >
                 {/* Enhanced gradient overlays for consistency with mobile */}
                 <div className="absolute inset-0 bg-gradient-to-br from-brand-400/10 via-transparent to-brand-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

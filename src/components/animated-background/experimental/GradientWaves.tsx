@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import { useTokenData } from "../../../contexts/TokenDataContext";
+import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
 
 export const GradientWaves: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
-  const { tokens, isConnected } = useTokenData();
+  const { tokens, isConnected } = useStandardizedTokenData("all", "volume", {}, 20, 50);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   // Gradient waves configuration

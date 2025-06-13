@@ -45,10 +45,16 @@ const TradingPanel: React.FC<{
   const [isTrading, setIsTrading] = useState(false);
   const [showPortfolio, setShowPortfolio] = useState(true);
 
-  // Log portfolio data to debug
+  // Debug logging
   useEffect(() => {
-    console.log('[TradingPanel] Portfolio prop received:', portfolio);
-  }, [portfolio]);
+    console.log('[TradingPanel] Component mounted with:', {
+      user,
+      contestId,
+      portfolio,
+      authToken: localStorage.getItem('authToken'),
+      dd_token: localStorage.getItem('dd_token')
+    });
+  }, [user, contestId, portfolio]);
 
   const executeTrade = async () => {
     if (!selectedToken || !user) return;
@@ -179,7 +185,10 @@ const TradingPanel: React.FC<{
           Select Token
         </label>
         <TokenSearchFixed
-          onSelectToken={setSelectedToken}
+          onSelectToken={(token) => {
+            console.log('[TradingPanel] Token selected:', token);
+            setSelectedToken(token);
+          }}
           placeholder="Search tokens..."
         />
       </div>
@@ -193,7 +202,10 @@ const TradingPanel: React.FC<{
             </label>
             <div className="flex gap-2">
               <button
-                onClick={() => setTradeType('BUY')}
+                onClick={() => {
+                  console.log('[TradingPanel] BUY button clicked');
+                  setTradeType('BUY');
+                }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   tradeType === 'BUY'
                     ? 'bg-green-500 text-white'
@@ -203,7 +215,10 @@ const TradingPanel: React.FC<{
                 BUY
               </button>
               <button
-                onClick={() => setTradeType('SELL')}
+                onClick={() => {
+                  console.log('[TradingPanel] SELL button clicked');
+                  setTradeType('SELL');
+                }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   tradeType === 'SELL'
                     ? 'bg-red-500 text-white'
@@ -489,7 +504,7 @@ export const ContestLobbyV2: React.FC = () => {
     // Subscribe to relevant topics from the WebSocket inventory
     const subscribeToTopics = () => {
       // These topics are from the WebSocket inventory document
-      ws.subscribe(['contest', 'contest-participants', 'portfolio', 'market-data']);
+      ws.subscribe(['contest', 'contest-participants', 'portfolio', 'market_data']);
     };
 
     // Handle trade executed events (from WebSocket inventory line 266)
@@ -654,6 +669,19 @@ export const ContestLobbyV2: React.FC = () => {
   return (
     <SilentErrorBoundary>
       <div className="min-h-screen bg-dark-100">
+        {/* Debug Test Button */}
+        <div className="fixed top-20 right-4 z-50">
+          <button
+            onClick={() => {
+              console.log('[DEBUG] Test button clicked!');
+              alert('Button works! Check console for debug info.');
+            }}
+            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          >
+            TEST CLICK
+          </button>
+        </div>
+        
         {/* Header */}
         <div className="bg-dark-200/50 backdrop-blur-sm border-b border-dark-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

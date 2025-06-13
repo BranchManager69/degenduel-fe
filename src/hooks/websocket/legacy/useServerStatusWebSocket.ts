@@ -1,6 +1,8 @@
 /**
  * Server Status WebSocket Hook
  * 
+ * @deprecated This is a legacy WebSocket hook. Use the modern topic-based hook from '../topic-hooks/useServerStatus' instead.
+ * 
  * This hook provides access to the server status WebSocket endpoint.
  * It follows the standardized WebSocket pattern for monitoring.
  */
@@ -32,6 +34,8 @@ interface ServerStatusMessage {
 /**
  * Hook for monitoring server status via WebSocket with HTTP fallback
  * Uses the v69 Monitor WebSocket endpoint for real-time status updates
+ * 
+ * @deprecated Use useServerStatus from '../topic-hooks/useServerStatus' instead.
  */
 export function useServerStatusWebSocket() {
   const [statusData, setStatusData] = useState<ServerStatusData>({

@@ -398,11 +398,43 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                   I'm your trading assistant for this contest. I'll provide market insights and tips to help you make better trading decisions.
                 </p>
                 
-                <div className="space-y-2">
+                {/* AI Thinking Indicator */}
+                {_isAiThinking && (
+                  <div className="flex items-center justify-center py-2 mb-2">
+                    <div className="flex space-x-1">
+                      <motion.div
+                        className="w-2 h-2 bg-cyber-400 rounded-full"
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                      />
+                      <motion.div
+                        className="w-2 h-2 bg-cyber-400 rounded-full"
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                      />
+                      <motion.div
+                        className="w-2 h-2 bg-cyber-400 rounded-full"
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                      />
+                    </div>
+                    <span className="ml-2 text-xs text-cyber-400">Analyzing...</span>
+                  </div>
+                )}
+                
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {aiTips.length === 0 && !_isAiThinking && (
+                    <div className="text-center py-4 text-xs text-gray-500">
+                      No insights yet. Click below to get started!
+                    </div>
+                  )}
                   {aiTips.map((tip: AITip) => (
-                    <div 
+                    <motion.div 
                       key={tip.id} 
                       className="p-2 rounded-md border border-cyber-500/20 bg-cyber-900/20 text-xs text-gray-300"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
                     >
                       <div className="flex items-center mb-1">
                         {tip.source === "market-insight" && (
@@ -417,10 +449,47 @@ export const ContestChat: React.FC<ContestChatProps> = ({
                         {tip.source === "news" && (
                           <span className="px-1.5 py-0.5 rounded text-xs bg-red-900/60 text-red-400 mr-1">NEWS</span>
                         )}
+                        {tip.timestamp && (
+                          <span className="text-xs text-gray-500 ml-auto">
+                            {new Date(tip.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
                       </div>
                       {tip.text}
-                    </div>
+                    </motion.div>
                   ))}
+                </div>
+                
+                {/* Quick Action Buttons */}
+                <div className="mt-3 space-y-2">
+                  <button
+                    onClick={() => askAI("What's the current market sentiment?")}
+                    disabled={_isAiThinking}
+                    className="w-full text-xs py-1.5 px-2 bg-cyber-900/50 hover:bg-cyber-800/50 text-cyber-300 rounded border border-cyber-500/30 transition-colors disabled:opacity-50"
+                  >
+                    Market Sentiment
+                  </button>
+                  <button
+                    onClick={() => askAI("Give me a trading tip for this contest")}
+                    disabled={_isAiThinking}
+                    className="w-full text-xs py-1.5 px-2 bg-cyber-900/50 hover:bg-cyber-800/50 text-cyber-300 rounded border border-cyber-500/30 transition-colors disabled:opacity-50"
+                  >
+                    Trading Tip
+                  </button>
+                  <button
+                    onClick={() => askAI("What are the latest crypto news?")}
+                    disabled={_isAiThinking}
+                    className="w-full text-xs py-1.5 px-2 bg-cyber-900/50 hover:bg-cyber-800/50 text-cyber-300 rounded border border-cyber-500/30 transition-colors disabled:opacity-50"
+                  >
+                    Latest News
+                  </button>
+                  <button
+                    onClick={() => askAI()}
+                    disabled={_isAiThinking}
+                    className="w-full text-xs py-1.5 px-2 bg-brand-600 hover:bg-brand-500 text-white rounded font-medium transition-colors disabled:opacity-50"
+                  >
+                    Get Fresh Insight
+                  </button>
                 </div>
               </div>
             </motion.div>

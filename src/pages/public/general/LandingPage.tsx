@@ -17,7 +17,6 @@ import { Link } from "react-router-dom";
 // Framer Motion
 import { motion } from "framer-motion";
 // Landing page
-import { AuthDebugPanel } from "../../../components/debug";
 import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
 import { EnhancedContestSection } from "../../../components/landing/contests-preview/EnhancedContestSection";
 import { CtaSection } from "../../../components/landing/cta-section/CtaSection";
@@ -67,7 +66,6 @@ export const LandingPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [animationPhase, setAnimationPhase] = useState(0);
-  const [debugMode, setDebugMode] = useState(false);
   const [animationDone, setAnimationDone] = useState(false);
   const forceShowFabs = true; // Changed from useState to a const, always true
   
@@ -519,74 +517,7 @@ export const LandingPage: React.FC = () => {
               {/* Title Section - Now featuring IntroLogo */}
               <div className="flex flex-col items-center justify-center mb-4 md:mb-8">
                 
-                {/* Admin debug button - visible even when HeroTitle is hidden */}
-                {isAdministrator && (
-                  <div className="flex justify-end mb-2 w-full max-w-4xl">
-                    <button
-                      className="bg-black/50 text-white text-xs p-1 rounded-md"
-                      onClick={() => setDebugMode(!debugMode)}
-                    >
-                      {debugMode ? "🛠️" : "🐛"}
-                    </button>
-                  </div>
-                )}
                 
-                {/* Demo Section - only visible to admins with debug mode enabled */}
-                {debugMode && isAdministrator && (
-                  <div className="w-full mb-10">
-                    
-                    {/* Auth Debug Panel 1 - shows authentication state for debugging */}
-                    <div className="mb-6 bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
-                      <h4 className="text-xl font-semibold mb-4 text-amber-400">Auth Debug 1</h4>
-                      <AuthDebugPanel />
-                    </div>
-                    
-                    {/* Auth Debug Panel 2 - shows authentication state for debugging */}
-                    <div className="fixed bottom-0 left-0 right-0 z-[100] p-2 bg-dark-700/80 backdrop-blur-sm">
-                      <h4 className="text-xl font-semibold mb-4 text-amber-400">Auth Debug 2</h4>
-                      <AuthDebugPanel />
-                    </div>
-
-                    {/* Responsive grid layout - one column on mobile, three columns on large screens */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      
-                      {/* Token Data Demo 
-                      <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
-                        <h4 className="text-xl font-semibold mb-4 text-brand-400">Market Data Topic</h4>
-                        <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading token data...</div>}>
-                          {(() => {
-                            const TokenDataDebug = React.lazy(() => import("../../../components/debug/websocket/TokenDataDebug"));
-                            return <TokenDataDebug />;
-                          })()}
-                        </React.Suspense>
-                      </div>
-                      
-                      {/* System Status Demo */}
-                      <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
-                        <h4 className="text-xl font-semibold mb-4 text-cyan-400">System Topic</h4>
-                        <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading system status...</div>}>
-                          {(() => {
-                            const SystemStatusDebug = React.lazy(() => import("../../../components/debug/websocket/SystemStatusDebug"));
-                            return <SystemStatusDebug />;
-                          })()}
-                        </React.Suspense>
-                      </div>
-                      
-                      {/* User Profile Demo */}
-                      <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 border border-gray-800">
-                        <h4 className="text-xl font-semibold mb-4 text-purple-400">User Topic (Requires Auth)</h4>
-                        <React.Suspense fallback={<div className="p-4 text-center text-gray-500">Loading user profile...</div>}>
-                          {(() => {
-                            const UserProfileDebug = React.lazy(() => import("../../../components/debug/websocket/UserProfileDebug"));
-                            return <UserProfileDebug />;
-                          })()}
-                        </React.Suspense>
-                      </div>
-
-                    </div>
-
-                  </div>
-                )}
                 
                 {/* Enhanced Hero Section with IntroLogo and animated background */}
                 <div className="relative w-full my-2 md:my-6">
@@ -605,7 +536,7 @@ export const LandingPage: React.FC = () => {
 
                     {/* Deep ambient glow spots */}
                     <motion.div
-                      className="absolute top-1/4 -left-1/4 w-full h-full rounded-full blur-3xl"
+                      className="absolute top-1/4 -left-1/4 w-full h-full rounded-full blur-xl"
                       style={{
                         background: 'radial-gradient(circle, rgba(153, 51, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)'
                       }}
@@ -622,7 +553,7 @@ export const LandingPage: React.FC = () => {
 
                     {/* Elegant data flow lines */}
                     <motion.div
-                      className="absolute bottom-1/3 -right-1/4 w-full h-full rounded-full blur-3xl"
+                      className="absolute bottom-1/3 -right-1/4 w-full h-full rounded-full blur-xl"
                       style={{
                         background: 'radial-gradient(circle, rgba(0, 225, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)'
                       }}

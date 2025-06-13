@@ -1,4 +1,7 @@
 /**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * No components are using this hook.
+ * 
  * useDatabaseStats Hook
  * 
  * Public hook for accessing database statistics via SYSTEM WebSocket topic
@@ -20,6 +23,7 @@ export interface DatabaseStats {
  * Hook for accessing database statistics via public SYSTEM WebSocket
  * 
  * @returns Database stats, loading state, and refresh function
+ * @deprecated This hook is deprecated and will be removed in a future version.
  */
 export function useDatabaseStats() {
   const [data, setData] = useState<DatabaseStats | null>(null);

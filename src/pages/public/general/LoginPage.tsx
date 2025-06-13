@@ -93,32 +93,6 @@ const LoginPage: React.FC = () => {
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-10 w-full max-w-md"
       >
-        {/* Logo section */}
-        <motion.div 
-          className="text-center mb-12"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ 
-            duration: 1.2, 
-            ease: [0.22, 1, 0.36, 1],
-            delay: 0.2 
-          }}
-        >
-          <Logo size="xl" animated={true} />
-          <motion.div 
-            className="mt-6 space-y-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.8 }}
-          >
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent">
-              Welcome to DegenDuel
-            </h1>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Connect your wallet or choose an alternative method to get started
-            </p>
-          </motion.div>
-        </motion.div>
 
         {/* Unified login panel */}
         <motion.div
@@ -130,27 +104,34 @@ const LoginPage: React.FC = () => {
             ease: [0.22, 1, 0.36, 1]
           }}
         >
-          <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 rounded-2xl opacity-20 group-hover:opacity-30 transition-opacity blur-sm"></div>
-            <div className="relative bg-gray-900/90 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-8 shadow-2xl">
-              {/* Header section */}
+          <div className="relative">
+            {/* Clean, subtle container */}
+            <div className="relative bg-gray-900/80 backdrop-blur-sm border border-gray-800 rounded-2xl p-8 shadow-xl">
+              {/* Logo integrated into header */}
               <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-2xl mb-4 border border-purple-500/20">
-                  <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Connect with Wallet</h3>
-                <p className="text-gray-400 text-sm">Recommended for the full DegenDuel experience</p>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ 
+                    duration: 0.8, 
+                    ease: [0.22, 1, 0.36, 1]
+                  }}
+                  className="mb-6"
+                >
+                  <Logo size="lg" animated={true} />
+                </motion.div>
               </div>
               
               {/* Primary wallet button - full width */}
-              <div className="mb-8">
+              <div className="mb-2">
                 <SimpleWalletButton 
                   className=""
                   isCompact={false} 
                 />
               </div>
+              
+              {/* Wallet requirement note */}
+              <p className="text-gray-400 text-xs text-center mb-8">Wallet required for first sign-up only if you link social(s)</p>
 
               {/* Divider */}
               <div className="relative mb-8">
@@ -175,7 +156,7 @@ const LoginPage: React.FC = () => {
                     />
                   </div>
                   <div className="text-center mt-2">
-                    <span className="text-xs text-gray-400">X (Twitter)</span>
+                    <span className="text-xs text-gray-400">Twitter</span>
                   </div>
                 </div>
 

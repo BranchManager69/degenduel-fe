@@ -118,7 +118,7 @@ export const BlinkResolver: React.FC = () => {
       navigate(`/contests/${contestId}`, { state: { transactionSuccess: true, signature } });
     } else if (blinkUrl.includes('/view-contest')) {
       // If it was a view live contest action, redirect to contest lobby
-      navigate(`/contests/${contestId}/lobby`, { state: { blinkRedirect: true } });
+      navigate(`/contests/${contestId}/live`, { state: { blinkRedirect: true } });
     } else if (blinkUrl.includes('/view-results')) {
       // If it was a view results action, redirect to contest results
       navigate(`/contests/${contestId}/results`, { state: { blinkRedirect: true } });

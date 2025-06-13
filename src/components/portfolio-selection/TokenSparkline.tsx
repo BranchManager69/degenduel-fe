@@ -72,7 +72,7 @@ export const TokenSparkline: React.FC<TokenSparklineProps> = ({
     fetchPriceHistory();
     
     // TODO: In the future, implement WebSocket subscription for real-time price history
-    // This would use the market-data topic with a specific request for historical data
+    // This would use the market_data topic with a specific request for historical data
   }, [tokenAddress]);
 
   if (error === "unavailable") {

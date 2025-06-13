@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useStandardizedTokenData } from './useStandardizedTokenData';
 import { TokenHelpers } from '../../types';
 
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * No components are using this hook. Use useStandardizedTokenData instead.
+ */
+
 interface GMGNPriceData {
   address: string;
   price: number;
@@ -120,6 +125,10 @@ const fetchGMGNPricesInBatches = async (
   return priceMap;
 };
 
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * No components are using this hook. Use useStandardizedTokenData instead.
+ */
 export function useGMGNTokenPrices(): GMGNTokenPricesResult {
   // Get fallback data from existing hook
   const fallbackData = useStandardizedTokenData();

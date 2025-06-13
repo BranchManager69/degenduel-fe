@@ -31,7 +31,7 @@ export const WebSocketStatusTest: React.FC = () => {
         
         <div className="p-4 bg-dark-200 rounded border border-dark-500">
           <h3 className="text-lg font-semibold text-brand-300 mb-2">No Reconnect Info</h3>
-          <UnifiedWebSocketStatus topic="market-data" showReconnectInfo={false} />
+          <UnifiedWebSocketStatus topic="market_data" showReconnectInfo={false} />
         </div>
         
         <div className="p-4 bg-dark-200 rounded border border-dark-500">

@@ -11,6 +11,7 @@ interface MultiSelectProps {
   onChange: (values: number[]) => void;
   options: MultiSelectOption[];
   className?: string;
+  disabled?: boolean;
 }
 
 export const MultiSelect: React.FC<MultiSelectProps> = ({
@@ -18,8 +19,10 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   onChange,
   options,
   className = "",
+  disabled = false,
 }) => {
   const toggleOption = (optionValue: number) => {
+    if (disabled) return;
     if (value.includes(optionValue)) {
       onChange(value.filter((v) => v !== optionValue));
     } else {
@@ -28,6 +31,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   };
 
   const toggleAll = () => {
+    if (disabled) return;
     if (value.length === options.length) {
       onChange([]);
     } else {
@@ -41,26 +45,30 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
         <button
           type="button"
           onClick={toggleAll}
-          className="text-sm text-gray-300 hover:text-gray-100"
+          disabled={disabled}
+          className={`text-sm ${disabled ? 'text-gray-500 cursor-not-allowed' : 'text-gray-300 hover:text-gray-100'}`}
         >
           {value.length === options.length ? "Deselect All" : "Select All"}
         </button>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-9 gap-2">
         {options.map((option) => (
           <button
             key={option.value}
             type="button"
             onClick={() => toggleOption(option.value)}
-            className={`flex items-center justify-between px-3 py-2 rounded-md border ${
-              value.includes(option.value)
-                ? "bg-brand-500/20 border-brand-500 text-brand-300"
-                : "bg-dark-300 border-dark-400 text-gray-300 hover:border-gray-500"
+            disabled={disabled}
+            className={`relative flex items-center justify-center w-10 h-10 rounded-md border text-sm font-medium ${
+              disabled 
+                ? "bg-dark-400/50 border-dark-500/50 text-gray-500 cursor-not-allowed"
+                : value.includes(option.value)
+                  ? "bg-brand-500/20 border-brand-500 text-brand-300"
+                  : "bg-dark-300 border-dark-400 text-gray-300 hover:border-gray-500"
             }`}
           >
             <span>{option.label}</span>
             {value.includes(option.value) && (
-              <CheckIcon className="w-4 h-4 ml-2" />
+              <CheckIcon className="w-3 h-3 absolute" />
             )}
           </button>
         ))}

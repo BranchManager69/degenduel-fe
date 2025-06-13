@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 
-import { useTokenData } from "../../contexts/TokenDataContext";
+import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
 
 interface TokenUpdate {
   id: string;
@@ -34,7 +34,7 @@ export const AmbientMarketData: React.FC = () => {
   const [lastMetrics, setLastMetrics] = useState<Record<string, TokenMetrics>>(
     {},
   );
-  const { tokens, isConnected, lastUpdate } = useTokenData();
+  const { tokens, isConnected, lastUpdate } = useStandardizedTokenData("all", "volume", {}, 20, 50);
   const prevTokensRef = useRef<{
     [symbol: string]: { price: string; volume24h: string };
   }>({});

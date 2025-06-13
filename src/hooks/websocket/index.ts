@@ -110,7 +110,6 @@ export * from './topic-hooks/useContestPositions';
 export * from './topic-hooks/useContests';
 export * from './topic-hooks/useContestScheduler';
 export * from './topic-hooks/useLiquiditySim';
-export * from './topic-hooks/useMarketData';
 export * from './topic-hooks/useNotifications';
 export * from './topic-hooks/usePortfolio';
 export * from './topic-hooks/usePortfolioUpdates';

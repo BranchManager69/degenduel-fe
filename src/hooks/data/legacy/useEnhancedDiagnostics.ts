@@ -4,6 +4,12 @@ import { useStore } from "../../../store/useStore";
 // We'll need to update this once the diagnostics WebSocket is properly set up
 // import { useBaseWebSocket } from './useBaseWebSocket';
 
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * Use hooks/websocket/topic-hooks/useService.ts instead.
+ * This implementation exists as a duplicate of the one in analytics/legacy/.
+ */
+
 interface UserSession {
   sessionId: string;
   userId: string;
@@ -60,6 +66,10 @@ interface DiagnosticsData {
   walletDiagnostics: Record<string, WalletDiagnostic>;
 }
 
+/**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * Use hooks/websocket/topic-hooks/useService.ts instead.
+ */
 export const useEnhancedDiagnostics = () => {
   const { user } = useStore();
   const [diagnosticsData, setDiagnosticsData] = useState<DiagnosticsData>({

@@ -33,17 +33,17 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-  TrustWalletAdapter
+    PhantomWalletAdapter,
+    SolflareWalletAdapter,
+    TrustWalletAdapter
 } from "@solana/wallet-adapter-wallets";
 
 // Other providers of dubious quality:
 import { Toaster } from "react-hot-toast";
 import { ToastListener, ToastProvider } from "./components/toast";
-import { TokenDataProvider } from "./contexts/TokenDataContext";
 
 // Components
+import { NotificationDebugPanel } from './components/debug/NotificationDebugPanel';
 
 // Helper component to redirect while preserving query parameters
 const PreserveQueryParamsRedirect = ({ to }: { to: string }) => {
@@ -127,6 +127,7 @@ const WalletManagementPage = lazy(() => import('./pages/admin/WalletManagementPa
 const WebSocketHub = lazy(() => import('./pages/admin/WebSocketHub'));
 const TokenSyncTest = lazy(() => import('./pages/admin/TokenSyncTest'));
 const TokenDataControlCenter = lazy(() => import('./pages/admin/TokenDataControlCenter').then(module => ({ default: module.TokenDataControlCenter })));
+const ApiTestingPage = lazy(() => import('./pages/admin/ApiTestingPage'));
 
 
 // Authenticated routes lazy loaded
@@ -293,12 +294,10 @@ const AppProvidersAndContent: React.FC = () => {
       <WalletAdapterProviders>
         <UnifiedAuthProvider>
           <SolanaConnectionProvider>
-            <TokenDataProvider>
-              <ToastProvider>
-                <AppContent />
-                <Toaster position="top-right" />
-              </ToastProvider>
-            </TokenDataProvider>
+            <ToastProvider>
+              <AppContent />
+              <Toaster position="top-right" />
+            </ToastProvider>
           </SolanaConnectionProvider>
         </UnifiedAuthProvider>
       </WalletAdapterProviders>
@@ -515,6 +514,7 @@ const AppContent: React.FC = () => {
           <Route path="/admin/wallet-monitoring" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Wallet Monitoring..." />}><WalletMonitoring /></Suspense></AdminRoute>} />
           <Route path="/admin/liq-sim" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Liquidity Simulator..." />}><LiquiditySimulatorPage /></Suspense></AdminRoute>} />
           <Route path="/admin/token-sync-test" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading Token Sync Test..." />}><TokenSyncTest /></Suspense></AdminRoute>} />
+          <Route path="/admin/api-testing" element={<AdminRoute><Suspense fallback={<LoadingFallback variant="default" message="Loading API Testing Dashboard..." />}><ApiTestingPage /></Suspense></AdminRoute>} />
           <Route path="/websocket-test" element={<SuperAdminRoute><Navigate to="/connection-debugger" replace /></SuperAdminRoute>} />
           <Route path="/websocket-dashboard" element={<SuperAdminRoute><Navigate to="/connection-debugger" replace /></SuperAdminRoute>} />
           <Route path="/amm-sim" element={<SuperAdminRoute><Suspense fallback={<LoadingFallback />}><AmmSim /></Suspense></SuperAdminRoute>} />
@@ -559,6 +559,9 @@ const AppContent: React.FC = () => {
 
       {/* Achievement Notification (?) */}
       <AchievementNotification />
+
+      {/* Notification Debug Panel */}
+      <NotificationDebugPanel />
 
       {/* Connection error banners aligned to the top of the screen */}
       {/*

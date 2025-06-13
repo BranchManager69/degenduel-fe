@@ -578,11 +578,11 @@ export const Footer: React.FC = () => {
                   </span>
                   <div className="relative">
                     <div
-                      className={`${styles.dotSize || 'w-4 h-4 sm:w-5 sm:h-5'} rounded-full transition-all duration-300 ${styles.dotColor} ${styles.shadow} ${styles.animate} ${styles.statusText === 'ONLINE' ? 'animate-pulse shadow-lg' : ''}`}
+                      className={`${styles.dotSize || 'w-3 h-3 sm:w-4 sm:h-4'} rounded-full transition-all duration-300 ${styles.dotColor} ${styles.shadow} ${styles.animate} ${styles.statusText === 'ONLINE' ? 'animate-pulse shadow-lg' : ''}`}
                     />
                     {styles.wsIndicator && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-cyan-400 text-[12px] sm:text-[14px] font-bold leading-none">
+                        <span className="text-cyan-400 text-[10px] sm:text-[12px] font-bold leading-none">
                           ⚡
                         </span>
                       </div>
