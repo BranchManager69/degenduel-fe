@@ -6,8 +6,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNotifications } from '../../hooks/websocket/topic-hooks/useNotifications';
-import { useUnifiedWebSocket } from '../../hooks/websocket/useUnifiedWebSocket';
 import { DDExtendedMessageType } from '../../hooks/websocket/types';
+import { useUnifiedWebSocket } from '../../hooks/websocket/useUnifiedWebSocket';
 
 export const NotificationDebugPanel: React.FC = () => {
   const [wsMessages, setWsMessages] = useState<any[]>([]);
@@ -50,11 +50,11 @@ export const NotificationDebugPanel: React.FC = () => {
   }, []);
 
   if (!isVisible) {
-    return (
-      <div className="fixed bottom-4 right-4 bg-gray-800 text-white px-3 py-1 rounded text-xs z-50">
-        Press Ctrl+Shift+D to toggle debug panel
-      </div>
-    );
+    //return (
+    //  <div className="fixed bottom-4 right-4 bg-gray-800 text-white px-3 py-1 rounded text-xs z-50">
+    //    Press Ctrl+Shift+D to toggle debug panel
+    //  </div>
+    //);
   }
 
   return (

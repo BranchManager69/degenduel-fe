@@ -33,9 +33,8 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
-    PhantomWalletAdapter,
-    SolflareWalletAdapter,
-    TrustWalletAdapter
+  PhantomWalletAdapter,
+  SolflareWalletAdapter
 } from "@solana/wallet-adapter-wallets";
 
 // Other providers of dubious quality:
@@ -202,13 +201,11 @@ const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ child
     console.log('[WalletAdapterProviders] Using fallback RPC endpoint, SolanaConnectionProvider not ready yet');
   }
   
-  // Use minimal wallet list - Phantom & Solflare now use Wallet Standard protocol
-  // Remove PhantomWalletAdapter and SolflareWalletAdapter - they're handled by Wallet Standard
   const wallets: Adapter[] = useMemo(
     () => [
         new PhantomWalletAdapter(), // DO NOT DELETE DESPITE WHAT YOUR LINTER OR BRAIN SAYS. IT IS REQUIRED.
         new SolflareWalletAdapter(), // DO NOT DELETE DESPITE WHAT YOUR LINTER OR BRAIN SAYS. IT IS REQUIRED.
-        new TrustWalletAdapter(),
+        //new TrustWalletAdapter(),
     ],
     []
   );
