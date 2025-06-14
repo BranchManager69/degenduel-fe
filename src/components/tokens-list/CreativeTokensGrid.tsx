@@ -106,6 +106,10 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
                 src={token.header_image_url || ''} 
                 alt={token.symbol}
                 className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                style={{ 
+                  objectPosition: 'center center',
+                  animation: 'bannerScan 60s ease-in-out infinite'
+                }}
               />
               {/* Neutral gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/20 transition-all duration-500" />
@@ -123,107 +127,69 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
 
         {/* MAIN CONTENT */}
         <div className="relative z-10 p-4 h-full flex flex-col justify-between">
-          {/* TOP ROW - Rank Badge & Performance Indicators */}
-          <div className="flex justify-between items-start mb-3">
-            {/* LEFT SIDE - RANK BADGE */}
-            <div>
-              {!isDuel && (
-                <div className={`flex items-center justify-center w-8 h-8 rounded-xl shadow-2xl
-                  bg-gradient-to-br ${rankStyle.bg} transform group-hover:scale-110 transition-transform duration-300
-                  ${isTopThree ? 'ring-2 ring-white/30' : ''}
-                `}>
-                  <span className="text-sm font-black text-white drop-shadow-lg">
-                    {displayRank}
-                  </span>
-                </div>
-              )}
-            </div>
-            
-            {/* RIGHT SIDE - DEGENDUEL SCORE */}
-            {token.degenduel_score && (
-              <div className="px-3 py-1.5 bg-brand-500/20 backdrop-blur-sm rounded-lg border border-brand-400/30">
-                <span className="text-sm text-brand-300 font-bold">{Math.round(Number(token.degenduel_score) || 0)}</span>
-              </div>
-            )}
-          </div>
-          
-          {/* MIDDLE - TOKEN INFO */}
+          {/* MIDDLE - TOKEN INFO WITH RANK */}
           <div className="flex-1 flex flex-col justify-center">
-            <div className="mb-2">
-              <h3 className={`font-black text-white drop-shadow-lg transition-all duration-300
-                ${isTopThree ? 'text-2xl group-hover:text-3xl' : 'text-xl group-hover:text-2xl'}
-              `}>
-                {token.symbol}
-              </h3>
-              <p className="text-gray-300 text-sm font-medium truncate opacity-80">
+            <div className="mb-3">
+              <div className="flex items-start justify-between">
+                <h3 className={`${token.symbol.length >= 9 ? 'text-3xl' : 'text-4xl'} font-bold text-white`} style={{ 
+                  textShadow: '6px 6px 12px rgba(0,0,0,1), -4px -4px 8px rgba(0,0,0,1), 3px 3px 6px rgba(0,0,0,1), 0px 0px 10px rgba(0,0,0,0.9)', 
+                  WebkitTextStroke: '1.5px rgba(0,0,0,0.7)' 
+                }}>
+                  {token.symbol}
+                </h3>
+                
+                {/* RANK NUMBER - on same line as symbol */}
+                {!isDuel && displayRank && (
+                  <span className={`font-bold ml-2 ${
+                    displayRank === 1 ? 'text-yellow-400' : 
+                    displayRank === 2 ? 'text-gray-300' : 
+                    displayRank === 3 ? 'text-amber-600' : 
+                    'text-white/60'
+                  }`} style={{
+                    fontSize: '14px',
+                    textShadow: 
+                      displayRank === 1 ? '0 0 10px rgba(251, 191, 36, 0.6), 2px 2px 4px rgba(0,0,0,1)' :
+                      displayRank === 2 ? '0 0 10px rgba(209, 213, 219, 0.6), 2px 2px 4px rgba(0,0,0,1)' :
+                      displayRank === 3 ? '0 0 10px rgba(217, 119, 6, 0.6), 2px 2px 4px rgba(0,0,0,1)' :
+                      '2px 2px 4px rgba(0,0,0,1)',
+                    fontWeight: 700,
+                  }}>
+                    #{displayRank}
+                  </span>
+                )}
+              </div>
+              <p className="text-gray-300 text-sm truncate mt-1" style={{
+                textShadow: '2px 2px 4px rgba(0,0,0,0.9)'
+              }}>
                 {token.name}
               </p>
             </div>
             
-            {/* ENHANCED PRICE DISPLAY */}
-            <div className="mb-3">
-              <div className="text-lg font-bold text-white font-mono drop-shadow-md">
-                {formatTokenPrice(TokenHelpers.getPrice(token))}
+            {/* MARKET CAP AND CHANGE - side by side */}
+            <div className="flex items-center justify-between">
+              {/* Market Cap - left side */}
+              <div className="text-base font-bold text-white" style={{ 
+                textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
+              }}>
+                ${formatNumber(TokenHelpers.getMarketCap(token), 'short')} MC
               </div>
-              <div className="flex items-center gap-2 mt-1">
-                <div className={`px-2 py-1 rounded-lg font-bold text-sm shadow-lg
-                  ${changeNum >= 0 ? 
-                    'bg-green-500/30 text-green-200 border border-green-400/30' : 
-                    'bg-red-500/30 text-red-200 border border-red-400/30'
-                  }
-                `}>
-                  {changeNum >= 0 ? '↗' : '↘'} {formatPercentage(TokenHelpers.getPriceChange(token))}
-                </div>
+              
+              {/* Percentage change - right side */}
+              <div className={`text-sm font-bold font-sans ${changeNum >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ 
+                textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
+              }}>
+                {changeNum >= 0 ? '↗' : '↘'} {formatPercentage(TokenHelpers.getPriceChange(token), false)}
               </div>
             </div>
           </div>
           
-          {/* BOTTOM - ENHANCED STATS GRID */}
-          <div className="space-y-2">
-            {/* Primary Stats Row */}
-            <div className="grid grid-cols-3 gap-1 text-xs">
-              <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
-                <div className="text-gray-400 mb-0.5">MCap</div>
-                <div className="text-white font-bold">${formatNumber(TokenHelpers.getMarketCap(token), 'short')}</div>
-              </div>
-              <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
-                <div className="text-gray-400 mb-0.5">Volume</div>
-                <div className="text-white font-bold">${formatNumber(TokenHelpers.getVolume(token), 'short')}</div>
-              </div>
-              <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 border border-white/10">
-                <div className="text-gray-400 mb-0.5">Liq</div>
-                <div className="text-white font-bold">${formatNumber(TokenHelpers.getLiquidity(token), 'short')}</div>
-              </div>
+          {/* BOTTOM - PRICE */}
+          <div>
+            <div className="text-xs text-gray-300 whitespace-nowrap" style={{ 
+              textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
+            }}>
+              {formatTokenPrice(TokenHelpers.getPrice(token))}
             </div>
-            
-            {/* Multi-timeframe Changes */}
-            {token.priceChanges && (
-              <div className="flex items-center justify-between px-1">
-                <div className="flex gap-1">
-                  <div className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    (Number(token.priceChanges.m5) || 0) >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
-                  }`}>
-                    5m: {formatPercentage(Number(token.priceChanges.m5) || 0, false)}
-                  </div>
-                  <div className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    (Number(token.priceChanges.h1) || 0) >= 0 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
-                  }`}>
-                    1h: {formatPercentage(Number(token.priceChanges.h1) || 0, false)}
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Tags if available */}
-            {token.tags && token.tags.length > 0 && (
-              <div className="flex gap-1 flex-wrap px-1">
-                {token.tags.slice(0, 3).map((tag, i) => (
-                  <span key={i} className="text-[10px] px-1.5 py-0.5 bg-brand-500/20 text-brand-300 rounded">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         </div>
         
@@ -242,6 +208,26 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
 
   return (
     <div className="relative">
+      {/* CSS for banner scanning animation */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes bannerScan {
+            0%, 100% {
+              object-position: center center;
+            }
+            25% {
+              object-position: left center;
+            }
+            50% {
+              object-position: center center;
+            }
+            75% {
+              object-position: right center;
+            }
+          }
+        `
+      }} />
+      
       {/* Background effects - Enhanced cyberpunk grid */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-cyber-500/10"></div>

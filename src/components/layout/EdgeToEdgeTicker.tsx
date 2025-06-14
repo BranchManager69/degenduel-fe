@@ -41,7 +41,7 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = (props) => {
     contests: initialContests,
     loading: initialLoading = true,
     isCompact: compactOverrideProp,
-    maxTokens = 15,
+    maxTokens = 20,
   } = props;
 
   // Use header scroll state to sync with header compact mode by default
