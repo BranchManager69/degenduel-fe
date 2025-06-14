@@ -35,6 +35,7 @@ _ADMIN_WALLET_DASHBOARD.md
 .env.development
 .env.test
 .env.production
+.ws-auth
 
 # Logs
 logs/

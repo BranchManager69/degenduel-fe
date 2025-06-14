@@ -232,8 +232,70 @@ export function useTokenData(
   // WebSocket handler for ALL token data (initial + updates + paginated responses)
   const handleMarketData = useCallback((message: any) => {
     try {
+      console.log(`[useTokenData] 🔥 RECEIVED MESSAGE:`, {
+        type: message.type,
+        topic: message.topic,
+        dataType: message.data?.type,
+        hasToken: !!message.data?.token,
+        tokenSymbol: message.data?.token?.symbol,
+        tokenPrice: message.data?.token?.price
+      });
+
+      // Handle individual token price updates from the new system
+      if (message.topic && message.topic.startsWith('token:price:')) {
+        if (message.data?.type === 'price_update') {
+          const tokenAddress = message.topic.split(':')[2];
+          console.log(`[useTokenData] 🎯 INDIVIDUAL TOKEN UPDATE for ${tokenAddress}: ${message.data.token.symbol} = $${message.data.token.price}`);
+          
+          // Update single token in existing list
+          setTokens((prev: Token[]) => {
+            const index = prev.findIndex(t => t.address === tokenAddress);
+            if (index !== -1) {
+              const updated = [...prev];
+              updated[index] = {
+                ...updated[index],
+                ...transformBackendTokenData(message.data.token)
+              };
+              return updated;
+            }
+            return prev;
+          });
+          
+          setLastUpdate(new Date());
+          
+          dispatchWebSocketEvent('token_price_update', {
+            socketType: 'individual-update',
+            message: `Price update for ${message.data.token.symbol}: $${message.data.token.price}`,
+            timestamp: new Date().toISOString()
+          });
+          return;
+        }
+      }
+      
+      // Still handle batch updates from token:price for backward compatibility
+      if (message.topic === 'token:price') {
+        if (message.data?.type === 'batch_update') {
+          console.log(`[useTokenData] Received batch update for ${message.data.count} tokens`);
+          
+          // Transform and update tokens
+          const updatedTokens = message.data.tokens.map(transformBackendTokenData);
+          
+          setTokens(updatedTokens);
+          setLastUpdate(new Date());
+          setIsLoading(false);
+          setHasInitialData(true);
+          
+          dispatchWebSocketEvent('token_batch_update', {
+            socketType: 'batch-update',
+            message: `Received batch update for ${message.data.count} tokens`,
+            timestamp: new Date().toISOString()
+          });
+          return;
+        }
+      }
+      
       // Handle paginated WebSocket responses (primary method)
-      if (message.type === 'DATA' && message.topic === 'market_data' && message.action === 'degenDuelRanked') {
+      if (message.type === 'DATA' && (message.topic === 'market_data' || message.topic === 'market-data') && message.action === 'degenDuelRanked') {
         console.log(`[useTokenData] Received paginated WebSocket response`);
 
         // Skip paginated responses if we already have REST data loaded to prevent flickering
@@ -295,14 +357,15 @@ export function useTokenData(
       }
 
       // Handle real-time market data updates (subscription data)
-      if (message.type === 'DATA' && message.topic === 'market_data') {
+      if (message.type === 'DATA' && (message.topic === 'market_data' || message.topic === 'market-data')) {
         if (Array.isArray(message.data)) {
           console.log(`[useTokenData] Received real-time market data for ${message.data.length} tokens`);
 
-          // Only process real-time updates if we have initial data
-          if (!hasInitialData || !isRestLoaded) {
-            console.log(`[useTokenData] Ignoring real-time update - no initial data yet`);
-            return;
+          // If we don't have initial data yet, treat this AS the initial data
+          if (!hasInitialData) {
+            console.log(`[useTokenData] No initial data yet - using WebSocket data as initial load`);
+            setHasInitialData(true);
+            setIsLoading(false);
           }
 
           // Transform update data
@@ -371,43 +434,57 @@ export function useTokenData(
     }
   }, [filters, isRestLoaded, hasInitialData, preserveOrder]);
 
-  // Register WebSocket listener for ALL market data + paginated responses
+  // Register WebSocket listener for ALL market data + individual token updates
   useEffect(() => {
     const unregister = ws.registerListener(
       'token-data-market-updates',
       ['DATA'] as any[], // Use consistent v69 unified format
-      handleMarketData,
-      ['market_data'] // Use consistent topic name
+      handleMarketData
+      // No topic filter - let all messages through so we can handle individual token updates
     );
     return unregister;
   }, [handleMarketData, ws.registerListener]);
 
-  // Subscribe to market_data when connected (prevent duplicate subscriptions)
-  const hasSubscribedMarketDataRef = useRef(false);
-
+  // Subscribe to individual tokens when we have them
+  const subscribedTokensRef = useRef<Set<string>>(new Set());
+  
   useEffect(() => {
-    if (ws.isConnected && !hasSubscribedMarketDataRef.current) {
-      console.log('[useTokenData] Subscribing to market_data topic for filtered tokens');
-      ws.subscribe(['market_data']);
-      hasSubscribedMarketDataRef.current = true;
-
-      dispatchWebSocketEvent('token_data_subscribe', {
-        socketType: 'market_data',
-        message: 'Subscribed to filtered market_data topic',
-        timestamp: new Date().toISOString()
+    console.log(`[useTokenData] 🚀 SUBSCRIPTION EFFECT: connected=${ws.isConnected}, tokens=${tokens.length}`);
+    if (ws.isConnected && tokens.length > 0) {
+      // Subscribe to individual token updates
+      const tokenAddresses = tokens.map(t => t.address).filter(Boolean);
+      console.log(`[useTokenData] 📋 Found ${tokenAddresses.length} token addresses:`, tokenAddresses.slice(0, 5));
+      const newSubscriptions: string[] = [];
+      
+      tokenAddresses.forEach(address => {
+        if (!subscribedTokensRef.current.has(address)) {
+          newSubscriptions.push(`token:price:${address}`);
+          subscribedTokensRef.current.add(address);
+        }
       });
-    } else if (!ws.isConnected) {
-      hasSubscribedMarketDataRef.current = false;
+      
+      if (newSubscriptions.length > 0) {
+        console.log(`[useTokenData] 🔔 SUBSCRIBING to ${newSubscriptions.length} individual token channels:`, newSubscriptions);
+        const success = ws.subscribe(newSubscriptions);
+        console.log(`[useTokenData] 📡 Subscription result:`, success);
+        
+        dispatchWebSocketEvent('token_individual_subscribe', {
+          socketType: 'individual-tokens',
+          message: `Subscribed to ${newSubscriptions.length} individual token channels`,
+          timestamp: new Date().toISOString()
+        });
+      }
     }
-
+    
     // Cleanup function
     return () => {
-      if (hasSubscribedMarketDataRef.current) {
-        ws.unsubscribe(['market_data']);
-        hasSubscribedMarketDataRef.current = false;
+      if (subscribedTokensRef.current.size > 0) {
+        const topics = Array.from(subscribedTokensRef.current).map(addr => `token:price:${addr}`);
+        ws.unsubscribe(topics);
+        subscribedTokensRef.current.clear();
       }
     };
-  }, [ws.isConnected]);
+  }, [ws.isConnected, tokens]);
 
   // REST-First: Load token data via REST for immediate display, WebSocket for updates
   useEffect(() => {

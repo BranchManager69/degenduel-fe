@@ -163,14 +163,14 @@ export const SystemNoticesManager: React.FC = () => {
   };
 
   return (
-    <div className="bg-dark-200/50 backdrop-blur-lg p-8 rounded-lg border border-brand-500/20 relative overflow-hidden">
+    <div className="bg-dark-200/50 backdrop-blur-lg p-4 rounded-lg border border-dark-300/50 relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-blue-500/5" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.1)_0%,transparent_60%)]" />
       
       <div className="relative">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex-1 min-w-0">
             <h2 className="font-cyber tracking-wider text-lg sm:text-xl lg:text-2xl bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent whitespace-nowrap">
               SYSTEM NOTICES
@@ -189,7 +189,7 @@ export const SystemNoticesManager: React.FC = () => {
         {/* Create Notice Button */}
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
-          className="w-full group relative mb-6"
+          className="w-full group relative mb-3"
         >
           <motion.div
             className={`
@@ -220,8 +220,8 @@ export const SystemNoticesManager: React.FC = () => {
               </div>
             </div>
 
-            <div className="px-6 py-4 pl-12">
-              <div className="font-cyber tracking-wider text-lg">
+            <div className="px-4 py-3 pl-10">
+              <div className="font-cyber tracking-wider text-base">
                 {showCreateForm ? (
                   <span className="text-red-400 group-hover:text-red-300">
                     CANCEL OPERATION
@@ -259,12 +259,12 @@ export const SystemNoticesManager: React.FC = () => {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               onSubmit={handleSubmit}
-              className="mb-6 p-6 bg-dark-200/30 backdrop-blur-sm rounded-lg border border-brand-500/30 relative overflow-hidden"
+              className="mb-3 p-4 bg-dark-200/30 backdrop-blur-sm rounded-lg border border-dark-300/50 relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-cyan-500/5" />
               
               <div className="relative">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-purple-300 mb-3 font-mono tracking-wide">
                       NOTICE_TITLE [OPTIONAL]
@@ -273,7 +273,7 @@ export const SystemNoticesManager: React.FC = () => {
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full px-4 py-3 bg-dark-200/50 border border-brand-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
+                      className="w-full px-4 py-3 bg-dark-200/50 border border-dark-300/50 rounded-lg text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
                       placeholder="MAINTENANCE_ALERT"
                     />
                   </div>
@@ -285,7 +285,7 @@ export const SystemNoticesManager: React.FC = () => {
                     <select
                       value={formData.type}
                       onChange={(e) => setFormData({ ...formData, type: e.target.value as SystemNotice['type'] })}
-                      className="w-full px-4 py-3 bg-dark-200/50 border border-brand-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
+                      className="w-full px-4 py-3 bg-dark-200/50 border border-dark-300/50 rounded-lg text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
                     >
                       <option value="info">INFO</option>
                       <option value="warning">WARNING</option>
@@ -301,7 +301,7 @@ export const SystemNoticesManager: React.FC = () => {
                     <textarea
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      className="w-full px-4 py-3 bg-dark-200/50 border border-brand-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
+                      className="w-full px-4 py-3 bg-dark-200/50 border border-dark-300/50 rounded-lg text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
                       rows={3}
                       required
                       placeholder="ENTER_SYSTEM_NOTIFICATION_MESSAGE..."
@@ -316,7 +316,7 @@ export const SystemNoticesManager: React.FC = () => {
                       type="datetime-local"
                       value={formData.start_date}
                       onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                      className="w-full px-4 py-3 bg-dark-200/50 border border-brand-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
+                      className="w-full px-4 py-3 bg-dark-200/50 border border-dark-300/50 rounded-lg text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
                     />
                   </div>
 
@@ -328,7 +328,7 @@ export const SystemNoticesManager: React.FC = () => {
                       type="datetime-local"
                       value={formData.end_date}
                       onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                      className="w-full px-4 py-3 bg-dark-200/50 border border-brand-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
+                      className="w-full px-4 py-3 bg-dark-200/50 border border-dark-300/50 rounded-lg text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
                     />
                   </div>
 
@@ -391,7 +391,7 @@ export const SystemNoticesManager: React.FC = () => {
                   key={notice.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`p-6 rounded-lg border bg-gradient-to-r ${style.bg} ${style.border} relative overflow-hidden backdrop-blur-sm ${
+                  className={`p-4 rounded-lg border bg-gradient-to-r ${style.bg} ${style.border} relative overflow-hidden backdrop-blur-sm ${
                     isCurrentlyActive ? `ring-2 ring-offset-2 ring-offset-dark-200 ring-${notice.type === 'info' ? 'blue' : notice.type === 'warning' ? 'yellow' : notice.type === 'error' ? 'red' : 'green'}-500 ${style.glow}` : ''
                   }`}
                 >

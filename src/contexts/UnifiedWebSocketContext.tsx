@@ -529,27 +529,45 @@ export const UnifiedWebSocketProvider: React.FC<{
   const distributeMessage = (message: WebSocketMessage) => {
     const { type, topic } = message;
     
+    console.log(`🔥 [WebSocket] DISTRIBUTING MESSAGE:`, {
+      type,
+      topic,
+      hasData: !!message.data,
+      listenerCount: listenersRef.current.size
+    });
+    
     // Find matching listeners
-    listenersRef.current.forEach((listener) => {
+    listenersRef.current.forEach((listener, listenerId) => {
+      console.log(`🎯 [WebSocket] Checking listener '${listenerId}':`, {
+        listenerTypes: listener.types,
+        listenerTopics: listener.topics,
+        messageType: type,
+        messageTopic: topic
+      });
+      
       // Check if listener is interested in this message type
       if (!listener.types.includes(type as DDExtendedMessageType)) {
+        console.log(`❌ [WebSocket] Listener '${listenerId}' not interested in type '${type}'`);
         return;
       }
       
       // If listener has topic filters AND message has a topic, check for match
       if (listener.topics && topic) {
         if (!listener.topics.includes(topic)) {
+          console.log(`❌ [WebSocket] Listener '${listenerId}' topic mismatch. Wants: ${listener.topics}, Got: ${topic}`);
           return;
         }
       }
       
       // If message type is SYSTEM, always distribute regardless of topic filters
       if (type === 'SYSTEM') {
+        console.log(`✅ [WebSocket] Distributing SYSTEM message to listener '${listenerId}'`);
         listener.callback(message);
         return;
       }
       
       // If no topic filters or no topic in message, distribute based on type match only
+      console.log(`✅ [WebSocket] Distributing message to listener '${listenerId}'`);
       listener.callback(message);
     });
   };

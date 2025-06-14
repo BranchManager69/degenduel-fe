@@ -132,7 +132,7 @@ export const AdminLogsPanel: React.FC = () => {
   };
 
   return (
-    <div className="bg-dark-200/60 backdrop-blur-sm border border-dark-300 p-4 shadow-lg relative h-full">
+    <div className="bg-dark-200/60 backdrop-blur-sm border border-dark-300 p-4 shadow-lg relative h-full min-w-0 overflow-hidden">
       {/* Top horizontal scanner line animation */}
       <div className="absolute inset-0 h-px w-full bg-brand-400/30 animate-scan-fast"></div>
       
@@ -191,7 +191,9 @@ export const AdminLogsPanel: React.FC = () => {
         <>
           <div className="space-y-2 mb-4 max-h-[460px] overflow-y-auto hide-scrollbar pr-1">
             <AnimatePresence>
-              {logs.map((log, index) => {
+              {logs
+                .filter(log => log.action !== 'ADMIN_LOGS_VIEW')
+                .map((log, index) => {
                 const theme = getActionTheme(log.action);
                 
                 return (
@@ -201,7 +203,7 @@ export const AdminLogsPanel: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ delay: index * 0.05 }}
-                    className="bg-dark-300/60 border-2 border-dark-400 overflow-hidden hover:bg-dark-300/80 transition-all duration-300 group relative"
+                    className="bg-dark-300/60 border-2 border-dark-400 overflow-hidden hover:bg-dark-300/80 transition-all duration-300 group relative min-w-0 max-w-full"
                   >
                     {/* Background scanner effect */}
                     <div className={`absolute inset-0 bg-gradient-to-r ${theme.gradientClass} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
@@ -211,29 +213,29 @@ export const AdminLogsPanel: React.FC = () => {
                     <div className={`absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 ${theme.borderClass}`}></div>
                     
                     {/* Edge-to-edge colored header with action and time */}
-                    <div className={`flex items-center justify-between px-3 py-2 ${theme.bgClass} ${theme.textClass}`}>
-                      <span className="text-xs font-medium whitespace-nowrap">
+                    <div className={`flex items-center justify-between px-3 py-2 ${theme.bgClass} ${theme.textClass} min-w-0`}>
+                      <span className="text-xs font-medium truncate flex-1 min-w-0 mr-2">
                         {log.action}
                       </span>
-                      <span className="text-xs opacity-80 whitespace-nowrap">
+                      <span className="text-xs opacity-80 flex-shrink-0 whitespace-nowrap">
                         {format(new Date(log.created_at), 'MMM d, HH:mm')}
                       </span>
                     </div>
                     
                     {/* Content area with padding */}
-                    <div className="p-3">
-                      {/* Details as a grid */}
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    <div className="p-3 min-w-0">
+                      {/* Details as a responsive grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-2 min-w-0 max-w-full">
                         {Object.entries(log.details)
                           .filter(([key]) => key !== '__v' && key !== '_id')
                           .slice(0, 6) // Show up to 6 details
                           .map(([key, value]) => (
-                            <div key={key} className="flex flex-col">
-                              <span className="text-gray-400 text-xs">{key.replace(/_/g, ' ')}</span>
-                              <span className="text-gray-300 text-sm truncate">
+                            <div key={key} className="flex flex-col min-w-0 max-w-full">
+                              <span className="text-gray-400 text-xs truncate">{key.replace(/_/g, ' ')}</span>
+                              <span className="text-gray-300 text-sm truncate break-all">
                                 {typeof value === 'object' 
-                                  ? JSON.stringify(value).substring(0, 30) + (JSON.stringify(value).length > 30 ? '...' : '')
-                                  : String(value).substring(0, 30) + (String(value).length > 30 ? '...' : '')}
+                                  ? JSON.stringify(value).substring(0, 15) + (JSON.stringify(value).length > 15 ? '...' : '')
+                                  : String(value).substring(0, 15) + (String(value).length > 15 ? '...' : '')}
                               </span>
                             </div>
                           ))
@@ -241,25 +243,25 @@ export const AdminLogsPanel: React.FC = () => {
                       </div>
                       
                       {/* Footer with admin address and IP */}
-                      <div className="mt-3 pt-2 border-t border-dark-400 flex items-center justify-between text-xs">
-                        <div className="font-mono">
+                      <div className="mt-3 pt-2 border-t border-dark-400 flex items-center justify-between text-xs min-w-0 gap-2">
+                        <div className="font-mono flex-shrink-0 min-w-0">
                           {isWalletAddress(log.admin_address) ? (
                             <a 
                               href={`https://solscan.io/account/${log.admin_address}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-cyber-400 hover:text-cyber-300 relative group"
+                              className="text-cyber-400 hover:text-cyber-300 relative group truncate block"
                               onClick={(e) => e.stopPropagation()}
                             >
                               {formatShortAddress(log.admin_address)}
                               <span className="absolute -bottom-px left-0 right-0 h-px bg-cyber-400/50 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
                             </a>
                           ) : (
-                            <span className="text-gray-500">{formatShortAddress(log.admin_address)}</span>
+                            <span className="text-gray-500 truncate block">{formatShortAddress(log.admin_address)}</span>
                           )}
                         </div>
                         {log.ip_address && (
-                          <div className="text-gray-500 truncate max-w-[50%]">
+                          <div className="text-gray-500 truncate flex-shrink-0 text-right max-w-[50%]">
                             {log.ip_address}
                           </div>
                         )}
@@ -273,11 +275,11 @@ export const AdminLogsPanel: React.FC = () => {
 
           {/* Pagination - stylized version */}
           {pagination && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-xs text-gray-400 whitespace-nowrap">
+            <div className="flex items-center justify-between mt-4 min-w-0 gap-2">
+              <div className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">
                 Showing {pagination.page} of {pagination.totalPages} pages
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-shrink-0">
                 <button
                   onClick={handlePrevPage}
                   disabled={!pagination.hasPrevPage}

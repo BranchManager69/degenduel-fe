@@ -558,7 +558,7 @@ const AppContent: React.FC = () => {
       <AchievementNotification />
 
       {/* Notification Debug Panel */}
-      <NotificationDebugPanel />
+      {user && (user as any).is_superadmin && <NotificationDebugPanel />}
 
       {/* Connection error banners aligned to the top of the screen */}
       {/*
