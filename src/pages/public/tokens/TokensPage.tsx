@@ -29,6 +29,10 @@ export const TokensPage: React.FC = () => {
   // Infinite scroll state
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   
+  // Client-side pagination state
+  const [displayCount, setDisplayCount] = useState(50); // Start by showing 50 tokens
+  const TOKENS_PER_PAGE = 50; // Load 50 more each time
+  
   const user = useStore((state) => state.user);
   const location = useLocation();
   const navigate = useNavigate();
@@ -51,7 +55,7 @@ export const TokensPage: React.FC = () => {
     getTokenBySymbol,
     refresh,
     loadMore,
-  } = useStandardizedTokenData("all", "marketCap", {}, 5, 50); // Start with 50, load more on scroll
+  } = useStandardizedTokenData("all", "marketCap", {}, 5, 3000); // Load all tokens for accurate sorting
   
   // Token metadata for compatibility
   const metadata = useMemo<TokenResponseMetadata>(() => ({
@@ -68,24 +72,21 @@ export const TokensPage: React.FC = () => {
 
   // Modal close handler removed - no longer needed
 
-  // Load more tokens for infinite scroll using real pagination
+  // Load more tokens - now handles client-side pagination
   const loadMoreTokens = useCallback(() => {
-    if (isLoadingMore || !pagination?.hasMore || isLoading) {
-      console.log('[TokensPage] Cannot load more:', { isLoadingMore, hasMore: pagination?.hasMore, isLoading });
-      return;
-    }
+    if (isLoadingMore) return;
     
-    console.log('[TokensPage] Loading more tokens...');
+    console.log('[TokensPage] Loading more tokens (client-side pagination)');
     setIsLoadingMore(true);
     
-    // Use the actual loadMore function from the hook
-    loadMore();
+    // Increase the display count
+    setDisplayCount(prev => prev + TOKENS_PER_PAGE);
     
     // Reset loading state after a short delay
     setTimeout(() => {
       setIsLoadingMore(false);
-    }, 500);
-  }, [isLoadingMore, pagination?.hasMore, isLoading, loadMore]);
+    }, 100); // Shorter delay since we're not fetching from server
+  }, [isLoadingMore]);
 
   // Token selection logic removed - using dedicated pages now
 
@@ -159,8 +160,8 @@ export const TokensPage: React.FC = () => {
     return sorted;
   }, [allTokens, sortField, sortDirection]);
 
-  // Visible tokens - all sorted tokens with DUEL prepended if not already there
-  const visibleTokens = useMemo(() => {
+  // All tokens sorted (but not all displayed)
+  const allSortedTokens = useMemo(() => {
     // Prepend DUEL token if not already in the list
     if (duelToken && !sortedTokens.some(t => t.contractAddress === duelToken.contractAddress)) {
       return [duelToken, ...sortedTokens];
@@ -168,9 +169,14 @@ export const TokensPage: React.FC = () => {
     
     return sortedTokens;
   }, [sortedTokens, duelToken]);
+  
+  // Visible tokens - only show up to displayCount
+  const visibleTokens = useMemo(() => {
+    return allSortedTokens.slice(0, displayCount);
+  }, [allSortedTokens, displayCount]);
 
-  // Check if there are more tokens to load from server
-  const hasMoreTokens = pagination?.hasMore ?? false;
+  // Check if there are more tokens to display (client-side)
+  const hasMoreTokens = displayCount < allSortedTokens.length;
 
   // NO CLIENT-SIDE SEARCH/FILTERING - Backend handles everything
 
@@ -268,8 +274,8 @@ export const TokensPage: React.FC = () => {
               <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 text-xs font-mono">
                 <div className="text-blue-300">📊 Pagination Debug:</div>
                 <div className="text-blue-200 mt-1">
-                  Loaded: {visibleTokens.length} | Total: {pagination.total} | 
-                  Offset: {pagination.offset} | HasMore: {pagination.hasMore ? '✅' : '❌'} | 
+                  Showing: {visibleTokens.length} of {allSortedTokens.length} | Total Available: {pagination?.total || allSortedTokens.length} | 
+                  HasMore: {hasMoreTokens ? '✅' : '❌'} | 
                   Sort: {sortField} ({sortDirection})
                 </div>
               </div>
@@ -380,7 +386,7 @@ export const TokensPage: React.FC = () => {
                       </div>
                     ) : (
                       <div className="text-xs text-gray-500">
-                        Scroll for more • {sortedTokens.length} tokens loaded
+                        Scroll for more • Showing {visibleTokens.length} of {allSortedTokens.length} tokens
                       </div>
                     )}
                   </div>
