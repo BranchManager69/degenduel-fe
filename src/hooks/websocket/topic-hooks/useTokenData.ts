@@ -155,17 +155,30 @@ export function useTokenData(
         // Update pagination state
         setPagination(paginationData);
 
-        // Smart append with reasonable limit
+        // Smart append with duplicate prevention
         if (offset > 0) {
           setTokens(prev => {
-            const MAX_DISPLAY = 200; // Reasonable limit for performance
-            const combined = [...prev, ...filteredTokens];
-            // Only limit if getting too large
-            if (combined.length > MAX_DISPLAY) {
-              console.log(`[useTokenData] Trimming to last ${MAX_DISPLAY} tokens for performance`);
-              return combined.slice(-MAX_DISPLAY);
-            }
-            return combined;
+            // Create a map to track unique tokens by contract address
+            const tokenMap = new Map<string, Token>();
+            
+            // Add existing tokens to map
+            prev.forEach(token => {
+              const key = token.contractAddress || token.address;
+              if (key) tokenMap.set(key.toLowerCase(), token);
+            });
+            
+            // Add new tokens, overwriting any duplicates
+            filteredTokens.forEach(token => {
+              const key = token.contractAddress || token.address;
+              if (key) tokenMap.set(key.toLowerCase(), token);
+            });
+            
+            // Convert back to array
+            const uniqueTokens = Array.from(tokenMap.values());
+            
+            console.log(`[useTokenData] After deduplication: ${uniqueTokens.length} unique tokens (was ${prev.length + filteredTokens.length} with duplicates)`);
+            
+            return uniqueTokens;
           });
         } else {
           // Fresh load - replace everything
@@ -328,7 +341,7 @@ export function useTokenData(
           // Smart append with reasonable limit (same as REST)
           if (paginationData.offset > 0) {
             setTokens(prev => {
-              const MAX_DISPLAY = 200; // Reasonable limit for performance
+              const MAX_DISPLAY = 5000; // Allow all tokens for accurate sorting
               const combined = [...prev, ...filteredTokens];
               // Only limit if getting too large
               if (combined.length > MAX_DISPLAY) {
