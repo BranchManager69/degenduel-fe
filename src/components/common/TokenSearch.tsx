@@ -126,11 +126,11 @@ export const TokenSearch: React.FC<TokenSearchProps> = ({
   const getSuggestionsContainerClass = () => {
     switch (variant) {
       case "minimal":
-        return "absolute z-50 w-full mt-1 bg-dark-200/90 backdrop-blur-md border border-dark-300/30 rounded-md shadow-lg";
+        return "absolute z-[200] w-full mt-1 bg-dark-200/90 backdrop-blur-md border border-dark-300/30 rounded-md shadow-lg";
       case "modern":
-        return "absolute z-50 w-full mt-0 bg-dark-200/80 backdrop-blur-md rounded-b-md shadow-xl";
+        return "absolute z-[200] w-full mt-0 bg-dark-200/80 backdrop-blur-md rounded-b-md shadow-xl";
       default:
-        return "absolute z-50 w-full mt-1 bg-dark-200 border border-dark-300/30 rounded-lg shadow-xl";
+        return "absolute z-[200] w-full mt-1 bg-dark-200 border border-dark-300/30 rounded-lg shadow-xl";
     }
   };
 

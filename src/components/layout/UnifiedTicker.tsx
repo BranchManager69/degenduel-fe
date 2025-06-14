@@ -116,7 +116,13 @@ export const UnifiedTicker: React.FC<Props> = ({
   const displayTokens = useMemo(() => {
     if (!allTokens) return [];
     
-    const sortedTokens = [...(allTokens as Token[])].sort((a, b) => {
+    // Filter tokens by minimum market cap of $100,000
+    const filteredTokens = allTokens.filter((token: Token) => {
+      const marketCap = Number(token.market_cap) || 0;
+      return marketCap >= 100000;
+    });
+    
+    const sortedTokens = [...filteredTokens].sort((a, b) => {
       const changeA = TokenHelpers.getPriceChange(a);
       const changeB = TokenHelpers.getPriceChange(b);
       return changeB - changeA; // Sort by actual change, biggest gains first

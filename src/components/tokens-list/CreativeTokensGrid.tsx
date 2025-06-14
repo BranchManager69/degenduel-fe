@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Token, TokenHelpers } from "../../types";
 import { formatNumber, formatPercentage, formatTokenPrice } from "../../utils/format";
 import { OptimizedTokenCard } from "./OptimizedTokenCard";
@@ -22,6 +22,26 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
 }) => {
   const selectedTokenRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Track which tokens have already been animated
+  const [animatedTokens, setAnimatedTokens] = useState<Set<string>>(new Set());
+
+  // Update animated tokens when new tokens arrive
+  useEffect(() => {
+    // Mark all current tokens as animated after a delay
+    const newAnimatedTokens = new Set<string>();
+    tokens.forEach(token => {
+      const key = token.contractAddress || token.address || token.symbol;
+      if (key) {
+        newAnimatedTokens.add(key);
+      }
+    });
+    
+    // Update the set after animation completes
+    setTimeout(() => {
+      setAnimatedTokens(newAnimatedTokens);
+    }, 1000); // After animation duration
+  }, [tokens]);
 
   // Scroll to selected token with a delay
   useEffect(() => {
@@ -70,6 +90,10 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     // Actual rank (0 for DUEL, then 1, 2, 3...)
     const displayRank = isDuel ? 0 : index;
     
+    // Check if this token has already been animated
+    const tokenKey = token.contractAddress || token.address || token.symbol;
+    const isNewToken = tokenKey && !animatedTokens.has(tokenKey);
+    
     // Dynamic rank colors for top 3
     const getRankStyle = (rank: number) => {
       if (isDuel) return { bg: 'from-yellow-500 to-yellow-600', glow: 'shadow-yellow-500/50' };
@@ -86,11 +110,13 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     return (
       <div 
         className={`group relative overflow-hidden rounded-2xl transition-all duration-500 cursor-pointer backdrop-blur-xl
+          ${isNewToken ? 'token-card-animation' : ''}
           ${isSelected ? 'ring-4 ring-yellow-500/60 scale-105 z-30' : 'hover:scale-[1.03] z-10'}
           ${isDuel ? 'ring-2 ring-purple-500/60 shadow-[0_0_20px_rgba(147,51,234,0.4)]' : ''}
           ${isTopThree ? 'bg-gradient-to-br from-dark-100/90 via-dark-200/80 to-dark-300/90' : 'bg-dark-200/70'}
           ${isTopThree ? 'shadow-2xl ' + rankStyle.glow : 'shadow-xl shadow-black/20'}
         `}
+        style={{ animationDelay: isNewToken ? `${(index % 20) * 0.05}s` : undefined }}
         onClick={() => handleTokenClick(token)}
       >
         {/* DUEL SPECIAL EFFECT */}
@@ -208,7 +234,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
 
   return (
     <div className="relative">
-      {/* CSS for banner scanning animation */}
+      {/* CSS for animations */}
       <style dangerouslySetInnerHTML={{
         __html: `
           @keyframes bannerScan {
@@ -224,6 +250,22 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
             75% {
               object-position: right center;
             }
+          }
+          
+          @keyframes fadeUpIn {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          .token-card-animation {
+            animation: fadeUpIn 0.6s ease-out forwards;
+            opacity: 0;
           }
         `
       }} />
