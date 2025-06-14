@@ -44,12 +44,11 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     }
   }, [onTokenClick]);
 
-  // NEW: Use provided featuredTokens for stability, fallback to slice for backward compatibility
-  const trendingTokens = featuredTokens.length > 0 ? featuredTokens : tokens.slice(0, 12);
+  // NEW: If no featured tokens provided, show ALL tokens in the hot grid format
+  const trendingTokens = featuredTokens.length > 0 ? featuredTokens : tokens;
   
-  // For the standard grid, use the provided tokens (which are already the "rest" tokens from the page)
-  // Or exclude featured tokens if we're using the old method
-  const restTokens = featuredTokens.length > 0 ? tokens : tokens.slice(12);
+  // Only show rest tokens if we have featured tokens
+  const restTokens = featuredTokens.length > 0 ? tokens : [];
 
   // We no longer need this function as we're using inline styling
   // const getTrendColor = (change: string) => {
