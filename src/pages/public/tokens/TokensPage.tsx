@@ -53,8 +53,7 @@ export const TokensPage: React.FC = () => {
     lastUpdate,
     pagination,
     getTokenBySymbol,
-    refresh,
-    loadMore,
+    refresh
   } = useStandardizedTokenData("all", "marketCap", {}, 5, 3000); // Load all tokens for accurate sorting
   
   // Token metadata for compatibility

@@ -48,9 +48,9 @@ export const UnifiedTicker: React.FC<Props> = ({
   
   // We'll add the debug effect later after originalTickerItems is defined
   
-  // Use standardized token data
-  const { tokens: finalTokens, isLoading: finalTokensLoading, isConnected: finalDataConnected } = 
-    useStandardizedTokenData("all", "change", {}, 5, maxTokens);
+  // Use standardized token data - load all tokens for accurate sorting
+  const { tokens: allTokens, isLoading: finalTokensLoading, isConnected: finalDataConnected } = 
+    useStandardizedTokenData("all", "change", {}, 5, 3000); // Load all tokens
 
   // Helper functions
   const formatTimeUntilStart = (startTime: string): string => {
@@ -112,18 +112,18 @@ export const UnifiedTicker: React.FC<Props> = ({
       .slice(0, 10);
   }, [currentContests]);
 
-  // Sort tokens by price change (biggest movers first)
+  // Sort tokens by price change (biggest movers first) and limit to maxTokens
   const displayTokens = useMemo(() => {
-    if (!finalTokens) return [];
+    if (!allTokens) return [];
     
-    const sortedTokens = [...(finalTokens as Token[])].sort((a, b) => {
+    const sortedTokens = [...(allTokens as Token[])].sort((a, b) => {
       const changeA = TokenHelpers.getPriceChange(a);
       const changeB = TokenHelpers.getPriceChange(b);
       return changeB - changeA; // Sort by actual change, biggest gains first
     });
     
     return sortedTokens.slice(0, maxTokens);
-  }, [finalTokens, maxTokens]);
+  }, [allTokens, maxTokens]);
 
   useEffect(() => {
     setCurrentContests(initialContests);
@@ -381,6 +381,42 @@ export const UnifiedTicker: React.FC<Props> = ({
         return (
           <div
             key={tokenKey}
+            className="inline-flex items-center"
+            style={{
+              transitionDelay: `${currentItemIndex * 30}ms`,
+              willChange: "transform",
+              transform: "translate3d(0, 0, 0)",
+              marginRight: isCompact ? '16px' : '24px', // Space after the whole token unit
+            }}
+          >
+            {/* Rank number outside the card */}
+            <span 
+              className={`font-bold transition-all duration-300 ease-out ${
+                index === 0 ? 'text-yellow-400' : 
+                index === 1 ? 'text-gray-300' : 
+                index === 2 ? 'text-amber-600' : 
+                'text-cyan-400/70'
+              }`}
+              style={{
+                fontSize: isCompact ? '11px' : '14px',
+                textShadow: 
+                  index === 0 ? '0 0 10px rgba(251, 191, 36, 0.6)' :
+                  index === 1 ? '0 0 10px rgba(209, 213, 219, 0.6)' :
+                  index === 2 ? '0 0 10px rgba(217, 119, 6, 0.6)' :
+                  '0 0 8px rgba(0, 225, 255, 0.3)',
+                fontFamily: 'inherit', // Use default font, not monospace
+                fontWeight: 700,
+                minWidth: isCompact ? '18px' : '22px',
+                textAlign: 'right' as const,
+                display: 'inline-block',
+                marginRight: isCompact ? '2px' : '3px', // Small gap to the card
+                position: 'relative' as const,
+                zIndex: 1
+              }}
+            >
+              {index + 1}
+            </span>
+            <div
             onClick={() => {
               // Only navigate if user didn't drag
               if (!hasDraggedRef.current) {
@@ -392,11 +428,9 @@ export const UnifiedTicker: React.FC<Props> = ({
             style={{
               '--token-px': isCompact ? '6px' : '12px',
               '--token-py': isCompact ? '2px' : '4px', 
-              '--token-mx': isCompact ? '8px' : '12px',
               '--token-height': isCompact ? '24px' : '32px',
               '--token-min-width': isCompact ? '110px' : '100px',
               padding: 'var(--token-py) var(--token-px)',
-              margin: '0 var(--token-mx)',
               height: 'var(--token-height)',
               minWidth: 'var(--token-min-width)',
               transitionDelay: `${currentItemIndex * 30}ms`, // Staggered animation
@@ -467,25 +501,41 @@ export const UnifiedTicker: React.FC<Props> = ({
               </div>
             </div>
           </div>
+          </div>
         );
       }) : [];
     
     let items: ReactElement[] = [];
+    
+    // Add smooth entry animation for token items
+    const animatedTokenItems = tokenItems.map((item, index) => {
+      if (item.key?.toString().includes('skeleton')) return item;
+      
+      return React.cloneElement(item, {
+        ...item.props,
+        style: {
+          ...item.props.style,
+          opacity: 0,
+          animation: `fadeInSlide 0.5s ease-out forwards`,
+          animationDelay: `${index * 50}ms`
+        }
+      });
+    });
     
     // Add DUEL announcement first
     if (duelAnnouncementItem) items.push(duelAnnouncementItem);
     
     // Simple mixing of content
     if (activeTab === "all") {
-      const maxLength = Math.max(contestItems.length, tokenItems.length);
+      const maxLength = Math.max(contestItems.length, animatedTokenItems.length);
       for (let i = 0; i < maxLength; i++) {
         if (i < contestItems.length) items.push(contestItems[i]);
-        if (i < tokenItems.length) items.push(tokenItems[i]);
+        if (i < animatedTokenItems.length) items.push(animatedTokenItems[i]);
       }
     } else if (activeTab === "contests") {
       items.push(...contestItems);
     } else {
-      items.push(...tokenItems);
+      items.push(...animatedTokenItems);
     }
     
     // Show message if no data
@@ -1005,6 +1055,17 @@ export const UnifiedTicker: React.FC<Props> = ({
             transform: translateZ(0);
             backface-visibility: hidden;
             perspective: 1000px;
+          }
+          /* Smooth fade in animation for tokens */
+          @keyframes fadeInSlide {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
           }
         `
       }} />
