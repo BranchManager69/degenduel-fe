@@ -35,7 +35,7 @@
  * @updated 2025-12-06 - Implemented WebSocket pagination for pro frontend experience
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { ddApi } from '../../../services/dd-api';
 import { Token, TokenHelpers } from '../../../types';
@@ -255,7 +255,13 @@ export function useTokenData(
       });
 
       // Handle individual token price updates from the new system
+      // PERFORMANCE OPTIMIZATION: Skip individual updates if disabled
       if (message.topic && message.topic.startsWith('token:price:')) {
+        // Log but don't process individual updates to reduce CPU load
+        console.log(`[useTokenData] 🎯 SKIPPING INDIVIDUAL TOKEN UPDATE for ${message.topic} (disabled for performance)`);
+        return;
+        
+        /* ORIGINAL CODE - DISABLED FOR PERFORMANCE
         if (message.data?.type === 'price_update') {
           const tokenAddress = message.topic.split(':')[2];
           console.log(`[useTokenData] 🎯 INDIVIDUAL TOKEN UPDATE for ${tokenAddress}: ${message.data.token.symbol} = $${message.data.token.price}`);
@@ -283,6 +289,7 @@ export function useTokenData(
           });
           return;
         }
+        */
       }
       
       // Still handle batch updates from token:price for backward compatibility
@@ -459,8 +466,12 @@ export function useTokenData(
   }, [handleMarketData, ws.registerListener]);
 
   // Subscribe to individual tokens when we have them
-  const subscribedTokensRef = useRef<Set<string>>(new Set());
+  // const subscribedTokensRef = useRef<Set<string>>(new Set());
   
+  // TEMPORARILY DISABLED: Individual token subscriptions to reduce message volume
+  // This was causing 300+ individual subscriptions and ~10 messages/second
+  // Instead, we'll rely on batch updates from the market_data topic
+  /*
   useEffect(() => {
     console.log(`[useTokenData] 🚀 SUBSCRIPTION EFFECT: connected=${ws.isConnected}, tokens=${tokens.length}`);
     if (ws.isConnected && tokens.length > 0) {
@@ -498,6 +509,7 @@ export function useTokenData(
       }
     };
   }, [ws.isConnected, tokens]);
+  */
 
   // REST-First: Load token data via REST for immediate display, WebSocket for updates
   useEffect(() => {

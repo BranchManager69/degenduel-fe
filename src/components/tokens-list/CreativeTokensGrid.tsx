@@ -116,7 +116,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
           ${isTopThree ? 'bg-gradient-to-br from-dark-100/90 via-dark-200/80 to-dark-300/90' : 'bg-dark-200/70'}
           ${isTopThree ? 'shadow-2xl ' + rankStyle.glow : 'shadow-xl shadow-black/20'}
         `}
-        style={{ animationDelay: isNewToken ? `${(index % 20) * 0.05}s` : undefined }}
+        style={{ animationDelay: isNewToken && index < 500 ? `${(index % 20) * 0.05}s` : undefined }}
         onClick={() => handleTokenClick(token)}
       >
         {/* DUEL SPECIAL EFFECT */}
@@ -266,6 +266,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
           .token-card-animation {
             animation: fadeUpIn 0.6s ease-out forwards;
             opacity: 0;
+            will-change: transform, opacity;
           }
         `
       }} />
