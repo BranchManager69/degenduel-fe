@@ -25,6 +25,8 @@ export const TokensPage: React.FC = () => {
   // State initialization
   const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false);
   
+  // Search filter state
+  const [searchFilter, setSearchFilter] = useState<string>("");
   
   // Infinite scroll state
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -127,8 +129,14 @@ export const TokensPage: React.FC = () => {
   const sortedTokens = useMemo(() => {
     if (!allTokens || allTokens.length === 0) return [];
     
-    // Sort ALL tokens by the selected field
-    const sorted = [...allTokens].sort((a, b) => {
+    // Filter tokens by minimum market cap of $100,000
+    const filtered = allTokens.filter(token => {
+      const marketCap = Number(token.market_cap) || 0;
+      return marketCap >= 100000;
+    });
+    
+    // Sort filtered tokens by the selected field
+    const sorted = [...filtered].sort((a, b) => {
       let compareValue = 0;
       
       switch (sortField) {
@@ -284,14 +292,14 @@ export const TokensPage: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-[150] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <OptimizedTokensHeader
           metadata={metadata}
         />
         
         
         {/* Simplified Controls */}
-        <div className="mt-6 flex justify-center">
+        <div className="mt-6 flex justify-center relative z-[100]">
           <div className="flex items-center gap-3">
             <TokenSearch
               onSelectToken={handleTokenSearchSelect}
@@ -324,7 +332,7 @@ export const TokensPage: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 relative z-10">
+      <div className="flex-1 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
           
           {/* Regular Token List View */}
