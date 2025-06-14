@@ -11,7 +11,7 @@
  */
 
 import { motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
@@ -20,15 +20,19 @@ import { formatNumber } from "../../../utils/format";
 import { setupTokenOGMeta, resetToDefaultMeta } from "../../../utils/ogImageUtils";
 import { TokenHelpers } from "../../../types";
 import { TrendingUp, TrendingDown, Activity, DollarSign, BarChart3, Users } from "lucide-react";
+import { useWebSocket } from "../../../contexts/UnifiedWebSocketContext";
+import { DDExtendedMessageType } from "../../../hooks/websocket/types";
 
 export const TokenDetailPageNew: React.FC = () => {
   const { address } = useParams<{ address: string }>();
   const [error, setError] = useState<string | null>(null);
+  const ws = useWebSocket();
 
   // State for single token data
   const [token, setToken] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [wsError, setWsError] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   // Fetch single token directly from the new efficient endpoint!
   useEffect(() => {
@@ -59,6 +63,104 @@ export const TokenDetailPageNew: React.FC = () => {
 
     fetchToken();
   }, [address]);
+
+  // WebSocket handler for token updates
+  const handleTokenUpdate = useCallback((message: any) => {
+    console.log(`[TokenDetailPageNew] 🔥 RECEIVED MESSAGE for ${address}:`, {
+      type: message.type,
+      topic: message.topic,
+      dataType: message.data?.type,
+      hasToken: !!message.data?.token,
+      tokenSymbol: message.data?.token?.symbol,
+      tokenPrice: message.data?.token?.price
+    });
+
+    // Handle individual token price updates - NEW FORMAT!
+    if (message.topic && message.topic.startsWith('token:price:')) {
+      const tokenAddress = message.topic.split(':')[2];
+      if (tokenAddress.toLowerCase() === address?.toLowerCase() && message.data?.type === 'price_update') {
+        console.log(`[TokenDetailPageNew] Received individual price update for ${message.data.token.symbol}: $${message.data.token.price}`);
+        const updatedToken = message.data.token;
+        setToken((prevToken: any) => ({
+          ...prevToken,
+          ...updatedToken,
+          // Ensure numeric values
+          price: parseFloat(updatedToken.price || '0'),
+          previousPrice: parseFloat(updatedToken.previousPrice || '0'),
+          change_24h: parseFloat(updatedToken.change_24h || '0'),
+          market_cap: parseFloat(updatedToken.market_cap || '0'),
+          volume_24h: parseFloat(updatedToken.volume_24h || '0'),
+          liquidity: parseFloat(updatedToken.liquidity || '0')
+        }));
+        setLastUpdate(new Date());
+        return;
+      }
+    }
+    
+    // Fallback: Handle batch updates from token:price (backward compatibility)
+    if (message.topic === 'token:price') {
+      if (message.data?.type === 'batch_update') {
+        // Find our token in the batch
+        const updatedToken = message.data.tokens.find((t: any) => 
+          t.address?.toLowerCase() === address?.toLowerCase()
+        );
+        
+        if (updatedToken) {
+          console.log('[TokenDetailPageNew] Found token in batch update:', updatedToken.symbol);
+          setToken((prevToken: any) => ({
+            ...prevToken,
+            ...updatedToken,
+            change_24h: parseFloat(updatedToken.change_24h || '0'),
+            market_cap: parseFloat(updatedToken.market_cap || '0'),
+            volume_24h: parseFloat(updatedToken.volume_24h || '0'),
+            liquidity: parseFloat(updatedToken.liquidity || '0')
+          }));
+          setLastUpdate(new Date());
+        }
+      }
+      return;
+    }
+    
+    // Fallback: Handle general market data updates
+    if (message.type === 'DATA' && (message.topic === 'market_data' || message.topic === 'market-data')) {
+      if (Array.isArray(message.data)) {
+        // Find our token in the update
+        const updatedToken = message.data.find((t: any) => 
+          t.address?.toLowerCase() === address?.toLowerCase()
+        );
+        
+        if (updatedToken) {
+          console.log('[TokenDetailPageNew] Received general market update for token');
+          setToken(updatedToken);
+          setLastUpdate(new Date());
+        }
+      }
+    }
+  }, [address]);
+
+  // Subscribe to WebSocket updates
+  useEffect(() => {
+    if (!ws.isConnected || !address) return;
+
+    // Register handler for all token updates
+    const unregister = ws.registerListener(
+      'token-detail-updates',
+      [DDExtendedMessageType.DATA, DDExtendedMessageType.SYSTEM],
+      handleTokenUpdate
+      // No topic filter - we'll handle all messages and filter by topic in the handler
+    );
+    
+    // Subscribe to the INDIVIDUAL token channel!
+    const tokenTopic = `token:price:${address}`;
+    console.log(`[TokenDetailPageNew] 🔔 SUBSCRIBING to individual token channel: ${tokenTopic}`);
+    const success = ws.subscribe([tokenTopic]);
+    console.log(`[TokenDetailPageNew] 📡 Subscription result:`, success);
+
+    return () => {
+      unregister();
+      ws.unsubscribe([tokenTopic]);
+    };
+  }, [ws.isConnected, address, handleTokenUpdate]);
 
   useEffect(() => {
     if (!address) {
@@ -208,8 +310,8 @@ export const TokenDetailPageNew: React.FC = () => {
                 
                 {/* Real-time indicator */}
                 <div className="flex items-center gap-2 mt-2 text-sm text-gray-400">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Token details • Updated now
+                  <div className={`w-2 h-2 rounded-full ${ws.isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} />
+                  {ws.isConnected ? 'Live updates' : 'Connecting...'} • {lastUpdate ? `Updated ${Math.floor((Date.now() - lastUpdate.getTime()) / 1000)}s ago` : 'Loading...'}
                 </div>
 
                 {/* Trading Actions */}

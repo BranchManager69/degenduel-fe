@@ -1029,9 +1029,13 @@ export const ContestDetails: React.FC = () => {
                       <>
                         <p className="text-xs text-gray-400 uppercase tracking-wide">Total Prize Pool</p>
                         <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent"}`}>
-                          {formatCurrency(Number(contest.total_prize_pool || contest.prize_pool || "0"))}
+                          {formatCurrency(
+                            Number(contest.entry_fee) > 0
+                              ? Number(contest.entry_fee) * contest.max_participants
+                              : Number(contest.total_prize_pool || contest.prize_pool || "0")
+                          )}
                         </p>
-                        <p className="text-xs text-gray-500">Grows with entries</p>
+                        <p className="text-xs text-gray-500">{Number(contest.entry_fee) > 0 ? "if contest is filled" : "fixed prize pool"}</p>
                       </>
                     )}
                   </div>
@@ -1178,7 +1182,9 @@ export const ContestDetails: React.FC = () => {
               <div className="group relative">
                 <SilentErrorBoundary>
                   <PrizeStructure
-                    prizePool={Number(contest.total_prize_pool || contest.prize_pool || "0")}
+                    prizePool={Number(contest.entry_fee) > 0 
+                      ? Number(contest.entry_fee) * contest.max_participants
+                      : Number(contest.total_prize_pool || contest.prize_pool || "0")}
                     entryFee={Number(contest?.entry_fee || 0)}
                     maxParticipants={Number(contest?.max_participants || 0)}
                     currentParticipants={Number(contest?.participant_count || 0)}

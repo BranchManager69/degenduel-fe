@@ -113,7 +113,7 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
         {/* Platform Fee - Only show if not crown contest */}
         {PLATFORM_FEE > 0 && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-400">Platform Fee</span>
+            <span className="text-gray-400">Degen Dividends</span>
             <div className="flex items-center gap-2">
               <span className="text-gray-300">
                 {formatCurrency(platformFee)}
@@ -140,7 +140,7 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
         {/* DUEL Holder Info - Only for regular contests */}
         {PLATFORM_FEE > 0 && (
           <div className="text-xs text-gray-500 flex items-center gap-1">
-            <span>Platform fees go to</span>
+            <span>Daily SOL airdrop to</span>
             <a 
               href="https://jup.ag/tokens/F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX" 
               target="_blank" 
@@ -149,7 +149,7 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
             >
               DUEL
             </a>
-            <span>holders daily</span>
+            <span>holders</span>
           </div>
         )}
       </div>

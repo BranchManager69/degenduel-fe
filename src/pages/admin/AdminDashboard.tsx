@@ -15,7 +15,6 @@ import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
 import { StartContest } from "../../components/ApiPlaygroundParts/StartContest";
 import { UserDetail } from "../../components/ApiPlaygroundParts/UserDetail";
 import { LazyLoad } from "../../components/shared/LazyLoad";
-import { TokenDiscoveryFeed } from "../../components/tokens-list/TokenDiscoveryFeed";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 
@@ -488,7 +487,7 @@ export const AdminDashboard: React.FC = () => {
           {systemAlerts.length > 0 && (
             <LazyLoad
               placeholder={
-                <div className="animate-pulse bg-dark-200/30 h-16 w-full rounded-lg border border-brand-500/10"></div>
+                <div className="animate-pulse bg-dark-200/30 h-16 w-full rounded-lg border border-dark-300/30"></div>
               }
               rootMargin="75px"
             >
@@ -497,7 +496,7 @@ export const AdminDashboard: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <div className="bg-dark-200/50 backdrop-blur-lg p-6 rounded-lg border border-brand-500/20">
+                <div className="bg-dark-200/50 backdrop-blur-lg p-6 rounded-lg border border-dark-300/50">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-gray-100">
                       System Alerts
@@ -604,7 +603,7 @@ export const AdminDashboard: React.FC = () => {
           {/* Main content - 75% width on desktop */}
           <div className="lg:col-span-3 space-y-4 lg:space-y-6">
             {/* Maintenance Mode Control */}
-            <div className="bg-dark-200/50 backdrop-blur-lg p-4 sm:p-6 rounded-lg border border-brand-500/20 relative overflow-hidden">
+            <div className="bg-dark-200/50 backdrop-blur-lg p-4 sm:p-6 rounded-lg border border-dark-300/50 relative overflow-hidden">
               <div className="relative">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex-1 min-w-0">
@@ -659,7 +658,7 @@ export const AdminDashboard: React.FC = () => {
                             Math.max(1, parseInt(e.target.value) || 1),
                           )
                         }
-                        className="w-full bg-dark-200/50 border border-brand-500/20 rounded px-3 py-2 text-gray-300 font-mono text-center"
+                        className="w-full bg-dark-200/50 border border-dark-300/50 rounded px-3 py-2 text-gray-300 font-mono text-center"
                       />
                       <div className="text-xs text-gray-500 mt-1 font-mono">
                         ({Math.floor(maintenanceDuration / 60)}h{" "}
@@ -748,14 +747,12 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* System Notices Management */}
-            <LazyLoad>
-              <SystemNoticesManager />
-            </LazyLoad>
+            <SystemNoticesManager />
 
             {/* System Reports Button */}
             <Link
               to="/admin/system-reports"
-              className="block bg-dark-200/70 backdrop-blur-lg p-6 rounded-lg border-2 border-purple-500/30 hover:border-purple-500/50 transition-all duration-300 relative overflow-hidden group shadow-lg hover:shadow-purple-500/20 transform hover:-translate-y-1"
+              className="block bg-dark-200/70 backdrop-blur-lg p-4 rounded-lg border-2 border-purple-500/30 hover:border-purple-500/50 transition-all duration-300 relative overflow-hidden group shadow-lg hover:shadow-purple-500/20 transform hover:-translate-y-1"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.15)_0%,transparent_60%)]" />
@@ -822,7 +819,7 @@ export const AdminDashboard: React.FC = () => {
             </Link>
 
             {/* All Admin Tools - Unified Container */}
-            <div className="bg-dark-200/50 backdrop-blur-lg p-4 rounded-lg border border-brand-500/20">
+            <div className="bg-dark-200/50 backdrop-blur-lg p-4 rounded-lg border border-dark-300/50">
               <h2 className="text-xl font-display mb-4 text-gray-100">Admin Tools</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {adminSections.map((section) => (
@@ -832,8 +829,8 @@ export const AdminDashboard: React.FC = () => {
                       bg-dark-200/75 backdrop-blur-lg border-2
                       ${
                         selectedSection === section.id
-                          ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
-                          : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
+                          ? `border-dark-300/70 shadow-lg shadow-${section.color}-500/20`
+                          : `border-dark-300/50 hover:border-dark-300/70`
                       }
                       p-3 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
                     `}
@@ -1841,27 +1838,6 @@ export const AdminDashboard: React.FC = () => {
                 <AdminLogsPanel />
               </LazyLoad>
 
-              {/* Token Discovery Feed */}
-              <LazyLoad
-                placeholder={
-                  <div className="animate-pulse">
-                    <div className="bg-dark-300/30 h-10 w-full rounded-t-lg"></div>
-                    <div className="bg-dark-200/40 p-4 rounded-b-lg space-y-3">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className="bg-dark-300/20 h-12 rounded"></div>
-                      ))}
-                    </div>
-                  </div>
-                }
-                rootMargin="50px"
-              >
-                <TokenDiscoveryFeed 
-                  maxDisplay={10}
-                  showHeader={true}
-                  showChainBadges={true}
-                  className="max-h-96"
-                />
-              </LazyLoad>
             </div>
           </div>
         </div>

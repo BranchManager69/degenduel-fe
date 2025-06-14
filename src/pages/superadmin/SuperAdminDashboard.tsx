@@ -399,7 +399,7 @@ export const SuperAdminDashboard: React.FC = () => {
     <ContestProvider>
       <div data-testid="superadmin-dashboard">
 
-      <div className="container mx-auto p-6 space-y-6 relative z-10 pb-32">
+      <div className="container mx-auto p-4 sm:p-6 space-y-6 relative z-10 pb-8">
         {/* Header with animated gradient */}
         <div className="flex items-center justify-between">
           <div className="relative group">
@@ -421,7 +421,7 @@ export const SuperAdminDashboard: React.FC = () => {
           {systemAlerts.length > 0 && (
             <LazyLoad
               placeholder={
-                <div className="animate-pulse bg-dark-200/30 h-16 w-full rounded-lg border border-brand-500/10"></div>
+                <div className="animate-pulse bg-dark-200/30 h-16 w-full rounded-lg border border-dark-300/30"></div>
               }
               rootMargin="150px"
             >
@@ -430,7 +430,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <div className="bg-dark-200/50 backdrop-blur-lg p-6 rounded-lg border border-brand-500/20">
+                <div className="bg-dark-200/50 backdrop-blur-lg p-6 rounded-lg border border-dark-300/50">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-gray-100">
                       System Alerts
@@ -533,17 +533,11 @@ export const SuperAdminDashboard: React.FC = () => {
         </AnimatePresence>
 
         {/* Dashboard Layout - main content and admin logs panel */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
           {/* Main content - 75% width on desktop */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-4 lg:space-y-6">
             {/* Maintenance Mode Control */}
-            <LazyLoad 
-              placeholder={
-                <div className="animate-pulse bg-dark-200/30 h-40 rounded-lg border border-dark-300"></div>
-              }
-              rootMargin="100px"
-            >
-              <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300 p-8 rounded-lg relative overflow-hidden">
+            <div className="bg-dark-200/50 backdrop-blur-sm border border-dark-300/50 p-4 sm:p-6 rounded-lg relative overflow-hidden">
                 {/* Top horizontal scanner line animation */}
                 <div className="absolute inset-0 h-px w-full bg-cyber-400/30 animate-scan-fast"></div>
                 
@@ -607,7 +601,7 @@ export const SuperAdminDashboard: React.FC = () => {
                               Math.max(1, parseInt(e.target.value) || 1),
                             )
                           }
-                          className="w-full bg-dark-200/50 border border-brand-500/20 rounded px-3 py-2 text-gray-300 font-mono text-center"
+                          className="w-full bg-dark-200/50 border border-dark-300/50 rounded px-3 py-2 text-gray-300 font-mono text-center"
                         />
                         <div className="text-xs text-gray-500 mt-1 font-mono">
                           ({Math.floor(maintenanceDuration / 60)}h{" "}
@@ -693,9 +687,114 @@ export const SuperAdminDashboard: React.FC = () => {
                     </div>
                   </button>
                 </div>
-              </div>
-            </LazyLoad>
+            </div>
 
+            {/* All SuperAdmin Tools - Unified Container */}
+            <div className="bg-dark-200/50 backdrop-blur-lg p-4 rounded-lg border border-dark-300/50">
+              <h2 className="text-xl font-display mb-4 text-gray-100">SuperAdmin Tools</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {superadminSections.map((section) => (
+                  <motion.div
+                    key={section.id}
+                    className={`
+                      bg-dark-200/75 backdrop-blur-lg border-2
+                      ${
+                        selectedSection === section.id
+                          ? `border-dark-300/70 shadow-lg shadow-${section.color}-500/20`
+                          : `border-dark-300/50 hover:border-dark-300/70`
+                      }
+                      p-3 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
+                    `}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                  >
+                    <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                    
+                    {section.isNew && (
+                      <div className="absolute -top-2 -right-2 z-10">
+                        <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
+                          NEW
+                        </div>
+                      </div>
+                    )}
+                    
+                    {section.link ? (
+                      <Link to={section.link} className="block h-full">
+                        <div className="flex items-center mb-2">
+                          <div className={`text-xl text-${section.color}-300 mr-2 group-hover:scale-110 transition-transform duration-300`}>
+                            {section.icon}
+                          </div>
+                          <h3 className={`text-sm font-bold text-${section.color}-300 font-display tracking-wide`}>
+                            {section.title}
+                          </h3>
+                        </div>
+                        
+                        <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-2`}></div>
+                        
+                        <p className="text-gray-300 text-xs font-mono">
+                          <span className={`text-${section.color}-200`}>→</span> {section.description}
+                        </p>
+                        
+                        <div className="absolute -bottom-0 -right-0 w-6 h-6">
+                          <div className={`absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                        </div>
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          setSelectedSection(
+                            selectedSection === section.id ? null : section.id,
+                          )
+                        }
+                        data-section-id={section.id}
+                        className="block w-full text-left"
+                      >
+                        <div className="flex items-center mb-2">
+                          <div className={`text-xl text-${section.color}-300 mr-2 group-hover:scale-110 transition-transform duration-300`}>
+                            {section.icon}
+                          </div>
+                          <h3 className={`text-sm font-bold text-${section.color}-300 font-display tracking-wide`}>
+                            {section.title}
+                          </h3>
+                        </div>
+                        
+                        <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-2`}></div>
+                        
+                        <p className="text-gray-300 text-xs font-mono">
+                          <span className={`text-${section.color}-200`}>→</span> {section.description}
+                        </p>
+                        
+                        <div className={`absolute top-3 right-3 text-${section.color}-300 text-sm transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                          ↓
+                        </div>
+                        
+                        <div className="absolute -bottom-0 -right-0 w-6 h-6">
+                          <div className={`absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                        </div>
+                      </button>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+              
+              {/* Expandable Content for selected items */}
+              <AnimatePresence>
+                {selectedSection && superadminSections.find(s => s.id === selectedSection)?.component && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-4"
+                  >
+                    <div className="pt-4 border-t border-dark-300">
+                      {superadminSections.find(s => s.id === selectedSection)?.component}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* REMOVE ALL OLD SECTIONS - keeping this comment as a marker */}
+            <div style={{ display: 'none' }}>
             {/* Advanced Management Section */}
             <LazyLoad 
               placeholder={
@@ -1403,14 +1502,14 @@ export const SuperAdminDashboard: React.FC = () => {
                 </div>    
               </div>
             </LazyLoad>
-
+            </div>
           </div>
 
           {/* Monitor Panels - 25% width on desktop, full width on mobile */}
           <div className="lg:col-span-1">
             
             {/* Monitor Panels Container (Admin Logs, Active WebSocket Connections) */}
-            <div className="sticky top-6 space-y-6 max-h-screen overflow-hidden">
+            <div className="sticky top-6 space-y-4 lg:space-y-6 max-h-screen overflow-hidden">
               
               {/* Admin Logs Monitoring Panel */}
               <LazyLoad
@@ -1419,7 +1518,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     <div className="bg-dark-300/30 h-10 w-full rounded-t-lg"></div>
                     <div className="bg-dark-200/40 p-4 rounded-b-lg space-y-3">
                       {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="bg-dark-300/20 h-16 rounded"></div>
+                        <div key={i} className="bg-dark-300/20 h-12 rounded"></div>
                       ))}
                     </div>
                   </div>
@@ -1437,7 +1536,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     <div className="bg-dark-300/30 h-10 w-full rounded-t-lg"></div>
                     <div className="bg-dark-200/40 p-4 rounded-b-lg space-y-3">
                       {[1, 2].map(i => (
-                        <div key={i} className="bg-dark-300/20 h-16 rounded"></div>
+                        <div key={i} className="bg-dark-300/20 h-12 rounded"></div>
                       ))}
                     </div>
                   </div>
