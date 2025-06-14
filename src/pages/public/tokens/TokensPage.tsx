@@ -25,9 +25,6 @@ export const TokensPage: React.FC = () => {
   // State initialization
   const [isAddTokenModalOpen, setIsAddTokenModalOpen] = useState(false);
   
-  // Search filter state
-  const [searchFilter, setSearchFilter] = useState<string>("");
-  
   // Infinite scroll state
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   
@@ -292,14 +289,14 @@ export const TokensPage: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="relative z-[150] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <OptimizedTokensHeader
           metadata={metadata}
         />
         
         
         {/* Simplified Controls */}
-        <div className="mt-6 flex justify-center relative z-[100]">
+        <div className="mt-6 flex justify-center relative">
           <div className="flex items-center gap-3">
             <TokenSearch
               onSelectToken={handleTokenSearchSelect}
