@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { formatCurrency } from "../../lib/utils";
 import { getFullImageUrl } from "../../utils/profileImageUtils";
 import { PublicUserSearch } from "../common/PublicUserSearch";
 
@@ -61,7 +62,7 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [, setSelectedUser] = useState<any>(null);
-  const [showCompactView, setShowCompactView] = useState(participants.length > 20);
+  const [showCompactView] = useState(false);
   
   // Track previous ranks for animation
   const [previousRanks, setPreviousRanks] = useState<Map<string, number>>(new Map());
@@ -207,15 +208,7 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
             </div>
           </div>
           
-          {/* View toggle for large lists */}
-          {participants.length > 10 && (
-            <button
-              onClick={() => setShowCompactView(!showCompactView)}
-              className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
-            >
-              {showCompactView ? "Detailed View" : "Compact View"}
-            </button>
-          )}
+
         </div>
 
         {/* Search - only show for 10+ participants */}
@@ -401,7 +394,7 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                         </div>
                         {!showCompactView && participant.portfolio_value && (
                           <div className="text-xs text-gray-500">
-                            ${parseFloat(participant.portfolio_value).toLocaleString()}
+                            {formatCurrency(participant.portfolio_value)}
                           </div>
                         )}
                       </motion.div>
