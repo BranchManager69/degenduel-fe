@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Crown } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
+import { formatCurrency } from '../../lib/utils';
 
 interface LeaderboardChartParticipant {
   wallet_address: string;
@@ -20,6 +21,8 @@ interface MultiParticipantChartV2Props {
     wallet_address: string;
     nickname: string;
     is_current_user?: boolean;
+    performance_percentage?: string;
+    portfolio_value?: string;
   }>;
   timeInterval?: '5m' | '15m' | '1h' | '4h' | '24h';
   maxParticipants?: number;
@@ -336,14 +339,18 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
     const leader = sortedByValue[0];
     const leaderParticipant = chartData.find(p => p.wallet_address === leader[0]);
     
+    // Find the leader in the participants array to get backend performance_percentage
+    const leaderParticipantData = participants.find(p => p.wallet_address === leader[0]);
+    const leaderPerformance = parseFloat(leaderParticipantData?.performance_percentage || '0');
+    
     return {
       leader: leaderParticipant,
-      leaderValue: leader[1].value,
-      leaderChange: leader[1].change,
+      leaderValue: parseFloat(leaderParticipantData?.portfolio_value || '0'), // Use backend-provided value
+      leaderChange: leaderPerformance, // Use backend-provided percentage
       userRank,
       topThree: sortedByValue
     };
-  }, [chartData, latestValues, user?.wallet_address]);
+  }, [chartData, latestValues, user?.wallet_address, participants]);
 
   if (isLoading) {
     return (
@@ -385,7 +392,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
             </span>
             {' '}is leading with{' '}
             <span className="font-mono font-semibold text-white">
-              ${performanceSummary.leaderValue.toLocaleString()}
+              {formatCurrency(performanceSummary.leaderValue)}
             </span>
             {' '}
             <span className={`text-sm ${performanceSummary.leaderChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -395,10 +402,24 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
               <>
                 {'. '}You are currently in{' '}
                 <span className="font-semibold text-brand-400">
-                  {performanceSummary.userRank === 1 ? '1st' : 
-                   performanceSummary.userRank === 2 ? '2nd' :
-                   performanceSummary.userRank === 3 ? '3rd' :
-                   `${performanceSummary.userRank}th`} place
+                  {(() => {
+                    const rank = performanceSummary.userRank;
+                    const lastDigit = rank % 10;
+                    const lastTwoDigits = rank % 100;
+                    
+                    // Special cases for 11th, 12th, 13th
+                    if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
+                      return `${rank}th`;
+                    }
+                    
+                    // Regular cases
+                    switch (lastDigit) {
+                      case 1: return `${rank}st`;
+                      case 2: return `${rank}nd`;
+                      case 3: return `${rank}rd`;
+                      default: return `${rank}th`;
+                    }
+                  })()} place
                 </span>
               </>
             )}
@@ -692,25 +713,6 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
         )}
       </div>
 
-      {/* Chart Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-        <div className="bg-dark-300/50 rounded-lg p-3">
-          <div className="text-xs text-gray-400">Active Lines</div>
-          <div className="text-lg font-bold text-white">{selectedParticipants.size}</div>
-        </div>
-        <div className="bg-dark-300/50 rounded-lg p-3">
-          <div className="text-xs text-gray-400">Top Participants</div>
-          <div className="text-lg font-bold text-white">{chartData.length}</div>
-        </div>
-        <div className="bg-dark-300/50 rounded-lg p-3">
-          <div className="text-xs text-gray-400">Data Points</div>
-          <div className="text-lg font-bold text-white">{unifiedChartData.length}</div>
-        </div>
-        <div className="bg-dark-300/50 rounded-lg p-3">
-          <div className="text-xs text-gray-400">View Mode</div>
-          <div className="text-lg font-bold text-white capitalize">{viewMode}</div>
-        </div>
-      </div>
     </div>
   );
 };
