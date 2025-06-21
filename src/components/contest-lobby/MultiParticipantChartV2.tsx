@@ -55,6 +55,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
   const [viewMode, setViewMode] = useState<ViewMode>('relative');
   const [hoveredParticipant, setHoveredParticipant] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '1d' | 'all'>('all');
+  const [showParticipantSelector, setShowParticipantSelector] = useState(false);
 
   // Removed hoursBack - now calculated inline in useEffect
 
@@ -484,89 +485,6 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
         </div>
       </div>
 
-      {/* Participant Selection */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-gray-300">Select Participants</h3>
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                const allWallets = new Set(chartData.map(p => p.wallet_address));
-                setSelectedParticipants(allWallets);
-              }}
-              className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
-            >
-              Select All
-            </button>
-            <span className="text-gray-600">|</span>
-            <button
-              onClick={() => setSelectedParticipants(new Set())}
-              className="text-xs text-gray-400 hover:text-gray-300 transition-colors"
-            >
-              Clear All
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-        {chartData.map((participant, index) => {
-          const isCurrentUser = participant.wallet_address === user?.wallet_address;
-          const color = PARTICIPANT_COLORS[index % PARTICIPANT_COLORS.length];
-          
-          return (
-            <motion.button
-              key={participant.wallet_address}
-              onClick={() => {
-                const newSelected = new Set(selectedParticipants);
-                if (newSelected.has(participant.wallet_address)) {
-                  newSelected.delete(participant.wallet_address);
-                } else {
-                  newSelected.add(participant.wallet_address);
-                }
-                setSelectedParticipants(newSelected);
-              }}
-              onMouseEnter={() => setHoveredParticipant(participant.wallet_address)}
-              onMouseLeave={() => setHoveredParticipant(null)}
-              className={`px-3 py-1.5 rounded-full text-sm border transition-all flex items-center gap-2 ${
-                selectedParticipants.has(participant.wallet_address)
-                  ? 'border-gray-400 bg-gray-400/20 text-white'
-                  : 'border-gray-600 bg-transparent text-gray-400 hover:border-gray-400'
-              } ${
-                hoveredParticipant === participant.wallet_address ? 'ring-2 ring-gray-400/50' : ''
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <span 
-                className="inline-block w-3 h-3 rounded-full"
-                style={{ backgroundColor: color }}
-              />
-              <span className="flex items-center gap-1">
-                #{participant.current_rank} {participant.nickname || participant.wallet_address.slice(0, 8)}
-                {isCurrentUser && (
-                  <span className="text-xs text-brand-400">(You)</span>
-                )}
-                {latestValues[participant.wallet_address] && (
-                  <span className={`text-xs ${
-                    latestValues[participant.wallet_address].change >= 0 
-                      ? 'text-green-400' 
-                      : 'text-red-400'
-                  }`}>
-                    {latestValues[participant.wallet_address].change >= 0 ? 
-                      <ChevronUp className="w-3 h-3 inline" /> : 
-                      <ChevronDown className="w-3 h-3 inline" />
-                    }
-                  </span>
-                )}
-              </span>
-            </motion.button>
-          );
-        })}
-        </div>
-      </div>
-
       {/* Chart */}
       <motion.div 
         className="h-96 w-full bg-dark-300/30 rounded-lg p-4 border border-dark-200"
@@ -676,6 +594,103 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
           </LineChart>
         </ResponsiveContainer>
       </motion.div>
+
+      {/* Participant Selection */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-medium text-gray-300">Select Participants</h3>
+            <button
+              onClick={() => setShowParticipantSelector(!showParticipantSelector)}
+              className="text-xs text-gray-400 hover:text-gray-300 transition-colors flex items-center gap-1"
+            >
+              {showParticipantSelector ? (
+                <>Hide <ChevronUp className="w-3 h-3" /></>
+              ) : (
+                <>Show Individual <ChevronDown className="w-3 h-3" /></>
+              )}
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                const allWallets = new Set(chartData.map(p => p.wallet_address));
+                setSelectedParticipants(allWallets);
+              }}
+              className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
+            >
+              Select All
+            </button>
+            <span className="text-gray-600">|</span>
+            <button
+              onClick={() => setSelectedParticipants(new Set())}
+              className="text-xs text-gray-400 hover:text-gray-300 transition-colors"
+            >
+              Clear All
+            </button>
+          </div>
+        </div>
+        {showParticipantSelector && (
+          <div className="flex flex-wrap gap-2">
+        {chartData.map((participant, index) => {
+          const isCurrentUser = participant.wallet_address === user?.wallet_address;
+          const color = PARTICIPANT_COLORS[index % PARTICIPANT_COLORS.length];
+          
+          return (
+            <motion.button
+              key={participant.wallet_address}
+              onClick={() => {
+                const newSelected = new Set(selectedParticipants);
+                if (newSelected.has(participant.wallet_address)) {
+                  newSelected.delete(participant.wallet_address);
+                } else {
+                  newSelected.add(participant.wallet_address);
+                }
+                setSelectedParticipants(newSelected);
+              }}
+              onMouseEnter={() => setHoveredParticipant(participant.wallet_address)}
+              onMouseLeave={() => setHoveredParticipant(null)}
+              className={`px-3 py-1.5 rounded-full text-sm border transition-all flex items-center gap-2 ${
+                selectedParticipants.has(participant.wallet_address)
+                  ? 'border-gray-400 bg-gray-400/20 text-white'
+                  : 'border-gray-600 bg-transparent text-gray-400 hover:border-gray-400'
+              } ${
+                hoveredParticipant === participant.wallet_address ? 'ring-2 ring-gray-400/50' : ''
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <span 
+                className="inline-block w-3 h-3 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+              <span className="flex items-center gap-1">
+                #{participant.current_rank} {participant.nickname || participant.wallet_address.slice(0, 8)}
+                {isCurrentUser && (
+                  <span className="text-xs text-brand-400">(You)</span>
+                )}
+                {latestValues[participant.wallet_address] && (
+                  <span className={`text-xs ${
+                    latestValues[participant.wallet_address].change >= 0 
+                      ? 'text-green-400' 
+                      : 'text-red-400'
+                  }`}>
+                    {latestValues[participant.wallet_address].change >= 0 ? 
+                      <ChevronUp className="w-3 h-3 inline" /> : 
+                      <ChevronDown className="w-3 h-3 inline" />
+                    }
+                  </span>
+                )}
+              </span>
+            </motion.button>
+          );
+        })}
+          </div>
+        )}
+      </div>
 
       {/* Chart Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">

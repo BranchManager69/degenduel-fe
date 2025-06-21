@@ -25,11 +25,8 @@ import { LiveTradeActivity } from "../../../components/contest-lobby/LiveTradeAc
 import { MultiParticipantChartV2 } from "../../../components/contest-lobby/MultiParticipantChartV2";
 //import { ShareContestButton } from "../../../components/contest-lobby/ShareContestButton";
 import { ContestLobbyHeader } from "../../../components/contest-lobby/ContestLobbyHeader";
-import { ContestStatsCard } from "../../../components/contest-lobby/ContestStatsCard";
 import { PrizeDistributionCard } from "../../../components/contest-lobby/PrizeDistributionCard";
-import { ReferralProgressCard } from "../../../components/contest-lobby/ReferralProgressCard";
 import { UserPerformanceCard } from "../../../components/contest-lobby/UserPerformanceCard";
-import { UserPositionCard } from "../../../components/contest-lobby/UserPositionCard";
 import { Button } from "../../../components/ui/Button";
 import { useWebSocket } from "../../../contexts/UnifiedWebSocketContext";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
@@ -282,8 +279,15 @@ export const ContestLobbyV2: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [activeTab, setActiveTab] = useState<'trade' | 'chart' | 'leaderboard' | 'activity' | 'chat'>('trade');
-  const [unreadMessages] = useState(0);
+  const [activeTab, setActiveTab] = useState<'trade' | 'leaderboard' | 'activity'>('leaderboard');
+  
+  // Switch away from Trade tab if user logs out
+  useEffect(() => {
+    if (!user && activeTab === 'trade') {
+      setActiveTab('leaderboard');
+    }
+  }, [user, activeTab]);
+  //const [unreadMessages] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   
   // Mouse position tracking for parallax effect
@@ -306,10 +310,9 @@ export const ContestLobbyV2: React.FC = () => {
   
   // Fetch portfolio data
   const fetchPortfolio = useCallback(async () => {
-    if (!contestIdFromParams || !user?.wallet_address) {
-      console.log('[ContestLobbyV2] Cannot fetch portfolio - missing data:', {
-        contestId: contestIdFromParams,
-        userWallet: user?.wallet_address
+    if (!contestIdFromParams) {
+      console.log('[ContestLobbyV2] Cannot fetch portfolio - missing contestId:', {
+        contestId: contestIdFromParams
       });
       return;
     }
@@ -357,9 +360,9 @@ export const ContestLobbyV2: React.FC = () => {
         setAllParticipantsData(mergedParticipants);
         
         // Find the current user's portfolio from the response
-        const userPortfolio = mergedParticipants.find(
+        const userPortfolio = user ? mergedParticipants.find(
           (p: any) => p.wallet_address === user.wallet_address
-        );
+        ) : null;
         
         if (userPortfolio) {
           // Transform the data to match the expected format
@@ -380,7 +383,7 @@ export const ContestLobbyV2: React.FC = () => {
             pnl_sol: userPortfolio.pnl_sol?.toString() || '0',
             initial_value: userPortfolio.initial_value_sol?.toString() || '0',
             // Find rank from participants array
-            rank: mergedParticipants.findIndex((p: any) => p.wallet_address === user.wallet_address) + 1
+            rank: user ? mergedParticipants.findIndex((p: any) => p.wallet_address === user.wallet_address) + 1 : 0
           };
           console.log('[ContestLobbyV2] User portfolio found:', portfolioData);
           setPortfolio(portfolioData);
@@ -736,13 +739,14 @@ export const ContestLobbyV2: React.FC = () => {
   }, [user, effectiveParticipants]);
 
 
-  // Tab definitions
-  const tabs = [
-    { id: 'trade', label: 'Trade', count: null },
-    { id: 'chart', label: 'Multi-Chart', count: null },
+  // Tab definitions - hide Trade tab when logged out
+  const tabs = user ? [
     { id: 'leaderboard', label: 'Leaderboard', count: effectiveParticipants.length },
-    { id: 'activity', label: 'Activity', count: null },
-    { id: 'chat', label: 'Chat', count: unreadMessages > 0 ? unreadMessages : null }
+    { id: 'trade', label: 'Trade', count: null },
+    { id: 'activity', label: 'Activity', count: null }
+  ] : [
+    { id: 'leaderboard', label: 'Leaderboard', count: effectiveParticipants.length },
+    { id: 'activity', label: 'Activity', count: null }
   ];
   
   // Debug effective participants
@@ -879,38 +883,32 @@ export const ContestLobbyV2: React.FC = () => {
               {activeTab === 'trade' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
-                    <TradingPanel
-                      contestId={contestIdFromParams!}
-                      portfolio={portfolio}
-                      onTradeComplete={refreshPortfolio}
-                    />
-                    
-                    {/* Enhanced Portfolio Display */}
-                    {user && (
-                      <div className="mt-6">
-                        <EnhancedPortfolioDisplay
+                    {user ? (
+                      <>
+                        <TradingPanel
                           contestId={contestIdFromParams!}
-                          walletAddress={user.wallet_address}
-                          nickname={user.nickname || 'You'}
+                          portfolio={portfolio}
+                          onTradeComplete={refreshPortfolio}
                         />
-                      </div>
+                        
+                        {/* Enhanced Portfolio Display */}
+                        <div className="mt-6">
+                          <EnhancedPortfolioDisplay
+                            contestId={contestIdFromParams!}
+                            walletAddress={user.wallet_address}
+                            nickname={user.nickname || 'You'}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      /* Spectator Mode - Show Participants List */
+                      <ParticipantsList 
+                        participants={effectiveParticipants} 
+                        contestStatus="live"
+                      />
                     )}
                   </div>
                   <div className="space-y-6">
-                    {/* Prize Distribution Card */}
-                    <PrizeDistributionCard prizePool={contest.prizePool || '0'} />
-                    
-                    {/* Contest Stats Card */}
-                    <ContestStatsCard contest={contest} participants={effectiveParticipants} />
-                    
-                    {/* Referral Progress Card */}
-                    <ReferralProgressCard className="mb-6" />
-                    
-                    <ParticipantsList 
-                      participants={effectiveParticipants} 
-                      contestStatus="live"
-                    />
-                    
                     {userPerformance && (
                       <UserPerformanceCard userPerformance={{
                         rank: userPerformance.rank,
@@ -919,26 +917,17 @@ export const ContestLobbyV2: React.FC = () => {
                         prize_awarded: userPerformance.prize_awarded || undefined
                       }} />
                     )}
-                  </div>
-                </div>
-              )}
-
-              {/* Multi-Chart Tab */}
-              {activeTab === 'chart' && (
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                  <div className="lg:col-span-3">
-                    <MultiParticipantChartV2 
-                      contestId={contestIdFromParams!}
-                      participants={effectiveParticipants}
-                      timeInterval="1h"
-                      maxParticipants={effectiveParticipants.length}
-                    />
-                  </div>
-                  <div>
-                    <ParticipantsList 
-                      participants={effectiveParticipants} 
-                      contestStatus="live"
-                    />
+                    
+                    {/* Prize Distribution Card */}
+                    <PrizeDistributionCard prizePool={contest.prizePool || '0'} />
+                    
+                    {/* Participants List - only show in right column when logged in */}
+                    {user && (
+                      <ParticipantsList 
+                        participants={effectiveParticipants} 
+                        contestStatus="live"
+                      />
+                    )}
                   </div>
                 </div>
               )}
@@ -947,51 +936,44 @@ export const ContestLobbyV2: React.FC = () => {
               {activeTab === 'leaderboard' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
+                    <MultiParticipantChartV2 
+                      contestId={contestIdFromParams!}
+                      participants={effectiveParticipants}
+                      timeInterval="1h"
+                      maxParticipants={effectiveParticipants.length}
+                    />
+                  </div>
+                  <div className="space-y-6">
                     <ParticipantsList 
                       participants={effectiveParticipants} 
                       contestStatus="live"
                     />
                   </div>
-                  <div className="space-y-6">
-                    {userPerformance && (
-                      <UserPositionCard 
-                        rank={userPerformance.rank}
-                        performancePercentage={userPerformance.performance_percentage}
+                </div>
+              )}
+
+              {/* Activity Tab */}
+              {activeTab === 'activity' && (
+                <div className="space-y-6">
+                  {/* Contest Chat */}
+                  <ContestChat contestId={contestIdFromParams!} />
+                  
+                  {/* Activity Content */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2">
+                      <LiveTradeActivity contestId={contestIdFromParams!} maxTrades={50} />
+                    </div>
+                    <div className="space-y-6">
+                      <ParticipantsList 
+                        participants={effectiveParticipants} 
+                        contestStatus="live"
                       />
-                    )}
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Activity Tab */}
-              {activeTab === 'activity' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2">
-                    <LiveTradeActivity contestId={contestIdFromParams!} maxTrades={50} />
-                  </div>
-                  <div className="space-y-6">
-                    <ParticipantsList 
-                      participants={effectiveParticipants} 
-                      contestStatus="live"
-                    />
-                  </div>
-                </div>
-              )}
 
-              {/* Chat Tab */}
-              {activeTab === 'chat' && (
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                  <div className="lg:col-span-3">
-                    <ContestChat contestId={contestIdFromParams!} />
-                  </div>
-                  <div>
-                    <ParticipantsList 
-                      participants={effectiveParticipants} 
-                      contestStatus="live"
-                    />
-                  </div>
-                </div>
-              )}
             </motion.div>
           </AnimatePresence>
         </div>
