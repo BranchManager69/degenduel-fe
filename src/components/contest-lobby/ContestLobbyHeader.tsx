@@ -73,7 +73,7 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
       
       <motion.div
         ref={headerRef}
-        className="relative w-full h-80 sm:h-96 overflow-hidden bg-gradient-to-br from-dark-200 to-dark-300 group"
+        className="relative w-full h-80 sm:h-96 overflow-hidden group"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         onMouseMove={onMouseMove}
@@ -102,12 +102,12 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
               onError={() => setImageError(true)}
             />
             {/* Gradient overlays for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-dark-100/95 via-dark-100/50 to-dark-100/20" />
-            <div className="absolute inset-0 bg-gradient-to-r from-dark-100/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
           </>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
-            <div className="absolute inset-0 bg-gradient-to-t from-dark-100/95 via-dark-100/50 to-dark-100/20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
           </div>
         )}
       </motion.div>
@@ -174,7 +174,7 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
             className="flex flex-wrap items-center gap-6 text-lg"
           >
             {/* Prize Pool with animated shimmer */}
-            <div className="flex items-center gap-2 bg-dark-100/60 backdrop-blur-sm rounded-lg px-4 py-2 border border-brand-400/30">
+            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-4 py-2 border border-brand-400/30">
               <span className="text-gray-300">Prize Pool:</span>
               <motion.span
                 className="font-bold text-brand-300 relative"
@@ -187,7 +187,7 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
             </div>
             
             {/* Participants Count */}
-            <div className="flex items-center gap-2 bg-dark-100/60 backdrop-blur-sm rounded-lg px-4 py-2">
+            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-4 py-2">
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
@@ -198,7 +198,7 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
             
             {/* Timer */}
             {timeDisplay && (
-              <div className="flex items-center gap-2 bg-dark-100/60 backdrop-blur-sm rounded-lg px-4 py-2">
+              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-4 py-2">
                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -224,7 +224,7 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
       </motion.div>
       
       {/* Bottom gradient fade for smooth transition */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-dark-100 to-transparent z-20" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent z-20" />
     </motion.div>
     </>
   );

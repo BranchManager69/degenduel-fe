@@ -694,7 +694,7 @@ export const ContestLobbyV2: React.FC = () => {
 
   return (
     <SilentErrorBoundary>
-      <div className="min-h-screen bg-dark-100">
+      <div className="min-h-screen">
         {/* Debug Test Button */}
         <div className="fixed top-20 right-4 z-50">
           <button
