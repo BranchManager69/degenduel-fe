@@ -317,25 +317,48 @@ export const ContestLobbyV2: React.FC = () => {
     
     setPortfolioLoading(true);
     try {
-      // Using session cookie authentication - no auth token needed
-      console.log('[ContestLobbyV2] Fetching portfolio analytics from:', `/api/portfolio-analytics/contests/${contestIdFromParams}/performance/detailed`);
-      const response = await fetch(
-        `/api/portfolio-analytics/contests/${contestIdFromParams}/performance/detailed`,
-        {
-          credentials: 'same-origin' // This ensures cookies are sent
-        }
-      );
+      // Fetch both portfolio analytics and enhanced participant data with profile images
+      const [portfolioResponse, participantsResponse] = await Promise.all([
+        fetch(`/api/portfolio-analytics/contests/${contestIdFromParams}/performance/detailed`, {
+          credentials: 'same-origin'
+        }),
+        fetch(`/api/contests/${contestIdFromParams}/participants`, {
+          credentials: 'same-origin'
+        })
+      ]);
       
-      if (response.ok) {
-        const data = await response.json();
+      console.log('[ContestLobbyV2] Fetching portfolio analytics from:', `/api/portfolio-analytics/contests/${contestIdFromParams}/performance/detailed`);
+      
+      if (portfolioResponse.ok) {
+        const data = await portfolioResponse.json();
         console.log('[ContestLobbyV2] Portfolio analytics data fetched:', data);
         
-        // Store all participants data for leaderboard
-        console.log('[ContestLobbyV2] All participants from portfolio analytics:', data.participants);
-        setAllParticipantsData(data.participants || []);
+        // Get enhanced participant data with profile images
+        let enhancedParticipantsData: any[] = [];
+        if (participantsResponse.ok) {
+          const participantsData = await participantsResponse.json();
+          enhancedParticipantsData = participantsData.contest_participants || participantsData.participants || [];
+          console.log('[ContestLobbyV2] Enhanced participants with profile images:', enhancedParticipantsData);
+        }
+        
+        // Merge portfolio analytics with profile image data
+        const mergedParticipants = (data.participants || []).map((portfolioParticipant: any) => {
+          const enhancedData = enhancedParticipantsData.find(
+            (enhanced: any) => enhanced.wallet_address === portfolioParticipant.wallet_address
+          );
+          
+          return {
+            ...portfolioParticipant,
+            profile_image_url: enhancedData?.profile_image_url || null,
+            nickname: enhancedData?.nickname || enhancedData?.users?.nickname || portfolioParticipant.username || `Player ${portfolioParticipant.rank || 0}`
+          };
+        });
+        
+        console.log('[ContestLobbyV2] Merged participants with profile images:', mergedParticipants);
+        setAllParticipantsData(mergedParticipants);
         
         // Find the current user's portfolio from the response
-        const userPortfolio = data.participants?.find(
+        const userPortfolio = mergedParticipants.find(
           (p: any) => p.wallet_address === user.wallet_address
         );
         
@@ -358,7 +381,7 @@ export const ContestLobbyV2: React.FC = () => {
             pnl_sol: userPortfolio.pnl_sol?.toString() || '0',
             initial_value: userPortfolio.initial_value_sol?.toString() || '0',
             // Find rank from participants array
-            rank: data.participants.findIndex((p: any) => p.wallet_address === user.wallet_address) + 1
+            rank: mergedParticipants.findIndex((p: any) => p.wallet_address === user.wallet_address) + 1
           };
           console.log('[ContestLobbyV2] User portfolio found:', portfolioData);
           setPortfolio(portfolioData);
@@ -367,8 +390,8 @@ export const ContestLobbyV2: React.FC = () => {
           setPortfolio(null);
         }
       } else {
-        console.error('[ContestLobbyV2] Portfolio fetch failed:', response.status, response.statusText);
-        const errorText = await response.text();
+        console.error('[ContestLobbyV2] Portfolio fetch failed:', portfolioResponse.status, portfolioResponse.statusText);
+        const errorText = await portfolioResponse.text();
         console.error('[ContestLobbyV2] Error response:', errorText);
       }
     } catch (error) {
@@ -659,25 +682,51 @@ export const ContestLobbyV2: React.FC = () => {
       return [];
     }
     
-    const transformed = allParticipantsData.map((p, index) => ({
+    // First sort by performance percentage (highest to lowest)
+    const sortedData = [...allParticipantsData].sort((a, b) => {
+      const aPerf = parseFloat(a.pnl_percent?.toString() || '0');
+      const bPerf = parseFloat(b.pnl_percent?.toString() || '0');
+      return bPerf - aPerf; // Descending order (highest performance first)
+    });
+    
+    const transformed = sortedData.map((p, index) => ({
       wallet_address: p.wallet_address,
-      nickname: p.username || `Player ${index + 1}`,
-      username: p.username || `Player ${index + 1}`,
-      profile_image_url: null, // Not provided by portfolio analytics
+      nickname: p.nickname || p.username || `Player ${index + 1}`,
+      username: p.nickname || p.username || `Player ${index + 1}`,
+      profile_image_url: p.profile_image_url || null, // Now includes profile images from merged data
       portfolio_value: p.total_value_sol?.toString() || '0',
       performance_percentage: p.pnl_percent?.toString() || '0',
-      rank: index + 1, // Already sorted by value from API
+      rank: index + 1, // Now properly ranked by performance
       is_ai_agent: false,
       is_current_user: user?.wallet_address === p.wallet_address,
       prize_awarded: null
     }));
     
-    console.log('[ContestLobbyV2] Transformed participants:', transformed);
+    console.log('[ContestLobbyV2] Transformed and sorted participants:', transformed);
     return transformed;
   }, [allParticipantsData, user?.wallet_address]);
   
-  // Use transformed participants if WebSocket participants are empty
-  const effectiveParticipants = participants.length > 0 ? participants : transformedParticipants;
+  // Always use properly sorted participants 
+  const effectiveParticipants = useMemo(() => {
+    const sourceData = participants.length > 0 ? participants : transformedParticipants;
+    
+    console.log('[DEBUG] Before sorting - sourceData:', sourceData.slice(0, 3));
+    console.log('[DEBUG] Using participants from WebSocket:', participants.length > 0);
+    
+    // Always sort by performance percentage regardless of data source
+    const sorted = [...sourceData].sort((a, b) => {
+      const aPerf = parseFloat(a.performance_percentage?.toString() || '0');
+      const bPerf = parseFloat(b.performance_percentage?.toString() || '0');
+      console.log(`[DEBUG] Comparing ${a.nickname} (${aPerf}%) vs ${b.nickname} (${bPerf}%)`);
+      return bPerf - aPerf; // Highest performance first
+    }).map((p, index) => ({
+      ...p,
+      rank: index + 1 // Update ranks after sorting
+    }));
+    
+    console.log('[DEBUG] After sorting - top 3:', sorted.slice(0, 3));
+    return sorted;
+  }, [participants, transformedParticipants]);
   
   // Calculate user's current performance
   const userPerformance = useMemo(() => {
@@ -859,7 +908,7 @@ export const ContestLobbyV2: React.FC = () => {
                     <ReferralProgressCard className="mb-6" />
                     
                     <ParticipantsList 
-                      participants={effectiveParticipants.slice(0, 10)} 
+                      participants={effectiveParticipants} 
                       contestStatus="live"
                     />
                     
@@ -888,9 +937,9 @@ export const ContestLobbyV2: React.FC = () => {
                   </div>
                   <div>
                     <Leaderboard 
-                      entries={effectiveParticipants.map((p, index) => ({
-                        rank: p.rank || index + 1,
-                        username: p.nickname || `Player ${index + 1}`,
+                      entries={effectiveParticipants.map((p) => ({
+                        rank: p.rank, // Use actual rank, not index
+                        username: p.nickname || `Player ${p.rank}`,
                         profilePictureUrl: p.profile_image_url || null,
                         performancePercentage: p.performance_percentage || '0',
                         portfolioValue: p.portfolio_value || '0',
@@ -909,9 +958,9 @@ export const ContestLobbyV2: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
                     <Leaderboard 
-                      entries={effectiveParticipants.map((p, index) => ({
-                        rank: p.rank || index + 1,
-                        username: p.nickname || `Player ${index + 1}`,
+                      entries={effectiveParticipants.map((p) => ({
+                        rank: p.rank, // Use actual rank, not index
+                        username: p.nickname || `Player ${p.rank}`,
                         profilePictureUrl: p.profile_image_url || null,
                         performancePercentage: p.performance_percentage || '0',
                         portfolioValue: p.portfolio_value || '0',
@@ -941,7 +990,7 @@ export const ContestLobbyV2: React.FC = () => {
                   </div>
                   <div className="space-y-6">
                     <ParticipantsList 
-                      participants={effectiveParticipants.slice(0, 10)} 
+                      participants={effectiveParticipants} 
                       contestStatus="live"
                     />
                   </div>
@@ -956,7 +1005,7 @@ export const ContestLobbyV2: React.FC = () => {
                   </div>
                   <div>
                     <ParticipantsList 
-                      participants={effectiveParticipants.slice(0, 10)} 
+                      participants={effectiveParticipants} 
                       contestStatus="live"
                     />
                   </div>
