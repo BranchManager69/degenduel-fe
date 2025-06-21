@@ -326,6 +326,27 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
     return null;
   };
 
+  // Generate performance summary - moved BEFORE conditional returns to fix hooks order
+  const performanceSummary = useMemo(() => {
+    if (!chartData.length || !latestValues) return null;
+    
+    const sortedByValue = Object.entries(latestValues)
+      .sort(([, a], [, b]) => b.value - a.value)
+      .slice(0, 3);
+    
+    const userRank = user?.wallet_address ? latestValues[user.wallet_address]?.rank : null;
+    const leader = sortedByValue[0];
+    const leaderParticipant = chartData.find(p => p.wallet_address === leader[0]);
+    
+    return {
+      leader: leaderParticipant,
+      leaderValue: leader[1].value,
+      leaderChange: leader[1].change,
+      userRank,
+      topThree: sortedByValue
+    };
+  }, [chartData, latestValues, user?.wallet_address]);
+
   if (isLoading) {
     return (
       <div className="h-96 flex items-center justify-center">
@@ -349,27 +370,6 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
       </div>
     );
   }
-
-  // Generate performance summary
-  const performanceSummary = useMemo(() => {
-    if (!chartData.length || !latestValues) return null;
-    
-    const sortedByValue = Object.entries(latestValues)
-      .sort(([, a], [, b]) => b.value - a.value)
-      .slice(0, 3);
-    
-    const userRank = user?.wallet_address ? latestValues[user.wallet_address]?.rank : null;
-    const leader = sortedByValue[0];
-    const leaderParticipant = chartData.find(p => p.wallet_address === leader[0]);
-    
-    return {
-      leader: leaderParticipant,
-      leaderValue: leader[1].value,
-      leaderChange: leader[1].change,
-      userRank,
-      topThree: sortedByValue
-    };
-  }, [chartData, latestValues, user?.wallet_address]);
 
   return (
     <div className="space-y-4">
