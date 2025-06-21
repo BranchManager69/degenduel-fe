@@ -206,7 +206,7 @@ export function useSolanaTokenData(
         supply: tokenSupply.value.amount,
         decimals: tokenSupply.value.decimals,
         holders,
-        symbol: effectiveMintAddress === config.SOLANA.DEGEN_TOKEN_ADDRESS ? 'DEGEN' : 'Unknown'
+        symbol: effectiveMintAddress === config.SOLANA.DEGEN_TOKEN_ADDRESS ? 'DUEL' : 'Unknown'
       };
 
       // If a wallet address is provided and user is authenticated, fetch token balance for that wallet

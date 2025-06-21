@@ -9,9 +9,9 @@
  * @updated 2025-06-03 - Initial implementation with advanced metrics
  */
 
-import { useWebSocket } from '@/contexts/UnifiedWebSocketContext';
-import { DDExtendedMessageType } from '@/hooks/websocket';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useWebSocket } from '../../contexts/UnifiedWebSocketContext';
+import { DDExtendedMessageType } from '../../hooks/websocket';
 
 // Enhanced Token interface with all advanced metrics for whale room
 export interface WhaleRoomToken {
