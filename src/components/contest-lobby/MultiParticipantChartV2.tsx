@@ -123,13 +123,10 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
         console.log('[MultiParticipantChartV2] Transformed participants:', chartParticipants);
         setChartData(chartParticipants);
         
-        // Auto-select current user and top 3 participants
+        // Auto-select ALL participants
         const autoSelected = new Set<string>();
-        chartParticipants.forEach((participant, index) => {
-          const isCurrentUser = participant.wallet_address === user?.wallet_address;
-          if (isCurrentUser || index < 3) {
-            autoSelected.add(participant.wallet_address);
-          }
+        chartParticipants.forEach((participant) => {
+          autoSelected.add(participant.wallet_address);
         });
         setSelectedParticipants(autoSelected);
 

@@ -21,7 +21,6 @@ import { TokenSearchFixed } from "../../../components/common/TokenSearchFixed";
 import { ContestChat } from "../../../components/contest-chat/ContestChat";
 import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
 import { EnhancedPortfolioDisplay } from "../../../components/contest-lobby/EnhancedPortfolioDisplay";
-import { Leaderboard } from "../../../components/contest-lobby/Leaderboard";
 import { LiveTradeActivity } from "../../../components/contest-lobby/LiveTradeActivity";
 import { MultiParticipantChartV2 } from "../../../components/contest-lobby/MultiParticipantChartV2";
 //import { ShareContestButton } from "../../../components/contest-lobby/ShareContestButton";
@@ -932,22 +931,13 @@ export const ContestLobbyV2: React.FC = () => {
                       contestId={contestIdFromParams!}
                       participants={effectiveParticipants}
                       timeInterval="1h"
-                      maxParticipants={10}
+                      maxParticipants={effectiveParticipants.length}
                     />
                   </div>
                   <div>
-                    <Leaderboard 
-                      entries={effectiveParticipants.map((p) => ({
-                        rank: p.rank, // Use actual rank, not index
-                        username: p.nickname || `Player ${p.rank}`,
-                        profilePictureUrl: p.profile_image_url || null,
-                        performancePercentage: p.performance_percentage || '0',
-                        portfolioValue: p.portfolio_value || '0',
-                        isCurrentUser: user?.wallet_address === p.wallet_address,
-                        isAiAgent: p.is_ai_agent || false
-                      }))}
-                      showSparklines={true}
-                      className="h-full"
+                    <ParticipantsList 
+                      participants={effectiveParticipants} 
+                      contestStatus="live"
                     />
                   </div>
                 </div>
@@ -957,18 +947,9 @@ export const ContestLobbyV2: React.FC = () => {
               {activeTab === 'leaderboard' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
-                    <Leaderboard 
-                      entries={effectiveParticipants.map((p) => ({
-                        rank: p.rank, // Use actual rank, not index
-                        username: p.nickname || `Player ${p.rank}`,
-                        profilePictureUrl: p.profile_image_url || null,
-                        performancePercentage: p.performance_percentage || '0',
-                        portfolioValue: p.portfolio_value || '0',
-                        isCurrentUser: user?.wallet_address === p.wallet_address,
-                        isAiAgent: p.is_ai_agent || false
-                      }))}
-                      showSparklines={true}
-                      className="h-full"
+                    <ParticipantsList 
+                      participants={effectiveParticipants} 
+                      contestStatus="live"
                     />
                   </div>
                   <div className="space-y-6">
