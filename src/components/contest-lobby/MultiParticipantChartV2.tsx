@@ -56,17 +56,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
   const [hoveredParticipant, setHoveredParticipant] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '1d' | 'all'>('all');
 
-  // Calculate hours back based on interval
-  const hoursBack = useMemo(() => {
-    switch (timeInterval) {
-      case '5m': return 6;    // 6 hours of 5-minute data
-      case '15m': return 24;  // 24 hours of 15-minute data
-      case '1h': return 48;   // 48 hours of hourly data
-      case '4h': return 96;   // 96 hours of 4-hour data
-      case '24h': return 168; // 7 days of daily data
-      default: return 24;
-    }
-  }, [timeInterval]);
+  // Removed hoursBack - now calculated inline in useEffect
 
   // Fetch leaderboard chart data
   useEffect(() => {
@@ -77,17 +67,20 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
       setError(null);
 
       try {
-        const authToken = localStorage.getItem('authToken');
-        if (!authToken) {
-          throw new Error('Authentication required');
-        }
+        // Map time interval to hours
+        const intervalHours = {
+          '5m': 1,
+          '15m': 1,
+          '1h': 6,
+          '4h': 24,
+          '24h': 24
+        }[timeInterval] || 24;
 
+        // Use portfolio analytics timeline endpoint - no auth required!
         const response = await fetch(
-          `/api/contests/${contestId}/leaderboard-chart?hours=${hoursBack}&top=${maxParticipants}`,
+          `/api/portfolio-analytics/contests/${contestId}/performance/timeline?hours=${intervalHours}`,
           {
-            headers: {
-              'Authorization': `Bearer ${authToken}`
-            }
+            credentials: 'same-origin' // Use session cookie
           }
         );
         
@@ -96,17 +89,43 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
         }
 
         const data = await response.json();
+        console.log('[MultiParticipantChartV2] Timeline data:', data);
         
-        if (!data.success || !data.leaderboard_chart) {
-          throw new Error('Invalid response format');
-        }
+        // Transform the timeline data to match expected format
+        const participantMap = new Map<string, LeaderboardChartParticipant>();
+        
+        // Get latest snapshot for current rankings
+        const latestSnapshot = data.snapshots[data.snapshots.length - 1];
+        const latestParticipants = latestSnapshot ? Object.entries(latestSnapshot.participants) : [];
+        
+        // Sort by value to determine ranks
+        latestParticipants.sort((a, b) => (b[1] as any).value - (a[1] as any).value);
+        
+        // Process each participant
+        latestParticipants.forEach(([walletAddress, participantData]: [string, any], index) => {
+          const history = data.snapshots.map((snapshot: any) => ({
+            timestamp: snapshot.timestamp,
+            portfolio_value: snapshot.participants[walletAddress]?.value || 0
+          }));
+          
+          participantMap.set(walletAddress, {
+            wallet_address: walletAddress,
+            nickname: participantData.username,
+            current_rank: index + 1,
+            history: history
+          });
+        });
 
-        // Store the chart data
-        setChartData(data.leaderboard_chart.participants || []);
+        // Convert to array and limit to maxParticipants
+        const chartParticipants = Array.from(participantMap.values())
+          .slice(0, maxParticipants);
+        
+        console.log('[MultiParticipantChartV2] Transformed participants:', chartParticipants);
+        setChartData(chartParticipants);
         
         // Auto-select current user and top 3 participants
         const autoSelected = new Set<string>();
-        data.leaderboard_chart.participants.forEach((participant: LeaderboardChartParticipant, index: number) => {
+        chartParticipants.forEach((participant, index) => {
           const isCurrentUser = participant.wallet_address === user?.wallet_address;
           if (isCurrentUser || index < 3) {
             autoSelected.add(participant.wallet_address);
@@ -123,7 +142,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
     };
 
     fetchLeaderboardChart();
-  }, [contestId, hoursBack, maxParticipants, user?.wallet_address]);
+  }, [contestId, timeInterval, maxParticipants, user?.wallet_address, participants.length]);
 
   // Get initial values for relative calculations
   const initialValues = useMemo(() => {
