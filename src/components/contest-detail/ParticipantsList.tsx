@@ -84,17 +84,15 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
   const sortedParticipants = useMemo(() => {
     
     return [...filteredParticipants].sort((a, b) => {
-      // Current user first
-      if (a.is_current_user && !b.is_current_user) return -1;
-      if (b.is_current_user && !a.is_current_user) return 1;
-      
-      // AI agents last
-      if (a.is_ai_agent && !b.is_ai_agent) return 1;
-      if (b.is_ai_agent && !a.is_ai_agent) return -1;
-
-      // For live/completed contests, sort by rank
+      // For live/completed contests, sort by rank (performance-based)
       if (contestStatus !== "upcoming" && a.rank !== undefined && b.rank !== undefined) {
         return a.rank - b.rank;
+      }
+      
+      // AI agents last for upcoming contests only
+      if (contestStatus === "upcoming") {
+        if (a.is_ai_agent && !b.is_ai_agent) return 1;
+        if (b.is_ai_agent && !a.is_ai_agent) return -1;
       }
       
       // For upcoming contests, sort by user level then experience

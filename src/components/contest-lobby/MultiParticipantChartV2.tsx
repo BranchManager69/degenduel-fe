@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { motion } from 'framer-motion';
+import { ChevronDown, ChevronUp, Crown } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
-import { Crown, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface LeaderboardChartParticipant {
   wallet_address: string;
@@ -52,7 +52,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<ViewMode>('absolute');
+  const [viewMode, setViewMode] = useState<ViewMode>('relative');
   const [hoveredParticipant, setHoveredParticipant] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '1d' | 'all'>('all');
 
