@@ -11,25 +11,36 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import {
+  //Link, 
+  useParams
+} from "react-router-dom";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
 import { TokenSearchFixed } from "../../../components/common/TokenSearchFixed";
 import { ContestChat } from "../../../components/contest-chat/ContestChat";
 import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
-import { ContestTimer } from "../../../components/contest-lobby/ContestTimer";
+import { EnhancedPortfolioDisplay } from "../../../components/contest-lobby/EnhancedPortfolioDisplay";
+import { Leaderboard } from "../../../components/contest-lobby/Leaderboard";
 import { LiveTradeActivity } from "../../../components/contest-lobby/LiveTradeActivity";
-import { Badge } from "../../../components/ui/Badge";
+import { MultiParticipantChartV2 } from "../../../components/contest-lobby/MultiParticipantChartV2";
+//import { ShareContestButton } from "../../../components/contest-lobby/ShareContestButton";
+import { ContestLobbyHeader } from "../../../components/contest-lobby/ContestLobbyHeader";
+import { ContestStatsCard } from "../../../components/contest-lobby/ContestStatsCard";
+import { PrizeDistributionCard } from "../../../components/contest-lobby/PrizeDistributionCard";
+import { ReferralProgressCard } from "../../../components/contest-lobby/ReferralProgressCard";
+import { UserPerformanceCard } from "../../../components/contest-lobby/UserPerformanceCard";
+import { UserPositionCard } from "../../../components/contest-lobby/UserPositionCard";
 import { Button } from "../../../components/ui/Button";
+import { useWebSocket } from "../../../contexts/UnifiedWebSocketContext";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/useContestParticipants";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
-import { useWebSocket } from "../../../contexts/UnifiedWebSocketContext";
 // Removed usePortfolio - implementing manual portfolio fetching
+import { useToast } from "../../../components/toast";
 import { formatCurrency } from "../../../lib/utils";
 import { ContestViewData, SearchToken } from "../../../types";
 import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
-import { useToast } from "../../../components/toast";
 
 // Trading Panel Component
 const TradingPanel: React.FC<{
@@ -265,114 +276,6 @@ const TradingPanel: React.FC<{
   );
 };
 
-// Multi-Participant Chart Component  
-const MultiParticipantChart: React.FC<{ contestId: string }> = ({ contestId }) => {
-  const [chartData, setChartData] = useState<any>(null);
-  const [timeRange, setTimeRange] = useState<number>(24);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchChartData = async () => {
-      setIsLoading(true);
-      try {
-        const authToken = localStorage.getItem('authToken') || localStorage.getItem('dd_token');
-        const headers: HeadersInit = {};
-        
-        if (authToken) {
-          headers['Authorization'] = `Bearer ${authToken}`;
-        }
-        
-        const response = await fetch(
-          `/api/contests/${contestId}/leaderboard-chart?hours=${timeRange}&top=10`,
-          { headers }
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          setChartData(data);
-        }
-      } catch (error) {
-        console.error('[MultiParticipantChart] Failed to fetch chart data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchChartData();
-  }, [contestId, timeRange]);
-
-  return (
-    <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-100">Performance Chart</h3>
-        <div className="flex gap-2">
-          {[24, 48, 168].map((hours) => (
-            <button
-              key={hours}
-              onClick={() => setTimeRange(hours)}
-              className={`px-3 py-1 rounded text-sm ${
-                timeRange === hours
-                  ? 'bg-brand-500 text-white'
-                  : 'bg-dark-300 text-gray-300 hover:bg-dark-200'
-              }`}
-            >
-              {hours === 24 ? '1D' : hours === 48 ? '2D' : '1W'}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="h-64 bg-dark-300/30 rounded-lg flex items-center justify-center">
-          <LoadingSpinner size="sm" />
-        </div>
-      ) : chartData ? (
-        <div className="h-64 bg-dark-300/30 rounded-lg p-4">
-          {chartData.data && chartData.data.length > 0 ? (
-            <div className="space-y-2">
-              <div className="text-xs text-gray-400 mb-2">
-                Top {chartData.data.length} Participants Performance
-              </div>
-              {/* Simple performance bars */}
-              {chartData.data.slice(0, 5).map((participant: any, index: number) => (
-                <div key={participant.wallet} className="flex items-center gap-2">
-                  <div className="w-20 text-xs text-gray-400 truncate">
-                    {participant.nickname || `Player ${index + 1}`}
-                  </div>
-                  <div className="flex-1 bg-dark-400 rounded-full h-6 relative overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 ${
-                        index === 0 ? 'bg-yellow-500' :
-                        index === 1 ? 'bg-gray-400' :
-                        index === 2 ? 'bg-orange-600' :
-                        'bg-brand-500'
-                      }`}
-                      style={{ width: `${Math.max(10, (parseFloat(participant.performance) + 100) / 2)}%` }}
-                    >
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-dark-100">
-                        {participant.performance}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <div className="text-xs text-gray-500 mt-2">
-                Chart updates every 5 minutes
-              </div>
-            </div>
-          ) : (
-            <p className="text-gray-400 text-center">No performance data yet</p>
-          )}
-        </div>
-      ) : (
-        <div className="h-64 bg-dark-300/30 rounded-lg flex items-center justify-center">
-          <LoadingSpinner size="sm" />
-        </div>
-      )}
-    </div>
-  );
-};
-
 
 // Main Contest Lobby V2 Component
 export const ContestLobbyV2: React.FC = () => {
@@ -386,6 +289,10 @@ export const ContestLobbyV2: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'trade' | 'chart' | 'leaderboard' | 'activity' | 'chat'>('trade');
   const [unreadMessages] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
+  
+  // Mouse position tracking for parallax effect
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
 
   // WebSocket hooks
   const { contestViewData: wsUpdatedData } = useContestViewUpdates(contestIdFromParams || null, contestViewData);
@@ -600,6 +507,30 @@ export const ContestLobbyV2: React.FC = () => {
     };
   }, [contestIdFromParams, ws.isConnected, ws.subscribe, ws.registerListener, refreshPortfolio, user?.wallet_address]);
 
+  // Mouse move handler for parallax effect (desktop only)
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    if (!target) return;
+    
+    // Get card dimensions and position
+    const rect = target.getBoundingClientRect();
+    
+    // Calculate mouse position relative to card center (values from -0.5 to 0.5)
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    
+    // Update mouse position state
+    setMousePosition({ x, y });
+  };
+  
+  // Mouse enter/leave handlers
+  const handleMouseEnter = () => setIsHovering(true);
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    // Reset to center position when not hovering
+    setMousePosition({ x: 0, y: 0 });
+  };
+
   // Setup OG meta tags - use useMemo to prevent infinite re-renders
   const contestForMeta = useMemo(() => contestViewData?.contest, [contestViewData?.contest?.id, contestViewData?.contest?.name]);
   const participantCount = useMemo(() => participants.length, [participants.length]);
@@ -622,6 +553,7 @@ export const ContestLobbyV2: React.FC = () => {
     const userParticipant = participants.find(p => p.wallet_address === user.wallet_address);
     return userParticipant || null;
   }, [user, participants]);
+
 
   // Tab definitions
   const tabs = [
@@ -682,104 +614,58 @@ export const ContestLobbyV2: React.FC = () => {
           </button>
         </div>
         
-        {/* Header */}
-        <div className="bg-dark-200/50 backdrop-blur-sm border-b border-dark-300">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            {/* Breadcrumb */}
-            <div className="flex items-center text-sm text-gray-400 mb-2">
-              <Link to="/" className="hover:text-brand-400 transition-colors">Home</Link>
-              <span className="mx-2">›</span>
-              <Link to="/contests" className="hover:text-brand-400 transition-colors">Contests</Link>
-              <span className="mx-2">›</span>
-              <span className="text-gray-300">{contest.name}</span>
-            </div>
+        {/* Beautiful Header with Parallax Effect */}
+        <ContestLobbyHeader
+          contest={contest}
+          participants={participants}
+          mousePosition={mousePosition}
+          isHovering={isHovering}
+          onMouseMove={handleMouseMove}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        />
+
+        {/* Content Section */}
+        <div className="relative z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             
-            {/* Contest Info */}
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-3">
-                  {contest.name}
-                  <Badge 
-                    variant={contest.status === 'active' ? 'success' : 'secondary'}
-                    className="text-xs"
-                  >
-                    {contest.status === 'active' ? 'LIVE' : contest.status.toUpperCase()}
-                  </Badge>
-                  {(contest as any).contest_code && (
-                    <span className="text-xs text-gray-500 font-mono">
-                      {(contest as any).contest_code}
-                    </span>
-                  )}
-                </h1>
-                
-                {contest.description && (
-                  <p className="text-sm text-gray-400 mt-1">{contest.description}</p>
-                )}
-                
-                <div className="flex items-center gap-4 mt-2 text-sm">
-                  <span className="text-gray-400">
-                    Prize Pool: <span className="text-brand-400 font-mono font-bold">
-                      {formatCurrency(contest.prizePool || 0)}
-                    </span>
-                  </span>
-                  <span className="text-gray-400">
-                    Entry Fee: <span className="text-gray-200 font-mono">
-                      {formatCurrency(contest.entryFee || 0)}
-                    </span>
-                  </span>
-                  <span className="text-gray-400">
-                    Participants: <span className="text-gray-200 font-bold">
-                      {participants.length}
-                      {contest.settings?.maxParticipants && (
-                        <span className="text-gray-500">/{contest.settings.maxParticipants}</span>
-                      )}
-                    </span>
-                  </span>
-                  {userPerformance && (
-                    <span className="text-gray-400">
-                      Your Rank: <span className={`font-bold ${
-                        userPerformance.rank && userPerformance.rank <= 3 ? 'text-yellow-400' : 'text-gray-200'
-                      }`}>
-                        #{userPerformance.rank || 'N/A'}
-                      </span>
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              {/* Timer */}
-              <div className="text-right">
-                <div className="text-sm text-gray-400 mb-1">
-                  {contest.status === 'active' ? 'Ends In' : 'Starts In'}
-                </div>
-                <ContestTimer 
-                  endTime={new Date(
-                    contest.status === 'active' 
-                      ? (contest.endTime || Date.now() + 3600000)
-                      : (contest.startTime || Date.now() + 3600000)
-                  )}
-                  showDate={false}
-                />
-              </div>
-            </div>
-            
-            {/* Tab Navigation */}
-            <div className="mt-4 flex items-center gap-1">
+            {/* Beautiful Tab Navigation with Premium Effects */}
+            <div className="mt-8 flex items-center gap-2 p-1 bg-dark-300/30 backdrop-blur-sm rounded-lg border border-dark-200">
               {tabs.map(tab => (
                 <motion.button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                  className={`relative px-4 py-2.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 group ${
                     activeTab === tab.id
-                      ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
-                      : 'text-gray-400 hover:text-gray-300 hover:bg-dark-300/50'
+                      ? 'text-white'
+                      : 'text-gray-400 hover:text-gray-200'
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {tab.label}
+                  {/* Active tab background with gradient */}
+                  {activeTab === tab.id && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-gradient-to-br from-brand-500/30 to-brand-600/30 rounded-md border border-brand-500/40"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/10 to-brand-400/0 animate-data-stream-responsive" />
+                    </motion.div>
+                  )}
+                  
+                  {/* Hover gradient effect */}
+                  <div className="absolute inset-0 rounded-md bg-gradient-to-br from-brand-500/0 to-brand-600/0 group-hover:from-brand-500/10 group-hover:to-brand-600/10 transition-all duration-300" />
+                  
+                  <span className="relative z-10">{tab.label}</span>
+                  
                   {tab.count && (
-                    <span className="ml-1 bg-brand-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    <span className={`relative z-10 text-xs rounded-full w-5 h-5 flex items-center justify-center transition-all ${
+                      activeTab === tab.id 
+                        ? 'bg-brand-500 text-white' 
+                        : 'bg-dark-400/50 text-gray-400 group-hover:bg-brand-500/20 group-hover:text-brand-300'
+                    }`}>
                       {tab.count > 99 ? '99+' : tab.count}
                     </span>
                   )}
@@ -809,75 +695,27 @@ export const ContestLobbyV2: React.FC = () => {
                       portfolio={portfolio}
                       onTradeComplete={refreshPortfolio}
                     />
+                    
+                    {/* Enhanced Portfolio Display */}
+                    {user && (
+                      <div className="mt-6">
+                        <EnhancedPortfolioDisplay
+                          contestId={contestIdFromParams!}
+                          walletAddress={user.wallet_address}
+                          nickname={user.nickname || 'You'}
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-6">
                     {/* Prize Distribution Card */}
-                    <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-dark-300">
-                      <h3 className="text-sm font-medium text-gray-400 mb-3">Prize Distribution</h3>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-yellow-400 flex items-center gap-1">
-                            <span className="text-lg">🥇</span> 1st Place
-                          </span>
-                          <span className="font-mono font-bold text-yellow-400">
-                            {formatCurrency(parseFloat(contest.prizePool || '0') * 0.5)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-300 flex items-center gap-1">
-                            <span className="text-lg">🥈</span> 2nd Place
-                          </span>
-                          <span className="font-mono font-bold text-gray-300">
-                            {formatCurrency(parseFloat(contest.prizePool || '0') * 0.3)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-orange-600 flex items-center gap-1">
-                            <span className="text-lg">🥉</span> 3rd Place
-                          </span>
-                          <span className="font-mono font-bold text-orange-600">
-                            {formatCurrency(parseFloat(contest.prizePool || '0') * 0.2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                    <PrizeDistributionCard prizePool={contest.prizePool || '0'} />
                     
                     {/* Contest Stats Card */}
-                    <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-dark-300">
-                      <h3 className="text-sm font-medium text-gray-400 mb-3">Contest Stats</h3>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Total Volume</span>
-                          <span className="font-mono text-gray-200">
-                            {formatCurrency(participants.length * parseFloat(contest.entryFee || '0'))}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Avg Performance</span>
-                          <span className="font-mono text-gray-200">
-                            {participants.length > 0 
-                              ? (participants.reduce((acc, p) => acc + parseFloat(p.performance_percentage || '0'), 0) / participants.length).toFixed(2)
-                              : '0.00'}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Duration</span>
-                          <span className="font-mono text-gray-200">
-                            {contest.endTime && contest.startTime 
-                              ? Math.round((new Date(contest.endTime).getTime() - new Date(contest.startTime).getTime()) / 3600000) + 'h'
-                              : 'N/A'}
-                          </span>
-                        </div>
-                        {contest.settings?.tokenTypesAllowed && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Allowed Tokens</span>
-                            <span className="text-gray-200">
-                              {contest.settings.tokenTypesAllowed.join(', ')}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <ContestStatsCard contest={contest} participants={participants} />
+                    
+                    {/* Referral Progress Card */}
+                    <ReferralProgressCard className="mb-6" />
                     
                     <ParticipantsList 
                       participants={participants.slice(0, 10)} 
@@ -885,43 +723,12 @@ export const ContestLobbyV2: React.FC = () => {
                     />
                     
                     {userPerformance && (
-                      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-dark-300">
-                        <h3 className="text-sm font-medium text-gray-400 mb-3">Your Performance</h3>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Rank</span>
-                            <span className={`font-mono font-bold ${
-                              userPerformance.rank && userPerformance.rank <= 3 ? 'text-yellow-400' : 'text-gray-200'
-                            }`}>
-                              #{userPerformance.rank || 'N/A'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Portfolio Value</span>
-                            <span className="font-mono font-bold text-gray-200">
-                              {formatCurrency(parseFloat(userPerformance.portfolio_value || '0'))}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">P&L</span>
-                            <span className={`font-mono font-bold ${
-                              parseFloat(userPerformance.performance_percentage || '0') >= 0
-                                ? 'text-green-400'
-                                : 'text-red-400'
-                            }`}>
-                              {userPerformance.performance_percentage || '0'}%
-                            </span>
-                          </div>
-                          {userPerformance.prize_awarded && parseFloat(userPerformance.prize_awarded) > 0 && (
-                            <div className="flex justify-between pt-2 border-t border-dark-300">
-                              <span className="text-gray-400">Prize Won</span>
-                              <span className="font-mono font-bold text-yellow-400">
-                                {formatCurrency(parseFloat(userPerformance.prize_awarded))}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      <UserPerformanceCard userPerformance={{
+                        rank: userPerformance.rank,
+                        portfolio_value: userPerformance.portfolio_value,
+                        performance_percentage: userPerformance.performance_percentage,
+                        prize_awarded: userPerformance.prize_awarded || undefined
+                      }} />
                     )}
                   </div>
                 </div>
@@ -931,12 +738,26 @@ export const ContestLobbyV2: React.FC = () => {
               {activeTab === 'chart' && (
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                   <div className="lg:col-span-3">
-                    <MultiParticipantChart contestId={contestIdFromParams!} />
+                    <MultiParticipantChartV2 
+                      contestId={contestIdFromParams!}
+                      participants={participants}
+                      timeInterval="1h"
+                      maxParticipants={10}
+                    />
                   </div>
                   <div>
-                    <ParticipantsList 
-                      participants={participants.slice(0, 10)} 
-                      contestStatus="live"
+                    <Leaderboard 
+                      entries={participants.map((p, index) => ({
+                        rank: p.rank || index + 1,
+                        username: p.nickname || `Player ${index + 1}`,
+                        profilePictureUrl: p.profile_image_url || null,
+                        performancePercentage: p.performance_percentage || '0',
+                        portfolioValue: p.portfolio_value || '0',
+                        isCurrentUser: user?.wallet_address === p.wallet_address,
+                        isAiAgent: p.is_ai_agent || false
+                      }))}
+                      showSparklines={true}
+                      className="h-full"
                     />
                   </div>
                 </div>
@@ -946,22 +767,26 @@ export const ContestLobbyV2: React.FC = () => {
               {activeTab === 'leaderboard' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
-                    <ParticipantsList 
-                      participants={participants} 
-                      contestStatus="live"
+                    <Leaderboard 
+                      entries={participants.map((p, index) => ({
+                        rank: p.rank || index + 1,
+                        username: p.nickname || `Player ${index + 1}`,
+                        profilePictureUrl: p.profile_image_url || null,
+                        performancePercentage: p.performance_percentage || '0',
+                        portfolioValue: p.portfolio_value || '0',
+                        isCurrentUser: user?.wallet_address === p.wallet_address,
+                        isAiAgent: p.is_ai_agent || false
+                      }))}
+                      showSparklines={true}
+                      className="h-full"
                     />
                   </div>
                   <div className="space-y-6">
                     {userPerformance && (
-                      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-4 border border-dark-300">
-                        <h3 className="text-sm font-medium text-gray-400 mb-3">Your Position</h3>
-                        <div className="text-center">
-                          <div className="text-3xl font-bold text-brand-400">
-                            #{userPerformance.rank || 'N/A'}
-                          </div>
-                          <div className="text-sm text-gray-400 mt-1">Current Rank</div>
-                        </div>
-                      </div>
+                      <UserPositionCard 
+                        rank={userPerformance.rank}
+                        performancePercentage={userPerformance.performance_percentage}
+                      />
                     )}
                   </div>
                 </div>

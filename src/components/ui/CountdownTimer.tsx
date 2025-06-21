@@ -60,7 +60,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
   if (timeLeft.days > 0) {
     return (
       <span>
-        {timeLeft.days}d {formatNumber(timeLeft.hours)}h{" "}
+        {timeLeft.days}d {timeLeft.hours}h{" "}
         {formatNumber(timeLeft.minutes)}m
       </span>
     );
@@ -69,7 +69,7 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
   if (timeLeft.hours > 0) {
     return (
       <span>
-        {formatNumber(timeLeft.hours)}h {formatNumber(timeLeft.minutes)}m
+        {timeLeft.hours}h {formatNumber(timeLeft.minutes)}m
         {showSeconds && ` ${formatNumber(timeLeft.seconds)}s`}
       </span>
     );
