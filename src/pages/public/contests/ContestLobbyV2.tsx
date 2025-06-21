@@ -325,7 +325,7 @@ export const ContestLobbyV2: React.FC = () => {
         console.log('[ContestLobbyV2] Portfolio analytics data fetched:', data);
         
         // Find the current user's portfolio from the response
-        const userPortfolio = data.portfolios?.find(
+        const userPortfolio = data.participants?.find(
           (p: any) => p.wallet_address === user.wallet_address
         );
         
@@ -333,10 +333,22 @@ export const ContestLobbyV2: React.FC = () => {
           // Transform the data to match the expected format
           const portfolioData = {
             wallet_address: userPortfolio.wallet_address,
-            total_value: userPortfolio.total_value,
-            tokens: userPortfolio.holdings || [],
-            performance_percentage: userPortfolio.performance_percentage,
-            rank: userPortfolio.rank
+            total_value: userPortfolio.total_value_sol?.toString() || '0',
+            tokens: (userPortfolio.holdings || []).map((holding: any) => ({
+              symbol: holding.symbol,
+              name: holding.name,
+              weight: holding.weight,
+              percentage: holding.weight, // alias for weight
+              quantity: holding.quantity?.toString() || '0',
+              current_value: holding.value_sol?.toString() || '0',
+              value: holding.value_sol?.toString() || '0', // alias
+              value_usd: holding.value_usd?.toString() || '0'
+            })),
+            performance_percentage: userPortfolio.pnl_percent?.toString() || '0',
+            pnl_sol: userPortfolio.pnl_sol?.toString() || '0',
+            initial_value: userPortfolio.initial_value_sol?.toString() || '0',
+            // Find rank from participants array
+            rank: data.participants.findIndex((p: any) => p.wallet_address === user.wallet_address) + 1
           };
           console.log('[ContestLobbyV2] User portfolio found:', portfolioData);
           setPortfolio(portfolioData);
@@ -378,37 +390,49 @@ export const ContestLobbyV2: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Use the lightweight /live endpoint that includes contest details
-        const response = await fetch(`/api/contests/${contestId}/live`);
+        // Fetch static contest details and dynamic leaderboard data in parallel
+        const [contestResponse, liveResponse] = await Promise.all([
+          fetch(`/api/contests/${contestId}`),
+          fetch(`/api/contests/${contestId}/live`)
+        ]);
         
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!contestResponse.ok || !liveResponse.ok) {
+          throw new Error(`Failed to load contest data`);
         }
         
-        const data = await response.json();
-        console.log('[ContestLobbyV2] Contest live data:', data);
+        const contestData = await contestResponse.json();
+        const liveData = await liveResponse.json();
         
-        // Transform snake_case API response to camelCase for TypeScript interfaces
+        console.log('[ContestLobbyV2] Contest details:', contestData);
+        console.log('[ContestLobbyV2] Live data:', liveData);
+        
+        // Transform contest details from full endpoint
         const transformedContest = {
-          id: data.contest.id.toString(), // API returns number, type expects string
-          name: data.contest.name,
-          description: data.contest.description || '',
-          status: data.contest.status === 'active' ? 'active' as const : data.contest.status,
-          startTime: data.contest.start_time,
-          endTime: data.contest.end_time,
-          entryFee: data.contest.entry_fee || '0',
-          prizePool: data.contest.prize_pool,
-          totalPrizePool: data.contest.total_prize_pool,
-          currency: data.contest.currency || 'SOL',
-          participantCount: data.contest.participant_count,
-          settings: data.contest.settings || {},
-          isCurrentUserParticipating: !!data.leaderboard?.find((entry: any) => 
+          id: contestData.id.toString(),
+          name: contestData.name,
+          description: contestData.description || '',
+          status: contestData.status === 'active' ? 'active' as const : contestData.status,
+          startTime: contestData.start_time,
+          endTime: contestData.end_time,
+          entryFee: contestData.entry_fee || '0',
+          prizePool: contestData.prize_pool,
+          totalPrizePool: contestData.current_prize_pool || contestData.prize_pool,
+          currency: contestData.currency || 'SOL',
+          participantCount: liveData.contest.participant_count || contestData.participant_count,
+          settings: {
+            difficulty: contestData.settings?.difficulty || 'guppy',
+            maxParticipants: contestData.max_participants || null,
+            minParticipants: contestData.min_participants || 1,
+            tokenTypesAllowed: contestData.settings?.tokenTypesAllowed || ['SPL'],
+            startingPortfolioValue: contestData.settings?.startingPortfolioValue || '10000'
+          },
+          isCurrentUserParticipating: !!liveData.leaderboard?.find((entry: any) => 
             entry.wallet_address === user?.wallet_address
           )
         };
         
-        // Transform leaderboard entries
-        const transformedLeaderboard = (data.leaderboard || []).map((entry: any) => ({
+        // Transform leaderboard entries from live endpoint
+        const transformedLeaderboard = (liveData.leaderboard || []).map((entry: any) => ({
           rank: entry.rank,
           userId: entry.wallet_address,
           username: entry.nickname || entry.username || `Player ${entry.rank}`,
@@ -479,55 +503,45 @@ export const ContestLobbyV2: React.FC = () => {
     const handleContestActivity = (message: any) => {
       if (message.contestId === parseInt(contestIdFromParams)) {
         console.log('[ContestLobbyV2] Contest activity:', message);
-        // Refresh contest view data
+        // Refresh contest view data (only need live data for updates)
         const fetchData = async () => {
           setIsLoading(true);
           try {
             const response = await fetch(`/api/contests/${contestIdFromParams}/live`);
             if (response.ok) {
-              const data = await response.json();
+              const liveData = await response.json();
               
-              // Transform snake_case API response to camelCase for TypeScript interfaces
-              const transformedContest = {
-                id: data.contest.id.toString(),
-                name: data.contest.name,
-                description: data.contest.description || '',
-                status: data.contest.status === 'active' ? 'active' as const : data.contest.status,
-                startTime: data.contest.start_time,
-                endTime: data.contest.end_time,
-                entryFee: data.contest.entry_fee || '0',
-                prizePool: data.contest.prize_pool,
-                totalPrizePool: data.contest.total_prize_pool,
-                currency: data.contest.currency || 'SOL',
-                participantCount: data.contest.participant_count,
-                settings: data.contest.settings || {},
-                isCurrentUserParticipating: !!data.leaderboard?.find((entry: any) => 
-                  entry.wallet_address === user?.wallet_address
-                )
-              };
-              
-              // Transform leaderboard entries
-              const transformedLeaderboard = (data.leaderboard || []).map((entry: any) => ({
-                rank: entry.rank,
-                userId: entry.wallet_address,
-                username: entry.nickname || entry.username || `Player ${entry.rank}`,
-                profilePictureUrl: entry.profile_image_url,
-                portfolioValue: entry.portfolio_value,
-                performancePercentage: entry.performance_percentage,
-                isCurrentUser: entry.wallet_address === user?.wallet_address,
-                isAiAgent: entry.is_ai_agent || false,
-                prizeAwarded: entry.prize_awarded || null
-              }));
-              
-              const viewData: ContestViewData = {
-                contest: transformedContest,
-                leaderboard: transformedLeaderboard,
-                currentUserPerformance: transformedLeaderboard.find((entry: any) => 
-                  entry.userId === user?.wallet_address
-                ) || null
-              };
-              
-              setContestViewData(viewData);
+              // Keep existing contest details, just update dynamic fields
+              setContestViewData(prev => {
+                if (!prev) return prev;
+                
+                // Update participant count from live data
+                const updatedContest = {
+                  ...prev.contest,
+                  participantCount: liveData.contest.participant_count
+                };
+                
+                // Transform leaderboard entries
+                const transformedLeaderboard = (liveData.leaderboard || []).map((entry: any) => ({
+                  rank: entry.rank,
+                  userId: entry.wallet_address,
+                  username: entry.nickname || entry.username || `Player ${entry.rank}`,
+                  profilePictureUrl: entry.profile_image_url,
+                  portfolioValue: entry.portfolio_value,
+                  performancePercentage: entry.performance_percentage,
+                  isCurrentUser: entry.wallet_address === user?.wallet_address,
+                  isAiAgent: entry.is_ai_agent || false,
+                  prizeAwarded: entry.prize_awarded || null
+                }));
+                
+                return {
+                  contest: updatedContest,
+                  leaderboard: transformedLeaderboard,
+                  currentUserPerformance: transformedLeaderboard.find((entry: any) => 
+                    entry.userId === user?.wallet_address
+                  ) || null
+                };
+              });
             }
           } catch (err) {
             console.error('[ContestLobbyV2] Error refreshing contest data:', err);
