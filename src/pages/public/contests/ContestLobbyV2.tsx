@@ -145,9 +145,9 @@ const TradingPanel: React.FC<{
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-medium text-gray-100">{token.weight}%</div>
+                    <div className="font-medium text-gray-100">{token.weight || token.percentage}%</div>
                     <div className="text-xs text-gray-400">
-                      Value: {formatCurrency(parseFloat(token.current_value || '0'))}
+                      Value: {formatCurrency(parseFloat(token.current_value || token.value || '0'))}
                     </div>
                   </div>
                 </div>
@@ -312,27 +312,42 @@ export const ContestLobbyV2: React.FC = () => {
     
     setPortfolioLoading(true);
     try {
-      const authToken = localStorage.getItem('authToken') || localStorage.getItem('dd_token');
-      if (!authToken) {
-        console.error('[ContestLobbyV2] No auth token found');
-        return;
-      }
-      
+      // Using session cookie authentication - no auth token needed
       const response = await fetch(
-        `/api/contests/${contestIdFromParams}/portfolio/${user.wallet_address}`,
+        `/api/portfolio-analytics/contests/${contestIdFromParams}/performance/detailed`,
         {
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+          credentials: 'same-origin' // This ensures cookies are sent
         }
       );
       
       if (response.ok) {
         const data = await response.json();
-        console.log('[ContestLobbyV2] Portfolio data fetched:', data);
-        setPortfolio(data);
+        console.log('[ContestLobbyV2] Portfolio analytics data fetched:', data);
+        
+        // Find the current user's portfolio from the response
+        const userPortfolio = data.portfolios?.find(
+          (p: any) => p.wallet_address === user.wallet_address
+        );
+        
+        if (userPortfolio) {
+          // Transform the data to match the expected format
+          const portfolioData = {
+            wallet_address: userPortfolio.wallet_address,
+            total_value: userPortfolio.total_value,
+            tokens: userPortfolio.holdings || [],
+            performance_percentage: userPortfolio.performance_percentage,
+            rank: userPortfolio.rank
+          };
+          console.log('[ContestLobbyV2] User portfolio found:', portfolioData);
+          setPortfolio(portfolioData);
+        } else {
+          console.log('[ContestLobbyV2] No portfolio found for user');
+          setPortfolio(null);
+        }
       } else {
         console.error('[ContestLobbyV2] Portfolio fetch failed:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('[ContestLobbyV2] Error response:', errorText);
       }
     } catch (error) {
       console.error('[ContestLobbyV2] Failed to fetch portfolio:', error);
@@ -373,12 +388,43 @@ export const ContestLobbyV2: React.FC = () => {
         const data = await response.json();
         console.log('[ContestLobbyV2] Contest live data:', data);
         
-        // The /live endpoint returns data in the expected ContestViewData format
+        // Transform snake_case API response to camelCase for TypeScript interfaces
+        const transformedContest = {
+          id: data.contest.id.toString(), // API returns number, type expects string
+          name: data.contest.name,
+          description: data.contest.description || '',
+          status: data.contest.status === 'active' ? 'active' as const : data.contest.status,
+          startTime: data.contest.start_time,
+          endTime: data.contest.end_time,
+          entryFee: data.contest.entry_fee || '0',
+          prizePool: data.contest.prize_pool,
+          totalPrizePool: data.contest.total_prize_pool,
+          currency: data.contest.currency || 'SOL',
+          participantCount: data.contest.participant_count,
+          settings: data.contest.settings || {},
+          isCurrentUserParticipating: !!data.leaderboard?.find((entry: any) => 
+            entry.wallet_address === user?.wallet_address
+          )
+        };
+        
+        // Transform leaderboard entries
+        const transformedLeaderboard = (data.leaderboard || []).map((entry: any) => ({
+          rank: entry.rank,
+          userId: entry.wallet_address,
+          username: entry.nickname || entry.username || `Player ${entry.rank}`,
+          profilePictureUrl: entry.profile_image_url,
+          portfolioValue: entry.portfolio_value,
+          performancePercentage: entry.performance_percentage,
+          isCurrentUser: entry.wallet_address === user?.wallet_address,
+          isAiAgent: entry.is_ai_agent || false,
+          prizeAwarded: entry.prize_awarded || null
+        }));
+        
         const viewData: ContestViewData = {
-          contest: data.contest,
-          leaderboard: data.leaderboard || [],
-          currentUserPerformance: data.leaderboard?.find((entry: any) => 
-            entry.wallet_address === user?.wallet_address || entry.userId === user?.wallet_address
+          contest: transformedContest,
+          leaderboard: transformedLeaderboard,
+          currentUserPerformance: transformedLeaderboard.find((entry: any) => 
+            entry.userId === user?.wallet_address
           ) || null
         };
         
@@ -440,13 +486,47 @@ export const ContestLobbyV2: React.FC = () => {
             const response = await fetch(`/api/contests/${contestIdFromParams}/live`);
             if (response.ok) {
               const data = await response.json();
-              const viewData: ContestViewData = {
-                contest: data.contest,
-                leaderboard: data.leaderboard || [],
-                currentUserPerformance: data.leaderboard?.find((entry: any) => 
+              
+              // Transform snake_case API response to camelCase for TypeScript interfaces
+              const transformedContest = {
+                id: data.contest.id.toString(),
+                name: data.contest.name,
+                description: data.contest.description || '',
+                status: data.contest.status === 'active' ? 'active' as const : data.contest.status,
+                startTime: data.contest.start_time,
+                endTime: data.contest.end_time,
+                entryFee: data.contest.entry_fee || '0',
+                prizePool: data.contest.prize_pool,
+                totalPrizePool: data.contest.total_prize_pool,
+                currency: data.contest.currency || 'SOL',
+                participantCount: data.contest.participant_count,
+                settings: data.contest.settings || {},
+                isCurrentUserParticipating: !!data.leaderboard?.find((entry: any) => 
                   entry.wallet_address === user?.wallet_address
+                )
+              };
+              
+              // Transform leaderboard entries
+              const transformedLeaderboard = (data.leaderboard || []).map((entry: any) => ({
+                rank: entry.rank,
+                userId: entry.wallet_address,
+                username: entry.nickname || entry.username || `Player ${entry.rank}`,
+                profilePictureUrl: entry.profile_image_url,
+                portfolioValue: entry.portfolio_value,
+                performancePercentage: entry.performance_percentage,
+                isCurrentUser: entry.wallet_address === user?.wallet_address,
+                isAiAgent: entry.is_ai_agent || false,
+                prizeAwarded: entry.prize_awarded || null
+              }));
+              
+              const viewData: ContestViewData = {
+                contest: transformedContest,
+                leaderboard: transformedLeaderboard,
+                currentUserPerformance: transformedLeaderboard.find((entry: any) => 
+                  entry.userId === user?.wallet_address
                 ) || null
               };
+              
               setContestViewData(viewData);
             }
           } catch (err) {
