@@ -37,7 +37,7 @@ import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/useContestParticipants";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 // Removed usePortfolio - implementing manual portfolio fetching
-import { useToast } from "../../../components/toast";
+import { useCustomToast } from "../../../components/toast";
 import { formatCurrency } from "../../../lib/utils";
 import { ContestViewData, SearchToken } from "../../../types";
 import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
@@ -49,7 +49,7 @@ const TradingPanel: React.FC<{
   onTradeComplete: () => void;
 }> = ({ contestId, portfolio, onTradeComplete }) => {
   const { user } = useMigratedAuth();
-  const toast = useToast();
+  const { addToast } = useCustomToast();
   const [selectedToken, setSelectedToken] = useState<SearchToken | null>(null);
   const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY');
   const [weight, setWeight] = useState<number>(10);
@@ -72,18 +72,13 @@ const TradingPanel: React.FC<{
     
     setIsTrading(true);
     try {
-      const authToken = localStorage.getItem('authToken') || localStorage.getItem('dd_token');
-      if (!authToken) {
-        throw new Error('Authentication required');
-      }
-
-      // Use the portfolio trades endpoint from backend docs
+      // Use the portfolio trades endpoint with session cookie auth
       const response = await fetch(`/api/portfolio/${contestId}/trades`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include', // Use session cookie like submitPortfolio
         body: JSON.stringify({
           wallet_address: user.wallet_address,
           token_id: selectedToken.id,
@@ -97,7 +92,7 @@ const TradingPanel: React.FC<{
         console.log('[TradingPanel] Trade executed:', result);
         
         // Success feedback
-        toast.success(`${tradeType} ${selectedToken.symbol} - ${weight}% of portfolio`);
+        addToast('success', `${tradeType} ${selectedToken.symbol} - ${weight}% of portfolio`);
         
         // Reset and refresh
         onTradeComplete();
@@ -109,7 +104,7 @@ const TradingPanel: React.FC<{
       }
     } catch (error) {
       console.error('[TradingPanel] Trade failed:', error);
-      toast.error(error instanceof Error ? error.message : 'Trade failed');
+      addToast('error', error instanceof Error ? error.message : 'Trade failed');
     } finally {
       setIsTrading(false);
     }
@@ -133,8 +128,8 @@ const TradingPanel: React.FC<{
           
           {showPortfolio && (
             <div className="space-y-3">
-              {portfolio.tokens.map((token: any) => (
-                <div key={token.token_id || token.address} className="flex items-center justify-between p-3 bg-dark-300/50 rounded-lg">
+              {portfolio.tokens.map((token: any, index: number) => (
+                <div key={token.token_id || token.address || token.symbol || index} className="flex items-center justify-between p-3 bg-dark-300/50 rounded-lg">
                   <div className="flex items-center gap-3">
                     {token.image_url && (
                       <img src={token.image_url} alt={token.symbol} className="w-8 h-8 rounded-full" />
@@ -281,6 +276,8 @@ const TradingPanel: React.FC<{
 export const ContestLobbyV2: React.FC = () => {
   const { id: contestIdFromParams } = useParams<{ id: string }>();
   const { user } = useMigratedAuth();
+  
+  console.log('[ContestLobbyV2] Component mounted with contestId:', contestIdFromParams, 'user:', user);
 
   const [contestViewData, setContestViewData] = useState<ContestViewData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -297,8 +294,16 @@ export const ContestLobbyV2: React.FC = () => {
   // WebSocket hooks
   const { contestViewData: wsUpdatedData } = useContestViewUpdates(contestIdFromParams || null, contestViewData);
   const { participants } = useContestParticipants(contestIdFromParams ? parseInt(contestIdFromParams) : null);
+  
+  // Debug participants
+  useEffect(() => {
+    console.log('[ContestLobbyV2] Participants from WebSocket hook:', participants);
+    console.log('[ContestLobbyV2] Participants length:', participants.length);
+    console.log('[ContestLobbyV2] Contest view data leaderboard:', contestViewData?.leaderboard);
+  }, [participants, contestViewData]);
   const [portfolio, setPortfolio] = useState<any>(null);
   const [_portfolioLoading, setPortfolioLoading] = useState(false);
+  const [allParticipantsData, setAllParticipantsData] = useState<any[]>([]);
   
   // Fetch portfolio data
   const fetchPortfolio = useCallback(async () => {
@@ -313,6 +318,7 @@ export const ContestLobbyV2: React.FC = () => {
     setPortfolioLoading(true);
     try {
       // Using session cookie authentication - no auth token needed
+      console.log('[ContestLobbyV2] Fetching portfolio analytics from:', `/api/portfolio-analytics/contests/${contestIdFromParams}/performance/detailed`);
       const response = await fetch(
         `/api/portfolio-analytics/contests/${contestIdFromParams}/performance/detailed`,
         {
@@ -323,6 +329,10 @@ export const ContestLobbyV2: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         console.log('[ContestLobbyV2] Portfolio analytics data fetched:', data);
+        
+        // Store all participants data for leaderboard
+        console.log('[ContestLobbyV2] All participants from portfolio analytics:', data.participants);
+        setAllParticipantsData(data.participants || []);
         
         // Find the current user's portfolio from the response
         const userPortfolio = data.participants?.find(
@@ -640,23 +650,60 @@ export const ContestLobbyV2: React.FC = () => {
     }
   }, [contestForMeta, participantCount]);
 
+  // Transform participants data for leaderboard
+  const transformedParticipants = useMemo(() => {
+    console.log('[ContestLobbyV2] Creating transformed participants from:', allParticipantsData);
+    
+    if (!allParticipantsData.length) {
+      console.log('[ContestLobbyV2] No participants data to transform');
+      return [];
+    }
+    
+    const transformed = allParticipantsData.map((p, index) => ({
+      wallet_address: p.wallet_address,
+      nickname: p.username || `Player ${index + 1}`,
+      username: p.username || `Player ${index + 1}`,
+      profile_image_url: null, // Not provided by portfolio analytics
+      portfolio_value: p.total_value_sol?.toString() || '0',
+      performance_percentage: p.pnl_percent?.toString() || '0',
+      rank: index + 1, // Already sorted by value from API
+      is_ai_agent: false,
+      is_current_user: user?.wallet_address === p.wallet_address,
+      prize_awarded: null
+    }));
+    
+    console.log('[ContestLobbyV2] Transformed participants:', transformed);
+    return transformed;
+  }, [allParticipantsData, user?.wallet_address]);
+  
+  // Use transformed participants if WebSocket participants are empty
+  const effectiveParticipants = participants.length > 0 ? participants : transformedParticipants;
+  
   // Calculate user's current performance
   const userPerformance = useMemo(() => {
-    if (!user || !participants.length) return null;
+    if (!user || !effectiveParticipants.length) return null;
     
-    const userParticipant = participants.find(p => p.wallet_address === user.wallet_address);
+    const userParticipant = effectiveParticipants.find(p => p.wallet_address === user.wallet_address);
     return userParticipant || null;
-  }, [user, participants]);
+  }, [user, effectiveParticipants]);
 
 
   // Tab definitions
   const tabs = [
     { id: 'trade', label: 'Trade', count: null },
     { id: 'chart', label: 'Multi-Chart', count: null },
-    { id: 'leaderboard', label: 'Leaderboard', count: participants.length },
+    { id: 'leaderboard', label: 'Leaderboard', count: effectiveParticipants.length },
     { id: 'activity', label: 'Activity', count: null },
     { id: 'chat', label: 'Chat', count: unreadMessages > 0 ? unreadMessages : null }
   ];
+  
+  // Debug effective participants
+  useEffect(() => {
+    if (effectiveParticipants.length > 0) {
+      console.log('[ContestLobbyV2] Participants loaded! Count:', effectiveParticipants.length);
+      console.log('[ContestLobbyV2] First 3 participants:', effectiveParticipants.slice(0, 3));
+    }
+  }, [effectiveParticipants]);
 
   // Loading state
   if (isLoading) {
@@ -711,7 +758,7 @@ export const ContestLobbyV2: React.FC = () => {
         {/* Beautiful Header with Parallax Effect */}
         <ContestLobbyHeader
           contest={contest}
-          participants={participants}
+          participants={effectiveParticipants}
           mousePosition={mousePosition}
           isHovering={isHovering}
           onMouseMove={handleMouseMove}
@@ -806,13 +853,13 @@ export const ContestLobbyV2: React.FC = () => {
                     <PrizeDistributionCard prizePool={contest.prizePool || '0'} />
                     
                     {/* Contest Stats Card */}
-                    <ContestStatsCard contest={contest} participants={participants} />
+                    <ContestStatsCard contest={contest} participants={effectiveParticipants} />
                     
                     {/* Referral Progress Card */}
                     <ReferralProgressCard className="mb-6" />
                     
                     <ParticipantsList 
-                      participants={participants.slice(0, 10)} 
+                      participants={effectiveParticipants.slice(0, 10)} 
                       contestStatus="live"
                     />
                     
@@ -834,14 +881,14 @@ export const ContestLobbyV2: React.FC = () => {
                   <div className="lg:col-span-3">
                     <MultiParticipantChartV2 
                       contestId={contestIdFromParams!}
-                      participants={participants}
+                      participants={effectiveParticipants}
                       timeInterval="1h"
                       maxParticipants={10}
                     />
                   </div>
                   <div>
                     <Leaderboard 
-                      entries={participants.map((p, index) => ({
+                      entries={effectiveParticipants.map((p, index) => ({
                         rank: p.rank || index + 1,
                         username: p.nickname || `Player ${index + 1}`,
                         profilePictureUrl: p.profile_image_url || null,
@@ -862,7 +909,7 @@ export const ContestLobbyV2: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
                     <Leaderboard 
-                      entries={participants.map((p, index) => ({
+                      entries={effectiveParticipants.map((p, index) => ({
                         rank: p.rank || index + 1,
                         username: p.nickname || `Player ${index + 1}`,
                         profilePictureUrl: p.profile_image_url || null,
@@ -894,7 +941,7 @@ export const ContestLobbyV2: React.FC = () => {
                   </div>
                   <div className="space-y-6">
                     <ParticipantsList 
-                      participants={participants.slice(0, 10)} 
+                      participants={effectiveParticipants.slice(0, 10)} 
                       contestStatus="live"
                     />
                   </div>
@@ -909,7 +956,7 @@ export const ContestLobbyV2: React.FC = () => {
                   </div>
                   <div>
                     <ParticipantsList 
-                      participants={participants.slice(0, 10)} 
+                      participants={effectiveParticipants.slice(0, 10)} 
                       contestStatus="live"
                     />
                   </div>
