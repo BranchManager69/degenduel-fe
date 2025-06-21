@@ -10,6 +10,7 @@ export const ContestTimer: React.FC<ContestTimerProps> = ({
   showDate = false,
 }) => {
   const [timeLeft, setTimeLeft] = useState({
+    days: 0,
     hours: 0,
     minutes: 0,
     seconds: 0,
@@ -22,12 +23,13 @@ export const ContestTimer: React.FC<ContestTimerProps> = ({
 
       if (difference <= 0) {
         setIsEnded(true);
-        return { hours: 0, minutes: 0, seconds: 0 };
+        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
       }
 
       setIsEnded(false);
       return {
-        hours: Math.floor(difference / (1000 * 60 * 60)),
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
         minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
         seconds: Math.floor((difference % (1000 * 60)) / 1000),
       };
@@ -71,6 +73,42 @@ export const ContestTimer: React.FC<ContestTimerProps> = ({
 
   return (
     <div className="flex items-center space-x-4">
+      {/* Days - Only show if there are days */}
+      {timeLeft.days > 0 && (
+        <div className="relative">
+          <svg className="w-20 h-20 transform -rotate-90">
+            <circle
+              cx="40"
+              cy="40"
+              r="36"
+              stroke="currentColor"
+              strokeWidth="4"
+              fill="transparent"
+              className="text-dark-300"
+            />
+            <circle
+              cx="40"
+              cy="40"
+              r="36"
+              stroke="currentColor"
+              strokeWidth="4"
+              fill="transparent"
+              strokeDasharray={36 * 2 * Math.PI}
+              strokeDashoffset={36 * 2 * Math.PI * (1 - (timeLeft.days % 7) / 7)}
+              className="text-purple-500 transition-all duration-1000 ease-in-out"
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <span className="text-2xl font-bold text-gray-100">
+                {timeLeft.days}
+              </span>
+              <span className="block text-xs text-gray-400">DAYS</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hours */}
       <div className="relative">
         <svg className="w-20 h-20 transform -rotate-90">
@@ -91,7 +129,7 @@ export const ContestTimer: React.FC<ContestTimerProps> = ({
             strokeWidth="4"
             fill="transparent"
             strokeDasharray={36 * 2 * Math.PI}
-            strokeDashoffset={36 * 2 * Math.PI * (1 - (timeLeft.hours % 24) / 24)}
+            strokeDashoffset={36 * 2 * Math.PI * (1 - timeLeft.hours / 24)}
             className="text-brand-500 transition-all duration-1000 ease-in-out"
           />
         </svg>
