@@ -29,11 +29,11 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   
-  const contestImage = getContestImageUrl(contest.metadata?.bannerImage || contest.metadata?.profileImage);
+  const contestImage = getContestImageUrl('');
   
   // Calculate time until start/end
   const getTimeDisplay = () => {
-    const now = new Date();
+    // const now = new Date();
     const startTime = new Date(contest.startTime || (contest as any).start_time);
     const endTime = new Date(contest.endTime || (contest as any).end_time);
     
@@ -42,7 +42,7 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
         label: 'Starts in',
         time: startTime
       };
-    } else if (contest.status === 'active' || contest.status === 'live') {
+    } else if (contest.status === 'active') {
       return {
         label: 'Ends in',
         time: endTime
@@ -135,7 +135,7 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
             className="mb-4"
           >
             <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold backdrop-blur-sm ${
-              contest.status === 'active' || contest.status === 'live'
+              contest.status === 'active'
                 ? 'bg-green-500/20 text-green-300 border border-green-400/30 shadow-[0_0_20px_rgba(34,197,94,0.5)]'
                 : contest.status === 'pending'
                   ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-400/30 shadow-[0_0_20px_rgba(234,179,8,0.5)]'
@@ -144,7 +144,7 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
                     : 'bg-red-500/20 text-red-300 border border-red-400/30'
             }`}>
               <span className={`mr-2 w-2 h-2 rounded-full ${
-                contest.status === 'active' || contest.status === 'live'
+                contest.status === 'active'
                   ? 'bg-green-400 animate-pulse'
                   : contest.status === 'pending'
                     ? 'bg-yellow-400 animate-pulse'
@@ -192,7 +192,7 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
               <span className="text-gray-300">
-                {participants.length} / {contest.maxParticipants || '∞'} Players
+                {participants.length} / {contest.settings?.maxParticipants || '∞'} Players
               </span>
             </div>
             
@@ -203,11 +203,12 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="text-gray-300">{timeDisplay.label}</span>
-                <CountdownTimer
-                  targetDate={timeDisplay.time}
-                  className="font-mono text-white"
-                  showSeconds={true}
-                />
+                <div className="font-mono text-white">
+                  <CountdownTimer
+                    targetDate={timeDisplay.time}
+                    showSeconds={true}
+                  />
+                </div>
               </div>
             )}
             
