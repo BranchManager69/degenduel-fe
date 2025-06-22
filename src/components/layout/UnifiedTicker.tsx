@@ -278,13 +278,59 @@ export const UnifiedTicker: React.FC<Props> = ({
         const currentItemIndex = globalItemIndex++;
         const isNumeroUno = contest.name.toLowerCase().includes('numero uno');
         
+        // Determine contest label
+        const getContestLabel = (index: number, contest: any) => {
+          if (index === 0) return "STARTING NEXT";
+          if (isNumeroUno) return "NUMERO UNO";
+          if (contest.status === 'active') return "LIVE NOW";
+          
+          // Determine if it's a duel (2 max) or contest (3+)
+          const isDuel = contest.max_participants === 2;
+          return isDuel ? "NEW DUEL" : "NEW CONTEST";
+        };
+        
+        const contestLabel = getContestLabel(index, contest);
+        
         return (
           <div
             key={contestKey}
-            onClick={() => {
-              // Only navigate if user didn't drag
-              if (!hasDraggedRef.current && contest.id) {
-                navigate(`/contests/${contest.id}`);
+            className="inline-flex items-center"
+            style={{
+              marginRight: isCompact ? '16px' : '24px',
+            }}
+          >
+            {/* Contest label badge */}
+            <div 
+              className={`flex items-center justify-center font-bold transition-all duration-300 ease-out rounded-sm ${
+                index === 0 ? 'text-emerald-400 bg-emerald-400/15' : 
+                isNumeroUno ? 'text-yellow-400 bg-yellow-400/15' :
+                contest.status === 'active' ? 'text-red-400 bg-red-400/15' :
+                'text-purple-400 bg-purple-400/15'
+              }`}
+              style={{
+                fontSize: isCompact ? '9px' : '11px',
+                textShadow: 
+                  index === 0 ? '0 0 8px rgba(52, 211, 153, 0.6)' :
+                  isNumeroUno ? '0 0 8px rgba(251, 191, 36, 0.6)' :
+                  contest.status === 'active' ? '0 0 8px rgba(248, 113, 113, 0.6)' :
+                  '0 0 8px rgba(168, 85, 247, 0.6)',
+                fontFamily: 'inherit',
+                fontWeight: 700,
+                minWidth: isCompact ? '42px' : '50px',
+                height: isCompact ? '14px' : '16px',
+                marginRight: '0px',
+                position: 'relative' as const,
+                zIndex: 1,
+                padding: '0 4px'
+              }}
+            >
+              {contestLabel}
+            </div>
+            <div
+              onClick={() => {
+                // Only navigate if user didn't drag
+                if (!hasDraggedRef.current && contest.id) {
+                  navigate(`/contests/${contest.id}`);
               }
             }}
             className={`relative inline-flex items-center rounded-lg cursor-pointer hover:bg-brand-500/20 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden ${
@@ -298,7 +344,7 @@ export const UnifiedTicker: React.FC<Props> = ({
               '--contest-mx': isCompact ? '8px' : '12px', 
               '--contest-height': isCompact ? '24px' : '32px',
               padding: 'var(--contest-py) var(--contest-px)',
-              margin: '0 var(--contest-mx)',
+              margin: '0',
               height: 'var(--contest-height)',
               transitionDelay: `${currentItemIndex * 30}ms`, // Staggered animation
               willChange: "transform",
@@ -351,6 +397,7 @@ export const UnifiedTicker: React.FC<Props> = ({
               </div>
             </div>
           </div>
+          </div>
         );
       }) : [];
 
@@ -395,33 +442,32 @@ export const UnifiedTicker: React.FC<Props> = ({
               marginRight: isCompact ? '16px' : '24px', // Space after the whole token unit
             }}
           >
-            {/* Rank number outside the card */}
-            <span 
-              className={`font-bold transition-all duration-300 ease-out ${
-                index === 0 ? 'text-yellow-400' : 
-                index === 1 ? 'text-gray-300' : 
-                index === 2 ? 'text-amber-600' : 
-                'text-cyan-400/70'
+            {/* Rank number badge */}
+            <div 
+              className={`flex items-center justify-center font-bold transition-all duration-300 ease-out rounded-sm ${
+                index === 0 ? 'text-yellow-400 bg-yellow-400/15' : 
+                index === 1 ? 'text-gray-300 bg-gray-300/15' : 
+                index === 2 ? 'text-amber-600 bg-amber-600/15' : 
+                'text-cyan-400/70 bg-cyan-400/10'
               }`}
               style={{
-                fontSize: isCompact ? '11px' : '14px',
+                fontSize: isCompact ? '12px' : index < 3 ? '16px' : '14px',
                 textShadow: 
                   index === 0 ? '0 0 10px rgba(251, 191, 36, 0.6)' :
                   index === 1 ? '0 0 10px rgba(209, 213, 219, 0.6)' :
                   index === 2 ? '0 0 10px rgba(217, 119, 6, 0.6)' :
                   '0 0 8px rgba(0, 225, 255, 0.3)',
-                fontFamily: 'inherit', // Use default font, not monospace
+                fontFamily: 'inherit',
                 fontWeight: 700,
-                minWidth: isCompact ? '18px' : '22px',
-                textAlign: 'right' as const,
-                display: 'inline-block',
-                marginRight: isCompact ? '2px' : '3px', // Small gap to the card
+                minWidth: isCompact ? '26px' : index < 3 ? '32px' : '30px',
+                height: isCompact ? '16px' : index < 3 ? '20px' : '18px',
+                marginRight: '1px',
                 position: 'relative' as const,
                 zIndex: 1
               }}
             >
-              {index + 1}
-            </span>
+              <span style={{ fontSize: '0.8em', opacity: 0.7, marginRight: '1px' }}>#</span>{index + 1}
+            </div>
             <div
             onClick={() => {
               // Only navigate if user didn't drag
@@ -535,7 +581,38 @@ export const UnifiedTicker: React.FC<Props> = ({
     if (activeTab === "all") {
       // First add all tokens (1-21), then all contests
       items.push(...animatedTokenItems);
-      items.push(...contestItems);
+      
+      // Only show contests after tokens are loaded (not just loading)
+      if (!finalTokensLoading && animatedTokenItems.length > 0 && contestItems.length > 0) {
+        // Add separator between tokens and contests
+        items.push(
+          <div key="section-separator" className="inline-flex items-center" style={{ marginRight: isCompact ? '16px' : '24px' }}>
+            <div className="w-px h-4 bg-gray-600/40 mx-3" />
+          </div>
+        );
+        
+        // Add contests with delayed animation
+        const delayedContestItems = contestItems.map((item, index) => {
+          return React.cloneElement(item, {
+            ...item.props,
+            style: {
+              ...item.props.style,
+              opacity: 0,
+              animation: `fadeInSlide 0.5s ease-out forwards`,
+              animationDelay: `${(animatedTokenItems.length * 50) + (index * 50) + 200}ms` // Wait for tokens + extra delay
+            }
+          });
+        });
+        
+        items.push(...delayedContestItems);
+        
+        // Add separator after contests to loop back to tokens
+        items.push(
+          <div key="loop-separator" className="inline-flex items-center" style={{ marginRight: isCompact ? '16px' : '24px' }}>
+            <div className="w-px h-4 bg-gray-600/40 mx-3" />
+          </div>
+        );
+      }
     } else if (activeTab === "contests") {
       items.push(...contestItems);
     } else {
