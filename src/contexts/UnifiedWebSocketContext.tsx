@@ -235,6 +235,11 @@ export const UnifiedWebSocketProvider: React.FC<{
   const handleMessage = (event: MessageEvent) => {
     try {
       const message = JSON.parse(event.data);
+      
+      // Fix missing type field from backend WebSocket messages
+      if (message.topic && !message.type) {
+        message.type = 'DATA';
+      }
 
       // Handle proper pong responses from backend
       if ((message.type === 'RESPONSE' || message.type === 'SYSTEM') && message.action === 'pong') {
