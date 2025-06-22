@@ -238,8 +238,12 @@ export const UnifiedWebSocketProvider: React.FC<{
       
       // Fix missing type field from backend WebSocket messages
       if (message.topic && !message.type) {
+        console.log('[WebSocket] Fixed missing type field for message:', message);
         message.type = 'DATA';
       }
+      
+      // Log ALL messages to see what we're getting
+      console.log('[WebSocket] Raw message received:', message);
 
       // Handle proper pong responses from backend
       if ((message.type === 'RESPONSE' || message.type === 'SYSTEM') && message.action === 'pong') {
