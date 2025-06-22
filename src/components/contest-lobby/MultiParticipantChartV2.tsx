@@ -62,12 +62,24 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
   const [showParticipantSelector, setShowParticipantSelector] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Debug contest ID
+  console.log('[MultiParticipantChartV2] contestId:', contestId, 'type:', typeof contestId);
+
   // Use WebSocket for real-time updates
   useContestLobbyWebSocket({
     contestId,
-    onTradeExecuted: () => setRefreshKey(prev => prev + 1),
-    onPortfolioUpdate: () => setRefreshKey(prev => prev + 1),
-    onContestActivity: () => setRefreshKey(prev => prev + 1),
+    onTradeExecuted: () => {
+      console.log('[MultiParticipantChartV2] Trade executed, refreshing...');
+      setRefreshKey(prev => prev + 1);
+    },
+    onPortfolioUpdate: () => {
+      console.log('[MultiParticipantChartV2] Portfolio updated, refreshing...');
+      setRefreshKey(prev => prev + 1);
+    },
+    onContestActivity: () => {
+      console.log('[MultiParticipantChartV2] Contest activity, refreshing...');
+      setRefreshKey(prev => prev + 1);
+    },
     userWalletAddress: user?.wallet_address
   });
 
