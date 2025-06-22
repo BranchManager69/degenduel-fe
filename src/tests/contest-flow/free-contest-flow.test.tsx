@@ -21,11 +21,11 @@ import {
 } from './setup';
 
 // Import the pages we'll be testing
-import { TokenSelection as PortfolioTokenSelectionPage } from '../../pages/public/contests/PortfolioTokenSelectionPage';
 import { ContestBrowser } from '../../pages/public/contests/ContestBrowserPage';
 import { ContestDetails } from '../../pages/public/contests/ContestDetailPage';
 import { ContestLobby } from '../../pages/public/contests/ContestLobbyPage';
 import { ContestResults } from '../../pages/public/contests/ContestResultsPage';
+import { PortfolioTokenSelectionPage } from '../../pages/public/contests/PortfolioTokenSelectionPage';
 
 // Mock react-router-dom for controlled navigation testing
 const mockNavigate = jest.fn();

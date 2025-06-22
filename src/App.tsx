@@ -33,8 +33,8 @@ import { type Adapter } from "@solana/wallet-adapter-base"; // Added for explici
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter
+    PhantomWalletAdapter,
+    SolflareWalletAdapter
 } from "@solana/wallet-adapter-wallets";
 
 // Other providers of dubious quality:
@@ -136,7 +136,7 @@ const CreateContestPage = lazy(() => import('./pages/authenticated/CreateContest
 const MyContestsPage = lazy(() => import('./pages/authenticated/MyContestsPage'));
 const MyPortfoliosPage = lazy(() => import('./pages/authenticated/MyPortfoliosPage'));
 const NotificationsPage = lazy(() => import('./pages/authenticated/NotificationsPage'));
-const TokenSelection = lazy(() => import('./pages/public/contests/PortfolioTokenSelectionPage').then(module => ({ default: module.TokenSelection })));
+const TokenSelection = lazy(() => import('./pages/public/contests/PortfolioTokenSelectionPage').then(module => ({ default: module.PortfolioTokenSelectionPage })));
 const PrivateProfilePage = lazy(() => import('./pages/authenticated/PrivateProfilePage').then(module => ({ default: module.PrivateProfilePage })));
 const WalletPage = lazy(() => import('./pages/authenticated/WalletPage'));
 

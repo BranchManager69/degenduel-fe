@@ -11,10 +11,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  //Link, 
-  useParams
-} from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
 import { TokenSearchFixed } from "../../../components/common/TokenSearchFixed";
@@ -23,13 +20,13 @@ import { ParticipantsList } from "../../../components/contest-detail/Participant
 import { EnhancedPortfolioDisplay } from "../../../components/contest-lobby/EnhancedPortfolioDisplay";
 import { LiveTradeActivity } from "../../../components/contest-lobby/LiveTradeActivity";
 import { MultiParticipantChartV2 } from "../../../components/contest-lobby/MultiParticipantChartV2";
-//import { ShareContestButton } from "../../../components/contest-lobby/ShareContestButton";
+
 import { ContestLobbyHeader } from "../../../components/contest-lobby/ContestLobbyHeader";
 import { PrizeDistributionCard } from "../../../components/contest-lobby/PrizeDistributionCard";
 import { UserPerformanceCard } from "../../../components/contest-lobby/UserPerformanceCard";
 import { Button } from "../../../components/ui/Button";
-import { useWebSocket } from "../../../contexts/UnifiedWebSocketContext";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
+import { useContestLobbyWebSocket } from "../../../hooks/websocket/topic-hooks/useContestLobbyWebSocket";
 import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/useContestParticipants";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 // Removed usePortfolio - implementing manual portfolio fetching
@@ -506,135 +503,64 @@ export const ContestLobbyV2: React.FC = () => {
     }
   }, [wsUpdatedData]);
 
-  // Get WebSocket instance
-  const ws = useWebSocket();
-
-  // Set up WebSocket listeners for real-time updates
-  useEffect(() => {
-    if (!contestIdFromParams || !ws.isConnected) return;
-
-    // Subscribe to relevant topics from the WebSocket inventory
-    const subscribeToTopics = () => {
-      // These topics are from the WebSocket inventory document
-      ws.subscribe(['contest', 'contest-participants', 'portfolio', 'market_data']);
-    };
-
-    // Handle trade executed events (from WebSocket inventory line 266)
-    const handleTradeExecuted = (message: any) => {
-      if (message.contestId === parseInt(contestIdFromParams)) {
-        console.log('[ContestLobbyV2] Trade executed:', message);
-        // Refresh portfolio after trade
-        refreshPortfolio();
+  // Handle contest activity updates
+  const handleContestActivity = useCallback(async () => {
+    if (!contestIdFromParams) return;
+    
+    // Refresh contest view data (only need live data for updates)
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/contests/${contestIdFromParams}/live`);
+      if (response.ok) {
+        const liveData = await response.json();
+        
+        // Keep existing contest details, just update dynamic fields
+        setContestViewData(prev => {
+          if (!prev) return prev;
+          
+          // Update participant count from live data
+          const updatedContest = {
+            ...prev.contest,
+            participantCount: liveData.contest.participant_count
+          };
+          
+          // Transform leaderboard entries
+          const transformedLeaderboard = (liveData.leaderboard || []).map((entry: any) => ({
+            rank: entry.rank,
+            userId: entry.wallet_address,
+            username: entry.nickname || entry.username || `Player ${entry.rank}`,
+            profilePictureUrl: entry.profile_image_url,
+            portfolioValue: entry.portfolio_value,
+            performancePercentage: entry.performance_percentage,
+            isCurrentUser: entry.wallet_address === user?.wallet_address,
+            isAiAgent: entry.is_ai_agent || false,
+            prizeAwarded: entry.prize_awarded || null
+          }));
+          
+          return {
+            contest: updatedContest,
+            leaderboard: transformedLeaderboard,
+            currentUserPerformance: transformedLeaderboard.find((entry: any) => 
+              entry.userId === user?.wallet_address
+            ) || null
+          };
+        });
       }
-    };
+    } catch (err) {
+      console.error('[ContestLobbyV2] Error refreshing contest data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [contestIdFromParams, user?.wallet_address]);
 
-    // Handle portfolio updates (from WebSocket inventory line 264)
-    const handlePortfolioUpdate = (message: any) => {
-      console.log('[ContestLobbyV2] Portfolio updated:', message);
-      refreshPortfolio();
-    };
-
-    // Handle contest activity (from WebSocket inventory line 90)
-    const handleContestActivity = (message: any) => {
-      if (message.contestId === parseInt(contestIdFromParams)) {
-        console.log('[ContestLobbyV2] Contest activity:', message);
-        // Refresh contest view data (only need live data for updates)
-        const fetchData = async () => {
-          setIsLoading(true);
-          try {
-            const response = await fetch(`/api/contests/${contestIdFromParams}/live`);
-            if (response.ok) {
-              const liveData = await response.json();
-              
-              // Keep existing contest details, just update dynamic fields
-              setContestViewData(prev => {
-                if (!prev) return prev;
-                
-                // Update participant count from live data
-                const updatedContest = {
-                  ...prev.contest,
-                  participantCount: liveData.contest.participant_count
-                };
-                
-                // Transform leaderboard entries
-                const transformedLeaderboard = (liveData.leaderboard || []).map((entry: any) => ({
-                  rank: entry.rank,
-                  userId: entry.wallet_address,
-                  username: entry.nickname || entry.username || `Player ${entry.rank}`,
-                  profilePictureUrl: entry.profile_image_url,
-                  portfolioValue: entry.portfolio_value,
-                  performancePercentage: entry.performance_percentage,
-                  isCurrentUser: entry.wallet_address === user?.wallet_address,
-                  isAiAgent: entry.is_ai_agent || false,
-                  prizeAwarded: entry.prize_awarded || null
-                }));
-                
-                return {
-                  contest: updatedContest,
-                  leaderboard: transformedLeaderboard,
-                  currentUserPerformance: transformedLeaderboard.find((entry: any) => 
-                    entry.userId === user?.wallet_address
-                  ) || null
-                };
-              });
-            }
-          } catch (err) {
-            console.error('[ContestLobbyV2] Error refreshing contest data:', err);
-          } finally {
-            setIsLoading(false);
-          }
-        };
-        fetchData();
-      }
-    };
-
-    // Register listeners for specific message types from the WebSocket inventory
-    const unregisterTrade = ws.registerListener(
-      `contest-trade-${contestIdFromParams}`,
-      ['DATA'] as any[],
-      (message) => {
-        // Check for TRADE_EXECUTED messages
-        if (message.type === 'TRADE_EXECUTED' || (message.type === 'DATA' && message.subtype === 'TRADE_EXECUTED')) {
-          handleTradeExecuted(message);
-        }
-      },
-      ['contest', 'portfolio']
-    );
-
-    const unregisterPortfolio = ws.registerListener(
-      `contest-portfolio-${contestIdFromParams}`,
-      ['DATA'] as any[],
-      (message) => {
-        // Check for PORTFOLIO_UPDATED messages
-        if (message.type === 'PORTFOLIO_UPDATED' || (message.type === 'DATA' && message.subtype === 'PORTFOLIO_UPDATED')) {
-          handlePortfolioUpdate(message);
-        }
-      },
-      ['portfolio']
-    );
-
-    const unregisterContest = ws.registerListener(
-      `contest-activity-${contestIdFromParams}`,
-      ['DATA'] as any[],
-      (message) => {
-        // Check for contest activity
-        if (message.type === 'CONTEST_ACTIVITY' || (message.type === 'DATA' && message.data?.type === 'CONTEST_ACTIVITY')) {
-          handleContestActivity(message.data || message);
-        }
-      },
-      ['contest']
-    );
-
-    // Subscribe to topics
-    subscribeToTopics();
-
-    // Cleanup
-    return () => {
-      unregisterTrade();
-      unregisterPortfolio();
-      unregisterContest();
-    };
-  }, [contestIdFromParams, ws.isConnected, ws.subscribe, ws.registerListener, refreshPortfolio, user?.wallet_address]);
+  // Set up WebSocket listeners using the custom hook
+  useContestLobbyWebSocket({
+    contestId: contestIdFromParams ?? null,
+    onTradeExecuted: refreshPortfolio,
+    onPortfolioUpdate: refreshPortfolio,
+    onContestActivity: handleContestActivity,
+    userWalletAddress: user?.wallet_address
+  });
 
   // Mouse move handler for parallax effect (desktop only)
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -794,18 +720,6 @@ export const ContestLobbyV2: React.FC = () => {
   return (
     <SilentErrorBoundary>
       <div className="min-h-screen">
-        {/* Debug Test Button */}
-        <div className="fixed top-20 right-4 z-50">
-          <button
-            onClick={() => {
-              console.log('[DEBUG] Test button clicked!');
-              alert('Button works! Check console for debug info.');
-            }}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-          >
-            TEST CLICK
-          </button>
-        </div>
         
         {/* Beautiful Header with Parallax Effect */}
         <ContestLobbyHeader

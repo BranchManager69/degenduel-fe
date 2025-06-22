@@ -1,4 +1,4 @@
-// src/pages/authenticated/TokenSelection.tsx
+// src/pages/public/contests/PortfolioTokenSelectionPage.tsx
 
 import { Buffer } from "buffer";
 
@@ -103,7 +103,7 @@ function ErrorFallback({ error }: { error: Error }) {
   );
 }
 
-export const TokenSelection: React.FC = () => {
+export const PortfolioTokenSelectionPage: React.FC = () => {
   console.log("🏗️ PortfolioTokenSelectionPage: Component rendering");
   
   // Helper function to parse Decimal.js objects from backend
@@ -279,7 +279,7 @@ export const TokenSelection: React.FC = () => {
             const loadedTokenAddresses = new Set(tokens.map(t => TokenHelpers.getAddress(t)));
             const missingTokenAddresses: string[] = [];
             
-            for (const [contractAddress] of existingPortfolio) {
+            for (const contractAddress of existingPortfolio.keys()) {
               if (!loadedTokenAddresses.has(contractAddress)) {
                 missingTokenAddresses.push(contractAddress);
               }
@@ -1913,3 +1913,5 @@ export const TokenSelection: React.FC = () => {
     </ErrorBoundary>
   );
 };
+
+export default PortfolioTokenSelectionPage;
