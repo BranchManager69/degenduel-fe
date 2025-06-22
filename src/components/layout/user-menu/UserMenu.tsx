@@ -12,7 +12,7 @@
 
 import { Menu, Transition } from "@headlessui/react";
 import React, { Fragment, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../../store/useStore";
@@ -23,7 +23,6 @@ import { AdminControls } from "./UserMenuAdminControls";
 
 // Import shared menu components and configuration
 import { getMenuItems } from '../menu/menuConfig';
-import { NotificationsDropdown } from '../menu/NotificationsDropdown';
 import {
     MenuDivider,
     SectionHeader
@@ -42,7 +41,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   isCompact = false,
   unreadNotifications = 0,
 }) => {
-  const navigate = useNavigate();
   const { isAdministrator, isSuperAdmin } = useMigratedAuth();
   const { achievements } = useStore();
   const [imageError, setImageError] = useState(false);
