@@ -22,9 +22,10 @@ import { useStore } from "../../store/useStore";
 // import { useSystemSettings } from "../../hooks/websocket/topic-hooks/useSystemSettings";
 import MiniLogo from "../logo/MiniLogo";
 import NanoLogo from "../logo/NanoLogo";
-import { CompactBalance } from "../ui/CompactBalance";
 import { MobileMenuButton } from './MobileMenuButton'; // TEMP
 import { UserMenu } from './user-menu/UserMenu';
+import SolanaTokenDisplay from "../SolanaTokenDisplay";
+import { config } from "../../config/config";
 // import { MenuBackdrop } from './menu/SharedMenuComponents';
 
 
@@ -145,12 +146,6 @@ export const Header: React.FC = () => {
             >
               Tokens
             </Link>
-            <Link 
-              to="/mcp" 
-              className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
-            >
-              MCP
-            </Link>
           </nav>
 
           {/* Spacer */}
@@ -168,13 +163,6 @@ export const Header: React.FC = () => {
 
             {/* Desktop Balances and User Menu */}
             <div className="hidden md:flex items-center gap-3">
-              {/* Compact Balance Display (Desktop) */}
-              {isAuthenticated && user && (
-                <CompactBalance 
-                  walletAddress={user.wallet_address}
-                />
-              )}
-              
               <AnimatePresence mode="wait">
                 {isAuthenticated && user ? (
                   <motion.div 
@@ -183,7 +171,30 @@ export const Header: React.FC = () => {
                     animate={{ opacity: 1, x: 0 }} 
                     exit={{ opacity: 0, x: 10 }}
                     transition={{ duration: 0.2 }}
+                    className="flex items-center gap-2"
                   >
+                    {/* Token Balance Display (desktop only - admin/superadmin only) */}
+                    {(isAdministrator || user.role === 'superadmin') && (
+                      <div className="hidden md:block group relative overflow-hidden">
+                        {/* Glow effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        
+                        {/* Main container - MORE COMPACT */}
+                        <div className="relative px-2 py-0.5 bg-gradient-to-r from-purple-900/90 to-purple-800/90 backdrop-blur-sm rounded-full border border-purple-600/30 group-hover:border-purple-400/40 transition-all duration-300">
+                          <div className="text-purple-100">
+                            <SolanaTokenDisplay 
+                              mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS}
+                              walletAddress={user.wallet_address} 
+                              compact={true}
+                              className="text-[10px]"
+                              showSupply={false}
+                              showHolders={false}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <UserMenu 
                       user={user} 
                       onDisconnect={() => logout && logout()} 

@@ -533,11 +533,9 @@ export const UnifiedTicker: React.FC<Props> = ({
     
     // Simple mixing of content
     if (activeTab === "all") {
-      const maxLength = Math.max(contestItems.length, animatedTokenItems.length);
-      for (let i = 0; i < maxLength; i++) {
-        if (i < contestItems.length) items.push(contestItems[i]);
-        if (i < animatedTokenItems.length) items.push(animatedTokenItems[i]);
-      }
+      // First add all tokens (1-21), then all contests
+      items.push(...animatedTokenItems);
+      items.push(...contestItems);
     } else if (activeTab === "contests") {
       items.push(...contestItems);
     } else {

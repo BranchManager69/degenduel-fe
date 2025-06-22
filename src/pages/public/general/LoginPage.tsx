@@ -28,8 +28,8 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Get the path to redirect to after login (default to home)
-  const from = location.state?.from?.pathname || "/";
+  // Get the path to redirect to after login (default to my-contests)
+  const from = location.state?.from?.pathname || "/my-contests";
   
   // Store intended destination in localStorage for social auth redirects
   React.useEffect(() => {
