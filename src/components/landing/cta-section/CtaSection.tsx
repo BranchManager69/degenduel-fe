@@ -152,9 +152,10 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
       }}
     >
       {/* Secondary buttons row - two buttons side by side */}
-      <div className="flex flex-row w-full max-w-md gap-4 justify-between">
+      {/* GAMEPLAY and FAQ buttons hidden per user request */}
+      {/* <div className="flex flex-row w-full max-w-md gap-4 justify-between">
         {/* GAMEPLAY button */}
-        <RouterLink to="/how-it-works" className="w-full sm:w-[48%]">
+        {/* <RouterLink to="/how-it-works" className="w-full sm:w-[48%]">
           <button 
             className="w-full relative group overflow-hidden"
             aria-label="Learn gameplay instructions"
@@ -183,10 +184,10 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
               </div>
             </div>
           </button>
-        </RouterLink>
+        </RouterLink> */}
 
         {/* FAQ button */}
-        <RouterLink to="/faq" className="w-full sm:w-[48%]">
+        {/* <RouterLink to="/faq" className="w-full sm:w-[48%]">
           <button 
             className="w-full relative group overflow-hidden"
             aria-label="Frequently asked questions"
@@ -216,7 +217,7 @@ export const CtaSection: React.FC<CtaSectionProps> = ({ user, animationPhase }) 
             </div>
           </button>
         </RouterLink>
-      </div>
+      </div> */}
 
       {/* Conditional WHALE ROOM button - properly implemented with hook */}
       <WhaleRoomButton user={user} />

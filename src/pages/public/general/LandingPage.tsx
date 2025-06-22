@@ -641,10 +641,10 @@ export const LandingPage: React.FC = () => {
                 {/* Hero tagline with glow effect */}
                 <div className="text-center space-y-2">
                   <h2 className="text-2xl sm:text-3xl font-black text-[#9D4EDD] drop-shadow-[0_0_30px_rgba(157,78,221,0.5)] hover:drop-shadow-[0_0_40px_rgba(157,78,221,0.8)] transition-all duration-300 px-4">
-                    High-Stakes Trading Competitions on Solana
+                    Sim Crypto Trading Battles
                   </h2>
                   <p className="text-sm sm:text-base text-gray-300/80 font-medium">
-                    Win big. Trade like a degen. No liquidations.
+                    Prove your skills. Win real Solana. No transactions required.
                   </p>
                 </div>
 
