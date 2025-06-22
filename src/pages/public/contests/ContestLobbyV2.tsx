@@ -301,6 +301,7 @@ export const ContestLobbyV2: React.FC = () => {
     console.log('[ContestLobbyV2] Participants length:', participants.length);
     console.log('[ContestLobbyV2] Contest view data leaderboard:', contestViewData?.leaderboard);
   }, [participants, contestViewData]);
+
   const [portfolio, setPortfolio] = useState<any>(null);
   const [_portfolioLoading, setPortfolioLoading] = useState(false);
   const [allParticipantsData, setAllParticipantsData] = useState<any[]>([]);
@@ -404,6 +405,14 @@ export const ContestLobbyV2: React.FC = () => {
   useEffect(() => {
     fetchPortfolio();
   }, [fetchPortfolio]);
+  
+  // Refresh portfolio data when WebSocket updates come in
+  useEffect(() => {
+    if (participants.length > 0 || wsUpdatedData) {
+      console.log('[ContestLobbyV2] WebSocket update detected, refreshing portfolio data');
+      fetchPortfolio();
+    }
+  }, [participants.length, wsUpdatedData, fetchPortfolio]);
   
   const refreshPortfolio = useCallback(() => {
     fetchPortfolio();

@@ -65,26 +65,23 @@ export const SolanaTokenDisplay: React.FC<SolanaTokenDisplayProps> = ({
         title="Click to view wallet details"
       >
         {isLoading ? (
-          <span className="loading text-gray-400 font-sans">... <span className="text-purple-300">DUEL</span></span>
+          <span className="loading text-gray-400 font-sans">...</span>
         ) : error ? (
-          <span className="disconnected text-gray-500 font-sans">-- <span className="text-purple-300">DUEL</span></span>
+          <span className="disconnected text-gray-500 font-sans">--</span>
         ) : tokenData ? (
           <span className="balance text-white font-sans">
             {tokenData.userBalance !== undefined 
-              ? <>
-                  <span className="font-medium">
-                    <AnimatedFormattedNumber 
-                      value={parseFloat(tokenData.userBalance.toString())} 
-                      formatter={formatTokenBalance}
-                      showChangeColor={true}
-                    />
-                  </span>
-                  <span className="text-purple-200 ml-1">DUEL</span>
-                </>
-              : <><span className="font-medium">0</span><span className="text-purple-200 ml-1">DUEL</span></>}
+              ? <span className="font-medium">
+                  <AnimatedFormattedNumber 
+                    value={parseFloat(tokenData.userBalance.toString())} 
+                    formatter={formatTokenBalance}
+                    showChangeColor={true}
+                  />
+                </span>
+              : <span className="font-medium">0</span>}
           </span>
         ) : (
-          <span className="disconnected text-gray-500 font-sans">-- <span className="text-purple-300">DUEL</span></span>
+          <span className="disconnected text-gray-500 font-sans">--</span>
         )}
       </button>
     );

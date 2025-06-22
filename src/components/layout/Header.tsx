@@ -175,21 +175,47 @@ export const Header: React.FC = () => {
                   >
                     {/* Token Balance Display (desktop only - admin/superadmin only) */}
                     {(isAdministrator || user.role === 'superadmin') && (
-                      <div className="hidden md:block group relative overflow-hidden">
-                        {/* Glow effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="hidden md:block group relative">
+                        {/* Outer glow that intensifies on hover */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-75 blur transition-all duration-300 group-hover:duration-200" />
                         
-                        {/* Main container - MORE COMPACT */}
-                        <div className="relative px-2 py-0.5 bg-gradient-to-r from-purple-900/90 to-purple-800/90 backdrop-blur-sm rounded-full border border-purple-600/30 group-hover:border-purple-400/40 transition-all duration-300">
-                          <div className="text-purple-100">
+                        {/* Main container with enhanced styling */}
+                        <div className="relative flex items-center gap-0.5 pl-2 pr-2.5 py-1 
+                          bg-gradient-to-r from-purple-900/80 via-purple-800/80 to-purple-900/80 
+                          backdrop-blur-sm rounded-full 
+                          border border-purple-500/20 group-hover:border-purple-400/50 
+                          transition-all duration-300 transform group-hover:scale-105
+                          shadow-lg shadow-purple-900/20 group-hover:shadow-purple-500/30">
+                          
+                          {/* Animated background gradient */}
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600/0 via-purple-500/10 to-purple-600/0 
+                            opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                            animate-pulse" />
+                          
+                          {/* Balance display - smaller and tighter */}
+                          <div className="relative text-purple-100 flex items-center">
                             <SolanaTokenDisplay 
                               mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS}
                               walletAddress={user.wallet_address} 
                               compact={true}
-                              className="text-[10px]"
+                              className="text-[11px] font-medium leading-none"
                               showSupply={false}
                               showHolders={false}
                             />
+                          </div>
+                          
+                          {/* Token icon - slightly smaller */}
+                          <div className="relative flex items-center justify-center w-4 h-4">
+                            <div className="absolute inset-0 bg-purple-400 rounded-full animate-ping opacity-20" />
+                            <div className="relative w-4 h-4 flex items-center justify-center">
+                              <NanoLogo />
+                            </div>
+                          </div>
+                          
+                          {/* Shimmer effect overlay */}
+                          <div className="absolute inset-0 rounded-full overflow-hidden">
+                            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 
+                              bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                           </div>
                         </div>
                       </div>

@@ -23,11 +23,21 @@ export const useContestLobbyWebSocket = ({
   const ws = useWebSocket();
 
   useEffect(() => {
-    if (!contestId || !ws.isConnected) return;
+    console.log('[useContestLobbyWebSocket] Effect running:', {
+      contestId,
+      isConnected: ws.isConnected,
+      ws: ws
+    });
+    
+    if (!contestId || !ws.isConnected) {
+      console.log('[useContestLobbyWebSocket] Skipping - no contestId or not connected');
+      return;
+    }
 
-    // Subscribe to relevant topics
+    // Subscribe to relevant topics (only public ones that work without auth)
     const subscribeToTopics = () => {
-      ws.subscribe(['contest', 'contest-participants', 'portfolio', 'market_data']);
+      console.log('[useContestLobbyWebSocket] Subscribing to contest topics');
+      ws.subscribe(['contest', 'contest-participants']);
     };
 
     // Handle trade executed events
@@ -57,40 +67,45 @@ export const useContestLobbyWebSocket = ({
       `contest-trade-${contestId}`,
       ['DATA'] as any[],
       (message) => {
-        if (message.type === 'TRADE_EXECUTED' || (message.type === 'DATA' && message.subtype === 'TRADE_EXECUTED')) {
-          handleTradeExecuted(message);
+        // Listen for LEADERBOARD_UPDATE which happens after trades
+        if (message.type === 'DATA' && message.topic === 'contest' && message.action === 'LEADERBOARD_UPDATE') {
+          handleTradeExecuted(message.data);
         }
       },
-      ['contest', 'portfolio']
+      ['contest']
     );
 
     const unregisterPortfolio = ws.registerListener(
       `contest-portfolio-${contestId}`,
       ['DATA'] as any[],
       (message) => {
-        if (message.type === 'PORTFOLIO_UPDATED' || (message.type === 'DATA' && message.subtype === 'PORTFOLIO_UPDATED')) {
-          handlePortfolioUpdate(message);
+        // Listen for PORTFOLIO_UPDATE from contest-participants topic
+        if (message.type === 'DATA' && message.topic === 'contest-participants' && message.action === 'PORTFOLIO_UPDATE') {
+          handlePortfolioUpdate(message.data);
         }
       },
-      ['portfolio']
+      ['contest-participants']
     );
 
     const unregisterContest = ws.registerListener(
       `contest-activity-${contestId}`,
       ['DATA'] as any[],
       (message) => {
-        if (message.type === 'CONTEST_ACTIVITY' || (message.type === 'DATA' && message.data?.type === 'CONTEST_ACTIVITY')) {
-          handleContestActivity(message.data || message);
+        // Listen for CONTEST_ACTIVITY from contest topic
+        if (message.type === 'DATA' && message.topic === 'contest' && message.action === 'CONTEST_ACTIVITY') {
+          handleContestActivity(message.data);
         }
       },
       ['contest']
     );
 
     // Subscribe to topics
+    console.log('[useContestLobbyWebSocket] About to subscribe to topics');
     subscribeToTopics();
 
     // Cleanup
     return () => {
+      console.log('[useContestLobbyWebSocket] Cleaning up listeners');
       unregisterTrade();
       unregisterPortfolio();
       unregisterContest();

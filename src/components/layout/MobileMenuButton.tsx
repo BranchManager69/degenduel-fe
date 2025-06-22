@@ -14,12 +14,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { config } from "../../config/config";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../store/useStore";
 import { getFullImageUrl } from "../../utils/profileImageUtils";
 import { BiometricAuthButton, DiscordLoginButton, SimpleWalletButton, TelegramLoginButton, TwitterLoginButton } from "../auth";
+import NanoLogo from "../logo/NanoLogo";
 import SolanaTokenDisplay from "../SolanaTokenDisplay";
-import { config } from "../../config/config";
 
 // Import shared menu components and configuration
 import { getMenuItems } from './menu/menuConfig';
@@ -193,33 +194,33 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
 
   // Add role-based button styling like desktop
   const buttonStyles = useMemo(() => {
-    // Super Admin styling takes precedence
+    // Super Admin styling takes precedence - match desktop exactly
     if (isSuperAdmin) {
       return {
-        bg: "from-amber-500/20 via-amber-400/20 to-amber-300/20",
-        text: "text-amber-100",
-        border: "border-amber-400/30",
+        bg: "bg-red-800/60",
+        text: "text-orange-300",
+        border: "border-red-600/50",
         hover: {
-          bg: "group-hover:from-amber-400/30 group-hover:via-amber-300/30 group-hover:to-amber-200/30",
-          border: "group-hover:border-amber-400/50",
-          glow: "group-hover:shadow-[0_0_15px_rgba(251,191,36,0.3)]",
+          bg: "group-hover:bg-red-700/70",
+          border: "group-hover:border-red-500/60",
+          glow: "",
         },
-        ring: "ring-amber-400/30 group-hover:ring-amber-400/50",
+        ring: "",
       };
     }
 
-    // Admin styling takes secondary precedence
+    // Admin styling takes secondary precedence - match desktop exactly
     if (isAdministrator) {
       return {
-        bg: "from-brand-600/20 via-brand-500/20 to-brand-400/20",
-        text: "text-brand-100",
-        border: "border-brand-400/30",
+        bg: "bg-amber-800/60",
+        text: "text-amber-300",
+        border: "border-amber-600/50",
         hover: {
-          bg: "group-hover:from-brand-500/30 group-hover:via-brand-400/30 group-hover:to-brand-300/30",
-          border: "group-hover:border-brand-400/50",
-          glow: "group-hover:shadow-[0_0_12px_rgba(153,51,255,0.25)]",
+          bg: "group-hover:bg-amber-700/70",
+          border: "group-hover:border-amber-500/60",
+          glow: "",
         },
-        ring: "ring-brand-400/30 group-hover:ring-brand-400/50",
+        ring: "",
       };
     }
 
@@ -239,17 +240,17 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
       };
     }
 
-    // Default styling for users with no level
+    // Default styling for users with no level - match desktop exactly
     return {
-      bg: "from-brand-500/20 to-brand-400/20",
-      text: "text-gray-200",
-      border: "border-brand-400/20",
+      bg: "bg-purple-800/60",
+      text: "text-purple-200",
+      border: "border-purple-600/50",
       hover: {
-        bg: "group-hover:from-brand-400/25 group-hover:to-brand-300/25",
-        border: "group-hover:border-brand-400/30",
-        glow: "group-hover:shadow-[0_0_8px_rgba(153,51,255,0.15)]",
+        bg: "group-hover:bg-purple-700/70",
+        border: "group-hover:border-purple-500/60",
+        glow: "",
       },
-      ring: "ring-brand-400/20 group-hover:ring-brand-400/30",
+      ring: "",
     };
   }, [isAdministrator, isSuperAdmin, userLevel, getLevelColorScheme]);
 
@@ -259,110 +260,151 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
         <div className="flex items-center space-x-1">
         {/* Token Balance Display (only for admin/superadmin users) */}
         {user && (isAdministrator || isSuperAdmin) && (
-          <div className="group relative overflow-hidden mr-1">
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="group relative mr-1">
+            {/* Outer glow for mobile */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-60 blur-sm transition-all duration-300" />
             
-            {/* Main container - MORE COMPACT */}
-            <div className="relative px-2 py-0.5 bg-gradient-to-r from-purple-900/90 to-purple-800/90 backdrop-blur-sm rounded-full border border-purple-600/30 group-hover:border-purple-400/40 transition-all duration-300">
-              <div className="text-purple-100">
+            {/* Main container - compact for mobile */}
+            <div className="relative flex items-center gap-1 pl-2.5 pr-3 py-0.5 
+              bg-gradient-to-r from-purple-900/80 via-purple-800/80 to-purple-900/80 
+              backdrop-blur-sm rounded-full 
+              border border-purple-500/20 
+              transition-all duration-300
+              shadow-md shadow-purple-900/20">
+              
+              {/* Balance display */}
+              <div className="text-purple-100 flex items-center">
                 <SolanaTokenDisplay 
                   mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS}
                   walletAddress={user.wallet_address} 
                   compact={true}
-                  className="text-[10px]"
+                  className="text-xs font-semibold leading-none"
                   showSupply={false}
                   showHolders={false}
                 />
+              </div>
+              
+              {/* Token icon */}
+              <div className="relative flex items-center justify-center w-4 h-4">
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <NanoLogo />
+                </div>
               </div>
             </div>
           </div>
         )}
         
-        {/* User Menu Button */}
+        {/* User Menu Button - Full pill style like desktop */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`relative flex items-center justify-center transition-all duration-300 group overflow-hidden
-            ${isCompact ? "w-9 h-9" : "w-10 h-10"}
-            rounded-full ${user ? `border ${buttonStyles.border} ${buttonStyles.hover.border} ${buttonStyles.hover.glow}` : 
-            `bg-gradient-to-r from-purple-600/20 via-purple-700/20 to-purple-800/20
-            border border-purple-500/30 hover:border-purple-400/50
-            hover:from-purple-500/30 hover:via-purple-600/30 hover:to-purple-700/30
-            hover:shadow-[0_0_12px_rgba(127,0,255,0.3)]
-            backdrop-blur-sm`} z-[60]`}
+          className={`relative group overflow-hidden transition-all duration-300 ease-out
+            ${isCompact ? "h-7" : "h-8"} flex items-center
+            rounded-full border ${user ? `${buttonStyles.border} ${buttonStyles.hover.border} ${buttonStyles.hover.glow}` : 
+            `border-purple-500/30 hover:border-purple-400/50
+            hover:shadow-[0_0_12px_rgba(127,0,255,0.3)]`} z-[60]`}
           aria-label="User menu"
           aria-expanded={isOpen}
           aria-haspopup="true"
         >
-          {/* Background gradient - only for logged in users */}
-          {user && (
-            <div
-              className={`absolute inset-0 bg-gradient-to-r ${buttonStyles.bg} ${buttonStyles.hover.bg} transition-all duration-300`}
-            />
-          )}
-          
-          {/* Gradient shine effect for non-logged in users */}
-          {!user && (
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
-          )}
           {user ? (
             <>
-              {/* User Profile Avatar Button */}
-              <div className="relative">
-                {/* Profile Image */}
-                <div className={`relative rounded-full overflow-hidden ring-2 ${buttonStyles.ring} transition-all duration-300 shadow-lg bg-dark-300 w-full h-full group-hover:scale-105`}>
-                  <img
-                    src={profileImageUrl}
-                    alt={displayName}
-                    onError={handleImageError}
-                    className="w-full h-full object-cover group-hover:brightness-110"
-                    loading="eager"
-                    crossOrigin="anonymous"
-                  />
-                </div>
-                
-                {/* Level Badge - Small circle with level number (unified with desktop) */}
-                {userLevel > 0 && (
-                  <div className={`absolute -bottom-0.5 -right-0.5 flex items-center justify-center h-4 w-4 
-                    ${getLevelColorScheme.badge} text-xs font-bold rounded-full border ${getLevelColorScheme.badgeBorder} 
-                    text-white shadow-inner transition-all duration-300`}
+              {/* Background gradient */}
+              <div
+                className={`absolute inset-0 bg-gradient-to-r ${buttonStyles.bg} ${buttonStyles.hover.bg} transition-all duration-300`}
+              />
+
+              {/* Content */}
+              <div className="relative flex items-center justify-between w-full px-2">
+                <div className="flex items-center gap-1.5">
+                  {/* Level Badge - Only show if level > 0 */}
+                  {userLevel > 0 && (
+                    <div
+                      className={`
+                        flex items-center justify-center 
+                        ${isCompact ? "h-3.5 min-w-3.5 text-[9px]" : "h-4 min-w-4 text-[10px]"} 
+                        px-1 font-bold rounded-full 
+                        bg-purple-700/80 text-purple-100
+                        border border-purple-600/50
+                        shadow-inner transition-all duration-300
+                      `}
+                    >
+                      <span className="mx-0.5">{userLevel}</span>
+                    </div>
+                  )}
+
+                  {/* Username */}
+                  <span
+                    className={`
+                      ${buttonStyles.text}
+                      font-medium tracking-wide transition-all duration-300
+                      ${isCompact ? "text-xs" : "text-sm"}
+                    `}
                   >
-                    {userLevel > 99 ? "99+" : userLevel}
+                    {displayName}
+                  </span>
+                </div>
+
+                {/* Avatar */}
+                <div className="relative">
+                  <div
+                    className={`
+                      ml-1.5 rounded-full overflow-hidden
+                      transition-all duration-300 shadow-lg
+                      ${isCompact ? "w-6 h-6" : "w-7 h-7"}
+                      bg-dark-300 
+                      group-hover:scale-105
+                    `}
+                  >
+                    <img
+                      src={profileImageUrl}
+                      alt={displayName}
+                      onError={handleImageError}
+                      className="w-full h-full object-cover group-hover:brightness-110"
+                      loading="eager"
+                      crossOrigin="anonymous"
+                    />
                   </div>
-                )}
+                </div>
               </div>
             </>
           ) : (
             <>
+              {/* Non-logged in button background */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-purple-700/20 to-purple-800/20 backdrop-blur-sm" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700" />
+              
               {/* Hamburger Menu for Non-Logged-In Users */}
-              <div
-                className={`flex flex-col gap-[3px] items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-                  ${isCompact ? "w-3" : "w-4"}`}
-              >
-                <motion.div
-                  animate={isOpen ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }}
-                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                  className={`${
-                    isCompact ? "w-2.5" : "w-3"
-                  } h-[2px] bg-purple-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center shadow-[0_0_4px_rgba(127,0,255,0.3)]`}
-                />
-                <motion.div
-                  animate={
-                    isOpen ? { opacity: 0, scale: 0 } : { opacity: 1, scale: 1 }
-                  }
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                  className={`${
-                    isCompact ? "w-2" : "w-2.5"
-                  } h-[2px] bg-purple-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-[0_0_4px_rgba(127,0,255,0.3)]`}
-                />
-                <motion.div
-                  animate={isOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }}
-                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                  className={`${
-                    isCompact ? "w-2.5" : "w-3"
-                  } h-[2px] bg-purple-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center shadow-[0_0_4px_rgba(127,0,255,0.3)]`}
-                />
+              <div className="relative px-3 py-1">
+                
+                {/* Hamburger Menu for Non-Logged-In Users */}
+                <div className={`flex flex-col gap-[3px] items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${isCompact ? "w-3" : "w-4"}`}>
+                  <motion.div
+                    animate={isOpen ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }}
+                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    className={`${
+                      isCompact ? "w-2.5" : "w-3"
+                    } h-[2px] bg-purple-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center shadow-[0_0_4px_rgba(127,0,255,0.3)]`}
+                  />
+                  <motion.div
+                    animate={
+                      isOpen ? { opacity: 0, scale: 0 } : { opacity: 1, scale: 1 }
+                    }
+                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                    className={`${
+                      isCompact ? "w-2" : "w-2.5"
+                    } h-[2px] bg-purple-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-[0_0_4px_rgba(127,0,255,0.3)]`}
+                  />
+                  <motion.div
+                    animate={isOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }}
+                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    className={`${
+                      isCompact ? "w-2.5" : "w-3"
+                    } h-[2px] bg-purple-300 group-hover:bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center shadow-[0_0_4px_rgba(127,0,255,0.3)]`}
+                  />
+                </div>
+                
               </div>
+
             </>
           )}
         </button>
