@@ -67,6 +67,7 @@ export const useContestLobbyWebSocket = ({
       `contest-trade-${contestId}`,
       ['DATA'] as any[],
       (message) => {
+        console.log('[🚨 CONTEST WEBSOCKET] Received message in trade listener:', JSON.stringify(message, null, 2));
         // Listen for LEADERBOARD_UPDATE which happens after trades
         if (message.type === 'DATA' && message.topic === 'contest' && message.action === 'LEADERBOARD_UPDATE') {
           handleTradeExecuted(message.data);
