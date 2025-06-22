@@ -19,11 +19,12 @@ import { Card } from "../../../components/ui/Card";
 import { formatNumber } from "../../../utils/format";
 import { setupTokenOGMeta, resetToDefaultMeta } from "../../../utils/ogImageUtils";
 import { TokenHelpers } from "../../../types";
-import { TrendingUp, TrendingDown, Activity, DollarSign, BarChart3, Users } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { useWebSocket } from "../../../contexts/UnifiedWebSocketContext";
 import { DDExtendedMessageType } from "../../../hooks/websocket/types";
 
 export const TokenDetailPageNew: React.FC = () => {
+  const [copySuccess, setCopySuccess] = useState(false);
   const { address } = useParams<{ address: string }>();
   const [error, setError] = useState<string | null>(null);
   const ws = useWebSocket();
@@ -223,7 +224,6 @@ export const TokenDetailPageNew: React.FC = () => {
   const priceChange24h = TokenHelpers.getPriceChange(token);
   const isPositive = priceChange24h >= 0;
   const marketCap = TokenHelpers.getMarketCap(token);
-  const volume24h = TokenHelpers.getVolume(token);
 
   return (
     <SilentErrorBoundary>
@@ -340,11 +340,17 @@ export const TokenDetailPageNew: React.FC = () => {
 
         {/* Main Content Area */}
         <div className="flex-1 relative z-10 max-w-7xl mx-auto px-4 py-8 w-full">
-          {/* Key Metrics Bar */}
+          {/* Under Construction Notice */}
+          <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+            <p className="text-yellow-400 text-sm text-center">
+              🚧 This page is under construction and being improved. More features coming soon
+            </p>
+          </div>
+          {/* Key Metrics Bar - Minimalist version with only Market Cap */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+            className="max-w-sm mb-8"
           >
             <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-400/50 p-4">
               <div className="flex items-center justify-between">
@@ -355,162 +361,14 @@ export const TokenDetailPageNew: React.FC = () => {
                 <DollarSign className="w-8 h-8 text-emerald-400/20" />
               </div>
             </Card>
-            
-            <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-400/50 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">24h Volume</p>
-                  <p className="text-xl font-bold text-white">${formatNumber(volume24h, "short")}</p>
-                </div>
-                <Activity className="w-8 h-8 text-blue-400/20" />
-              </div>
-            </Card>
-            
-            <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-400/50 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Liquidity</p>
-                  <p className="text-xl font-bold text-white">${formatNumber(token.liquidity || 0, "short")}</p>
-                </div>
-                <BarChart3 className="w-8 h-8 text-purple-400/20" />
-              </div>
-            </Card>
-            
-            <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-400/50 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">FDV</p>
-                  <p className="text-xl font-bold text-white">${formatNumber(token.fdv || 0, "short")}</p>
-                </div>
-                <Users className="w-8 h-8 text-orange-400/20" />
-              </div>
-            </Card>
           </motion.div>
 
-          {/* Detailed Information Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Performance Analysis */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="lg:col-span-2"
-            >
-              <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-400/50 h-full">
-                <div className="p-6">
-                  <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-emerald-400" />
-                    Performance Analysis
-                  </h2>
-
-                  {/* Multi-timeframe Performance */}
-                  {token.priceChanges && (
-                    <div className="mb-6">
-                      <h3 className="text-sm font-medium text-gray-400 mb-4">Price Movement</h3>
-                      <div className="grid grid-cols-4 gap-3">
-                        {[
-                          { period: '5m', key: 'm5' },
-                          { period: '1h', key: 'h1' },
-                          { period: '6h', key: 'h6' },
-                          { period: '24h', key: 'h24' }
-                        ].map(({ period, key }) => {
-                          const change = token.priceChanges?.[key as keyof typeof token.priceChanges] || 0;
-                          const isPos = change >= 0;
-                          const height = Math.min(Math.abs(change) * 3, 100);
-                          
-                          return (
-                            <div key={period} className="relative">
-                              <div className="bg-dark-300/50 rounded-lg p-4 border border-dark-400/50 hover:border-dark-400 transition-colors">
-                                <div className="relative h-20 mb-2">
-                                  <div 
-                                    className={`absolute bottom-0 left-0 right-0 rounded transition-all duration-500 ${
-                                      isPos ? 'bg-emerald-500/20' : 'bg-red-500/20'
-                                    }`}
-                                    style={{ height: `${height}%` }}
-                                  />
-                                  <div className="absolute inset-0 flex items-end justify-center pb-2">
-                                    <span className={`text-lg font-bold ${isPos ? 'text-emerald-400' : 'text-red-400'}`}>
-                                      {isPos ? '+' : ''}{formatNumber(change, 2)}%
-                                    </span>
-                                  </div>
-                                </div>
-                                <p className="text-center text-gray-400 text-sm font-medium">{period}</p>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Volume Analysis */}
-                  {token.volumes && (
-                    <div className="mb-6">
-                      <h3 className="text-sm font-medium text-gray-400 mb-4">Volume Analysis</h3>
-                      <div className="grid grid-cols-4 gap-3">
-                        {[
-                          { period: '5m', key: 'm5' },
-                          { period: '1h', key: 'h1' },
-                          { period: '6h', key: 'h6' },
-                          { period: '24h', key: 'h24' }
-                        ].map(({ period, key }) => {
-                          const volume = token.volumes?.[key as keyof typeof token.volumes] || 0;
-                          
-                          return (
-                            <div key={period} className="bg-dark-300/50 rounded-lg p-3 border border-dark-400/50">
-                              <p className="text-gray-400 text-xs mb-1">{period}</p>
-                              <p className="text-white font-semibold">${formatNumber(volume, "short")}</p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Transaction Activity */}
-                  {token.transactions && (
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-400 mb-4">Transaction Activity</h3>
-                      <div className="grid grid-cols-4 gap-3">
-                        {[
-                          { period: '5m', key: 'm5' },
-                          { period: '1h', key: 'h1' },
-                          { period: '6h', key: 'h6' },
-                          { period: '24h', key: 'h24' }
-                        ].map(({ period, key }) => {
-                          const txData = token.transactions?.[key as keyof typeof token.transactions];
-                          const buys = typeof txData === 'object' ? (txData as any).buys || 0 : 0;
-                          const sells = typeof txData === 'object' ? (txData as any).sells || 0 : 0;
-                          const buyPressure = buys + sells > 0 ? (buys / (buys + sells)) * 100 : 50;
-                          
-                          return (
-                            <div key={period} className="bg-dark-300/50 rounded-lg p-3 border border-dark-400/50">
-                              <p className="text-gray-400 text-xs mb-2">{period}</p>
-                              <div className="flex justify-between text-sm mb-1">
-                                <span className="text-emerald-400">{buys}B</span>
-                                <span className="text-red-400">{sells}S</span>
-                              </div>
-                              <div className="h-2 bg-dark-400 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
-                                  style={{ width: `${buyPressure}%` }}
-                                />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </motion.div>
-
-            {/* Token Information */}
+          {/* Token Information - Now the main content */}
+          <div className="max-w-2xl">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.1 }}
             >
               <Card className="bg-dark-200/50 backdrop-blur-sm border-dark-400/50 h-full">
                 <div className="p-6">
@@ -527,106 +385,66 @@ export const TokenDetailPageNew: React.FC = () => {
                         onClick={() => {
                           const address = TokenHelpers.getAddress(token);
                           if (address) {
-                            navigator.clipboard.writeText(address);
-                            // You could add a toast notification here
+                            navigator.clipboard.writeText(address).then(() => {
+                              setCopySuccess(true);
+                              setTimeout(() => setCopySuccess(false), 2000);
+                            });
                           }
                         }}
-                        className="px-3 py-1 bg-dark-400 hover:bg-dark-500 text-white text-xs rounded transition-colors"
+                        className="px-3 py-1 bg-dark-400 hover:bg-dark-500 text-white text-xs rounded transition-colors min-w-[50px]"
                       >
-                        Copy
+                        {copySuccess ? '✓' : 'Copy'}
                       </button>
                     </div>
                   </div>
 
-                  {/* Token Details */}
-                  <div className="space-y-3 mb-6">
-                    {token.total_supply && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Total Supply</span>
-                        <span className="text-white">{formatNumber(token.total_supply, "short")}</span>
-                      </div>
-                    )}
-                    {token.decimals && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Decimals</span>
-                        <span className="text-white">{token.decimals}</span>
-                      </div>
-                    )}
-                    {token.priority_score && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Priority Score</span>
-                        <span className="text-white">{token.priority_score}/100</span>
-                      </div>
-                    )}
-                    {token.degenduel_score && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">DegenDuel Score</span>
-                        <span className="text-emerald-400 font-semibold">{formatNumber(token.degenduel_score, 2)}</span>
-                      </div>
-                    )}
-                    {token.pairCreatedAt && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Pair Created</span>
-                        <span className="text-white">{new Date(token.pairCreatedAt).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Tags */}
-                  {token.tags && token.tags.length > 0 && (
-                    <div className="mb-6">
-                      <p className="text-gray-400 text-sm mb-2">Tags</p>
-                      <div className="flex flex-wrap gap-2">
-                        {token.tags.map((tag: string, idx: number) => (
-                          <span 
-                            key={idx}
-                            className="px-3 py-1 rounded-full text-xs font-medium bg-dark-300/50 text-gray-300 border border-dark-400/50"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Links */}
                   <div>
                     <p className="text-gray-400 text-sm mb-3">Links</p>
                     <div className="space-y-2">
-                      {token.websites?.map((website: any, idx: number) => (
-                        <a
-                          key={idx}
-                          href={typeof website === 'string' ? website : website.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 p-3 bg-dark-300/50 rounded-lg hover:bg-dark-300 transition-colors group"
-                        >
-                          <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                          <span className="text-gray-300 group-hover:text-white transition-colors text-sm">
-                            {typeof website === 'string' ? 'Website' : (website.label || 'Website')}
-                          </span>
-                        </a>
-                      ))}
-                      
-                      {TokenHelpers.getSocials(token).map((social, idx) => (
-                        <a
-                          key={idx}
-                          href={social.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 p-3 bg-dark-300/50 rounded-lg hover:bg-dark-300 transition-colors group"
-                        >
-                          <div className={`w-2 h-2 rounded-full ${
-                            social.type === 'twitter' ? 'bg-blue-400' :
-                            social.type === 'telegram' ? 'bg-blue-500' :
-                            social.type === 'discord' ? 'bg-purple-400' :
-                            'bg-gray-400'
-                          }`} />
-                          <span className="text-gray-300 group-hover:text-white transition-colors text-sm capitalize">
-                            {social.type}
-                          </span>
-                        </a>
-                      ))}
+                      {(token.websites?.length > 0 || TokenHelpers.getSocials(token).length > 0) ? (
+                        <>
+                          {token.websites?.map((website: any, idx: number) => (
+                            <a
+                              key={idx}
+                              href={typeof website === 'string' ? website : website.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 p-3 bg-dark-300/50 rounded-lg hover:bg-dark-300 transition-colors group"
+                            >
+                              <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                              <span className="text-gray-300 group-hover:text-white transition-colors text-sm">
+                                {typeof website === 'string' ? 'Website' : (website.label || 'Website')}
+                              </span>
+                            </a>
+                          ))}
+                          
+                          {TokenHelpers.getSocials(token).map((social, idx) => (
+                            <a
+                              key={idx}
+                              href={social.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 p-3 bg-dark-300/50 rounded-lg hover:bg-dark-300 transition-colors group"
+                            >
+                              <div className={`w-2 h-2 rounded-full ${
+                                social.type === 'twitter' ? 'bg-blue-400' :
+                                social.type === 'telegram' ? 'bg-blue-500' :
+                                social.type === 'discord' ? 'bg-purple-400' :
+                                'bg-gray-400'
+                              }`} />
+                              <span className="text-gray-300 group-hover:text-white transition-colors text-sm capitalize">
+                                {social.type}
+                              </span>
+                            </a>
+                          ))}
+                        </>
+                      ) : (
+                        <div className="p-3 bg-dark-300/50 rounded-lg text-center">
+                          <p className="text-gray-400 text-sm">No links available</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
