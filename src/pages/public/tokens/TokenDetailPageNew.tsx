@@ -67,6 +67,9 @@ export const TokenDetailPageNew: React.FC = () => {
 
   // WebSocket handler for token updates
   const handleTokenUpdate = useCallback((message: any) => {
+    // LOG EVERYTHING to debug
+    console.log(`[TokenDetailPageNew] 🚨 RAW MESSAGE RECEIVED:`, JSON.stringify(message, null, 2));
+    
     console.log(`[TokenDetailPageNew] 🔥 RECEIVED MESSAGE for ${address}:`, {
       type: message.type,
       topic: message.topic,
@@ -156,6 +159,10 @@ export const TokenDetailPageNew: React.FC = () => {
     console.log(`[TokenDetailPageNew] 🔔 SUBSCRIBING to individual token channel: ${tokenTopic}`);
     const success = ws.subscribe([tokenTopic]);
     console.log(`[TokenDetailPageNew] 📡 Subscription result:`, success);
+    
+    // Also subscribe to the general token:price channel to see if we get anything
+    console.log(`[TokenDetailPageNew] 🔔 ALSO subscribing to general token:price channel`);
+    ws.subscribe(['token:price']);
 
     return () => {
       unregister();
