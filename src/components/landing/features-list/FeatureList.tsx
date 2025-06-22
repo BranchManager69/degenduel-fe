@@ -91,9 +91,9 @@ const currentFeatures = [
   // 3 - Degen Dividends
   {
     title: "Degen Dividends",
-    description: "Half of all platform profits go to token holders through daily Solana rewards sent automatically to your wallet.",
+    description: "All DegenDuel profits (that's 10% of contest entry fees) are directly airdropped to DUEL token holders via daily automatic Solana transfers to your wallet. Airdrop amounts will be directly proportional to the amount held proportional to the total amount held by registered members (subject to change).",
     extendedDescription: 
-      "Token holders receive daily Solana rewards automatically sent to their connected wallets. The system tracks platform revenue in real-time and distributes 50% to the community.\n\nRewards are distributed proportionally based on token holdings. No staking or lock-up periods required - simply hold your tokens in a compatible wallet.",
+      "Token holders receive daily Solana rewards automatically sent to their connected wallets. The system tracks platform revenue and redistributes 100% of profits to the DegenDuel community.\n\nDegen Dividends are based on average daily balance (many small snapshots are taken throughout the day at random intervals). Simply hold your DUEL in your registered wallet.",
     icon: (
       <svg
         className="w-6 h-6"
