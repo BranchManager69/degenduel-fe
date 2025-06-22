@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
 import { formatCurrency } from '../../lib/utils';
+import { useContestLobbyWebSocket } from '../../hooks/websocket/topic-hooks/useContestLobbyWebSocket';
 
 interface LeaderboardChartParticipant {
   wallet_address: string;
@@ -59,6 +60,16 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
   const [hoveredParticipant, setHoveredParticipant] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '1d' | 'all'>('all');
   const [showParticipantSelector, setShowParticipantSelector] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Use WebSocket for real-time updates
+  useContestLobbyWebSocket({
+    contestId,
+    onTradeExecuted: () => setRefreshKey(prev => prev + 1),
+    onPortfolioUpdate: () => setRefreshKey(prev => prev + 1),
+    onContestActivity: () => setRefreshKey(prev => prev + 1),
+    userWalletAddress: user?.wallet_address
+  });
 
   // Removed hoursBack - now calculated inline in useEffect
 
@@ -143,7 +154,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
     };
 
     fetchLeaderboardChart();
-  }, [contestId, timeInterval, maxParticipants, user?.wallet_address, participants.length]);
+  }, [contestId, timeInterval, maxParticipants, user?.wallet_address, participants.length, refreshKey]);
 
   // Get initial values for relative calculations
   const initialValues = useMemo(() => {
@@ -352,7 +363,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
     };
   }, [chartData, latestValues, user?.wallet_address, participants]);
 
-  if (isLoading) {
+  if (isLoading && !chartData.length) {
     return (
       <div className="h-96 flex items-center justify-center">
         <div className="text-gray-400 animate-pulse">Loading performance data...</div>
@@ -508,11 +519,18 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
 
       {/* Chart */}
       <motion.div 
-        className="h-96 w-full bg-dark-300/30 rounded-lg p-4 border border-dark-200"
+        className="h-96 w-full bg-dark-300/30 rounded-lg p-4 border border-dark-200 relative"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
+        {/* Real-time update indicator */}
+        {isLoading && chartData.length > 0 && (
+          <div className="absolute top-2 right-2 flex items-center gap-2 text-xs text-gray-400">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            Updating...
+          </div>
+        )}
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={unifiedChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.5} />
