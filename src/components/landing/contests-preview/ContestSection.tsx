@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 // Import the ContestCard from the contest-browser directory to use the unified card
 import type { Contest } from "../../../types/index";
@@ -18,6 +19,7 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
   contests,
   loading,
 }) => {
+  const navigate = useNavigate();
   // Don't render the active contests section if there are no active contests
   if (type === "active" && contests.length === 0 && !loading) {
     return null;
@@ -163,9 +165,10 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
                     <ProminentContestCard 
                       contest={contest} 
                       featuredLabel="👑 CROWN CONTEST"
+                      onClick={() => navigate(`/contests/${contest.id}`)}
                     />
                   ) : (
-                    <ContestCard contest={contest} />
+                    <ContestCard contest={contest} onClick={() => navigate(`/contests/${contest.id}`)} />
                   );
                 })()}
               </div>

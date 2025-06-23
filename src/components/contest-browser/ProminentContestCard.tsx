@@ -150,7 +150,7 @@ export const ProminentContestCard: React.FC<ProminentContestCardProps> = ({
     <div className="relative">
       <motion.div
         ref={cardRef}
-        onClick={onClick}
+        onClick={onClick ? onClick : undefined}
         onMouseMove={!performanceMode ? handleMouseMove : undefined}
         onMouseEnter={!performanceMode ? handleMouseEnter : undefined}
         onMouseLeave={!performanceMode ? handleMouseLeave : undefined}

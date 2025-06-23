@@ -92,7 +92,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
   return (
     <div
       ref={cardRef}
-      onClick={onClick}
+      onClick={onClick ? onClick : undefined}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -573,7 +573,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
       </div>
 
       {/* Edge-to-edge button container */}
-      <div className="absolute bottom-0 left-0 right-0">
+      <div className="absolute bottom-0 left-0 right-0" onClick={(e) => e.stopPropagation()}>
         <ContestButton
           id={Number(contest.id)}
           type={
