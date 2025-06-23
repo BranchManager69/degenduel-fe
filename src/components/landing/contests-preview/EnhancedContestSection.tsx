@@ -1,10 +1,10 @@
 import React from "react";
 
 // Import both card types
+import { useStore } from "../../../store/useStore";
 import type { Contest } from "../../../types/index";
 import { ContestCard } from "../../contest-browser/ContestCard";
 import { ProminentContestCard } from "../../contest-browser/ProminentContestCard";
-import { useStore } from "../../../store/useStore";
 
 interface EnhancedContestSectionProps {
   title: string;
@@ -26,13 +26,11 @@ export const EnhancedContestSection: React.FC<EnhancedContestSectionProps> = ({
   isFeatureSection = false
 }) => {
   const performanceMode = useStore(state => state.performanceMode);
-  // Don't render the active contests section if there are no active contests
-  if (type === "active" && contests.length === 0 && !loading) {
-    return null;
-  }
-
-  // For feature section, show prominent card if provided
-  if (isFeatureSection && featuredContest) {
+  
+  // For feature section, show prominent card if provided - CHECK THIS FIRST!
+  // Currently ENABLED for debugging
+  const isFeatureSectionActivatedFlag = true;
+  if (isFeatureSectionActivatedFlag && isFeatureSection && featuredContest) {
     return (
       <section className="relative py-6">
         {/* Simplified cosmic effects for featured section */}
@@ -74,6 +72,11 @@ export const EnhancedContestSection: React.FC<EnhancedContestSectionProps> = ({
         </div>
       </section>
     );
+  }
+
+  // Don't render the active contests section if there are no active contests (but only for non-feature sections)
+  if (type === "active" && contests.length === 0 && !loading) {
+    return null;
   }
 
   if (loading) {

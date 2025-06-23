@@ -1,9 +1,9 @@
 import React from "react";
 
 // Import the ContestCard from the contest-browser directory to use the unified card
+import type { Contest } from "../../../types/index";
 import { ContestCard } from "../../contest-browser/ContestCard";
 import { ProminentContestCard } from "../../contest-browser/ProminentContestCard";
-import type { Contest } from "../../../types/index";
 
 interface ContestSectionProps {
   title: string;
@@ -56,8 +56,6 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
       </section>
     );
   }
-
-  const isPending = type === "pending";
 
   return (
     <section className="relative py-12">
@@ -123,37 +121,14 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
       </div>
 
       <div className="relative">
-        {/* Section Header with cosmic glow */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="space-y-1">
-            <h2
-              className={`text-2xl font-bold font-cyber tracking-wide bg-gradient-to-r ${
-                isPending
-                  ? "from-green-400 via-brand-400 to-brand-500"
-                  : "from-brand-400 via-purple-400 to-brand-500"
-              } text-transparent bg-clip-text relative group`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 to-transparent blur-xl animate-pulse-slow" />
-              {title}
-              <span
-                className={`absolute -left-[1px] top-[1px] text-2xl font-bold font-cyber ${
-                  isPending ? "text-green-600/30" : "text-purple-600/30"
-                } select-none`}
-              >
-                {title}
-              </span>
+        {/* Section Header - matches "What is DegenDuel?" style */}
+        <div className="text-center mb-12">
+          <div className="relative inline-block">
+            <h2 className="text-2xl md:text-4xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 tracking-wider uppercase relative inline-block mb-4">
+              CONTESTS
+              {/* Animated underline */}
+              <div className="absolute -bottom-2 md:-bottom-3 left-0 right-0 h-0.5 md:h-1 bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 rounded-full" />
             </h2>
-            {type === "active" && contests.length > 0 && (
-              <div className="flex items-center space-x-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500" />
-                </span>
-                <span className="text-sm text-brand-400 animate-pulse font-cyber">
-                  {contests.length} Live Match{contests.length !== 1 && "es"}
-                </span>
-              </div>
-            )}
           </div>
         </div>
 

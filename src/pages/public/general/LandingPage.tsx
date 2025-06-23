@@ -20,6 +20,7 @@ import { motion } from "framer-motion";
 import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
 import { EnhancedContestSection } from "../../../components/landing/contests-preview/EnhancedContestSection";
 import { CtaSection } from "../../../components/landing/cta-section/CtaSection";
+import { TemplateSection, TemplateSection2, TemplateSection3 } from "../../../components/landing/template-section";
 // import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle"; // No longer using HeroTitle
 // Import new MarketTickerGrid component (replacing the three token display components)
 // import IntroLogo from "../../../components/logo/IntroLogo"; // Original logo (no longer used)
@@ -35,7 +36,7 @@ import { ddApi } from "../../../services/dd-api";
 // Date Utilities
 // Release Date Service
 import {
-    FALLBACK_RELEASE_DATE
+  FALLBACK_RELEASE_DATE
 } from '../../../services/releaseDateService';
 // Import PaginatedResponse from types (used for API response typing)
 // import type { PaginatedResponse } from '../../../types';
@@ -44,6 +45,11 @@ import { useStore } from "../../../store/useStore"; // Ensure useStore is import
 
 // Config
 import { config } from "../../../config/config"; // Config
+
+// Debug flags for template sections
+const SHOW_TEMPLATE_SECTION_1 = false;
+const SHOW_TEMPLATE_SECTION_2 = false;
+const SHOW_TEMPLATE_SECTION_3 = false;
 
 // Enhanced Floating Buttons
 import FloatingButtonStack from '../../../components/layout/FloatingButtonStack'; // Enhanced floating button stack
@@ -480,6 +486,8 @@ export const LandingPage: React.FC = () => {
   const childVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
   const secondaryVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
 
+  const showCrownContest = false;
+
   // Render section with staggered animation
   // const renderSectionWithStagger = (
   //   index: number,
@@ -638,12 +646,21 @@ export const LandingPage: React.FC = () => {
                   variants={childVariants}
                 >
 
-                {/* Hero tagline with glow effect */}
+                {/* Hero tagline with enhanced styling */}
                 <div className="text-center space-y-2">
-                  <h2 className="text-2xl sm:text-3xl font-black text-[#9D4EDD] drop-shadow-[0_0_30px_rgba(157,78,221,0.5)] hover:drop-shadow-[0_0_40px_rgba(157,78,221,0.8)] transition-all duration-300 px-4">
-                    Sim Crypto Trading Battles
-                  </h2>
-                  <p className="text-sm sm:text-base text-gray-300/80 font-medium">
+                  <div className="relative inline-block">
+                    <h2 className="text-2xl md:text-4xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 tracking-wider uppercase relative inline-block">
+                      SIM CRYPTO TRADING BATTLES
+                      {/* Animated underline */}
+                      <motion.div 
+                        className="absolute -bottom-2 md:-bottom-3 left-0 right-0 h-0.5 md:h-1 bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 rounded-full"
+                        initial={{ width: '0%', left: '50%' }}
+                        animate={{ width: '100%', left: '0%' }}
+                        transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
+                      />
+                    </h2>
+                  </div>
+                  <p className="text-sm sm:text-base text-gray-300/80 font-medium mt-4 md:mt-6">
                     Prove your skills. Win real Solana. No transactions required.
                   </p>
                 </div>
@@ -659,17 +676,31 @@ export const LandingPage: React.FC = () => {
                 />
 
                 {/* Crown Contest Section - Extracted from contests */}
-                {!isMaintenanceModeActive && !error && (
+                {showCrownContest && !isMaintenanceModeActive && !error && (
                   (() => {
                     // Inline Crown Contest detection (same as contest browser)
                     const allAvailableContests = [...activeContests, ...openContests];
+                    
+                    // DEBUG: Log contest names being searched
+                    console.log('[Crown Contest Debug] Searching in contests:', allAvailableContests.map(c => ({
+                      id: c.id,
+                      name: c.name,
+                      status: c.status,
+                      upperName: c.name.toUpperCase()
+                    })));
+                    
                     const crownContest = allAvailableContests.find(contest => {
                       const upperName = contest.name.toUpperCase();
-                      return upperName.includes('NUMERO UNO') || 
+                      const isMatch = upperName.includes('NUMERO UNO') || 
                              upperName.includes('NUMERO  UNO') || // double space
                              upperName.includes('NUMERO\tUNO') || // tab
                              upperName.includes('NUMEROUNO'); // no space
+                      
+                      console.log('[Crown Contest Debug] Checking contest:', contest.name, 'upperName:', upperName, 'isMatch:', isMatch);
+                      return isMatch;
                     });
+                    
+                    console.log('[Crown Contest Debug] Found crown contest:', crownContest ? crownContest.name : 'NONE');
 
                     return crownContest ? (
                       <motion.div
@@ -677,84 +708,34 @@ export const LandingPage: React.FC = () => {
                         variants={secondaryVariants}
                       >
                         <div className="w-full max-w-none sm:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-4">
-                          <EnhancedContestSection
-                            title="Crown Contest"
-                            type={crownContest.status}
-                            contests={[]}
-                            loading={loading && activeContests.length === 0 && openContests.length === 0}
-                            featuredContest={crownContest}
-                            featuredLabel="CROWN CONTEST"
-                            isFeatureSection={true}
-                          />
+                          {(() => {
+                            console.log('[Crown Contest Debug] RENDERING EnhancedContestSection with:', {
+                              title: "Crown Contest",
+                              type: crownContest.status,
+                              featuredContest: crownContest.name,
+                              loading: loading && activeContests.length === 0 && openContests.length === 0
+                            });
+                            return (
+                              <EnhancedContestSection
+                                title="Crown Contest"
+                                type={crownContest.status}
+                                contests={[]}
+                                loading={loading && activeContests.length === 0 && openContests.length === 0}
+                                featuredContest={crownContest}
+                                featuredLabel="CROWN CONTEST"
+                                isFeatureSection={true}
+                              />
+                            );
+                          })()}
                         </div>
                       </motion.div>
-                    ) : null;
+                    ) : (
+                      console.log('[Crown Contest Debug] NOT RENDERING - crownContest is null'),
+                      null
+                    );
                   })()
                 )}
 
-                {/* Enhanced Features section - shown to all users */}
-                {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (
-                  <motion.div
-                    className="relative w-full mt-6 md:mt-12"
-                    initial={{ opacity: 0 }}
-                    animate={{
-                      opacity: animationPhase > 0 ? 1 : 0,
-                      transition: {
-                        delay: 0.9,
-                        duration: 1.2,
-                      },
-                    }}
-                  >
-
-                    {/* Features section container - responsive width for landscape mobile */}
-                    <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                      {/* Features component is only imported and rendered when the flag is enabled */}
-                      {(() => {
-
-                        // Only import and render when the flag is enabled (we already tested this once above)
-                        if (FEATURE_FLAGS.SHOW_FEATURES_SECTION) {
-                          
-                          // Dynamic import only when needed
-                          // const Features = React.lazy(  // <-- REMOVE THIS LINE
-                          //   () =>                    // <-- REMOVE THIS LINE
-                          //     import(                 // <-- REMOVE THIS LINE
-                          //       "../../../components/landing/features-list/Features" // <-- REMOVE THIS LINE
-                          //     ),                   // <-- REMOVE THIS LINE
-                          // );                         // <-- REMOVE THIS LINE
-                          return (
-                            <React.Suspense fallback={
-                              <div className="flex items-center justify-center py-20">
-                                <div className="text-gray-500 text-sm">Loading features...</div>
-                              </div>
-                            }>
-                              <Features />
-                            </React.Suspense>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
-                    
-                  </motion.div>
-                )}
-                
-                {/* NYSE-Style Market Ticker Grid - Replaces all previous token displays 
-                <motion.div
-                  className="w-full mt-8 mb-6"
-                  variants={secondaryVariants}
-                >
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <MarketTickerGrid
-                      maxTokens={12}
-                      title="DegenDuel • Market Data"
-                      subtitle="Real-time NYSE-style market feed"
-                      reorderInterval={8000}
-                      showBillboard={true}
-                    />
-                  </div>
-                </motion.div>
-                */}
-                
                 {/* Contest sections - shown to all users */}
                 <motion.div
                   variants={secondaryVariants}
@@ -830,65 +811,27 @@ export const LandingPage: React.FC = () => {
                         <div className="mb-4 md:mb-8">
                           {/* Crown Contest moved above Features section */}
 
-                          {/* Filter out featured contest from regular sections */}
+                          {/* Show all contests in one unified section */}
                           {(() => {
-                            // Find crown contest again for filtering
-                            const allAvailableContests = [...activeContests, ...openContests];
-                            const crownContest = allAvailableContests.find(contest => {
-                              const upperName = contest.name.toUpperCase();
-                              return upperName.includes('NUMERO UNO') || 
-                                     upperName.includes('NUMERO  UNO') || 
-                                     upperName.includes('NUMERO\tUNO') || 
-                                     upperName.includes('NUMEROUNO');
-                            });
-                            
-                            const filteredActiveContests = activeContests.filter(c => c.id !== crownContest?.id);
-                            const filteredOpenContests = openContests.filter(c => c.id !== crownContest?.id);
-                            
-                            return (
-                              <>
-                                {/* Use the shared ContestSection component for active contests */}
-                                {filteredActiveContests.length > 0 && (
-                                  <ContestSection
-                                    title="Live Duels"
-                                    type="active"
-                                    contests={filteredActiveContests}
-                                    loading={loading && activeContests.length === 0 && openContests.length === 0}
-                                  />
-                                )}
-
-                                {/* Use the shared ContestSection component for upcoming contests */}
-                                <ContestSection
-                                  title="Starting Soon"
-                                  type="pending"
-                                  contests={filteredOpenContests}
-                                  loading={loading && activeContests.length === 0 && openContests.length === 0}
-                                />
-                              </>
-                            );
+                            const allContests = [...activeContests, ...openContests];
+                            return allContests.length > 0 ? (
+                              <ContestSection
+                                title="Duels"
+                                type="active"
+                                contests={allContests}
+                                loading={loading && activeContests.length === 0 && openContests.length === 0}
+                              />
+                            ) : null;
                           })()}
 
                           {/* No duels available */}
-                          {(() => {
-                            // Check if there are any crown contests for the condition
-                            const allAvailableContests = [...activeContests, ...openContests];
-                            const hasCrownContest = allAvailableContests.some(contest => {
-                              const upperName = contest.name.toUpperCase();
-                              return upperName.includes('NUMERO UNO') || 
-                                     upperName.includes('NUMERO  UNO') || 
-                                     upperName.includes('NUMERO\tUNO') || 
-                                     upperName.includes('NUMEROUNO');
-                            });
-                            
-                            return activeContests.length === 0 &&
-                                   openContests.length === 0 &&
-                                   !hasCrownContest &&
-                                   !loading;
-                          })() && (
+                          {activeContests.length === 0 &&
+                           openContests.length === 0 &&
+                           !loading && (
                               <div className="text-center py-16">
                                 
                                 {/* No duels available title */}
-                                <h2 className="text-2xl font-bold mb-4 font-cyber tracking-wide bg-gradient-to-r from-brand-400 to-purple-500 text-transparent bg-clip-text">
+                                <h2 className="text-2xl font-bold mb-4 font-heading tracking-wide bg-gradient-to-r from-brand-400 to-purple-500 text-transparent bg-clip-text">
                                   No Duels Available
                                 </h2>
                                 
@@ -913,6 +856,67 @@ export const LandingPage: React.FC = () => {
                     </div>
                   )}
                 </motion.div>
+
+                {/* Enhanced Features section - shown to all users */}
+                {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (
+                  <motion.div
+                    className="relative w-full mt-6 md:mt-12"
+                    initial={{ opacity: 0 }}
+                    animate={{
+                      opacity: animationPhase > 0 ? 1 : 0,
+                      transition: {
+                        delay: 0.9,
+                        duration: 1.2,
+                      },
+                    }}
+                  >
+
+                    {/* Features section container - responsive width for landscape mobile */}
+                    <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                      {/* Features component is only imported and rendered when the flag is enabled */}
+                      {(() => {
+
+                        // Only import and render when the flag is enabled (we already tested this once above)
+                        if (FEATURE_FLAGS.SHOW_FEATURES_SECTION) {
+                          
+                          // Dynamic import only when needed
+                          // const Features = React.lazy(  // <-- REMOVE THIS LINE
+                          //   () =>                    // <-- REMOVE THIS LINE
+                          //     import(                 // <-- REMOVE THIS LINE
+                          //       "../../../components/landing/features-list/Features" // <-- REMOVE THIS LINE
+                          //     ),                   // <-- REMOVE THIS LINE
+                          // );                         // <-- REMOVE THIS LINE
+                          return (
+                            <React.Suspense fallback={
+                              <div className="flex items-center justify-center py-20">
+                                <div className="text-gray-500 text-sm">Loading features...</div>
+                              </div>
+                            }>
+                              <Features />
+                            </React.Suspense>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                    
+                  </motion.div>
+                )}
+
+                {/* Template Section - Customizable boilerplate section */}
+                {SHOW_TEMPLATE_SECTION_1 && (
+                  <TemplateSection />
+                )}
+
+                {/* Template Section 2 - 2-column layout with links */}
+                {SHOW_TEMPLATE_SECTION_2 && (
+                  <TemplateSection2 />
+                )}
+
+                {/* Template Section 3 - Horizontal scrolling with filters */}
+                {SHOW_TEMPLATE_SECTION_3 && (
+                  <TemplateSection3 />
+                )}
                 
                 </motion.div> 
                 {/* Close the main landing-content container with variants */}

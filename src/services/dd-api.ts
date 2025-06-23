@@ -1025,7 +1025,7 @@ export const ddApi = {
 
     // Get contests
     getContests: async (): Promise<{ contests: Contest[] }> => {
-      const response = await fetch(`${API_URL}/contests`);
+      const response = await fetch(`${API_URL}/contests?limit=1000`);
       if (!response.ok) throw new Error("Failed to fetch contests");
       return response.json();
     },
@@ -1287,7 +1287,7 @@ export const ddApi = {
     getActive: async (): Promise<Contest[]> => {
       const user = useStore.getState().user;
       const api = createApiClient();
-      const response = await api.fetch("/contests", {
+      const response = await api.fetch("/contests?limit=1000", {
         headers: {
           "Cache-Control": "no-cache",
         },
@@ -1375,7 +1375,7 @@ export const ddApi = {
 
       try {
         const api = createApiClient();
-        const response = await api.fetch("/contests");
+        const response = await api.fetch("/contests?limit=1000");
         const data = await response.json();
         let contests: Contest[] = Array.isArray(data)
           ? data
@@ -1839,19 +1839,19 @@ export const ddApi = {
 
         if (!response.ok) {
           // Extract more detailed error information
-          const errorMessage = responseData?.message || 
-                             responseData?.error || 
-                             responseData?.details?.message ||
-                             responseData?.details?.error ||
-                             `Failed to create contest: ${response.status} ${response.statusText}`;
-          
+          const errorMessage = responseData?.message ||
+            responseData?.error ||
+            responseData?.details?.message ||
+            responseData?.details?.error ||
+            `Failed to create contest: ${response.status} ${response.statusText}`;
+
           console.error("Contest creation failed:", {
             status: response.status,
             statusText: response.statusText,
             responseData,
             errorMessage
           });
-          
+
           throw new Error(errorMessage);
         }
 

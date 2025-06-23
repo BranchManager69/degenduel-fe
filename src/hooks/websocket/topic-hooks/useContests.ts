@@ -7,8 +7,9 @@
  * ⚠️  IMPORTANT: Contains Technical Debt - Band-aid TypeScript Approach ⚠️
  * 
  * ISSUE RESOLVED: Contest #768 "Numero Uno" was missing from UI due to:
- * 1. Frontend using wrong action name: 'GET_ALL_CONTESTS' → Fixed to 'getContests'
+ * 1. Frontend using wrong action name: 'GET_ALL_CONTESTS' → Fixed to 'getContests'  
  * 2. Backend changed message format without frontend updates
+ * 3. WebSocket requests missing pagination limit → Fixed to use limit=1000 like REST API
  * 
  * CURRENT APPROACH: Using `any` types for WebSocket messages to support dual formats
  * - OLD FORMAT: { type: 'DATA', topic: 'contest', subtype: 'update', data: {...} }
@@ -76,6 +77,8 @@ const DEFAULT_STATE = {
  * @param userId Optional user ID to filter contests by participation
  */
 export function useContests(userId?: string) {
+  console.log('🚀 [useContests] Hook called! userId:', userId);
+
   // State for contest data
   const [state, setState] = useState(DEFAULT_STATE);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -352,8 +355,8 @@ export function useContests(userId?: string) {
       ws.subscribe([TopicType.CONTEST]);
       hasSubscribedContestRef.current = true;
 
-      // Request initial contest data
-      ws.request(TopicType.CONTEST, 'getContests');
+      // Request initial contest data with limit to match REST API behavior
+      ws.request(TopicType.CONTEST, 'getContests', { limit: 1000 });
 
       // Request user contests if userId is provided
       if (userId) {
@@ -421,8 +424,8 @@ export function useContests(userId?: string) {
     setIsLoading(true);
 
     if (ws.isConnected) {
-      // Request fresh contest data
-      ws.request(TopicType.CONTEST, 'getContests');
+      // Request fresh contest data with limit to match REST API behavior
+      ws.request(TopicType.CONTEST, 'getContests', { limit: 1000 });
 
       // Request user contests if userId is provided
       if (userId) {
