@@ -122,7 +122,7 @@ const Features: React.FC = () => {
   // Features section JSX
   return (
     <MeasureRender id="Features" logThreshold={16}>
-      <div ref={containerRef} className="relative py-6 md:py-10 overflow-hidden">
+      <div ref={containerRef} className="relative py-6 md:py-10">
         {CosmicEffects}
 
         {/* Features section container */}
@@ -138,8 +138,8 @@ const Features: React.FC = () => {
             subtitle="Experience crypto trading like never before - competitive, fun, and rewarding."
           />
 
-          {/* Features List Component */}
-          <div className="px-2 md:px-4 relative z-10 max-w-7xl mx-auto">
+          {/* Features List Component - Remove padding constraints */}
+          <div className="relative z-10 max-w-7xl mx-auto">
             <FeatureList />
           </div>
         </motion.div>

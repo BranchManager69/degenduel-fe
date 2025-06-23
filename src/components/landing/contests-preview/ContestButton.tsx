@@ -48,10 +48,8 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
     contestButtonDestination = `/contests/${id}`;
   }
   
-  // Determine which cases need dual buttons
-  const isUpcomingNotEntered = isUpcoming && !isParticipating;
-  // We already have isComplete defined above
-  const showDualButtons = isUpcomingNotEntered || isComplete;
+  // Simplified - no more dual buttons, everything gets single button
+  const showDualButtons = false;
   
   // URLs for different buttons
   const detailsUrl = `/contests/${id}`; // Always goes to contest details
@@ -62,23 +60,26 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
 
   return showDualButtons ? (
     // Dual button layout - Enter gets more space
-    <div className="flex gap-2">
+    <div className="flex">
       {/* Details Button - smaller */}
       <Link to={detailsUrl} className="block flex-shrink-0 w-20">
         <button
           className={`
           w-full relative group overflow-hidden 
-          bg-dark-200/40 backdrop-blur-sm hover:bg-dark-200/60
-          border border-dark-300/80 hover:border-gray-400/40
-          transition-all duration-300 rounded-lg py-2
+          ${isComplete 
+            ? 'bg-gray-900/20 hover:bg-gray-900/30 backdrop-blur-sm border border-gray-500/40 hover:border-gray-500/60'
+            : 'bg-blue-900/20 hover:bg-blue-900/30 backdrop-blur-sm border border-blue-500/40 hover:border-blue-500/60'
+          }
+          transition-all duration-300 rounded-tl-none rounded-tr-none rounded-bl-lg rounded-br-none py-2
           font-cyber tracking-wide text-xs
+          border-r-0
         `}
         >
           {/* Subtle gradient background */}
           <div className="absolute inset-0 bg-gradient-to-r from-gray-500/0 via-gray-500/5 to-gray-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           
           {/* Very subtle border glow */}
-          <div className="absolute -inset-[1px] rounded-lg blur-sm bg-gradient-to-r from-gray-500/0 via-gray-500/20 to-gray-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="absolute -inset-[1px] rounded-tl-none rounded-tr-none rounded-bl-lg rounded-br-none blur-sm bg-gradient-to-r from-gray-500/0 via-gray-500/20 to-gray-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           
           {/* Badge content */}
           <div className="relative flex items-center justify-center">
@@ -98,11 +99,12 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
           className={`
           w-full relative group overflow-hidden 
           ${isComplete 
-            ? 'bg-dark-200/40 backdrop-blur-sm hover:bg-dark-200/60 border border-dark-300/80 hover:border-green-500/40' 
-            : 'bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 hover:from-purple-500 hover:via-purple-600 hover:to-purple-700 border border-purple-400/60 hover:border-purple-300/80'
+            ? 'bg-gray-900/20 hover:bg-gray-900/30 backdrop-blur-sm border border-gray-500/40 hover:border-gray-500/60' 
+            : 'bg-blue-900/20 hover:bg-blue-900/30 backdrop-blur-sm border border-blue-500/40 hover:border-blue-500/60'
           }
-          transition-all duration-300 rounded-lg py-2
+          transition-all duration-300 rounded-tl-none rounded-tr-none rounded-bl-none rounded-br-lg py-2
           font-cyber tracking-wide
+          border-l-0
         `}
         >
           {/* Subtle gradient background */}
@@ -116,7 +118,7 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
           
           {/* Very subtle border glow */}
           <div 
-            className={`absolute -inset-[1px] rounded-lg blur-sm bg-gradient-to-r 
+            className={`absolute -inset-[1px] rounded-tl-none rounded-tr-none rounded-bl-none rounded-br-lg blur-sm bg-gradient-to-r 
               ${isComplete 
                 ? 'from-green-500/0 via-green-500/30 to-green-500/0' 
                 : 'from-purple-400/0 via-purple-300/40 to-purple-400/0'} 
@@ -156,15 +158,19 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
       <button
         className={`
         w-full relative group overflow-hidden 
-        ${(isLive && !isParticipating) || (isUpcoming && !isParticipating)
-          ? 'bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 hover:from-purple-500 hover:via-purple-600 hover:to-purple-700 border border-purple-400/60 hover:border-purple-300/80'
-          : 'bg-dark-200/40 backdrop-blur-sm hover:bg-dark-200/60'
+        ${isCancelled 
+          ? 'bg-red-900/20 hover:bg-red-900/30 backdrop-blur-sm border border-red-500/40 hover:border-red-500/60'
+          : isLive 
+            ? isParticipating 
+              ? 'bg-green-900/20 hover:bg-green-900/30 backdrop-blur-sm border border-green-500/40 hover:border-green-500/60'
+              : 'bg-green-900/20 hover:bg-green-900/30 backdrop-blur-sm border border-green-500/40 hover:border-green-500/60'
+            : isUpcoming 
+              ? isParticipating
+                ? 'bg-blue-900/20 hover:bg-blue-900/30 backdrop-blur-sm border border-blue-500/40 hover:border-blue-500/60'
+                : 'bg-blue-900/20 hover:bg-blue-900/30 backdrop-blur-sm border border-blue-500/40 hover:border-blue-500/60'
+              : 'bg-dark-200/40 backdrop-blur-sm hover:bg-dark-200/60 border border-dark-300/80 hover:border-gray-400/40'
         }
-        ${(isLive && !isParticipating) || (isUpcoming && !isParticipating)
-          ? '' 
-          : isCancelled ? 'border border-dark-300/80 hover:border-red-500/40' : isLive ? 'border border-dark-300/80 hover:border-green-500/40' : isUpcoming ? 'border border-dark-300/80 hover:border-blue-500/40' : 'border border-dark-300/80 hover:border-gray-400/40'
-        }
-        transition-all duration-300 rounded-lg py-2
+        transition-all duration-300 rounded-tl-none rounded-tr-none rounded-bl-lg rounded-br-lg py-2
         font-cyber tracking-wide
       `}
       >
@@ -188,7 +194,7 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
         {/* Very subtle border glow */}
         <div
           className={`
-          absolute -inset-[1px] rounded-lg blur-sm 
+          absolute -inset-[1px] rounded-tl-none rounded-tr-none rounded-bl-lg rounded-br-lg blur-sm 
           bg-gradient-to-r 
           ${(isLive && !isParticipating) || (isUpcoming && !isParticipating)
             ? 'from-purple-400/0 via-purple-300/40 to-purple-400/0'
@@ -237,34 +243,17 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
           >
             {/* For active contests, we only have single button with clear text */}
             {isLive
-              ? (isParticipating ? "ENTER DUEL LOBBY" : "SPECTATE LIVE")
+              ? (isParticipating ? "LIVE" : "SPECTATE")
               : isUpcoming
-                ? (isParticipating ? "ALREADY ENTERED" : "VIEW CONTEST")
+                ? (isParticipating ? "UPDATE PORTFOLIO" : "DETAILS")
                 : isCancelled
-                  ? "VIEW DETAILS"
+                  ? "DETAILS"
                   : isComplete
-                    ? (isParticipating ? "MY RESULTS" : "VIEW RESULTS")
-                    : "VIEW DETAILS" /* Fallback */
+                    ? (isParticipating ? "MY RESULTS" : "RESULTS")
+                    : "DETAILS" /* Fallback */
             }
           </span>
 
-          <svg
-            className={`${(isLive && !isParticipating) || (isUpcoming && !isParticipating) 
-              ? 'text-purple-200 group-hover:text-white' 
-              : 'text-gray-400'
-            } ${(isLive && !isParticipating) || (isUpcoming && !isParticipating) 
-              ? '' 
-              : isLive ? 'group-hover:text-green-400' : isUpcoming ? 'group-hover:text-blue-400' : isCancelled ? 'group-hover:text-red-400' : 'group-hover:text-gray-300'
-            } w-5 h-5 transition-colors duration-300`}
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-          >
-            <path d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
         </div>
 
         {/* Subtle shine effect */}

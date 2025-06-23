@@ -32,6 +32,7 @@ interface FeatureCardProps {
   gradient?: string; // Compatibility with Features.tsx
   isUpcoming?: boolean;
   className?: string;
+  isShowcase?: boolean; // NEW: Theater mode styling
 }
 
 // Default feature illustrations if none provided
@@ -75,6 +76,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   animation,
   isUpcoming = false,
   className = "",
+  isShowcase = false,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -192,31 +194,35 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
     <MeasureRender id="FeatureCard" logThreshold={5}>
       <>
       {/* Feature card container */}
-      <div ref={cardRef} className={`relative h-full bg-dark-300 rounded-xl overflow-hidden border border-gray-700 hover:border-brand-400/50 transition-all duration-300 cursor-pointer ${className}`} onClick={toggleModal}>
+      <div 
+        ref={cardRef} 
+        className={`relative h-full bg-dark-300 rounded-xl overflow-hidden border border-gray-700 hover:border-brand-400/50 transition-all duration-300 ${!isShowcase ? 'cursor-pointer' : ''} ${className}`} 
+        onClick={!isShowcase ? toggleModal : undefined}
+      >
         
         {/* Feature card content */}
         <motion.div 
-          className="relative z-10 h-full cursor-pointer group"
+          className={`relative z-10 h-full group ${!isShowcase ? 'cursor-pointer' : ''}`}
           initial={{ opacity: 0, y: 20 }}
           animate={isVisible && !prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          whileHover={!prefersReducedMotion ? { y: -4, transition: { duration: 0.2 } } : {}}
+          whileHover={!prefersReducedMotion && !isShowcase ? { y: -4, transition: { duration: 0.2 } } : {}}
         >
           
-          {/* Dramatic Feature Card - Complete redesign with visual impact */}
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900/90 to-black border border-gray-800/40 h-full group-hover:border-purple-500/40 transition-all duration-300 shadow-lg group-hover:shadow-xl flex flex-col">
+                     {/* Dramatic Feature Card - Different styling for showcase mode */}
+           <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900/90 to-black border border-gray-800/40 h-full transition-all duration-300 shadow-lg flex flex-col ${!isShowcase ? 'group-hover:border-purple-500/40 group-hover:shadow-xl' : 'border-brand-400/30 shadow-2xl shadow-brand-400/20'}`}>
             
-            {/* Dynamic Feature Illustration/Banner - Mobile optimized aspect ratio */}
-            <div className="relative aspect-[3/2] sm:aspect-square w-full overflow-hidden shrink-0">
+                         {/* Dynamic Feature Illustration/Banner - Proper height for showcase theater */}
+             <div className={`relative w-full overflow-hidden shrink-0 ${isShowcase ? 'h-48 lg:h-64 xl:h-80' : 'aspect-[3/2] sm:aspect-square'}`}>
               
               {/* Gradient overlay for consistent branding & readability */}
               <div className={`absolute inset-0 bg-gradient-to-br from-gray-900/50 via-gray-900/30 to-gray-900/70 z-10`}></div>
               
-              {/* Animated energy effect - Reduced on mobile */}
+              {/* Animated energy effect - Enhanced for showcase */}
               <motion.div 
-                className={`absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent z-20 hidden sm:block`}
+                className={`absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent z-20 ${isShowcase ? 'block' : 'hidden sm:block'}`}
                 animate={{ x: ['-100%', '100%'] }}
-                transition={{ duration: 4, repeat: Infinity, repeatDelay: 3 }}
+                transition={{ duration: isShowcase ? 3 : 4, repeat: Infinity, repeatDelay: isShowcase ? 2 : 3 }}
               />
               
               {/* Feature image with fallback */}
@@ -247,11 +253,11 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
                   {/* Stylized abstract pattern */}
                   <div className="absolute inset-0 opacity-20 bg-[linear-gradient(45deg,transparent_25%,rgba(68,0,255,0.1)_50%,transparent_75%)] bg-[length:250%_250%] animate-shine"></div>
                   
-                  {/* Centered icon as fallback if no image */}
+                  {/* Centered icon as fallback if no image - Smaller in showcase to prioritize text */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-30">
                     
                     {/* Centered icon */}
-                    <div className="text-white transform scale-[1.5] sm:scale-[2]">
+                    <div className={`text-white transform ${isShowcase ? 'scale-[2] md:scale-[2.5]' : 'scale-[1.5] sm:scale-[2]'}`}>
                       {Icon}
                     </div>
 
@@ -264,66 +270,100 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/60 to-transparent z-20"></div>
               
               {/* Bottom content reveal gradient */}
-              <div className="absolute bottom-0 left-0 right-0 h-8 sm:h-12 bg-gradient-to-t from-gray-900 via-gray-900/95 to-transparent z-20"></div>
+              <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 via-gray-900/95 to-transparent z-20 ${isShowcase ? 'h-8' : 'h-8 sm:h-12'}`}></div>
               
-              {/* More/When button in top right corner */}
-              <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-30">
-                <motion.button
-                  className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[10px] sm:text-xs font-bold uppercase tracking-wide border border-white/20`}
-                  whileHover={{ 
-                    scale: 1.05,
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    borderColor: 'rgba(255,255,255,0.4)'
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleModal();
-                  }}
-                >
-                  {isUpcoming ? 'When?' : 'More'}
-                </motion.button>
-              </div>
+              {/* More/When button - Only show in grid mode, not showcase */}
+              {!isShowcase && (
+                <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-30">
+                  <motion.button
+                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[10px] sm:text-xs font-bold uppercase tracking-wide border border-white/20`}
+                    whileHover={{ 
+                      scale: 1.05,
+                      backgroundColor: 'rgba(0,0,0,0.8)',
+                      borderColor: 'rgba(255,255,255,0.4)'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleModal();
+                    }}
+                  >
+                    {isUpcoming ? 'When?' : 'More'}
+                  </motion.button>
+                </div>
+              )}
             </div>
             
-            {/* Content section with bold typography and integrated CTA - Mobile optimized padding */}
-            <div className="relative px-2 sm:px-3 py-1.5 sm:py-3 z-10 flex-grow flex flex-col">
+            {/* Content section - Prioritize top content, allow bottom overflow */}
+            <div className={`relative z-10 flex-grow flex flex-col ${isShowcase ? 'px-4 md:px-6 py-3 md:py-4 overflow-hidden' : 'px-2 sm:px-3 py-1.5 sm:py-3'}`}>
               
-              {/* Feature title (prominent) - Mobile optimized size */}
-              <h3 className={`text-sm sm:text-lg md:text-xl font-bold font-russo-one mb-0.5 sm:mb-2 text-white tracking-wide relative leading-tight`}>
+              {/* Feature title - Always visible at top */}
+              <h3 className={`font-bold font-russo-one text-white tracking-wide relative leading-tight flex-shrink-0 ${isShowcase ? 'text-xl md:text-2xl mb-3' : 'text-sm sm:text-lg md:text-xl mb-0.5 sm:mb-2'}`}>
                 {title}
                 
                 {/* Animated underline effect */}
                 <motion.div 
-                  className={`absolute -bottom-1 left-0 h-[2px] w-0 group-hover:w-full bg-gradient-to-r ${colorScheme.primary}`}
-                  initial={{ width: 0 }}
-                  whileHover={{ width: '100%' }}
+                  className={`absolute -bottom-1 left-0 h-[2px] bg-gradient-to-r ${colorScheme.primary} ${isShowcase ? 'w-full' : 'w-0 group-hover:w-full'}`}
+                  initial={{ width: isShowcase ? '100%' : 0 }}
+                  whileHover={!isShowcase ? { width: '100%' } : {}}
                   transition={{ duration: 0.3 }}
                 />
 
               </h3>
               
-              {/* Feature description - Mobile optimized sizing */}
-              <p className="text-gray-300 leading-tight sm:leading-snug font-sans text-[10px] sm:text-sm flex-grow mb-1 sm:mb-2">
+              {/* Feature description - Always visible, flexible height */}
+              <p className={`text-gray-300 leading-snug font-sans flex-shrink-0 ${isShowcase ? 'text-base md:text-lg mb-3' : 'text-[10px] sm:text-sm leading-tight sm:leading-snug mb-1 sm:mb-2'}`}>
                 {description}
               </p>
 
-              {/* Removed inline button - now in top right corner */}
+              {/* Status badge - High priority, always visible */}
+              {isUpcoming && (
+                <div className={`flex-shrink-0 ${isShowcase ? 'mb-3' : 'mb-2'}`}>
+                  <span className={`bg-blue-600/70 text-blue-100 font-bold uppercase tracking-wide rounded-sm font-sans backdrop-blur-sm border border-blue-400/30 inline-block ${isShowcase ? 'px-3 py-1 text-sm' : 'px-2 py-1 text-xs'}`}>
+                    Coming Soon
+                  </span>
+                </div>
+              )}
 
+              {/* Extended description - This can be cut off at bottom if needed */}
+              {isShowcase && extendedDescription && (
+                <div className="flex-grow overflow-hidden">
+                  <div className="text-gray-400 leading-relaxed space-y-2 text-sm md:text-base">
+                    {extendedDescription.split('\n').map((paragraph, idx) => (
+                      <p key={idx}>
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                  {/* Fade out gradient at bottom to indicate more content */}
+                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent pointer-events-none"></div>
+                </div>
+              )}
             </div>
+
+            {/* Animation section - Can be cut off if needed */}
+            {isShowcase && animation && FEATURE_FLAGS.SHOW_FEATURE_ANIMATIONS && (
+              <div className="relative flex-shrink-0 p-3 md:p-4 bg-gray-900/20 border-t border-gray-700 overflow-hidden max-h-32 md:max-h-40">
+                <div className="w-full h-full overflow-hidden rounded-lg">
+                  {animation}
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
         
-        {/* Accent line animation on hover for compact card */}
-        <motion.div 
-          className={`absolute bottom-0 left-0 h-1 bg-gradient-to-r ${colorScheme.primary} w-0 group-hover:w-full transition-all duration-700 ${isModalOpen ? 'hidden' : ''}`}
-          initial={{ width: 0 }}
-          whileHover={{ width: "100%" }}
-        />
+        {/* Accent line animation - Only for grid mode */}
+        {!isShowcase && (
+          <motion.div 
+            className={`absolute bottom-0 left-0 h-1 bg-gradient-to-r ${colorScheme.primary} w-0 group-hover:w-full transition-all duration-700 ${isModalOpen ? 'hidden' : ''}`}
+            initial={{ width: 0 }}
+            whileHover={{ width: "100%" }}
+          />
+        )}
 
       </div>
 
       {/* Expandable card (overlay when expanded) - MOVED OUTSIDE */}
-      {portalRoot && ReactDOM.createPortal(
+      {!isShowcase && portalRoot && ReactDOM.createPortal(
         <AnimatePresence>
           {/* Card expanded view */}
           {isModalOpen && (
