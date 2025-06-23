@@ -11,27 +11,42 @@ export function CyberGrid() { // Removed children prop
   const isPerformanceMode = usePerformanceMode();
   
   useEffect(() => {
+    let rafId: number | null = null;
+    let cachedHeight = window.innerHeight;
+    
     const updateHeight = () => {
-      const height = Math.max(
-        document.body.scrollHeight,
-        document.body.offsetHeight,
-        document.documentElement.clientHeight,
-        document.documentElement.scrollHeight,
-        document.documentElement.offsetHeight,
-        window.innerHeight
-      );
-      setDocumentHeight(`${height}px`);
+      if (rafId) return;
+      
+      rafId = requestAnimationFrame(() => {
+        const height = Math.max(
+          document.documentElement.scrollHeight,
+          document.documentElement.clientHeight,
+          window.innerHeight
+        );
+        
+        if (Math.abs(height - cachedHeight) > 10) {
+          cachedHeight = height;
+          setDocumentHeight(`${height}px`);
+        }
+        rafId = null;
+      });
     };
     
     updateHeight();
-    window.addEventListener('resize', updateHeight);
-    // Also update when content changes
-    const observer = new MutationObserver(updateHeight);
-    observer.observe(document.body, { childList: true, subtree: true });
+    
+    const resizeObserver = new ResizeObserver(() => {
+      updateHeight();
+    });
+    
+    resizeObserver.observe(document.documentElement);
+    resizeObserver.observe(document.body);
+    
+    window.addEventListener('resize', updateHeight, { passive: true });
     
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
       window.removeEventListener('resize', updateHeight);
-      observer.disconnect();
+      resizeObserver.disconnect();
     };
   }, []);
 
@@ -45,7 +60,7 @@ export function CyberGrid() { // Removed children prop
          }}>
       {/* Grid overlay - responsive sizing based on viewport */}
       <div 
-        className="absolute inset-0 opacity-10"
+        className="absolute inset-0 opacity-10 will-change-transform"
         style={{
           backgroundImage: 'linear-gradient(#9D4EDD 1px, transparent 1px), linear-gradient(90deg, #9D4EDD 1px, transparent 1px)',
           backgroundSize: 'clamp(30px, 4vw, 60px) clamp(30px, 4vw, 60px)',
@@ -77,38 +92,43 @@ export function CyberGrid() { // Removed children prop
 }
 
 function FloatingParticles() {
-  // Use CSS viewport units for truly dynamic, responsive positioning
-  const getInitialX = () => Math.random() * 100; // 0-100% of viewport width
-  const getInitialY = () => -5; // Start slightly above viewport
-  const getAnimateY = () => 105; // End slightly below viewport (105vh)
-  const getAnimateX = (_i: number) => Math.random() * 100; // Random position across viewport width
-
+  // Reduced particle count and optimized animations
+  const particleCount = 12;
+  
   return (
     <div className="absolute inset-0 pointer-events-none">
-      {Array.from({ length: 30 }).map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-1 h-1 bg-mauve-light rounded-full opacity-30"
-          style={{
-            left: `${getInitialX()}vw`,
-            top: `${getInitialY()}vh`,
-          }}
-          animate={{
-            top: `${getAnimateY()}vh`,
-            left: `${getAnimateX(i)}vw`,
-          }}
-          transition={{
-            duration: Math.random() * 5 + 5,
-            repeat: Infinity,
-            ease: "linear",
-            left: {
-              duration: Math.random() * 3 + 2,
+      {Array.from({ length: particleCount }).map((_, i) => {
+        const initialX = Math.random() * 100;
+        const animateX = Math.random() * 100;
+        const duration = Math.random() * 8 + 7;
+        const horizontalDuration = Math.random() * 4 + 3;
+        
+        return (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-mauve-light rounded-full opacity-30 will-change-transform"
+            style={{
+              left: `${initialX}vw`,
+              top: '-5vh',
+            }}
+            animate={{
+              top: '105vh',
+              left: `${animateX}vw`,
+            }}
+            transition={{
+              duration: duration,
               repeat: Infinity,
-              ease: "easeInOut",
-            }
-          }}
-        />
-      ))}
+              ease: "linear",
+              delay: i * 0.5,
+              left: {
+                duration: horizontalDuration,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
