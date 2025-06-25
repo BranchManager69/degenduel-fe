@@ -16,13 +16,13 @@ import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
 import { TokenSearchFixed } from "../../../components/common/TokenSearchFixed";
 import { ContestChat } from "../../../components/contest-chat/ContestChat";
+import { FocusedParticipantsList } from "../../../components/contest-detail/FocusedParticipantsList";
 import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
 import { EnhancedPortfolioDisplay } from "../../../components/contest-lobby/EnhancedPortfolioDisplay";
 import { LiveTradeActivity } from "../../../components/contest-lobby/LiveTradeActivity";
 import { MultiParticipantChartV2 } from "../../../components/contest-lobby/MultiParticipantChartV2";
 
 import { ContestLobbyHeader } from "../../../components/contest-lobby/ContestLobbyHeader";
-import { PrizeDistributionCard } from "../../../components/contest-lobby/PrizeDistributionCard";
 import { UserPerformanceCard } from "../../../components/contest-lobby/UserPerformanceCard";
 import { Button } from "../../../components/ui/Button";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
@@ -30,10 +30,83 @@ import { useContestLobbyWebSocket } from "../../../hooks/websocket/topic-hooks/u
 import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/useContestParticipants";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 // Removed usePortfolio - implementing manual portfolio fetching
+import { PrizeStructure } from "../../../components/contest-detail/PrizeStructure";
 import { useCustomToast } from "../../../components/toast";
 import { formatCurrency } from "../../../lib/utils";
 import { ContestViewData, SearchToken } from "../../../types";
 import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
+
+// Under Construction Overlay Component
+const UnderConstructionOverlay: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <div className="relative">
+      {/* Content (dimmed) */}
+      <div className="opacity-30 pointer-events-none select-none">
+        {children}
+      </div>
+      
+      {/* Construction Overlay */}
+      <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-lg">
+        <div className="text-center p-8 max-w-md">
+          {/* Animated Construction Icon */}
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="text-8xl mb-6"
+          >
+            🚧
+          </motion.div>
+          
+          {/* Construction Banner */}
+          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-6 py-3 rounded-lg font-bold text-xl mb-4 shadow-2xl border-4 border-black transform -rotate-1">
+            <div className="flex items-center justify-center gap-2">
+              <span>⚠️</span>
+              <span>UNDER CONSTRUCTION</span>
+              <span>⚠️</span>
+            </div>
+          </div>
+          
+          {/* Striped Warning Pattern */}
+          <div className="bg-gradient-to-r from-yellow-400 via-black to-yellow-400 h-3 mb-4 rounded-full opacity-80"
+               style={{
+                 backgroundImage: `repeating-linear-gradient(
+                   45deg,
+                   #fbbf24 0px,
+                   #fbbf24 10px,
+                   #000000 10px,
+                   #000000 20px
+                 )`
+               }}>
+          </div>
+          
+          {/* Message */}
+          <div className="text-gray-300 text-sm">
+            In-contest trading is coming soon.
+            <br />
+            Enjoy DFS-style portfolio contests, live now.
+          </div>
+          
+          {/* Animated Dots */}
+          <div className="flex justify-center gap-2 mt-4">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                transition={{ 
+                  duration: 1.5, 
+                  repeat: Infinity, 
+                  delay: i * 0.2,
+                  ease: "easeInOut"
+                }}
+                className="w-2 h-2 bg-yellow-400 rounded-full"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Trading Panel Component
 const TradingPanel: React.FC<{
@@ -277,6 +350,9 @@ export const ContestLobbyV2: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   const [activeTab, setActiveTab] = useState<'trade' | 'leaderboard' | 'activity'>('leaderboard');
+  
+  // Chart hover state - for coordinating between ParticipantsList and MultiParticipantChart
+  const [hoveredParticipant, setHoveredParticipant] = useState<string | null>(null);
   
   // Switch away from Trade tab if user logs out
   useEffect(() => {
@@ -804,73 +880,103 @@ export const ContestLobbyV2: React.FC = () => {
             >
               {/* Trade Tab */}
               {activeTab === 'trade' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2">
-                    {user ? (
-                      <>
-                        <TradingPanel
-                          contestId={contestIdFromParams!}
-                          portfolio={portfolio}
-                          onTradeComplete={refreshPortfolio}
-                        />
-                        
-                        {/* Enhanced Portfolio Display */}
-                        <div className="mt-6">
+                <div className="space-y-6">
+                  {user ? (
+                    <>
+                      {/* 1. Your Performance Card - PIZZAZZ! */}
+                      {userPerformance && (
+                        <UserPerformanceCard userPerformance={{
+                          rank: userPerformance.rank,
+                          portfolio_value: userPerformance.portfolio_value,
+                          performance_percentage: userPerformance.performance_percentage,
+                          prize_awarded: userPerformance.prize_awarded || undefined
+                        }} />
+                      )}
+                      
+                      {/* 2. Under Construction Trading Panel */}
+                      <UnderConstructionOverlay>
+                        <div className="space-y-6">
+                          <TradingPanel
+                            contestId={contestIdFromParams!}
+                            portfolio={portfolio}
+                            onTradeComplete={refreshPortfolio}
+                          />
+                          
+                          {/* Enhanced Portfolio Display */}
                           <EnhancedPortfolioDisplay
                             contestId={contestIdFromParams!}
                             walletAddress={user.wallet_address}
                             nickname={user.nickname || 'You'}
                           />
                         </div>
-                      </>
-                    ) : (
-                      /* Spectator Mode - Show Participants List */
+                      </UnderConstructionOverlay>
+                      
+                      {/* 3. Prize Structure - WAY BETTER! */}
+                      <PrizeStructure
+                        prizePool={parseFloat(contest.prizePool || '0')}
+                        entryFee={parseFloat(contest.entryFee || '0')}
+                        maxParticipants={contest.settings?.maxParticipants || 0}
+                        currentParticipants={contest.participantCount || 0}
+                        contestType={contest.settings?.difficulty || ''}
+                      />
+                      
+                      {/* 4. Participants List with Live Prizes */}
                       <ParticipantsList 
                         participants={effectiveParticipants} 
                         contestStatus="live"
+                        prizePool={parseFloat(contest.prizePool || '0')}
+                        contestId={contestIdFromParams!}
+                        onParticipantHover={setHoveredParticipant}
+                        hoveredParticipant={hoveredParticipant}
                       />
-                    )}
-                  </div>
-                  <div className="space-y-6">
-                    {userPerformance && (
-                      <UserPerformanceCard userPerformance={{
-                        rank: userPerformance.rank,
-                        portfolio_value: userPerformance.portfolio_value,
-                        performance_percentage: userPerformance.performance_percentage,
-                        prize_awarded: userPerformance.prize_awarded || undefined
-                      }} />
-                    )}
-                    
-                    {/* Prize Distribution Card */}
-                    <PrizeDistributionCard prizePool={contest.prizePool || '0'} />
-                    
-                    {/* Participants List - only show in right column when logged in */}
-                    {user && (
-                      <ParticipantsList 
-                        participants={effectiveParticipants} 
-                        contestStatus="live"
-                      />
-                    )}
-                  </div>
+                    </>
+                  ) : (
+                    /* Spectator Mode - Show Participants List */
+                    <ParticipantsList 
+                      participants={effectiveParticipants} 
+                      contestStatus="live"
+                      contestId={contestIdFromParams!}
+                      onParticipantHover={setHoveredParticipant}
+                      hoveredParticipant={hoveredParticipant}
+                    />
+                  )}
                 </div>
               )}
 
               {/* Leaderboard Tab */}
               {activeTab === 'leaderboard' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2">
-                    <MultiParticipantChartV2 
-                      contestId={contestIdFromParams!}
+                <div className="space-y-6">
+                  {/* Focused Participants View - New innovative interface */}
+                  <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
+                    <FocusedParticipantsList 
                       participants={effectiveParticipants}
-                      timeInterval="1h"
-                      maxParticipants={effectiveParticipants.length}
+                      contestStatus="live"
+                      prizePool={parseFloat(contest.prizePool || '0')}
+                      contestId={contestIdFromParams!}
                     />
                   </div>
-                  <div className="space-y-6">
-                    <ParticipantsList 
-                      participants={effectiveParticipants} 
-                      contestStatus="live"
-                    />
+                  
+                  {/* Main Grid Layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2">
+                      <MultiParticipantChartV2 
+                        contestId={contestIdFromParams!}
+                        participants={effectiveParticipants}
+                        timeInterval="1h"
+                        maxParticipants={effectiveParticipants.length}
+                        hoveredParticipant={hoveredParticipant}
+                      />
+                    </div>
+                    <div className="space-y-6">
+                      <ParticipantsList 
+                        participants={effectiveParticipants} 
+                        contestStatus="live"
+                        prizePool={parseFloat(contest.prizePool || '0')}
+                        contestId={contestIdFromParams!}
+                        onParticipantHover={setHoveredParticipant}
+                        hoveredParticipant={hoveredParticipant}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -890,6 +996,10 @@ export const ContestLobbyV2: React.FC = () => {
                       <ParticipantsList 
                         participants={effectiveParticipants} 
                         contestStatus="live"
+                        prizePool={parseFloat(contest.prizePool || '0')}
+                        contestId={contestIdFromParams!}
+                        onParticipantHover={setHoveredParticipant}
+                        hoveredParticipant={hoveredParticipant}
                       />
                     </div>
                   </div>

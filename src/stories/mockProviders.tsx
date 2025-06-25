@@ -1,7 +1,165 @@
 import * as React from 'react';
 import { ReactNode } from 'react';
 import { UnifiedWebSocketProvider } from '../contexts/UnifiedWebSocketContext';
-// import { AuthContextType } from '../contexts/AuthContext'; // Deleted context, commenting out import
+import { AuthMethod, TokenType } from '../services';
+import { User } from '../types/user';
+
+// Mock UnifiedAuthContext to match the real interface exactly
+interface MockUnifiedAuthContextType {
+  // Auth status
+  loading: boolean;
+  isAuthenticated: boolean;
+  user: User | null;
+  activeMethod: AuthMethod | null;
+  error: Error | null;
+  
+  // Authentication methods
+  loginWithWallet: (walletAddress: string, signMessage: (message: Uint8Array) => Promise<any>) => Promise<User>;
+  logout: () => Promise<void>;
+  
+  // Token management
+  getToken: (type?: TokenType) => Promise<string | null>;
+  getAccessToken: () => Promise<string | null>;
+  
+  // Account linking
+  linkTwitter: () => Promise<string>;
+  linkDiscord: () => Promise<string>;
+  linkTelegram: () => Promise<string>;
+  linkPasskey: () => Promise<void>;
+  
+  // Auth method status - use direct property checks
+  isWalletAuth: boolean;
+  isTwitterAuth: boolean;
+  isTwitterLinked: boolean;
+  isDiscordAuth: boolean;
+  isDiscordLinked: boolean;
+  isTelegramAuth: boolean;
+  isTelegramLinked: boolean;
+  isPasskeyAuth: boolean;
+  isPasskeyLinked: boolean;
+  
+  // Auth refresh
+  checkAuth: () => Promise<boolean>;
+  hardReset: () => void;
+}
+
+// Mock user for stories
+const mockUser: User = {
+  id: 'mock-user-123',
+  username: 'DegenTester',
+  nickname: 'DegenTester',
+  wallet_address: 'mockwallet123456789',
+  email: 'tester@degenduel.com',
+  role: 'user',
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  auth_method: 'wallet' as AuthMethod,
+  profile_image_url: undefined,
+  twitter_id: undefined,
+  discord_id: undefined,
+  telegram_id: undefined,
+  passkey_id: undefined,
+  is_admin: false,
+  is_superadmin: false,
+  banned: false,
+  stats: {
+    total_contests: 12,
+    contests_won: 3,
+    win_rate: 0.25,
+    total_winnings: 150.75,
+    degen_level: 5,
+    degen_points: 1250
+  }
+};
+
+// Mock auth context value
+const mockAuthContextValue: MockUnifiedAuthContextType = {
+  // Auth status
+  loading: false,
+  isAuthenticated: true, // Set to true for stories
+  user: mockUser,
+  activeMethod: 'wallet' as AuthMethod,
+  error: null,
+  
+  // Authentication methods
+  loginWithWallet: async () => {
+    console.log('[Storybook] Mock loginWithWallet called');
+    return mockUser;
+  },
+  logout: async () => {
+    console.log('[Storybook] Mock logout called');
+  },
+  
+  // Token management
+  getToken: async () => {
+    console.log('[Storybook] Mock getToken called');
+    return 'mock-jwt-token';
+  },
+  getAccessToken: async () => {
+    console.log('[Storybook] Mock getAccessToken called');
+    return 'mock-access-token';
+  },
+  
+  // Account linking
+  linkTwitter: async () => {
+    console.log('[Storybook] Mock linkTwitter called');
+    return 'mock-twitter-auth-url';
+  },
+  linkDiscord: async () => {
+    console.log('[Storybook] Mock linkDiscord called');
+    return 'mock-discord-auth-url';
+  },
+  linkTelegram: async () => {
+    console.log('[Storybook] Mock linkTelegram called');
+    return 'mock-telegram-auth-url';
+  },
+  linkPasskey: async () => {
+    console.log('[Storybook] Mock linkPasskey called');
+  },
+  
+  // Auth method status
+  isWalletAuth: true,
+  isTwitterAuth: false,
+  isTwitterLinked: false,
+  isDiscordAuth: false,
+  isDiscordLinked: false,
+  isTelegramAuth: false,
+  isTelegramLinked: false,
+  isPasskeyAuth: false,
+  isPasskeyLinked: false,
+  
+  // Auth refresh
+  checkAuth: async () => {
+    console.log('[Storybook] Mock checkAuth called');
+    return true;
+  },
+  hardReset: () => {
+    console.log('[Storybook] Mock hardReset called');
+  }
+};
+
+// Create the mock context - this needs to have the same name as the real one for module replacement to work
+const UnifiedAuthContext = React.createContext<MockUnifiedAuthContextType | undefined>(undefined);
+
+// Mock UnifiedAuthProvider that mimics the real one
+export const MockUnifiedAuthProvider = ({ children }: { children: ReactNode }) => {
+  return (
+    <UnifiedAuthContext.Provider value={mockAuthContextValue}>
+      {children}
+    </UnifiedAuthContext.Provider>
+  );
+};
+
+// Mock useAuth hook that matches the real one - this is the key piece
+export const useAuth = (): MockUnifiedAuthContextType => {
+  const context = React.useContext(UnifiedAuthContext);
+  
+  if (context === undefined) {
+    throw new Error('useAuth must be used within a UnifiedAuthProvider');
+  }
+  
+  return context;
+};
 
 // Define type instead of importing to avoid import errors
 // This mock AuthContextType might need to be updated to align with UnifiedAuthContextType if stores use it.
@@ -33,16 +191,16 @@ interface MockAuthContextType {
 const AuthContext = React.createContext<MockAuthContextType | undefined>(undefined); // Use local MockAuthContextType
 
 const mockAuthContext: MockAuthContextType = {
-  user: null,
+  user: mockUser,
   loading: false,
   error: null,
-  isAuthenticated: () => false,
-  activeAuthMethod: null,
+  isAuthenticated: () => true,
+  activeAuthMethod: 'wallet',
   authMethods: {},
-  isWalletConnected: false,
-  walletAddress: undefined,
+  isWalletConnected: true,
+  walletAddress: mockUser.wallet_address,
   isConnecting: false,
-  isWalletAuth: () => false,
+  isWalletAuth: () => true,
   isPrivyAuth: () => false,
   isTwitterAuth: () => false,
   isPrivyLinked: () => false,
@@ -51,9 +209,9 @@ const mockAuthContext: MockAuthContextType = {
   disconnectWallet: () => console.log('disconnectWallet called'),
   isSuperAdmin: () => false,
   isAdmin: () => false,
-  isFullyConnected: () => false,
+  isFullyConnected: () => true,
   checkAuth: () => console.log('checkAuth called'),
-  getAccessToken: async () => null
+  getAccessToken: async () => 'mock-token'
 };
 
 export const MockAuthProvider = ({ children }: { children: ReactNode }) => {
@@ -153,14 +311,14 @@ export const MockTwitterAuthProvider = ({ children }: { children: ReactNode }) =
   );
 };
 
-// Mock for the useStore hook - no user by default
+// Mock for the useStore hook
 export const createMockUseStore = () => {
   if (typeof window !== 'undefined') {
     (window as any).useStore = () => ({
-      user: null, // No user, so we see login options
+      user: mockUser,
       setUser: () => {},
-      isWalletConnected: false,
-      walletAddress: undefined,
+      isWalletConnected: true,
+      walletAddress: mockUser.wallet_address,
       maintenanceMode: false
     });
   }
@@ -175,14 +333,17 @@ const MockWebSocketProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Combined provider for stories
+// Combined provider for stories - CRITICAL: UnifiedAuthProvider must be the outermost auth provider
 export const AllProviders = ({ children }: { children: ReactNode }) => {
   // Setup the mocks
   React.useEffect(() => {
     createMockUseStore();
     
-    // Make sure we have hooks available globally
+    // Override the real useAuth with our mock at the global level
     if (typeof window !== 'undefined') {
+      // This is the critical part - we need to replace the module-level import
+      (window as any).__STORYBOOK_MOCK_AUTH__ = mockAuthContextValue;
+      
       // Mock auth context
       (window as any).useAuthContext = () => mockAuthContext;
       
@@ -219,13 +380,15 @@ export const AllProviders = ({ children }: { children: ReactNode }) => {
 
   return (
     <MockWebSocketProvider>
-      <MockAuthProvider>
-        <MockPrivyAuthProvider>
-          <MockTwitterAuthProvider>
-            {children}
-          </MockTwitterAuthProvider>
-        </MockPrivyAuthProvider>
-      </MockAuthProvider>
+      <MockUnifiedAuthProvider>
+        <MockAuthProvider>
+          <MockPrivyAuthProvider>
+            <MockTwitterAuthProvider>
+              {children}
+            </MockTwitterAuthProvider>
+          </MockPrivyAuthProvider>
+        </MockAuthProvider>
+      </MockUnifiedAuthProvider>
     </MockWebSocketProvider>
   );
 };

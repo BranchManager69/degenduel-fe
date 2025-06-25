@@ -98,9 +98,6 @@ export const TokenVerse: React.FC = () => {
     sceneRef.current.updateTokenData(validTokens);
   }, [tokens, isConnected, lastUpdate]);
 
-  if (!enabled) {
-    return null;
-  }
 
   return (
     <div

@@ -334,12 +334,14 @@ const MobileContestDetailPage: React.FC<MobileContestDetailPageProps> = ({
             <h2 className="text-lg font-bold text-gray-300">Participants</h2>
             <ParticipantsList 
               participants={contest.participants!.map(p => ({
-                address: p.address,
+                wallet_address: p.address,
                 nickname: p.username || `User-${p.address.slice(0, 6)}`,
-                score: p.score
+                portfolio_value: "1000",
+                performance_percentage: p.score?.toString() || "0"
               }))}
               contestStatus={displayStatus === "pending" ? "upcoming" : 
                            displayStatus === "active" ? "live" : "completed"}
+              contestId="123"
             />
           </div>
         </div>

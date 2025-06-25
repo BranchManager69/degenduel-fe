@@ -84,6 +84,7 @@ import "./styles/color-schemes.css";
 import { useMigratedAuth } from "./hooks/auth/useMigratedAuth";
 import { InviteSystemProvider } from './hooks/social/legacy/useInviteSystem'; // ? test
 import { useScrollbarVisibility } from "./hooks/ui/useScrollbarVisibility";
+import { useBackgroundCycler } from './hooks/useBackgroundCycler';
 
 
 // Config - Prelaunch mode
@@ -225,6 +226,9 @@ const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ child
 // App entry
 export const App: React.FC = () => {
   useScrollbarVisibility();
+  
+  // Enable background cycling with 'B' key
+  useBackgroundCycler();
   
   // Memoize searchParams to prevent infinite re-renders caused by creating new URLSearchParams on every render
   const searchParams = React.useMemo(() => new URLSearchParams(window.location.search), []);

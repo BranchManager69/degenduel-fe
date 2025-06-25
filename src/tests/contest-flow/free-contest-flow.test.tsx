@@ -13,17 +13,17 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
-    cleanupTestContests,
-    ContestFlowTestWrapper,
-    createTestContest,
-    performanceMonitor,
-    TEST_CONTEST_TEMPLATE
+  cleanupTestContests,
+  ContestFlowTestWrapper,
+  createTestContest,
+  performanceMonitor,
+  TEST_CONTEST_TEMPLATE
 } from './setup';
 
 // Import the pages we'll be testing
 import { ContestBrowser } from '../../pages/public/contests/ContestBrowserPage';
 import { ContestDetails } from '../../pages/public/contests/ContestDetailPage';
-import { ContestLobby } from '../../pages/public/contests/ContestLobbyPage';
+import { ContestLobbyV2 } from '../../pages/public/contests/ContestLobbyV2';
 import { ContestResults } from '../../pages/public/contests/ContestResultsPage';
 import { PortfolioTokenSelectionPage } from '../../pages/public/contests/PortfolioTokenSelectionPage';
 
@@ -299,7 +299,7 @@ describe('Free Contest Flow E2E', () => {
       
       render(
         <ContestFlowTestWrapper>
-          <ContestLobby />
+          <ContestLobbyV2 />
         </ContestFlowTestWrapper>
       );
 
@@ -367,7 +367,7 @@ describe('Free Contest Flow E2E', () => {
     it('should handle WebSocket disconnection gracefully', async () => {
       render(
         <ContestFlowTestWrapper>
-          <ContestLobby />
+          <ContestLobbyV2 />
         </ContestFlowTestWrapper>
       );
 
