@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { useBackgroundChangeListener } from "../../hooks/useBackgroundCycler";
 
 // Import background scenes
 import { AmbientMarketData } from "./AmbientMarketData";
@@ -41,6 +42,12 @@ type MixBlendMode =
 export const BackgroundEffects: React.FC = () => {
   const { uiDebug } = useStore();
   const { settings } = useSystemSettings();
+  const [, forceUpdate] = useState({});
+  
+  // Listen for background changes
+  useBackgroundChangeListener(() => {
+    forceUpdate({});
+  });
 
   // Get background settings, with fallback to defaults
   const backgroundSettings = extractBackgroundSettings(settings);

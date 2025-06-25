@@ -31,9 +31,9 @@ import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/use
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 import { getContestImageUrl } from "../../../lib/imageUtils";
 import {
-  formatCurrency,
-  isContestCurrentlyUnderway,
-  mapContestStatus,
+    formatCurrency,
+    isContestCurrentlyUnderway,
+    mapContestStatus,
 } from "../../../lib/utils";
 import { ddApi } from "../../../services/dd-api";
 import type { Contest as BaseContest, ContestViewData } from "../../../types/index";
@@ -1119,6 +1119,7 @@ export const ContestDetails: React.FC = () => {
                             : (contest.participants || []).map(transformLegacyParticipant)
                       }
                       contestStatus={mapContestStatus(contest.status)}
+                      contestId={id!}
                     />
                   </SilentErrorBoundary>
                 </div>

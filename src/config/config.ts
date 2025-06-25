@@ -114,6 +114,8 @@ export const FEATURE_FLAGS = {
 };
 
 /* System Settings */
+const selectedBackground = localStorage.getItem('selectedBackground') || 'CyberGrid';
+
 export const SYSTEM_SETTINGS = {
   // Currently this contains ONLY the background_scene settings
   BACKGROUND_SCENE: {
@@ -121,37 +123,37 @@ export const SYSTEM_SETTINGS = {
     SCENES: [
       {
         name: "CyberGrid",
-        enabled: true,
+        enabled: selectedBackground === 'CyberGrid',
         zIndex: 0,
         blendMode: "normal",
       },
       {
         name: "Dodgeball",
-        enabled: false,
+        enabled: selectedBackground === 'Dodgeball',
         zIndex: 4,
         blendMode: "screen",
       },
       {
         name: "TokenVerse",
-        enabled: false,
+        enabled: selectedBackground === 'TokenVerse',
         zIndex: 1,
         blendMode: "normal",
       },
       {
         name: "MarketVerse",
-        enabled: false,
+        enabled: selectedBackground === 'MarketVerse',
         zIndex: 2,
         blendMode: "lighten",
       },
       {
         name: "MarketBrain",
-        enabled: false,
+        enabled: selectedBackground === 'MarketBrain',
         zIndex: 3,
         blendMode: "normal",
       },
       {
         name: "AmbientMarketData",
-        enabled: false,
+        enabled: selectedBackground === 'AmbientMarketData',
         zIndex: 5,
         blendMode: "normal",
       },

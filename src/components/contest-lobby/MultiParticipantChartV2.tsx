@@ -2,9 +2,26 @@ import { motion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Crown } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { useMigratedAuth } from '../../hooks/auth/useMigratedAuth';
 import { formatCurrency } from '../../lib/utils';
-import { useContestLobbyWebSocket } from '../../hooks/websocket/topic-hooks/useContestLobbyWebSocket';
+
+// Detect if we're in Storybook environment
+const isStorybook = typeof window !== 'undefined' && 
+  (window.location.port === '6007' || window.location.port === '6006' || window.location.pathname.includes('storybook'));
+
+// Conditional imports for hooks (only in non-Storybook environments)
+let useMigratedAuth: any = null;
+let useContestLobbyWebSocket: any = null;
+
+if (!isStorybook) {
+  try {
+    const authModule = require('../../hooks/auth/useMigratedAuth');
+    const wsModule = require('../../hooks/websocket/topic-hooks/useContestLobbyWebSocket');
+    useMigratedAuth = authModule.useMigratedAuth;
+    useContestLobbyWebSocket = wsModule.useContestLobbyWebSocket;
+  } catch (error) {
+    // Error will be logged inside component
+  }
+}
 
 interface LeaderboardChartParticipant {
   wallet_address: string;
@@ -27,6 +44,7 @@ interface MultiParticipantChartV2Props {
   }>;
   timeInterval?: '5m' | '15m' | '1h' | '4h' | '24h';
   maxParticipants?: number;
+  hoveredParticipant?: string | null;
 }
 
 type ViewMode = 'absolute' | 'relative' | 'rank';
@@ -47,53 +65,216 @@ const PARTICIPANT_COLORS = [
 
 export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = ({
   contestId,
-  participants,
+  participants = [],
   timeInterval = '1h',
-  maxParticipants = 10
+  maxParticipants = 10,
+  hoveredParticipant = null
 }) => {
-  const { user } = useMigratedAuth();
+  // Use mock data in Storybook, real data in app
+  const { user } = isStorybook 
+    ? { user: { wallet_address: 'mock-wallet-123', nickname: 'StoryUser' } }
+    : (useMigratedAuth ? useMigratedAuth() : { user: null });
+
+  // Debug environment detection
+  useEffect(() => {
+    if (isStorybook) {
+      //console.log('[MultiParticipantChartV2] Running in Storybook environment');
+    } else if (!useMigratedAuth || !useContestLobbyWebSocket) {
+      //console.log('[MultiParticipantChartV2] Running in isolated environment - some hooks not available');
+    } else {
+      //console.log('[MultiParticipantChartV2] Running in full app environment');
+    }
+  }, []);
   const [chartData, setChartData] = useState<LeaderboardChartParticipant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('relative');
-  const [hoveredParticipant, setHoveredParticipant] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '1d' | 'all'>('all');
   const [showParticipantSelector, setShowParticipantSelector] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshKey] = useState(0);
+  
+  // Zoom and pan state
+  const [zoomDomain, setZoomDomain] = useState<{
+    x: [number, number] | null;
+    y: [number, number] | null;
+  }>({ x: null, y: null });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
 
-  // Debug contest ID
-  console.log('[MultiParticipantChartV2] contestId:', contestId, 'type:', typeof contestId);
+  // Zoom helper functions
+  const resetZoom = () => {
+    setZoomDomain({ x: null, y: null });
+  };
 
-  // Use WebSocket for real-time updates
-  useContestLobbyWebSocket({
-    contestId,
-    onTradeExecuted: () => {
-      console.log('[MultiParticipantChartV2] Trade executed, refreshing...');
-      setRefreshKey(prev => prev + 1);
-    },
-    onPortfolioUpdate: () => {
-      console.log('[MultiParticipantChartV2] Portfolio updated, refreshing...');
-      setRefreshKey(prev => prev + 1);
-    },
-    onContestActivity: () => {
-      console.log('[MultiParticipantChartV2] Contest activity, refreshing...');
-      setRefreshKey(prev => prev + 1);
-    },
-    userWalletAddress: user?.wallet_address
-  });
+  const getDataBounds = () => {
+    if (!unifiedChartData || !unifiedChartData.length) return null;
+    
+    const xMin = 0;
+    const xMax = unifiedChartData.length - 1;
+    
+    // Calculate Y bounds based on current view mode and visible participants
+    let yMin = Infinity;
+    let yMax = -Infinity;
+    
+    unifiedChartData.forEach(point => {
+      chartData.forEach(participant => {
+        if (selectedParticipants.has(participant.wallet_address)) {
+          const value = point[participant.wallet_address];
+          if (typeof value === 'number' && !isNaN(value)) {
+            yMin = Math.min(yMin, value);
+            yMax = Math.max(yMax, value);
+          }
+        }
+      });
+    });
+    
+    // Add padding to Y bounds
+    const yPadding = (yMax - yMin) * 0.1;
+    
+    return {
+      x: [xMin, xMax] as [number, number],
+      y: [yMin - yPadding, yMax + yPadding] as [number, number]
+    };
+  };
+
+  // Mouse event handlers for zoom and pan
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    
+    const bounds = getDataBounds();
+    if (!bounds) return;
+    
+    const currentX = zoomDomain.x || bounds.x;
+    const currentY = zoomDomain.y || bounds.y;
+    
+    const zoomFactor = e.deltaY > 0 ? 1.2 : 0.8; // Zoom out/in
+    
+    // Get mouse position relative to chart
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) / rect.width;
+    const mouseY = (e.clientY - rect.top) / rect.height;
+    
+    // Calculate new zoom bounds
+    const xRange = currentX[1] - currentX[0];
+    const yRange = currentY[1] - currentY[0];
+    
+    const newXRange = xRange * zoomFactor;
+    const newYRange = yRange * zoomFactor;
+    
+    const xCenter = currentX[0] + xRange * mouseX;
+    const yCenter = currentY[0] + yRange * (1 - mouseY); // Flip Y
+    
+    const newX: [number, number] = [
+      Math.max(bounds.x[0], xCenter - newXRange * mouseX),
+      Math.min(bounds.x[1], xCenter + newXRange * (1 - mouseX))
+    ];
+    
+    const newY: [number, number] = [
+      Math.max(bounds.y[0], yCenter - newYRange * (1 - mouseY)),
+      Math.min(bounds.y[1], yCenter + newYRange * mouseY)
+    ];
+    
+    setZoomDomain({ x: newX, y: newY });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0) { // Left mouse button
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !dragStart) return;
+    
+    const bounds = getDataBounds();
+    if (!bounds) return;
+    
+    const currentX = zoomDomain.x || bounds.x;
+    const currentY = zoomDomain.y || bounds.y;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const deltaX = (e.clientX - dragStart.x) / rect.width;
+    const deltaY = (e.clientY - dragStart.y) / rect.height;
+    
+    const xRange = currentX[1] - currentX[0];
+    const yRange = currentY[1] - currentY[0];
+    
+    const newX: [number, number] = [
+      Math.max(bounds.x[0], currentX[0] - deltaX * xRange),
+      Math.min(bounds.x[1], currentX[1] - deltaX * xRange)
+    ];
+    
+    const newY: [number, number] = [
+      Math.max(bounds.y[0], currentY[0] + deltaY * yRange),
+      Math.min(bounds.y[1], currentY[1] + deltaY * yRange)
+    ];
+    
+    setZoomDomain({ x: newX, y: newY });
+    setDragStart({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setDragStart(null);
+  };
+
+  const handleDoubleClick = () => {
+    resetZoom();
+  };
+
+  // Reset zoom when view mode changes
+  useEffect(() => {
+    resetZoom();
+  }, [viewMode]);
+
+  // WebSocket disabled for now to get chart working
+  useEffect(() => {
+    //console.log('[MultiParticipantChartV2] contestId:', contestId, 'type:', typeof contestId);
+    //console.log('[MultiParticipantChartV2] WebSocket temporarily disabled for Storybook compatibility');
+  }, [contestId]);
 
   // Removed hoursBack - now calculated inline in useEffect
 
   // Fetch leaderboard chart data
   useEffect(() => {
     const fetchLeaderboardChart = async () => {
-      if (!participants.length) return;
+      if (!participants || !participants.length) return;
 
       setIsLoading(true);
       setError(null);
 
       try {
+        // In Storybook, use mock data
+        if (isStorybook) {
+          //console.log('[MultiParticipantChartV2] Using mock data for Storybook');
+          
+          // Generate mock historical data
+          const now = Date.now();
+          const hours = 24;
+          const chartParticipants = participants.slice(0, maxParticipants).map((p, index) => ({
+            wallet_address: p.wallet_address,
+            nickname: p.nickname || `Player ${index + 1}`,
+            current_rank: index + 1,
+            history: Array.from({ length: hours }, (_, i) => ({
+              timestamp: new Date(now - (hours - i) * 60 * 60 * 1000).toISOString(),
+              portfolio_value: 10000 + Math.sin(i * 0.5 + index) * 1000 + Math.random() * 500
+            }))
+          }));
+          
+          setChartData(chartParticipants);
+          
+          // Auto-select ALL participants
+          const autoSelected = new Set<string>();
+          chartParticipants.forEach((participant) => {
+            autoSelected.add(participant.wallet_address);
+          });
+          setSelectedParticipants(autoSelected);
+          setIsLoading(false);
+          return;
+        }
+
         // Map time interval to hours
         const intervalHours = {
           '5m': 1,
@@ -116,7 +297,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
         }
 
         const data = await response.json();
-        console.log('[MultiParticipantChartV2] Timeline data:', data);
+        //console.log('[MultiParticipantChartV2] Timeline data:', data);
         
         // Transform the timeline data to match expected format
         const participantMap = new Map<string, LeaderboardChartParticipant>();
@@ -147,7 +328,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
         const chartParticipants = Array.from(participantMap.values())
           .slice(0, maxParticipants);
         
-        console.log('[MultiParticipantChartV2] Transformed participants:', chartParticipants);
+        //console.log('[MultiParticipantChartV2] Transformed participants:', chartParticipants);
         setChartData(chartParticipants);
         
         // Auto-select ALL participants
@@ -158,7 +339,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
         setSelectedParticipants(autoSelected);
 
       } catch (err) {
-        console.error('Failed to fetch leaderboard chart:', err);
+        //console.error('Failed to fetch leaderboard chart:', err);
         setError(err instanceof Error ? err.message : 'Failed to load performance data');
       } finally {
         setIsLoading(false);
@@ -166,22 +347,24 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
     };
 
     fetchLeaderboardChart();
-  }, [contestId, timeInterval, maxParticipants, user?.wallet_address, participants.length, refreshKey]);
+  }, [contestId, timeInterval, maxParticipants, user?.wallet_address, participants?.length, refreshKey]);
 
   // Get initial values for relative calculations
   const initialValues = useMemo(() => {
     const values: Record<string, number> = {};
-    chartData.forEach(participant => {
-      if (participant.history.length > 0) {
-        values[participant.wallet_address] = participant.history[0].portfolio_value;
-      }
-    });
+    if (chartData && chartData.length) {
+      chartData.forEach(participant => {
+        if (participant?.history?.length > 0) {
+          values[participant.wallet_address] = participant.history[0].portfolio_value;
+        }
+      });
+    }
     return values;
   }, [chartData]);
 
   // Calculate time-filtered data
   const timeFilteredData = useMemo(() => {
-    if (!chartData.length) return [];
+    if (!chartData || !chartData.length) return [];
     
     const now = Date.now();
     const cutoffTime = timeRange === 'all' ? 0 : now - (
@@ -192,7 +375,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
     
     return chartData.map(participant => ({
       ...participant,
-      history: participant.history.filter(point => 
+      history: (participant?.history || []).filter(point => 
         new Date(point.timestamp).getTime() >= cutoffTime
       )
     }));
@@ -200,14 +383,16 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
 
   // Combine all participant data into unified chart format
   const unifiedChartData = useMemo(() => {
-    if (!timeFilteredData.length) return [];
+    if (!timeFilteredData || !timeFilteredData.length) return [];
 
     // Get all unique timestamps
     const allTimestamps = new Set<string>();
     timeFilteredData.forEach(participant => {
-      participant.history.forEach(point => {
-        allTimestamps.add(point.timestamp);
-      });
+      if (participant?.history) {
+        participant.history.forEach(point => {
+          allTimestamps.add(point.timestamp);
+        });
+      }
     });
 
     // Create unified data points
@@ -220,19 +405,21 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
         const valuesAtTime: Array<{ wallet: string; value: number }> = [];
         
         timeFilteredData.forEach((participant) => {
-          const point = participant.history.find(p => p.timestamp === timestamp);
-          if (point) {
-            valuesAtTime.push({ 
-              wallet: participant.wallet_address, 
-              value: point.portfolio_value 
-            });
-            
-            // Store values based on view mode
-            if (viewMode === 'absolute') {
-              dataPoint[participant.wallet_address] = point.portfolio_value;
-            } else if (viewMode === 'relative' && initialValues[participant.wallet_address]) {
-              const percentChange = ((point.portfolio_value / initialValues[participant.wallet_address]) - 1) * 100;
-              dataPoint[participant.wallet_address] = percentChange;
+          if (participant?.history) {
+            const point = participant.history.find(p => p.timestamp === timestamp);
+            if (point) {
+              valuesAtTime.push({ 
+                wallet: participant.wallet_address, 
+                value: point.portfolio_value 
+              });
+              
+              // Store values based on view mode
+              if (viewMode === 'absolute') {
+                dataPoint[participant.wallet_address] = point.portfolio_value;
+              } else if (viewMode === 'relative' && initialValues[participant.wallet_address]) {
+                const percentChange = ((point.portfolio_value / initialValues[participant.wallet_address]) - 1) * 100;
+                dataPoint[participant.wallet_address] = percentChange;
+              }
             }
           }
         });
@@ -252,26 +439,12 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     
-    // Format based on interval
-    if (timeInterval === '5m' || timeInterval === '15m') {
-      return date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false 
-      });
-    } else if (timeInterval === '1h' || timeInterval === '4h') {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        hour12: false
-      });
-    } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short',
-        day: 'numeric'
-      });
-    }
+    // Clean 12-hour time format for live trading
+    return date.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
   };
 
   const formatValue = (value: number) => {
@@ -280,19 +453,27 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
     } else if (viewMode === 'rank') {
       return `#${Math.round(value)}`;
     }
-    return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    
+    // Compact currency formatting for better readability
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `$${(value / 1000).toFixed(1)}K`;
+    } else {
+      return `$${value.toFixed(0)}`;
+    }
   };
 
   // Get latest values for each participant
   const latestValues = useMemo(() => {
     const values: Record<string, { value: number; change: number; rank: number }> = {};
     
-    if (unifiedChartData.length > 0) {
+    if (unifiedChartData && unifiedChartData.length > 0 && chartData && chartData.length > 0) {
       const sortedParticipants = chartData
         .map(p => {
-          const value = p.history[p.history.length - 1]?.portfolio_value || 0;
+          const value = p?.history?.[p.history.length - 1]?.portfolio_value || 0;
           const initialValue = initialValues[p.wallet_address] || value;
-          const change = ((value / initialValue) - 1) * 100;
+          const change = initialValue > 0 ? ((value / initialValue) - 1) * 100 : 0;
           return { wallet: p.wallet_address, value, change };
         })
         .sort((a, b) => b.value - a.value);
@@ -352,11 +533,13 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
 
   // Generate performance summary - moved BEFORE conditional returns to fix hooks order
   const performanceSummary = useMemo(() => {
-    if (!chartData.length || !latestValues) return null;
+    if (!chartData || !chartData.length || !latestValues || !participants || !participants.length) return null;
     
     const sortedByValue = Object.entries(latestValues)
       .sort(([, a], [, b]) => b.value - a.value)
       .slice(0, 3);
+    
+    if (!sortedByValue.length) return null;
     
     const userRank = user?.wallet_address ? latestValues[user.wallet_address]?.rank : null;
     const leader = sortedByValue[0];
@@ -531,11 +714,72 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
 
       {/* Chart */}
       <motion.div 
-        className="h-96 w-full bg-dark-300/30 rounded-lg p-4 border border-dark-200 relative"
+        className={`h-96 w-full bg-dark-300/30 rounded-lg p-4 border border-dark-200 relative ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onDoubleClick={handleDoubleClick}
       >
+        {/* Zoom controls */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+          <button
+            onClick={() => {
+              const bounds = getDataBounds();
+              if (!bounds) return;
+              const currentX = zoomDomain.x || bounds.x;
+              const currentY = zoomDomain.y || bounds.y;
+              const newX: [number, number] = [
+                currentX[0] + (currentX[1] - currentX[0]) * 0.1,
+                currentX[1] - (currentX[1] - currentX[0]) * 0.1
+              ];
+              const newY: [number, number] = [
+                currentY[0] + (currentY[1] - currentY[0]) * 0.1,
+                currentY[1] - (currentY[1] - currentY[0]) * 0.1
+              ];
+              setZoomDomain({ x: newX, y: newY });
+            }}
+            className="w-8 h-8 bg-dark-400/80 hover:bg-dark-300/80 text-white rounded text-sm font-bold transition-colors"
+            title="Zoom In"
+          >
+            +
+          </button>
+          <button
+            onClick={() => {
+              const bounds = getDataBounds();
+              if (!bounds) return;
+              const currentX = zoomDomain.x || bounds.x;
+              const currentY = zoomDomain.y || bounds.y;
+              const newX: [number, number] = [
+                Math.max(bounds.x[0], currentX[0] - (currentX[1] - currentX[0]) * 0.1),
+                Math.min(bounds.x[1], currentX[1] + (currentX[1] - currentX[0]) * 0.1)
+              ];
+              const newY: [number, number] = [
+                Math.max(bounds.y[0], currentY[0] - (currentY[1] - currentY[0]) * 0.1),
+                Math.min(bounds.y[1], currentY[1] + (currentY[1] - currentY[0]) * 0.1)
+              ];
+              setZoomDomain({ x: newX, y: newY });
+            }}
+            className="w-8 h-8 bg-dark-400/80 hover:bg-dark-300/80 text-white rounded text-sm font-bold transition-colors"
+            title="Zoom Out"
+          >
+            −
+          </button>
+          <button
+            onClick={resetZoom}
+            className="w-8 h-8 bg-dark-400/80 hover:bg-dark-300/80 text-white rounded text-xs font-bold transition-colors"
+            title="Reset Zoom"
+          >
+            ⌂
+          </button>
+        </div>
+
         {/* Real-time update indicator */}
         {isLoading && chartData.length > 0 && (
           <div className="absolute top-2 right-2 flex items-center gap-2 text-xs text-gray-400">
@@ -543,23 +787,41 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
             Updating...
           </div>
         )}
+        
+        {/* Pan instructions */}
+        {(zoomDomain.x || zoomDomain.y) && (
+          <div className="absolute bottom-2 left-2 text-xs text-gray-500 bg-dark-400/80 px-2 py-1 rounded">
+            Drag to pan • Double-click to reset
+          </div>
+        )}
+
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={unifiedChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.5} />
             <XAxis 
-              dataKey="timestamp" 
-              tickFormatter={formatTimestamp}
+              dataKey="index"
+              domain={zoomDomain.x || ['dataMin', 'dataMax']}
+              type="number"
+              scale="linear"
+              tickFormatter={(value) => {
+                const dataPoint = unifiedChartData[Math.round(value)];
+                return dataPoint ? formatTimestamp(dataPoint.timestamp) : '';
+              }}
               stroke="#9CA3AF"
-              fontSize={12}
-              angle={-45}
-              textAnchor="end"
-              height={60}
+              fontSize={11}
+              tickLine={false}
+              axisLine={false}
+              interval="preserveStartEnd"
+              minTickGap={30}
             />
             <YAxis 
+              domain={zoomDomain.y || ['dataMin', 'dataMax']}
               tickFormatter={formatValue}
               stroke="#9CA3AF"
-              fontSize={12}
-              width={80}
+              fontSize={11}
+              tickLine={false}
+              axisLine={false}
+              width={60}
             />
             <Tooltip content={<CustomTooltip />} />
             
@@ -575,27 +837,30 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
               const isCurrentUser = participant.wallet_address === user?.wallet_address;
               const isHovered = hoveredParticipant === participant.wallet_address;
               const color = PARTICIPANT_COLORS[index % PARTICIPANT_COLORS.length];
-              const opacity = hoveredParticipant && !isHovered ? 0.3 : 1;
+              
+              // Hover logic: If someone is hovered, fade others. If no one hovered, show all normally
+              const shouldFade = hoveredParticipant && !isHovered;
+              const opacity = shouldFade ? 0.15 : 1;
+              const strokeWidth = isCurrentUser ? 3 : isHovered ? 3 : 2;
               
               return (
                 <Line
                   key={participant.wallet_address}
                   type={viewMode === 'rank' ? 'stepAfter' : 'monotone'}
                   dataKey={participant.wallet_address}
-                  stroke={color}
-                  strokeWidth={isCurrentUser ? 3 : isHovered ? 2.5 : 2}
+                  stroke={shouldFade ? '#6b7280' : color} // Gray out faded lines
+                  strokeWidth={strokeWidth}
                   strokeOpacity={opacity}
                   dot={false}
                   activeDot={{ 
-                    r: isHovered ? 6 : 4, 
-                    fill: color,
+                    r: isHovered ? 8 : 4, 
+                    fill: shouldFade ? '#6b7280' : color,
                     stroke: '#1f2937',
                     strokeWidth: 2
                   }}
                   isAnimationActive={true}
                   animationDuration={1000}
                   animationEasing="ease-in-out"
-                  label={index === 0 ? false : false} // Disable default labels
                 />
               );
             })}
@@ -699,8 +964,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
                 }
                 setSelectedParticipants(newSelected);
               }}
-              onMouseEnter={() => setHoveredParticipant(participant.wallet_address)}
-              onMouseLeave={() => setHoveredParticipant(null)}
+              // Hover is now controlled by parent component via ParticipantsList
               className={`px-3 py-1.5 rounded-full text-sm border transition-all flex items-center gap-2 ${
                 selectedParticipants.has(participant.wallet_address)
                   ? 'border-gray-400 bg-gray-400/20 text-white'
