@@ -156,7 +156,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const [selectedTokens, setSelectedTokens] = useState<Map<string, number>>(
     new Map(),
   );
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  // View mode removed - only using card view now
   const [contest, setContest] = useState<Contest | null>(null);
   const [contestLoading, setContestLoading] = useState(true);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -1633,8 +1633,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                     {/* Simplified Filters - Only search and view mode */}
                     <div className="mb-4 sm:mb-6 space-y-4">
                       <TokenFilters
-                        viewMode={viewMode}
-                        onViewModeChange={setViewMode}
                         onTokenSearchSelect={handleTokenSearchSelect}
                         sortBy={sortBy}
                         onSortChange={setSortBy}
