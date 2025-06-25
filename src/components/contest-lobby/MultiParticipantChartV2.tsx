@@ -10,16 +10,13 @@ const isStorybook = typeof window !== 'undefined' &&
 
 // Conditional imports for hooks (only in non-Storybook environments)
 let useMigratedAuth: any = null;
-let useContestLobbyWebSocket: any = null;
 
 if (!isStorybook) {
   try {
     const authModule = require('../../hooks/auth/useMigratedAuth');
-    const wsModule = require('../../hooks/websocket/topic-hooks/useContestLobbyWebSocket');
     useMigratedAuth = authModule.useMigratedAuth;
-    useContestLobbyWebSocket = wsModule.useContestLobbyWebSocket;
   } catch (error) {
-    // Error will be logged inside component
+    // Silently fail - component will use fallback auth
   }
 }
 
@@ -75,16 +72,14 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
     ? { user: { wallet_address: 'mock-wallet-123', nickname: 'StoryUser' } }
     : (useMigratedAuth ? useMigratedAuth() : { user: null });
 
-  // Debug environment detection
-  useEffect(() => {
-    if (isStorybook) {
-      //console.log('[MultiParticipantChartV2] Running in Storybook environment');
-    } else if (!useMigratedAuth || !useContestLobbyWebSocket) {
-      //console.log('[MultiParticipantChartV2] Running in isolated environment - some hooks not available');
-    } else {
-      //console.log('[MultiParticipantChartV2] Running in full app environment');
-    }
-  }, []);
+  // Helper function to auto-select all participants
+  const autoSelectAllParticipants = (participants: LeaderboardChartParticipant[]) => {
+    const selected = new Set<string>();
+    participants.forEach(p => selected.add(p.wallet_address));
+    setSelectedParticipants(selected);
+  };
+
+
   const [chartData, setChartData] = useState<LeaderboardChartParticipant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,150 +87,6 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
   const [viewMode, setViewMode] = useState<ViewMode>('relative');
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '1d' | 'all'>('all');
   const [showParticipantSelector, setShowParticipantSelector] = useState(false);
-  const [refreshKey] = useState(0);
-  
-  // Zoom and pan state
-  const [zoomDomain, setZoomDomain] = useState<{
-    x: [number, number] | null;
-    y: [number, number] | null;
-  }>({ x: null, y: null });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
-
-  // Zoom helper functions
-  const resetZoom = () => {
-    setZoomDomain({ x: null, y: null });
-  };
-
-  const getDataBounds = () => {
-    if (!unifiedChartData || !unifiedChartData.length) return null;
-    
-    const xMin = 0;
-    const xMax = unifiedChartData.length - 1;
-    
-    // Calculate Y bounds based on current view mode and visible participants
-    let yMin = Infinity;
-    let yMax = -Infinity;
-    
-    unifiedChartData.forEach(point => {
-      chartData.forEach(participant => {
-        if (selectedParticipants.has(participant.wallet_address)) {
-          const value = point[participant.wallet_address];
-          if (typeof value === 'number' && !isNaN(value)) {
-            yMin = Math.min(yMin, value);
-            yMax = Math.max(yMax, value);
-          }
-        }
-      });
-    });
-    
-    // Add padding to Y bounds
-    const yPadding = (yMax - yMin) * 0.1;
-    
-    return {
-      x: [xMin, xMax] as [number, number],
-      y: [yMin - yPadding, yMax + yPadding] as [number, number]
-    };
-  };
-
-  // Mouse event handlers for zoom and pan
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    
-    const bounds = getDataBounds();
-    if (!bounds) return;
-    
-    const currentX = zoomDomain.x || bounds.x;
-    const currentY = zoomDomain.y || bounds.y;
-    
-    const zoomFactor = e.deltaY > 0 ? 1.2 : 0.8; // Zoom out/in
-    
-    // Get mouse position relative to chart
-    const rect = e.currentTarget.getBoundingClientRect();
-    const mouseX = (e.clientX - rect.left) / rect.width;
-    const mouseY = (e.clientY - rect.top) / rect.height;
-    
-    // Calculate new zoom bounds
-    const xRange = currentX[1] - currentX[0];
-    const yRange = currentY[1] - currentY[0];
-    
-    const newXRange = xRange * zoomFactor;
-    const newYRange = yRange * zoomFactor;
-    
-    const xCenter = currentX[0] + xRange * mouseX;
-    const yCenter = currentY[0] + yRange * (1 - mouseY); // Flip Y
-    
-    const newX: [number, number] = [
-      Math.max(bounds.x[0], xCenter - newXRange * mouseX),
-      Math.min(bounds.x[1], xCenter + newXRange * (1 - mouseX))
-    ];
-    
-    const newY: [number, number] = [
-      Math.max(bounds.y[0], yCenter - newYRange * (1 - mouseY)),
-      Math.min(bounds.y[1], yCenter + newYRange * mouseY)
-    ];
-    
-    setZoomDomain({ x: newX, y: newY });
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 0) { // Left mouse button
-      setIsDragging(true);
-      setDragStart({ x: e.clientX, y: e.clientY });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !dragStart) return;
-    
-    const bounds = getDataBounds();
-    if (!bounds) return;
-    
-    const currentX = zoomDomain.x || bounds.x;
-    const currentY = zoomDomain.y || bounds.y;
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const deltaX = (e.clientX - dragStart.x) / rect.width;
-    const deltaY = (e.clientY - dragStart.y) / rect.height;
-    
-    const xRange = currentX[1] - currentX[0];
-    const yRange = currentY[1] - currentY[0];
-    
-    const newX: [number, number] = [
-      Math.max(bounds.x[0], currentX[0] - deltaX * xRange),
-      Math.min(bounds.x[1], currentX[1] - deltaX * xRange)
-    ];
-    
-    const newY: [number, number] = [
-      Math.max(bounds.y[0], currentY[0] + deltaY * yRange),
-      Math.min(bounds.y[1], currentY[1] + deltaY * yRange)
-    ];
-    
-    setZoomDomain({ x: newX, y: newY });
-    setDragStart({ x: e.clientX, y: e.clientY });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setDragStart(null);
-  };
-
-  const handleDoubleClick = () => {
-    resetZoom();
-  };
-
-  // Reset zoom when view mode changes
-  useEffect(() => {
-    resetZoom();
-  }, [viewMode]);
-
-  // WebSocket disabled for now to get chart working
-  useEffect(() => {
-    //console.log('[MultiParticipantChartV2] contestId:', contestId, 'type:', typeof contestId);
-    //console.log('[MultiParticipantChartV2] WebSocket temporarily disabled for Storybook compatibility');
-  }, [contestId]);
-
-  // Removed hoursBack - now calculated inline in useEffect
 
   // Fetch leaderboard chart data
   useEffect(() => {
@@ -248,8 +99,6 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
       try {
         // In Storybook, use mock data
         if (isStorybook) {
-          //console.log('[MultiParticipantChartV2] Using mock data for Storybook');
-          
           // Generate mock historical data
           const now = Date.now();
           const hours = 24;
@@ -264,13 +113,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
           }));
           
           setChartData(chartParticipants);
-          
-          // Auto-select ALL participants
-          const autoSelected = new Set<string>();
-          chartParticipants.forEach((participant) => {
-            autoSelected.add(participant.wallet_address);
-          });
-          setSelectedParticipants(autoSelected);
+          autoSelectAllParticipants(chartParticipants);
           setIsLoading(false);
           return;
         }
@@ -297,7 +140,6 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
         }
 
         const data = await response.json();
-        //console.log('[MultiParticipantChartV2] Timeline data:', data);
         
         // Transform the timeline data to match expected format
         const participantMap = new Map<string, LeaderboardChartParticipant>();
@@ -328,18 +170,10 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
         const chartParticipants = Array.from(participantMap.values())
           .slice(0, maxParticipants);
         
-        //console.log('[MultiParticipantChartV2] Transformed participants:', chartParticipants);
         setChartData(chartParticipants);
-        
-        // Auto-select ALL participants
-        const autoSelected = new Set<string>();
-        chartParticipants.forEach((participant) => {
-          autoSelected.add(participant.wallet_address);
-        });
-        setSelectedParticipants(autoSelected);
+        autoSelectAllParticipants(chartParticipants);
 
       } catch (err) {
-        //console.error('Failed to fetch leaderboard chart:', err);
         setError(err instanceof Error ? err.message : 'Failed to load performance data');
       } finally {
         setIsLoading(false);
@@ -347,7 +181,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
     };
 
     fetchLeaderboardChart();
-  }, [contestId, timeInterval, maxParticipants, user?.wallet_address, participants?.length, refreshKey]);
+  }, [contestId, timeInterval, maxParticipants, user?.wallet_address, participants?.length]);
 
   // Get initial values for relative calculations
   const initialValues = useMemo(() => {
@@ -714,84 +548,16 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
 
       {/* Chart */}
       <motion.div 
-        className={`h-96 w-full bg-dark-300/30 rounded-lg p-4 border border-dark-200 relative ${
-          isDragging ? 'cursor-grabbing' : 'cursor-grab'
-        }`}
+        className="h-96 w-full bg-dark-300/30 rounded-lg p-4 border border-dark-200 relative"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onDoubleClick={handleDoubleClick}
       >
-        {/* Zoom controls */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-          <button
-            onClick={() => {
-              const bounds = getDataBounds();
-              if (!bounds) return;
-              const currentX = zoomDomain.x || bounds.x;
-              const currentY = zoomDomain.y || bounds.y;
-              const newX: [number, number] = [
-                currentX[0] + (currentX[1] - currentX[0]) * 0.1,
-                currentX[1] - (currentX[1] - currentX[0]) * 0.1
-              ];
-              const newY: [number, number] = [
-                currentY[0] + (currentY[1] - currentY[0]) * 0.1,
-                currentY[1] - (currentY[1] - currentY[0]) * 0.1
-              ];
-              setZoomDomain({ x: newX, y: newY });
-            }}
-            className="w-8 h-8 bg-dark-400/80 hover:bg-dark-300/80 text-white rounded text-sm font-bold transition-colors"
-            title="Zoom In"
-          >
-            +
-          </button>
-          <button
-            onClick={() => {
-              const bounds = getDataBounds();
-              if (!bounds) return;
-              const currentX = zoomDomain.x || bounds.x;
-              const currentY = zoomDomain.y || bounds.y;
-              const newX: [number, number] = [
-                Math.max(bounds.x[0], currentX[0] - (currentX[1] - currentX[0]) * 0.1),
-                Math.min(bounds.x[1], currentX[1] + (currentX[1] - currentX[0]) * 0.1)
-              ];
-              const newY: [number, number] = [
-                Math.max(bounds.y[0], currentY[0] - (currentY[1] - currentY[0]) * 0.1),
-                Math.min(bounds.y[1], currentY[1] + (currentY[1] - currentY[0]) * 0.1)
-              ];
-              setZoomDomain({ x: newX, y: newY });
-            }}
-            className="w-8 h-8 bg-dark-400/80 hover:bg-dark-300/80 text-white rounded text-sm font-bold transition-colors"
-            title="Zoom Out"
-          >
-            −
-          </button>
-          <button
-            onClick={resetZoom}
-            className="w-8 h-8 bg-dark-400/80 hover:bg-dark-300/80 text-white rounded text-xs font-bold transition-colors"
-            title="Reset Zoom"
-          >
-            ⌂
-          </button>
-        </div>
-
         {/* Real-time update indicator */}
         {isLoading && chartData.length > 0 && (
           <div className="absolute top-2 right-2 flex items-center gap-2 text-xs text-gray-400">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
             Updating...
-          </div>
-        )}
-        
-        {/* Pan instructions */}
-        {(zoomDomain.x || zoomDomain.y) && (
-          <div className="absolute bottom-2 left-2 text-xs text-gray-500 bg-dark-400/80 px-2 py-1 rounded">
-            Drag to pan • Double-click to reset
           </div>
         )}
 
@@ -800,7 +566,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.5} />
             <XAxis 
               dataKey="index"
-              domain={zoomDomain.x || ['dataMin', 'dataMax']}
+              domain={['dataMin', 'dataMax']}
               type="number"
               scale="linear"
               tickFormatter={(value) => {
@@ -815,7 +581,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
               minTickGap={30}
             />
             <YAxis 
-              domain={zoomDomain.y || ['dataMin', 'dataMax']}
+              domain={['dataMin', 'dataMax']}
               tickFormatter={formatValue}
               stroke="#9CA3AF"
               fontSize={11}
