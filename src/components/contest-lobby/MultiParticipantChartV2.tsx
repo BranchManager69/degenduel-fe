@@ -32,12 +32,38 @@ interface LeaderboardChartParticipant {
 
 interface MultiParticipantChartV2Props {
   contestId: string;
+  contestStatus?: 'upcoming' | 'active' | 'completed' | 'cancelled';
   participants: Array<{
     wallet_address: string;
     nickname: string;
     is_current_user?: boolean;
     performance_percentage?: string;
     portfolio_value?: string;
+    equipped_skin?: {
+      id: string;
+      name: string;
+      rarity: 'basic' | 'rare' | 'special' | 'admin';
+      design: {
+        color?: string;
+        gradient?: string[];
+        pattern?: string;
+        width?: number;
+        glow?: boolean;
+        animation?: string;
+        image?: string;
+        opacity?: number;
+      };
+    } | null;
+    line_design?: {
+      color?: string;
+      gradient?: string[];
+      pattern?: string;
+      width?: number;
+      glow?: boolean;
+      animation?: string;
+      image?: string;
+      opacity?: number;
+    } | null;
   }>;
   timeInterval?: '5m' | '15m' | '1h' | '4h' | '24h';
   maxParticipants?: number;
@@ -46,7 +72,7 @@ interface MultiParticipantChartV2Props {
 
 
 
-// Color palette for different participants
+// Color palette for different participants (fallback when no custom design)
 const PARTICIPANT_COLORS = [
   '#10b981', // green
   '#3b82f6', // blue  
@@ -60,8 +86,77 @@ const PARTICIPANT_COLORS = [
   '#6366f1', // indigo
 ];
 
+// Get line style based on participant's equipped skin or legacy line_design
+const getLineStyle = (participant: any, index: number, shouldFade: boolean) => {
+  const defaultColor = PARTICIPANT_COLORS[index % PARTICIPANT_COLORS.length];
+  
+  // Priority system: equipped_skin > line_design > default
+  const lineDesign = participant.equipped_skin?.design || participant.line_design;
+  
+  if (!lineDesign) {
+    return {
+      stroke: shouldFade ? '#6b7280' : defaultColor,
+      strokeWidth: 2,
+      strokeDasharray: undefined,
+      filter: undefined,
+      className: undefined,
+    };
+  }
+  
+  // Base styles - handle gradient
+  let strokeColor;
+  if (shouldFade) {
+    strokeColor = '#6b7280';
+  } else if (lineDesign.gradient && lineDesign.gradient.length >= 2) {
+    strokeColor = `url(#gradient-${participant.wallet_address})`;
+  } else {
+    strokeColor = lineDesign.color || defaultColor;
+  }
+  
+  const styles: any = {
+    stroke: strokeColor,
+    strokeWidth: lineDesign.width || 2,
+    strokeOpacity: lineDesign.opacity || 1,
+  };
+  
+  // Pattern support
+  if (lineDesign.pattern === 'dashed') {
+    styles.strokeDasharray = '8 4';
+  } else if (lineDesign.pattern === 'dotted') {
+    styles.strokeDasharray = '2 2';
+  } else if (lineDesign.pattern === 'wave') {
+    styles.strokeDasharray = '10 5 5 5';
+  } else if (lineDesign.pattern === 'matrix') {
+    styles.strokeDasharray = '4 2 1 2';
+    styles.className = 'matrix-line';
+  } else if (lineDesign.pattern === 'lightning') {
+    styles.strokeDasharray = '15 5 5 5 10 5';
+    styles.className = 'lightning-line';
+  } else if (lineDesign.pattern === 'crown') {
+    styles.strokeDasharray = '10 2 2 2 10';
+    styles.className = 'crown-line';
+  } else if (lineDesign.pattern === 'code') {
+    styles.strokeDasharray = '8 3 3 3 8 3';
+    styles.className = 'code-line';
+  }
+  
+  // Glow effect - enhanced for special skins
+  if (lineDesign.glow && !shouldFade) {
+    const glowIntensity = lineDesign.width >= 4 ? '12px' : '8px';
+    styles.filter = `drop-shadow(0 0 ${glowIntensity} currentColor)`;
+  }
+  
+  // Animation classes
+  if (lineDesign.animation && !shouldFade) {
+    styles.className = (styles.className || '') + ' ' + `animate-${lineDesign.animation}`;
+  }
+  
+  return styles;
+};
+
 export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = ({
   contestId,
+  contestStatus = 'active',
   participants = [],
   timeInterval = '1h',
   maxParticipants = 10,
@@ -84,13 +179,18 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
-  const [timeRange, setTimeRange] = useState<'1h' | '6h' | '1d' | 'all'>('all');
   const [showParticipantSelector, setShowParticipantSelector] = useState(false);
 
   // Fetch leaderboard chart data
   useEffect(() => {
     const fetchLeaderboardChart = async () => {
       if (!participants || !participants.length) return;
+      
+      // Don't fetch data for upcoming or cancelled contests
+      if (contestStatus === 'upcoming' || contestStatus === 'cancelled') {
+        setIsLoading(false);
+        return;
+      }
 
       setIsLoading(true);
       setError(null);
@@ -180,7 +280,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
     };
 
     fetchLeaderboardChart();
-  }, [contestId, timeInterval, maxParticipants, user?.wallet_address, participants?.length]);
+  }, [contestId, contestStatus, timeInterval, maxParticipants, user?.wallet_address, participants?.length]);
 
   // Get initial values for relative calculations
   const initialValues = useMemo(() => {
@@ -195,24 +295,10 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
     return values;
   }, [chartData]);
 
-  // Calculate time-filtered data
+  // Use all chart data (no time filtering)
   const timeFilteredData = useMemo(() => {
-    if (!chartData || !chartData.length) return [];
-    
-    const now = Date.now();
-    const cutoffTime = timeRange === 'all' ? 0 : now - (
-      timeRange === '1h' ? 3600000 :
-      timeRange === '6h' ? 21600000 :
-      86400000 // 1d
-    );
-    
-    return chartData.map(participant => ({
-      ...participant,
-      history: (participant?.history || []).filter(point => 
-        new Date(point.timestamp).getTime() >= cutoffTime
-      )
-    }));
-  }, [chartData, timeRange]);
+    return chartData || [];
+  }, [chartData]);
 
   // Combine all participant data into unified chart format
   const unifiedChartData = useMemo(() => {
@@ -261,20 +347,187 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
       });
   }, [timeFilteredData, selectedParticipants, initialValues]);
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
+  // Calculate contest duration and smart tick settings
+  const contestDurationInfo = useMemo(() => {
+    if (!unifiedChartData || unifiedChartData.length < 2) {
+      return { durationMinutes: 60, tickCount: 6, tickInterval: 1, explicitTicks: [] };
+    }
     
-    // Clean 12-hour time format for live trading
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    });
+    const firstTimestamp = new Date(unifiedChartData[0].timestamp).getTime();
+    const lastTimestamp = new Date(unifiedChartData[unifiedChartData.length - 1].timestamp).getTime();
+    const durationMinutes = (lastTimestamp - firstTimestamp) / (1000 * 60);
+    
+    // Smart tick settings based on contest duration
+    let tickCount, tickInterval;
+    
+    if (durationMinutes <= 5) {
+      // 5-minute contest: one tick every minute (6 ticks)
+      tickCount = 6;
+      tickInterval = 1;
+    } else if (durationMinutes <= 15) {
+      // 15-minute contest: every 3-4 minutes (5 ticks)
+      tickCount = 5;
+      tickInterval = 3;
+    } else if (durationMinutes <= 30) {
+      // 30-minute contest: every 5 minutes (7 ticks)
+      tickCount = 7;
+      tickInterval = 5;
+    } else if (durationMinutes <= 60) {
+      // 1-hour contest: every 10 minutes (7 ticks)
+      tickCount = 7;
+      tickInterval = 10;
+    } else {
+      // 3-hour contest: every 30 minutes (7 ticks)
+      tickCount = 7;
+      tickInterval = 30;
+    }
+    
+    // Generate explicit tick positions based on minute boundaries for short contests
+    const explicitTicks: number[] = [];
+    
+    if (durationMinutes <= 5) {
+      // For 5-minute contests, find data points closest to each minute boundary
+      const startTime = new Date(unifiedChartData[0].timestamp).getTime();
+      
+      // Always include start
+      explicitTicks.push(0);
+      
+      // Find points closest to each minute boundary
+      for (let minute = 1; minute < Math.ceil(durationMinutes); minute++) {
+        const targetTime = startTime + (minute * 60 * 1000);
+        let closestIndex = 0;
+        let closestDiff = Infinity;
+        
+        unifiedChartData.forEach((point, index) => {
+          const pointTime = new Date(point.timestamp).getTime();
+          const diff = Math.abs(pointTime - targetTime);
+          if (diff < closestDiff) {
+            closestDiff = diff;
+            closestIndex = index;
+          }
+        });
+        
+        explicitTicks.push(closestIndex);
+      }
+      
+      // Always include end
+      explicitTicks.push(unifiedChartData.length - 1);
+      
+      // Remove duplicates and sort
+      const uniqueTicks = [...new Set(explicitTicks)].sort((a, b) => a - b);
+      return { durationMinutes, tickCount: uniqueTicks.length, tickInterval, explicitTicks: uniqueTicks };
+    } else {
+      // For longer contests, use evenly spaced ticks
+      const totalDataPoints = unifiedChartData.length;
+      
+      // Always include start (0)
+      explicitTicks.push(0);
+      
+      // Add middle ticks evenly spaced
+      for (let i = 1; i < tickCount - 1; i++) {
+        const position = Math.round((i / (tickCount - 1)) * (totalDataPoints - 1));
+        explicitTicks.push(position);
+      }
+      
+      // Always include end (last index)
+      if (totalDataPoints > 1) {
+        explicitTicks.push(totalDataPoints - 1);
+      }
+    }
+    
+    return { durationMinutes, tickCount, tickInterval, explicitTicks };
+  }, [unifiedChartData]);
+
+  const formatTimestamp = (timestamp: string, index?: number) => {
+    const date = new Date(timestamp);
+    const { durationMinutes } = contestDurationInfo;
+    
+    // Special labels for start and end
+    if (index === 0 && unifiedChartData.length > 1) {
+      return 'Start';
+    }
+    if (index === unifiedChartData.length - 1 && unifiedChartData.length > 1) {
+      return 'Now';
+    }
+    
+    // For very short contests, use compact format
+    if (durationMinutes <= 5) {
+      // Ultra compact for 5-minute contests: just "14:30" or "2:42"
+      const hours = date.getHours(); // No padding for hours
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    } else {
+      // All other contests: clean AM/PM format without seconds
+      let hours = date.getHours();
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // 0 should be 12
+      return `${hours}:${minutes} ${ampm}`;
+    }
   };
 
+  // Calculate smart Y-axis range (zero-centered for game context)
+  const yAxisInfo = useMemo(() => {
+    if (!unifiedChartData || !unifiedChartData.length || !selectedParticipants.size) {
+      return { domain: [-5, 5], tickInterval: 1, precision: 1 };
+    }
+    
+    // Find min/max values from all selected participants
+    let minValue = 0;
+    let maxValue = 0;
+    
+    unifiedChartData.forEach(point => {
+      selectedParticipants.forEach(walletAddress => {
+        const value = point[walletAddress];
+        if (typeof value === 'number' && !isNaN(value)) {
+          minValue = Math.min(minValue, value);
+          maxValue = Math.max(maxValue, value);
+        }
+      });
+    });
+    
+    // Get maximum absolute value for symmetric range around 0%
+    const maxAbsValue = Math.max(Math.abs(minValue), Math.abs(maxValue));
+    
+    // Apply smart minimum range (never too tight)
+    const minimumRange = 1; // At least ±1%
+    const dataRange = Math.max(maxAbsValue, minimumRange);
+    
+    // Add padding (20% of range) but keep it meaningful
+    const padding = Math.max(dataRange * 0.2, 0.5);
+    const finalRange = dataRange + padding;
+    
+    // Smart grid spacing based on range
+    let tickInterval, precision;
+    if (finalRange <= 2) {
+      tickInterval = 0.5;
+      precision = 1;
+    } else if (finalRange <= 5) {
+      tickInterval = 1;
+      precision = 1;
+    } else if (finalRange <= 15) {
+      tickInterval = 2;
+      precision = 1;
+    } else if (finalRange <= 30) {
+      tickInterval = 5;
+      precision = 0;
+    } else {
+      tickInterval = 10;
+      precision = 0;
+    }
+    
+    return {
+      domain: [-finalRange, finalRange],
+      tickInterval,
+      precision
+    };
+  }, [unifiedChartData, selectedParticipants]);
+
   const formatValue = (value: number) => {
-    // Always format as percentage since we're only using percentage change mode
-    return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+    // Adaptive precision based on Y-axis range
+    const precision = yAxisInfo.precision;
+    return `${value >= 0 ? '+' : ''}${value.toFixed(precision)}%`;
   };
 
   // Get latest values for each participant
@@ -439,130 +692,194 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
         </motion.div>
       )}
 
-      {/* Time Range Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-gray-300">Performance Timeline</h3>
-          <span className="text-xs text-gray-500">% Change from Start</span>
-        </div>
-        
-        <div className="flex gap-2">
-          <button
-            onClick={() => setTimeRange('1h')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-              timeRange === '1h'
-                ? 'bg-dark-200 text-white'
-                : 'bg-dark-300/50 text-gray-400 hover:text-white'
-            }`}
-          >
-            1H
-          </button>
-          <button
-            onClick={() => setTimeRange('6h')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-              timeRange === '6h'
-                ? 'bg-dark-200 text-white'
-                : 'bg-dark-300/50 text-gray-400 hover:text-white'
-            }`}
-          >
-            6H
-          </button>
-          <button
-            onClick={() => setTimeRange('1d')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-              timeRange === '1d'
-                ? 'bg-dark-200 text-white'
-                : 'bg-dark-300/50 text-gray-400 hover:text-white'
-            }`}
-          >
-            1D
-          </button>
-          <button
-            onClick={() => setTimeRange('all')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-              timeRange === 'all'
-                ? 'bg-dark-200 text-white'
-                : 'bg-dark-300/50 text-gray-400 hover:text-white'
-            }`}
-          >
-            ALL
-          </button>
-        </div>
+      {/* Chart Title */}
+      <div className="flex items-center gap-2">
+        <h3 className="text-sm font-medium text-gray-300">
+          {contestStatus === 'upcoming' ? 'Performance Preview' :
+           contestStatus === 'completed' ? 'Final Performance' :
+           contestStatus === 'cancelled' ? 'Contest Cancelled' :
+           'Performance Timeline'}
+        </h3>
+        <span className="text-xs text-gray-500">% Change from Start</span>
+        {contestDurationInfo.durationMinutes > 0 && (
+          <span className="text-xs text-gray-600">
+            • {contestDurationInfo.durationMinutes < 60 
+              ? `${Math.round(contestDurationInfo.durationMinutes)}m` 
+              : `${Math.round(contestDurationInfo.durationMinutes / 60 * 10) / 10}h`
+            } contest
+          </span>
+        )}
+        {/* Status indicator */}
+        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+          contestStatus === 'upcoming' ? 'bg-blue-500/20 text-blue-400' :
+          contestStatus === 'active' ? 'bg-green-500/20 text-green-400' :
+          contestStatus === 'completed' ? 'bg-gray-500/20 text-gray-400' :
+          'bg-red-500/20 text-red-400'
+        }`}>
+          {contestStatus === 'upcoming' ? 'Upcoming' :
+           contestStatus === 'active' ? 'Live' :
+           contestStatus === 'completed' ? 'Finished' :
+           'Cancelled'}
+        </span>
       </div>
 
       {/* Chart */}
       <motion.div 
-        className="h-96 w-full bg-dark-300/30 rounded-lg p-4 border border-dark-200 relative"
+        className={`h-96 w-full rounded-lg p-4 border relative ${
+          contestStatus === 'cancelled' ? 'bg-red-500/10 border-red-500/30' :
+          contestStatus === 'upcoming' ? 'bg-blue-500/10 border-blue-500/30' :
+          contestStatus === 'completed' ? 'bg-gray-500/10 border-gray-500/30' :
+          'bg-dark-300/30 border-dark-200'
+        }`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        {/* Real-time update indicator */}
-        {isLoading && chartData.length > 0 && (
-          <div className="absolute top-2 right-2 flex items-center gap-2 text-xs text-gray-400">
+        {/* Contest State Overlays */}
+        {contestStatus === 'upcoming' && (
+          <div className="absolute inset-0 bg-dark-400/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-20">
+            <div className="text-center">
+              <div className="text-4xl mb-3">⏳</div>
+              <h3 className="text-lg font-semibold text-blue-400 mb-2">Contest Starting Soon</h3>
+              <p className="text-sm text-gray-400">Performance data will appear once the contest begins</p>
+            </div>
+          </div>
+        )}
+        
+        {contestStatus === 'cancelled' && (
+          <div className="absolute inset-0 bg-dark-400/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-20">
+            <div className="text-center">
+              <div className="text-4xl mb-3">❌</div>
+              <h3 className="text-lg font-semibold text-red-400 mb-2">Contest Cancelled</h3>
+              <p className="text-sm text-gray-400">This contest has been cancelled and no data is available</p>
+            </div>
+          </div>
+        )}
+
+        {/* Real-time update indicator - only for active contests */}
+        {contestStatus === 'active' && isLoading && chartData.length > 0 && (
+          <div className="absolute top-2 right-2 flex items-center gap-2 text-xs text-gray-400 z-10">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            Updating...
+            Live Updates
+          </div>
+        )}
+        
+        {/* Completed contest indicator */}
+        {contestStatus === 'completed' && (
+          <div className="absolute top-2 right-2 flex items-center gap-2 text-xs text-gray-400 z-10">
+            <div className="w-2 h-2 bg-gray-400 rounded-full" />
+            Final Results
           </div>
         )}
 
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={unifiedChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.5} />
+            {/* SVG Definitions for gradients */}
+            <defs>
+              {participants.map((participant) => {
+                // Priority system: equipped_skin > line_design > none
+                const lineDesign = participant.equipped_skin?.design || participant.line_design;
+                if (lineDesign?.gradient && lineDesign.gradient.length >= 2) {
+                  return (
+                    <linearGradient key={participant.wallet_address} id={`gradient-${participant.wallet_address}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                      {lineDesign.gradient!.map((color, i) => (
+                        <stop 
+                          key={i} 
+                          offset={`${(i / (lineDesign.gradient!.length - 1)) * 100}%`} 
+                          stopColor={color} 
+                        />
+                      ))}
+                    </linearGradient>
+                  );
+                }
+                return null;
+              })}
+            </defs>
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="#374151" 
+              opacity={0.3}
+              horizontalPoints={(() => {
+                // Generate horizontal grid lines at meaningful intervals
+                const points = [];
+                const [min, max] = yAxisInfo.domain;
+                for (let i = Math.ceil(min / yAxisInfo.tickInterval) * yAxisInfo.tickInterval; i <= max; i += yAxisInfo.tickInterval) {
+                  if (i !== 0) points.push(i); // Skip 0% since we have special line
+                }
+                return points;
+              })()}
+            />
             <XAxis 
               dataKey="index"
               domain={['dataMin', 'dataMax']}
               type="number"
               scale="linear"
+              ticks={contestDurationInfo.explicitTicks}
               tickFormatter={(value) => {
-                const dataPoint = unifiedChartData[Math.round(value)];
-                return dataPoint ? formatTimestamp(dataPoint.timestamp) : '';
+                const index = Math.round(value);
+                const dataPoint = unifiedChartData[index];
+                return dataPoint ? formatTimestamp(dataPoint.timestamp, index) : '';
               }}
               stroke="#9CA3AF"
               fontSize={11}
               tickLine={false}
               axisLine={false}
-              interval="preserveStartEnd"
-              minTickGap={30}
+              interval={0}
+              minTickGap={contestDurationInfo.durationMinutes <= 5 ? 50 : 30}
             />
             <YAxis 
-              domain={['dataMin', 'dataMax']}
+              domain={yAxisInfo.domain}
               tickFormatter={formatValue}
               stroke="#9CA3AF"
               fontSize={11}
               tickLine={false}
               axisLine={false}
-              width={60}
+              width={65}
+              interval={0}
+              tickCount={Math.ceil((yAxisInfo.domain[1] - yAxisInfo.domain[0]) / yAxisInfo.tickInterval) + 1}
             />
             <Tooltip content={<CustomTooltip />} />
             
-            {/* Reference line at 0% for percentage change */}
-            <ReferenceLine y={0} stroke="#6b7280" strokeDasharray="3 3" />
+            {/* Zero line - where everyone starts */}
+            <ReferenceLine 
+              y={0} 
+              stroke="#6b7280" 
+              strokeWidth={1}
+              strokeDasharray="3 3"
+            />
             
             {/* Render lines for selected participants */}
             {chartData.map((participant, index) => {
               if (!selectedParticipants.has(participant.wallet_address)) return null;
               
+              // Find the original participant data with line_design
+              const originalParticipant = participants.find(p => p.wallet_address === participant.wallet_address);
+              
               const isCurrentUser = participant.wallet_address === user?.wallet_address;
               const isHovered = hoveredParticipant === participant.wallet_address;
-              const color = PARTICIPANT_COLORS[index % PARTICIPANT_COLORS.length];
               
               // Hover logic: If someone is hovered, fade others. If no one hovered, show all normally
-              const shouldFade = hoveredParticipant && !isHovered;
-              const opacity = shouldFade ? 0.15 : 1;
-              const strokeWidth = isCurrentUser ? 3 : isHovered ? 3 : 2;
+              const shouldFade = !!(hoveredParticipant && !isHovered);
+              
+              // Get custom line styles
+              const lineStyles = getLineStyle(originalParticipant || participant, index, shouldFade);
+              
+              // Override stroke width for current user or hovered
+              if (isCurrentUser || isHovered) {
+                lineStyles.strokeWidth = Math.max(lineStyles.strokeWidth, 3);
+              }
               
               return (
                 <Line
                   key={participant.wallet_address}
                   type="monotone"
                   dataKey={participant.wallet_address}
-                  stroke={shouldFade ? '#6b7280' : color} // Gray out faded lines
-                  strokeWidth={strokeWidth}
-                  strokeOpacity={opacity}
+                  {...lineStyles}
+                  strokeOpacity={shouldFade ? 0.15 : lineStyles.strokeOpacity}
                   dot={false}
                   activeDot={{ 
                     r: isHovered ? 8 : 4, 
-                    fill: shouldFade ? '#6b7280' : color,
+                    fill: shouldFade ? '#6b7280' : lineStyles.stroke,
                     stroke: '#1f2937',
                     strokeWidth: 2
                   }}
@@ -583,7 +900,10 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
               
               if (!value || !latestData) return null;
               
-              const color = PARTICIPANT_COLORS[index % PARTICIPANT_COLORS.length];
+              // Find the original participant data with line_design
+              const originalParticipant = participants.find(p => p.wallet_address === participant.wallet_address);
+              const lineStyles = getLineStyle(originalParticipant || participant, index, false);
+              const color = lineStyles.stroke;
               const isCurrentUser = participant.wallet_address === user?.wallet_address;
               
               return (
