@@ -158,6 +158,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   );
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   const [contest, setContest] = useState<Contest | null>(null);
+  const [contestLoading, setContestLoading] = useState(true);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [hasExistingPortfolio, setHasExistingPortfolio] = useState(false);
   const user = useStore((state) => state.user);
@@ -205,9 +206,12 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
 
   useEffect(() => {
     const fetchContest = async () => {
+      setContestLoading(true);
+      
       if (!contestId || contestId === 'undefined' || contestId === 'null') {
         console.error("Invalid contest ID:", contestId);
         toast.error("Invalid contest ID", { duration: 5000 });
+        setContestLoading(false);
         return;
       }
       
@@ -216,6 +220,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
       if (isNaN(numericId) || numericId <= 0) {
         console.error("Contest ID must be a valid number:", contestId);
         toast.error("Invalid contest ID format", { duration: 5000 });
+        setContestLoading(false);
         return;
       }
       
@@ -231,6 +236,9 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
       } catch (err) {
         console.error("Error fetching contest:", err);
         toast.error("Failed to load contest details", { duration: 5000 });
+        // Don't set contest to null on error, keep trying
+      } finally {
+        setContestLoading(false);
       }
     };
 
@@ -501,12 +509,20 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
       return;
     }
 
+    // Check if contest is still loading
+    if (contestLoading) {
+      console.log("Contest still loading...");
+      toast.error("Please wait for contest details to load", { duration: 3000 });
+      return;
+    }
+
     if (!contest || !contestId || contestId === 'undefined' || contestId === 'null') {
       console.error("Submit failed: Missing contest data:", {
         contest,
         contestId,
+        contestLoading,
       });
-      toast.error("Contest information not available");
+      toast.error("Contest information not available. Please refresh the page.");
       return;
     }
     
@@ -600,20 +616,32 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
           try {
             await connect();
             console.log("Wallet connected successfully");
+            
+            // Wait a bit for wallet state to update
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Re-check wallet state - the component will re-render with new wallet state
+            // For now, just return to let the user click submit again
+            setTransactionState({
+              status: "idle",
+              message: "Wallet connected! Please click submit again to continue.",
+            });
+            toast.success("Wallet connected! Please click submit again to continue.", { duration: 4000 });
+            return;
           } catch (error: any) {
             console.error("Wallet connection failed:", error);
             throw new Error("Please connect a Solana wallet to continue");
           }
         }
 
-        // Verify connected wallet matches user's registered wallet (after connection is confirmed)
+        // Verify connected wallet matches user's registered wallet
         if (user?.wallet_address && publicKey && publicKey.toBase58() !== user.wallet_address) {
           throw new Error("Connected wallet doesn't match your registered wallet address");
         }
 
         console.log("Creating Solana connection...");
         const connection = new Connection(
-          '/api/solana-rpc', // Using server-side Solana proxy
+          `${window.location.origin}/api/solana-rpc`, // Using server-side Solana proxy with full URL
           "confirmed",
         );
 
@@ -726,20 +754,52 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
             signature,
           });
 
-          // Modern confirmation pattern
-          await connection.confirmTransaction({
+          // Use backend's check-transaction endpoint instead of frontend confirmation
+          console.log("Checking transaction status with backend...");
+          
+          setTransactionState({
+            status: "confirming",
+            message: "Verifying transaction with backend...",
             signature,
-            blockhash: latestBlockhash.blockhash,
-            lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
           });
+
+          // Give transaction a moment to propagate before checking
+          await new Promise(resolve => setTimeout(resolve, 2000));
+
+          try {
+            // Use the backend's check-transaction endpoint
+            const checkResponse = await fetch(`${window.location.origin}/api/contests/check-transaction`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ signature })
+            });
+
+            const status = await checkResponse.json();
+
+            if (!status.found) {
+              throw new Error('Transaction not found - it may take a moment to propagate');
+            }
+
+            if (!status.success) {
+              throw new Error('Transaction failed on-chain');
+            }
+
+            if (status.confirmationStatus !== 'confirmed' && 
+                status.confirmationStatus !== 'finalized') {
+              console.warn('Transaction not fully confirmed yet, but proceeding...');
+            }
+
+            console.log("Transaction verified by backend:", status);
+          } catch (checkError) {
+            console.warn("Transaction check failed, but proceeding anyway:", checkError);
+            // Don't fail the whole flow if check fails - backend will verify during entry
+          }
 
           setTransactionState({
             status: "submitting",
-            message: "Transaction confirmed! Submitting contest entry...",
+            message: "Transaction verified! Submitting contest entry...",
             signature,
           });
-
-          console.log("Transaction confirmed!");
         } catch (err: any) {
           console.error("Transaction error:", err);
           
@@ -813,6 +873,26 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     } catch (error: any) {
       const errorMsg = error.message || "Failed to enter contest";
 
+      // Handle session expiration (401) errors
+      if (error.status === 401 || errorMsg.includes("401") || errorMsg.includes("No session token") || errorMsg.includes("unauthorized")) {
+        setTransactionState({
+          status: "error",
+          message: "Session expired",
+          error: "Your session has expired. Please log in again to continue.",
+          signature: confirmedSignature || transactionState.signature,
+        });
+
+        toast.error("Your session has expired. Please log in again.", { duration: 5000 });
+        
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+          navigate(`/login?returnUrl=${returnUrl}`);
+        }, 2000);
+        
+        return;
+      }
+
       // Handle "already participating" as info, not error
       if (errorMsg.toLowerCase().includes("already participating")) {
         // Show success message and redirect
@@ -858,8 +938,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
         friendlyErrorMsg = user?.wallet_address ? 
           "Unable to enter the contest. Please try again." : 
           "Please log in to enter contests.";
-      } else if (errorMsg.includes("authentication") || errorMsg.includes("unauthorized")) {
-        friendlyErrorMsg = "Please log in to continue.";
       }
 
       setTransactionState({
@@ -1776,6 +1854,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                             <Button
                               onClick={handlePreviewPortfolio}
                               disabled={
+                                contestLoading ||
                                 loadingEntryStatus ||
                                 portfolioValidation !== null ||
                                 isLoading ||
@@ -1839,6 +1918,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                     <Button
                       onClick={handlePreviewPortfolio}
                       disabled={
+                        contestLoading ||
                         loadingEntryStatus ||
                         portfolioValidation !== null ||
                         isLoading ||

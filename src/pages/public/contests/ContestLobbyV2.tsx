@@ -963,6 +963,9 @@ export const ContestLobbyV2: React.FC = () => {
                     <div className="lg:col-span-2">
                       <MultiParticipantChartV2 
                         contestId={contestIdFromParams!}
+                        contestStatus={contest.status === 'active' ? 'active' : 
+                                     contest.status === 'pending' ? 'upcoming' : 
+                                     contest.status === 'completed' ? 'completed' : 'cancelled'}
                         participants={effectiveParticipants}
                         timeInterval="1h"
                         maxParticipants={effectiveParticipants.length}

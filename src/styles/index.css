@@ -3,6 +3,7 @@
 @import "tailwindcss/utilities";
 
 @import "./utilities.css";
+@import "./chart-animations.css";
 
 /* Ensure we have the RGB values for brand colors for our animations */
 :root {

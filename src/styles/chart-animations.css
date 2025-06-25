@@ -1,0 +1,127 @@
+/* Chart Line Animations */
+
+/* Pulse animation - for rare skins */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px currentColor);
+  }
+  50% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 16px currentColor);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Shimmer animation - for admin skins */
+@keyframes shimmer {
+  0% {
+    filter: drop-shadow(0 0 8px currentColor) brightness(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 12px currentColor) brightness(1.2);
+  }
+  100% {
+    filter: drop-shadow(0 0 8px currentColor) brightness(1);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Matrix rain effect */
+@keyframes matrix-rain {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -20;
+  }
+}
+
+.animate-matrix {
+  animation: matrix-rain 1s linear infinite;
+}
+.matrix-line {
+  stroke-dasharray: 4 2 1 2;
+}
+
+/* Lightning flash effect */
+@keyframes flash {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px currentColor);
+  }
+  25% {
+    opacity: 0.9;
+    filter: drop-shadow(0 0 20px currentColor) brightness(1.5);
+  }
+  26% {
+    opacity: 0.3;
+  }
+  27% {
+    opacity: 1;
+    filter: drop-shadow(0 0 25px currentColor) brightness(2);
+  }
+}
+
+.animate-flash {
+  animation: flash 4s ease-in-out infinite;
+}
+.lightning-line {
+  stroke-dasharray: 15 5 5 5 10 5;
+}
+
+/* Spiral animation for Void Walker */
+@keyframes spiral {
+  0% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+  50% {
+    stroke-dashoffset: -50;
+    opacity: 0.7;
+  }
+  100% {
+    stroke-dashoffset: -100;
+    opacity: 0.9;
+  }
+}
+
+.animate-spiral {
+  animation: spiral 5s linear infinite;
+  stroke-dasharray: 20 10;
+}
+
+/* Rain animation for Matrix skin */
+@keyframes rain {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -10;
+  }
+}
+
+.animate-rain {
+  animation: rain 0.5s linear infinite;
+}
+
+/* Crown pattern */
+.crown-line {
+  stroke-dasharray: 10 2 2 2 10;
+}
+
+/* Code pattern */
+.code-line {
+  stroke-dasharray: 8 3 3 3 8 3;
+}
+
+/* Enhanced glow for special effects */
+.special-glow {
+  filter: drop-shadow(0 0 12px currentColor) drop-shadow(0 0 24px currentColor);
+}
