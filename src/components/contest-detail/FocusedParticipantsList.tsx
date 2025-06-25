@@ -238,7 +238,11 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
     // Calculate widths based on what's actually visible
     const expandedWidth = isMobile ? 40 : 30;
     const remainingWidth = maxWidth - expandedWidth;
-    const sliverWidth = remainingWidth / (visibleCount - 1);
+    
+    // Calculate sliver width with a maximum cap
+    const calculatedSliverWidth = visibleCount > 1 ? remainingWidth / (visibleCount - 1) : remainingWidth;
+    const maxSliverWidth = isMobile ? 10 : 8; // Maximum width to prevent ugly stretching
+    const sliverWidth = Math.min(calculatedSliverWidth, maxSliverWidth);
     
     return {
       sliverWidth,
@@ -246,11 +250,11 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
       showAllDetails: visibleCount <= 10 && !isMobile,
       visibleCount,
       fontSize: {
-        rank: isMobile ? 'text-xs' : 'text-sm',
-        username: isMobile ? 'text-[10px]' : 'text-xs',
+        rank: isMobile ? 'text-lg' : 'text-xl',
+        username: isMobile ? 'text-xl' : 'text-3xl',
         expanded: {
           rank: isMobile ? 'text-2xl' : 'text-4xl',
-          name: isMobile ? 'text-lg' : 'text-2xl'
+          name: isMobile ? 'text-2xl' : 'text-4xl'
         }
       }
     };
@@ -544,6 +548,17 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                       ? 'border-brand-400/50 bg-brand-500/10' 
                       : 'border-dark-400/50'
                   } hover:bg-dark-300/30 transition-all duration-300`}>
+                    {/* Profile picture background */}
+                    {participant.profile_image_url && (
+                      <div className="absolute inset-0">
+                        <img
+                          src={getFullImageUrl(participant.profile_image_url)}
+                          alt={participant.nickname}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    
                     {/* Current user glow effect */}
                     {participant.is_current_user && pulseCurrentUser && (
                       <motion.div
@@ -553,12 +568,13 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                       />
                     )}
                     
-                    {/* Performance gradient background */}
+                    {/* Performance gradient background - very faint */}
                     <div 
-                      className={`absolute inset-0 bg-gradient-to-b ${getPerformanceColor(participant.performance_percentage)} ${
-                        participant.is_current_user ? 'opacity-30' : 'opacity-20'
-                      }`}
+                      className={`absolute inset-0 bg-gradient-to-b ${getPerformanceColor(participant.performance_percentage)} opacity-10`}
                     />
+                    
+                    {/* Dark overlay for text readability */}
+                    <div className="absolute inset-0 bg-dark-400/50" />
                     
                     {/* Current user indicator */}
                     {participant.is_current_user && (
@@ -573,7 +589,10 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                           : getRankColor(displayRank)
                       } font-bold flex flex-col items-center`}>
                         {displayConfig.showAllDetails ? (
-                          <span className="text-xs">#{displayRank}</span>
+                          <span className={`${displayConfig.fontSize.rank}`} style={{
+                            textShadow: '2px 2px 4px rgba(0,0,0,0.9)',
+                            WebkitTextStroke: '1px rgba(0,0,0,0.8)'
+                          }}>{displayRank}</span>
                         ) : (
                           // Display rank vertically without #
                           displayRank.toString().split('').map((char: string, i: number) => (
@@ -605,17 +624,23 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                     )}
                     
                     {/* Username - rotated, centered in available space */}
-                    {!displayConfig.showAllDetails && (
-                      <div className="absolute top-1/2 left-0 right-0 flex justify-center -translate-y-1/2">
-                        <div className="transform -rotate-90 whitespace-nowrap">
-                          <span className={`${displayConfig.fontSize.username} font-medium ${
-                            participant.is_current_user ? 'text-brand-300' : 'text-gray-300'
-                          }`}>
-                            {participant.nickname}
-                          </span>
-                        </div>
+                    <div className="absolute top-1/2 left-0 right-0 flex justify-center -translate-y-1/2 z-20">
+                      <div className="transform -rotate-90 whitespace-nowrap">
+                        <span className={`${
+                          participant.nickname.length > 12 ? (isMobile ? 'text-base' : 'text-xl') :
+                          participant.nickname.length > 8 ? (isMobile ? 'text-lg' : 'text-2xl') :
+                          displayConfig.fontSize.username
+                        } font-bold ${
+                          participant.is_current_user ? 'text-brand-300' : 'text-gray-100'
+                        }`}
+                        style={{
+                          textShadow: '2px 2px 4px rgba(0,0,0,0.9)',
+                          WebkitTextStroke: '1px rgba(0,0,0,0.8)'
+                        }}>
+                          {participant.nickname}
+                        </span>
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
 
@@ -669,7 +694,7 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                               animate={isFocused ? { scale: [1, 1.1, 1] } : {}}
                               transition={{ duration: 0.3 }}
                             >
-                              #{displayRank}
+                              {displayRank}
                             </motion.span>
                             {participant.is_current_user && (
                               <span className="bg-brand-500 text-white px-3 py-1 rounded-md font-black text-sm">YOU</span>
@@ -680,11 +705,19 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                           </div>
                           
                           {/* Name and level */}
-                          <h4 className={`font-bold ${displayConfig.fontSize.expanded.name} mb-2 ${
+                          <h4 className={`font-bold ${
+                            participant.nickname.length > 15 ? (isMobile ? 'text-lg' : 'text-2xl') :
+                            participant.nickname.length > 10 ? (isMobile ? 'text-xl' : 'text-3xl') :
+                            displayConfig.fontSize.expanded.name
+                          } mb-2 ${
                             participant.is_current_user ? "text-brand-400" :
                             participant.is_ai_agent ? "text-cyan-400" :
                             "text-gray-100"
-                          }`}>
+                          }`}
+                          style={{
+                            textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                            WebkitTextStroke: '1px rgba(0,0,0,0.8)'
+                          }}>
                             {participant.nickname}
                           </h4>
                           
@@ -706,14 +739,21 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                             <div className="space-y-3">
                               <div className={`text-3xl font-bold ${
                                 parseFloat(participant.performance_percentage || "0") >= 0 ? "text-green-400" : "text-red-400"
-                              }`}>
+                              }`}
+                              style={{
+                                textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                                WebkitTextStroke: '1px rgba(0,0,0,0.8)'
+                              }}>
                                 {parseFloat(participant.performance_percentage || "0") >= 0 ? "+" : ""}
                                 {parseFloat(participant.performance_percentage || "0").toFixed(2)}%
                               </div>
                               
                               {participant.portfolio_value && (
                                 <div className="flex items-center gap-2 text-xl text-gray-200">
-                                  <span>{parseFloat(participant.portfolio_value).toFixed(2)}</span>
+                                  <span style={{
+                                    textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                                    WebkitTextStroke: '1px rgba(0,0,0,0.8)'
+                                  }}>{parseFloat(participant.portfolio_value).toFixed(2)}</span>
                                   <img 
                                     src="/assets/media/logos/solana.svg" 
                                     alt="SOL" 
@@ -799,17 +839,38 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
         </div>
       </div>
 
-      {/* Expandable Portfolio Section */}
+      {/* Right-side Portfolio Drawer */}
       <AnimatePresence>
         {expandedPortfolio && sortedParticipants[focusedIndex] && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="mt-4 bg-dark-300/30 border border-dark-300 rounded-lg overflow-hidden"
+          <>
+            {/* Dark overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 bg-black/50 z-40"
+              onClick={() => setExpandedPortfolio(false)}
+            />
+            
+            <motion.div
+            initial={{ x: "100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "100%", opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className={`fixed right-0 top-0 h-full ${isMobile ? 'w-full' : 'w-96'} bg-dark-300/95 backdrop-blur-md border-l border-dark-300 z-50 overflow-y-auto`}
           >
-            <div className="p-6">
+            {/* Close button */}
+            <button
+              onClick={() => setExpandedPortfolio(false)}
+              className="absolute top-4 right-4 p-2 bg-dark-400/50 rounded-lg hover:bg-dark-400 transition-colors z-10"
+            >
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <div className="p-6 pt-16">
               <h4 className="text-lg font-semibold text-gray-100 mb-4">
                 {sortedParticipants[focusedIndex].nickname}'s Portfolio
               </h4>
@@ -908,6 +969,7 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
               )}
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
 
