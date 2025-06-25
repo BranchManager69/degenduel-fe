@@ -16,7 +16,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import PortfolioPreviewModal from "../../../components/portfolio-selection/PortfolioPreviewModal";
 import { PortfolioSummary } from "../../../components/portfolio-selection/PortfolioSummary";
 import { TokenFilters } from "../../../components/portfolio-selection/TokenFilters";
-import { TokenGrid } from "../../../components/portfolio-selection/TokenGrid";
+import { CreativePortfolioGrid } from "../../../components/portfolio-selection/CreativePortfolioGrid";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Skeleton } from "../../../components/ui/Skeleton";
@@ -1643,19 +1643,21 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
 
                     {/* Enhanced Token Grid - Visual rich cards with infinite scroll */}
                     <div className="relative">
-                      <TokenGrid
+                      <CreativePortfolioGrid
                         tokens={sortedTokens}
                         selectedTokens={selectedTokens}
                         onTokenSelect={(contractAddress, weight) => {
                           if (weight === 0) {
                             handleTokenSelect(contractAddress);
                           } else {
-                            handleWeightChange(contractAddress, weight);
+                            setSelectedTokens(prev => {
+                              const newMap = new Map(prev);
+                              newMap.set(contractAddress, weight);
+                              return newMap;
+                            });
                           }
                         }}
-                        marketCapFilter=""
-                        viewMode={viewMode}
-                        searchQuery=""
+                        onWeightChange={handleWeightChange}
                       />
                     </div>
                   </div>
