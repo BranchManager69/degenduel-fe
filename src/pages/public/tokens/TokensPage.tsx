@@ -366,7 +366,6 @@ export const TokensPage: React.FC = () => {
                 tokens={visibleTokens}
                 featuredTokens={[]} // Empty array to show all tokens in one grid
                 selectedTokenSymbol={null}
-                onTokenClick={undefined} // Let cards flip instead of navigate
               />
               
               {/* Load More Trigger - Subtle infinite scroll indicator */}

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Token, TokenHelpers } from "../../types";
 import { formatNumber, formatPercentage, formatTokenPrice } from "../../utils/format";
@@ -9,7 +9,6 @@ interface CreativeTokensGridProps {
   tokens: Token[];
   featuredTokens?: Token[]; // NEW: Separate stable featured tokens
   selectedTokenSymbol?: string | null;
-  onTokenClick?: (token: Token) => void;
   backContent?: 'details' | 'portfolio'; // Control what shows on card back
 }
 
@@ -21,7 +20,6 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
   tokens, 
   featuredTokens = [], // NEW: Default to empty array
   selectedTokenSymbol,
-  onTokenClick,
   backContent = 'details' // Default to current detailed view
 }) => {
   const selectedTokenRef = useRef<HTMLDivElement>(null);
