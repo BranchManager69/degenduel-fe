@@ -17,6 +17,17 @@ interface Participant {
   };
   is_current_user?: boolean;
   is_ai_agent?: boolean;
+  bio?: string | null;
+  line_design?: {
+    color?: string;
+    gradient?: string[];
+    pattern?: string;
+    width?: number;
+    glow?: boolean;
+    animation?: string;
+    image?: string;
+    opacity?: number;
+  } | null;
 }
 
 interface FocusedParticipantsListProps {
@@ -24,6 +35,8 @@ interface FocusedParticipantsListProps {
   contestStatus?: "upcoming" | "live" | "completed";
   prizePool?: number;
   contestId?: string;
+  onParticipantHover?: (walletAddress: string | null) => void;
+  hoveredParticipant?: string | null;
 }
 
 export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = ({
@@ -31,6 +44,8 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
   contestStatus = "upcoming",
   prizePool = 0,
   contestId,
+  onParticipantHover,
+  hoveredParticipant,
 }) => {
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -228,7 +243,8 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
     return "text-gray-400";
   };
 
-  const activeIndex = hoveredIndex !== null ? hoveredIndex : focusedIndex;
+  // When drawer is open, keep focus on that participant
+  const activeIndex = expandedPortfolio ? focusedIndex : (hoveredIndex !== null ? hoveredIndex : focusedIndex);
   
   // Display configuration based on viewport
   const displayConfig = useMemo(() => {
@@ -388,6 +404,11 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
     if (focusedParticipant) {
       if (!expandedPortfolio) {
         fetchPortfolioData(focusedParticipant.wallet_address);
+        // Trigger hover state when opening drawer
+        onParticipantHover?.(focusedParticipant.wallet_address);
+      } else {
+        // Clear hover state when closing drawer
+        onParticipantHover?.(null);
       }
       setExpandedPortfolio(!expandedPortfolio);
     }
@@ -525,6 +546,7 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
               const prize = prizeMap.get(participant.wallet_address) || 0;
               const hasPrize = prize > 0;
               const displayRank = 'displayRank' in participant ? (participant as any).displayRank : actualIndex + 1;
+              const isHoveredFromOther = hoveredParticipant === participant.wallet_address;
             
             return (
               <motion.div
@@ -537,9 +559,23 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                   width: isActive ? `${displayConfig.expandedWidth}%` : `${displayConfig.sliverWidth}%`
                 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                onClick={() => setFocusedIndex(actualIndex)}
-                onMouseEnter={() => setHoveredIndex(actualIndex)}
-                onMouseLeave={() => setHoveredIndex(null)}
+                onClick={() => {
+                  if (!expandedPortfolio) {
+                    setFocusedIndex(actualIndex);
+                  }
+                }}
+                onMouseEnter={() => {
+                  if (!expandedPortfolio) {
+                    setHoveredIndex(actualIndex);
+                  }
+                  onParticipantHover?.(participant.wallet_address);
+                }}
+                onMouseLeave={() => {
+                  if (!expandedPortfolio) {
+                    setHoveredIndex(null);
+                    onParticipantHover?.(null);
+                  }
+                }}
               >
                 {/* Sliver view (compressed) */}
                 {!isActive && (
@@ -547,7 +583,9 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                     participant.is_current_user 
                       ? 'border-brand-400/50 bg-brand-500/10' 
                       : 'border-dark-400/50'
-                  } hover:bg-dark-300/30 transition-all duration-300`}>
+                  } hover:bg-dark-300/30 transition-all duration-300 ${
+                    isHoveredFromOther ? 'ring-2 ring-brand-400/50 bg-brand-500/10' : ''
+                  }`}>
                     {/* Profile picture background */}
                     {participant.profile_image_url && (
                       <div className="absolute inset-0">
@@ -850,7 +888,10 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
               className="fixed inset-0 bg-black/50 z-40"
-              onClick={() => setExpandedPortfolio(false)}
+              onClick={() => {
+                setExpandedPortfolio(false);
+                onParticipantHover?.(null);
+              }}
             />
             
             <motion.div
@@ -862,7 +903,10 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
           >
             {/* Close button */}
             <button
-              onClick={() => setExpandedPortfolio(false)}
+              onClick={() => {
+                setExpandedPortfolio(false);
+                onParticipantHover?.(null);
+              }}
               className="absolute top-4 right-4 p-2 bg-dark-400/50 rounded-lg hover:bg-dark-400 transition-colors z-10"
             >
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -874,6 +918,16 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
               <h4 className="text-lg font-semibold text-gray-100 mb-4">
                 {sortedParticipants[focusedIndex].nickname}'s Portfolio
               </h4>
+              
+              {/* Bio Section */}
+              {sortedParticipants[focusedIndex].bio && (
+                <div className="mb-6 p-4 bg-dark-400/30 rounded-lg">
+                  <h5 className="text-sm font-semibold text-gray-300 mb-2">Bio</h5>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    {sortedParticipants[focusedIndex].bio}
+                  </p>
+                </div>
+              )}
               
               {loadingPortfolio[sortedParticipants[focusedIndex].wallet_address] ? (
                 <div className="text-center py-8 text-gray-400">

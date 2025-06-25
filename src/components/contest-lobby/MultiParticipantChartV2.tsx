@@ -44,7 +44,7 @@ interface MultiParticipantChartV2Props {
   hoveredParticipant?: string | null;
 }
 
-type ViewMode = 'absolute' | 'relative' | 'rank';
+
 
 // Color palette for different participants
 const PARTICIPANT_COLORS = [
@@ -84,7 +84,6 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<ViewMode>('relative');
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '1d' | 'all'>('all');
   const [showParticipantSelector, setShowParticipantSelector] = useState(false);
 
@@ -247,10 +246,8 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
                 value: point.portfolio_value 
               });
               
-              // Store values based on view mode
-              if (viewMode === 'absolute') {
-                dataPoint[participant.wallet_address] = point.portfolio_value;
-              } else if (viewMode === 'relative' && initialValues[participant.wallet_address]) {
+              // Always use relative (percentage change) mode
+              if (initialValues[participant.wallet_address]) {
                 const percentChange = ((point.portfolio_value / initialValues[participant.wallet_address]) - 1) * 100;
                 dataPoint[participant.wallet_address] = percentChange;
               }
@@ -258,17 +255,11 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
           }
         });
         
-        // Calculate ranks for rank view
-        if (viewMode === 'rank') {
-          valuesAtTime.sort((a, b) => b.value - a.value);
-          valuesAtTime.forEach((item, rank) => {
-            dataPoint[item.wallet] = rank + 1;
-          });
-        }
+        // Note: Only using percentage change mode, no rank calculation needed
 
         return dataPoint;
       });
-  }, [timeFilteredData, selectedParticipants, viewMode, initialValues]);
+  }, [timeFilteredData, selectedParticipants, initialValues]);
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -282,20 +273,8 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
   };
 
   const formatValue = (value: number) => {
-    if (viewMode === 'relative') {
-      return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
-    } else if (viewMode === 'rank') {
-      return `#${Math.round(value)}`;
-    }
-    
-    // Compact currency formatting for better readability
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(1)}M`;
-    } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(1)}K`;
-    } else {
-      return `$${value.toFixed(0)}`;
-    }
+    // Always format as percentage since we're only using percentage change mode
+    return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
   };
 
   // Get latest values for each participant
@@ -326,9 +305,8 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const sortedPayload = viewMode === 'rank' 
-        ? payload.sort((a: any, b: any) => a.value - b.value)
-        : payload.sort((a: any, b: any) => b.value - a.value);
+      // Sort by percentage change (highest to lowest)
+      const sortedPayload = payload.sort((a: any, b: any) => b.value - a.value);
         
       return (
         <div className="bg-dark-300/95 backdrop-blur-sm border border-dark-200 rounded-lg p-4 shadow-xl">
@@ -336,8 +314,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
           {sortedPayload.map((entry: any, index: number) => {
             const participant = chartData.find(p => p.wallet_address === entry.dataKey);
             const isCurrentUser = participant?.wallet_address === user?.wallet_address;
-            const latestData = latestValues[entry.dataKey];
-            const isLeader = viewMode === 'rank' ? entry.value === 1 : index === 0;
+            const isLeader = index === 0; // Top performer at this timestamp
             
             return (
               <div key={entry.dataKey} className="flex items-center gap-3 py-1">
@@ -350,11 +327,6 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
                       {isCurrentUser && ' (You)'}
                     </span>
                   </p>
-                  {viewMode === 'absolute' && latestData && (
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {latestData.change >= 0 ? '+' : ''}{latestData.change.toFixed(2)}% from start
-                    </p>
-                  )}
                 </div>
               </div>
             );
@@ -467,39 +439,11 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
         </motion.div>
       )}
 
-      {/* View Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setViewMode('absolute')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              viewMode === 'absolute'
-                ? 'bg-brand-500 text-white'
-                : 'bg-dark-300 text-gray-400 hover:text-white hover:bg-dark-200'
-            }`}
-          >
-            Portfolio Value
-          </button>
-          <button
-            onClick={() => setViewMode('relative')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              viewMode === 'relative'
-                ? 'bg-brand-500 text-white'
-                : 'bg-dark-300 text-gray-400 hover:text-white hover:bg-dark-200'
-            }`}
-          >
-            % Change
-          </button>
-          <button
-            onClick={() => setViewMode('rank')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              viewMode === 'rank'
-                ? 'bg-brand-500 text-white'
-                : 'bg-dark-300 text-gray-400 hover:text-white hover:bg-dark-200'
-            }`}
-          >
-            Rank Trend
-          </button>
+      {/* Time Range Controls */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium text-gray-300">Performance Timeline</h3>
+          <span className="text-xs text-gray-500">% Change from Start</span>
         </div>
         
         <div className="flex gap-2">
@@ -591,10 +535,8 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
             />
             <Tooltip content={<CustomTooltip />} />
             
-            {/* Add reference line for rank view */}
-            {viewMode === 'relative' && (
-              <ReferenceLine y={0} stroke="#6b7280" strokeDasharray="3 3" />
-            )}
+            {/* Reference line at 0% for percentage change */}
+            <ReferenceLine y={0} stroke="#6b7280" strokeDasharray="3 3" />
             
             {/* Render lines for selected participants */}
             {chartData.map((participant, index) => {
@@ -612,7 +554,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
               return (
                 <Line
                   key={participant.wallet_address}
-                  type={viewMode === 'rank' ? 'stepAfter' : 'monotone'}
+                  type="monotone"
                   dataKey={participant.wallet_address}
                   stroke={shouldFade ? '#6b7280' : color} // Gray out faded lines
                   strokeWidth={strokeWidth}
