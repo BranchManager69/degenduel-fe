@@ -870,7 +870,7 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
               </svg>
             </button>
             
-            <div className="p-6 pt-16">
+            <div className="p-6 pt-16 max-w-full">
               <h4 className="text-lg font-semibold text-gray-100 mb-4">
                 {sortedParticipants[focusedIndex].nickname}'s Portfolio
               </h4>
