@@ -138,10 +138,8 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     error: tokensError,
     isConnected: isTokenDataConnected,
     lastUpdate,
-    refresh: refreshTokens,
-    loadMore,
-    pagination
-  } = useStandardizedTokenData("all", "marketCap", {}, 5, 50); // Start with 50, load more on scroll
+    refresh: refreshTokens
+  } = useStandardizedTokenData("all", "marketCap", {}, 5, 3000); // Load all 3000 tokens like TokensPage
   
   // Jupiter filters don't work with the centralized hook right now
   // The backend already filters duplicates for us
@@ -167,7 +165,9 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   // Get footer state for dynamic positioning
   const { isCompact } = useScrollFooter(50);
   
-  // Infinite scroll state
+  // Client-side pagination state (matching TokensPage)
+  const [displayCount, setDisplayCount] = useState(50); // Start by showing 50 tokens
+  const TOKENS_PER_PAGE = 50; // Load 50 more each time
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
   
@@ -416,8 +416,8 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     return orderedTokens;
   }, [allDisplayableTokens, selectedTokens]);
 
-  // Sort state for this page only
-  const [sortBy, setSortBy] = useState<'default' | 'marketCap' | 'volume' | 'change24h' | 'price'>('volume');
+  // Sort state for this page only - default to 'default' to respect backend order
+  const [sortBy, setSortBy] = useState<'default' | 'marketCap' | 'volume' | 'change24h' | 'price'>('default');
   
   // Apply sorting to the memoized tokens
   const sortedTokens = useMemo(() => {
@@ -440,6 +440,14 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
       }
     });
   }, [memoizedTokens, sortBy]);
+
+  // Visible tokens - only show up to displayCount (client-side pagination)
+  const visibleTokens = useMemo(() => {
+    return sortedTokens.slice(0, displayCount);
+  }, [sortedTokens, displayCount]);
+
+  // Check if there are more tokens to display (client-side)
+  const hasMoreTokens = displayCount < sortedTokens.length;
 
   // Token selection handler - will be defined after offline mode variables
 
@@ -1009,24 +1017,21 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const isOfflineMode = !isTokenDataConnected && !isInWsGracePeriod;
   const showOfflineIndicator = isOfflineMode && memoizedTokens.length > 0;
 
-  // Load more tokens for infinite scroll
+  // Load more tokens - now handles client-side pagination (matching TokensPage)
   const loadMoreTokens = useCallback(() => {
-    if (isLoadingMore || !pagination?.hasMore || tokenListLoading) {
-      console.log('[PortfolioTokenSelectionPage] Cannot load more:', { isLoadingMore, hasMore: pagination?.hasMore, tokenListLoading });
-      return;
-    }
+    if (isLoadingMore) return;
     
-    console.log('[PortfolioTokenSelectionPage] Loading more tokens...');
+    console.log('[PortfolioTokenSelectionPage] Loading more tokens (client-side pagination)');
     setIsLoadingMore(true);
     
-    // Use the actual loadMore function from the hook
-    loadMore();
+    // Increase the display count
+    setDisplayCount(prev => prev + TOKENS_PER_PAGE);
     
     // Reset loading state after a short delay
     setTimeout(() => {
       setIsLoadingMore(false);
-    }, 500);
-  }, [isLoadingMore, pagination?.hasMore, tokenListLoading, loadMore]);
+    }, 100); // Shorter delay since we're not fetching from server
+  }, [isLoadingMore]);
 
   // Enhanced token selection handler with offline support
   const handleTokenSelect = useCallback(
@@ -1264,7 +1269,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && pagination?.hasMore && !isLoadingMore && !tokenListLoading) {
+        if (entries[0].isIntersecting && hasMoreTokens && !isLoadingMore && !tokenListLoading) {
           console.log('[PortfolioTokenSelectionPage] Intersection detected, loading more tokens');
           loadMoreTokens();
         }
@@ -1282,7 +1287,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
         observer.unobserve(loadMoreTriggerRef.current);
       }
     };
-  }, [pagination?.hasMore, isLoadingMore, tokenListLoading, loadMoreTokens]);
+  }, [hasMoreTokens, isLoadingMore, tokenListLoading, loadMoreTokens]);
 
   // FIXED: Never block UI for connection issues when we have cached data
   const displayError = tokensError && memoizedTokens.length === 0 ? tokensError : null;
@@ -1642,7 +1647,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                     {/* Enhanced Token Grid - Visual rich cards with infinite scroll */}
                     <div className="relative">
                       <CreativePortfolioGrid
-                        tokens={sortedTokens}
+                        tokens={visibleTokens}
                         selectedTokens={selectedTokens}
                         onTokenSelect={(contractAddress, weight) => {
                           if (weight === 0) {
@@ -1657,6 +1662,31 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                         }}
                         onWeightChange={handleWeightChange}
                       />
+                      
+                      {/* Load More Trigger - Subtle infinite scroll indicator */}
+                      {hasMoreTokens && (
+                        <div 
+                          ref={loadMoreTriggerRef}
+                          className="relative py-12"
+                        >
+                          <div className="flex items-center justify-center">
+                            {isLoadingMore ? (
+                              <div className="flex items-center gap-3">
+                                <div className="flex gap-1">
+                                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse delay-75"></div>
+                                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse delay-150"></div>
+                                </div>
+                                <span className="text-sm text-gray-400">Loading more tokens...</span>
+                              </div>
+                            ) : (
+                              <div className="text-xs text-gray-500">
+                                Scroll for more • Showing {visibleTokens.length} of {sortedTokens.length} tokens
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Card>
