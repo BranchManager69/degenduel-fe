@@ -62,11 +62,8 @@ export const TokensPage: React.FC = () => {
     _stale: false,
   }), [lastUpdate]);
 
-  // Token selection handler
-  const handleTokenClick = useCallback((token: Token) => {
-    // Navigate to token detail page using contract address
-    navigate(`/tokens/${TokenHelpers.getAddress(token)}`);
-  }, [navigate]);
+  // Token selection handler - removed to enable card flipping
+  // Cards will now flip instead of navigating
 
   // Modal close handler removed - no longer needed
 
@@ -369,7 +366,7 @@ export const TokensPage: React.FC = () => {
                 tokens={visibleTokens}
                 featuredTokens={[]} // Empty array to show all tokens in one grid
                 selectedTokenSymbol={null}
-                onTokenClick={handleTokenClick}
+                onTokenClick={undefined} // Let cards flip instead of navigate
               />
               
               {/* Load More Trigger - Subtle infinite scroll indicator */}
