@@ -382,7 +382,9 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     const tokenMap = new Map<string, Token>();
     for (const token of combined) {
         const address = TokenHelpers.getAddress(token);
-        if (address && !tokenMap.has(address)) {
+        // Filter by minimum market cap of $100,000
+        const marketCap = Number(token.market_cap) || 0;
+        if (address && !tokenMap.has(address) && marketCap >= 100000) {
             tokenMap.set(address, token);
         }
     }
@@ -416,8 +418,8 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     return orderedTokens;
   }, [allDisplayableTokens, selectedTokens]);
 
-  // Sort state for this page only - default to 'default' to respect backend order
-  const [sortBy, setSortBy] = useState<'default' | 'marketCap' | 'volume' | 'change24h' | 'price'>('default');
+  // Sort state for this page only - default to 'change24h' to show hot movers first
+  const [sortBy, setSortBy] = useState<'default' | 'marketCap' | 'volume' | 'change24h' | 'price'>('change24h');
   
   // Apply sorting to the memoized tokens
   const sortedTokens = useMemo(() => {

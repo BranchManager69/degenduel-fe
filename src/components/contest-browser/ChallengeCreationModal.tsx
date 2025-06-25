@@ -69,7 +69,7 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  const [duration, setDuration] = React.useState("24"); // Duration in hours
+  const [duration, setDuration] = React.useState("1"); // Duration in hours
   const [formData, setFormData] = React.useState<ChallengeFormData>({
     opponent_wallet: "",
     name: `Duel Challenge ${Math.floor(Math.random() * 1000)}`,
@@ -128,10 +128,10 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
       value = parts[0] + '.' + parts[1].slice(0, 3);
     }
     
-    // Enforce maximum entry fee of 10 SOL
+    // Enforce maximum entry fee of 1 SOL
     const numericValue = parseFloat(value);
-    if (!isNaN(numericValue) && numericValue > 10) {
-      return; // Don't update if over 10 SOL
+    if (!isNaN(numericValue) && numericValue > 1) {
+      return; // Don't update if over 1 SOL
     }
     
     setFormData(prev => ({ ...prev, entry_fee: value }));
@@ -391,7 +391,7 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
           <div className="flex justify-between items-center p-4 sm:p-5 border-b border-dark-300/50 relative z-10 bg-dark-200/40 backdrop-blur-sm">
             <h2 className="text-lg sm:text-xl font-bold text-gray-100 flex items-center">
               <span className="mr-2">⚔️</span>
-              Challenge Friend
+              Challenge to a Duel
             </h2>
             <button
               type="button"
@@ -564,18 +564,12 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
                         required
                       >
                         <option value="0.0833333333333333">5 minutes</option>
+                        <option value="0.25">15 minutes</option>
                         <option value="0.5">30 minutes</option>
+                        <option value="0.75">45 minutes</option>
                         <option value="1">1 hour</option>
                         <option value="2">2 hours</option>
                         <option value="3">3 hours</option>
-                        <option value="4">4 hours</option>
-                        <option value="6">6 hours</option>
-                        <option value="8">8 hours</option>
-                        <option value="12">12 hours</option>
-                        <option value="24">1 day</option>
-                        <option value="48">2 days</option>
-                        <option value="72">3 days</option>
-                        <option value="168">1 week</option>
                       </select>
                       {calculatedEndTime && (() => {
                         const { dateStr, timeStr } = formatDatePreview(calculatedEndTime);
@@ -607,7 +601,7 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
                   </div>
                   <div className="mt-1 space-y-1">
                     <p className="text-xs text-gray-500">You pay upfront, opponent pays if they accept</p>
-                    <p className="text-xs text-gray-500">Maximum 10 SOL • Higher limits coming soon</p>
+                    <p className="text-xs text-gray-500">Maximum 1 SOL</p>
                   </div>
                 </div>
 
@@ -638,39 +632,25 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
                   )}
                   
                   <div className="relative z-10">
-                  {parseFloat(calculatedPrizePool) > 0 ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <div className="text-xs text-gray-400">Prize Pool</div>
-                        <div className="text-lg text-brand-400">◎ {(parseFloat(calculatedPrizePool) * 0.9).toFixed(3).replace(/\.?0+$/, '')} SOL</div>
-                        <div className="text-xs text-gray-500">
-                          <div>2 participants</div>
-                          <div>× {formData.entry_fee || '0'} SOL per entry</div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-400">Degen Dividends</div>
-                        <div className="text-lg text-purple-400">◎ {(parseFloat(calculatedPrizePool) * 0.1).toFixed(3).replace(/\.?0+$/, '')} SOL</div>
-                        <div className="text-xs text-gray-500">
-                          <div>Airdropped to DUEL</div>
-                          <div>holders daily
-                            <a href="/wallets" className="ml-1 text-purple-400 hover:text-purple-300 transition-colors underline">
-                              more info
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
                     <div>
-                      <div className="text-xs text-gray-400">Prize Pool</div>
+                      <div className="text-xs text-gray-400">Winner Takes All</div>
                       <div className="text-lg text-brand-400">◎ {calculatedPrizePool} SOL</div>
                       <div className="text-xs text-gray-500">
                         <div>2 participants</div>
                         <div>× {formData.entry_fee || '0'} SOL per entry</div>
                       </div>
+                      {parseFloat(calculatedPrizePool) === 0 && (
+                        <div className="mt-2 text-xs text-green-400 font-medium flex items-center">
+                          <span className="mr-1">✨</span>
+                          Free duel • Play for glory and bragging rights
+                        </div>
+                      )}
+                      {parseFloat(calculatedPrizePool) > 0 && (
+                        <div className="mt-2 text-xs text-cyan-400 font-medium">
+                          100% to the winner • No platform fees
+                        </div>
+                      )}
                     </div>
-                  )}
                   </div>
                 </div>
               </div>

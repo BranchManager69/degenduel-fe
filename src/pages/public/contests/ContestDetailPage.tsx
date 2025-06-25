@@ -117,6 +117,9 @@ export const ContestDetails: React.FC = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [enhancedParticipants, setEnhancedParticipants] = useState<any[]>([]);
   
+  // Add state for analytics participants with SOL values
+  const [analyticsParticipants, setAnalyticsParticipants] = useState<any[]>([]);
+  
   // Image loading states
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -307,6 +310,49 @@ export const ContestDetails: React.FC = () => {
         }
       } catch (participantsError) {
         console.log("Enhanced participants API not available, using legacy data:", participantsError);
+      }
+
+      // Fetch portfolio analytics data for SOL values (for active/completed contests)
+      const displayStatus = (() => {
+        if (data.status === "cancelled") return "cancelled";
+        const now = new Date();
+        const startTime = new Date(data.start_time);
+        const endTime = new Date(data.end_time);
+        const hasStarted = now >= startTime;
+        const hasEnded = now >= endTime;
+        if (hasEnded) return "completed";
+        if (hasStarted) return "active";
+        return "pending";
+      })();
+
+      if (displayStatus === "active" || displayStatus === "completed") {
+        try {
+          const analyticsResponse = await fetch(`/api/portfolio-analytics/contests/${id}/performance/detailed`, {
+            credentials: 'same-origin'
+          });
+          
+          if (analyticsResponse.ok) {
+            const analyticsData = await analyticsResponse.json();
+            console.log("Portfolio analytics data fetched:", analyticsData);
+            
+            // Transform analytics participants to match ParticipantsList expected format
+            const transformedAnalyticsParticipants = (analyticsData.participants || []).map((p: any) => ({
+              wallet_address: p.wallet_address,
+              nickname: p.username || p.nickname || `Player ${p.rank || 0}`,
+              portfolio_value: p.total_value_sol?.toString() || '0', // SOL value instead of USD
+              performance_percentage: p.pnl_percent?.toString() || '0',
+              rank: p.rank,
+              is_current_user: p.wallet_address === user?.wallet_address,
+              is_ai_agent: false,
+              profile_image_url: null
+            }));
+            
+            setAnalyticsParticipants(transformedAnalyticsParticipants);
+            console.log("Analytics participants with SOL values:", transformedAnalyticsParticipants);
+          }
+        } catch (analyticsError) {
+          console.log("Portfolio analytics not available, using basic data:", analyticsError);
+        }
       }
 
       // Ensure settings are properly initialized
@@ -1114,12 +1160,15 @@ export const ContestDetails: React.FC = () => {
                       participants={
                         realtimeParticipants.length > 0 
                           ? realtimeParticipants 
-                          : enhancedParticipants.length > 0
-                            ? enhancedParticipants
-                            : (contest.participants || []).map(transformLegacyParticipant)
+                          : analyticsParticipants.length > 0
+                            ? analyticsParticipants  // Use analytics data with SOL values when available
+                            : enhancedParticipants.length > 0
+                              ? enhancedParticipants
+                              : (contest.participants || []).map(transformLegacyParticipant)
                       }
                       contestStatus={mapContestStatus(contest.status)}
                       contestId={id!}
+                      prizePool={parseFloat(contest.prize_pool || '0')}  // Add missing prizePool prop
                     />
                   </SilentErrorBoundary>
                 </div>

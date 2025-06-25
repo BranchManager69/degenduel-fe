@@ -74,10 +74,9 @@ export const TokenFilters: React.FC<TokenFiltersProps> = ({
                 onChange={(e) => onSortChange(e.target.value as any)}
                 className="px-3 py-2 bg-dark-300/70 border border-dark-400 rounded-lg text-white text-sm focus:outline-none focus:border-brand-400 appearance-none"
               >
-                <option value="default">🔥 Trending</option>
+                <option value="change24h">24h Change</option>
                 <option value="marketCap">Market Cap</option>
                 <option value="volume">Volume</option>
-                <option value="change24h">24h Change</option>
                 <option value="price">Price</option>
               </select>
             </div>

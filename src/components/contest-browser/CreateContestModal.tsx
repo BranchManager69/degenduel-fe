@@ -104,9 +104,9 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     return `${initials}-${timestamp}${suffix}`;
   };
 
-  const [participantRange, setParticipantRange] = React.useState("3-50");
+  const [participantRange, setParticipantRange] = React.useState("3-20");
 
-  const [duration, setDuration] = React.useState("24"); // Duration in hours
+  const [duration, setDuration] = React.useState("1"); // Duration in hours
   const [formData, setFormData] = React.useState({
     name: `Degen Dustup ${Math.floor(Math.random() * 100)}`,
     description: `May the best Degen win.`,
@@ -114,7 +114,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     prize_pool: "0", // Will be calculated based on entry fee × participants
     start_time: getSmartStartTime(),
     min_participants: 3,
-    max_participants: 50,
+    max_participants: 20,
     allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     settings: {
       difficulty: "guppy", // Hard-coded default
@@ -431,10 +431,10 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       value = parts[0] + '.' + parts[1].slice(0, 3);
     }
     
-    // Enforce maximum entry fee of 10 SOL
+    // Enforce maximum entry fee of 1 SOL
     const numericValue = parseFloat(value);
-    if (!isNaN(numericValue) && numericValue > 10) {
-      return; // Don't update if over 10 SOL
+    if (!isNaN(numericValue) && numericValue > 1) {
+      return; // Don't update if over 1 SOL
     }
     
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -575,7 +575,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 pointer-events-none" />
           
           <div className="flex justify-between items-center p-4 sm:p-5 border-b border-dark-300/50 relative z-10 bg-dark-200/40 backdrop-blur-sm">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-100">Create Contest</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-100">Create a Contest</h2>
             <button
               type="button"
               onClick={onClose}
@@ -801,18 +801,12 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                           required
                         >
                           <option value="0.0833333333333333">5 minutes</option>
+                          <option value="0.25">15 minutes</option>
                           <option value="0.5">30 minutes</option>
+                          <option value="0.75">45 minutes</option>
                           <option value="1">1 hour</option>
                           <option value="2">2 hours</option>
                           <option value="3">3 hours</option>
-                          <option value="4">4 hours</option>
-                          <option value="6">6 hours</option>
-                          <option value="8">8 hours</option>
-                          <option value="12">12 hours</option>
-                          <option value="24">1 day</option>
-                          <option value="48">2 days</option>
-                          <option value="72">3 days</option>
-                          <option value="168">1 week</option>
                         </select>
                         {calculatedEndTime && (() => {
                           const { dateStr, timeStr } = formatDatePreview(calculatedEndTime);
@@ -866,7 +860,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                           />
                           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">SOL</div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Max: 10 SOL (higher limit soon)</p>
+                        <p className="text-xs text-gray-500 mt-1">Max: 1 SOL</p>
                       </div>
                     </div>
                   </div>

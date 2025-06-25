@@ -85,8 +85,8 @@ export const ContestBrowser: React.FC = () => {
         tokenTypesAllowed: [],
         startingPortfolioValue: '1000'
       },
-      min_participants: 3,
-      max_participants: 100,
+      min_participants: (contest as any).min_participants,
+      max_participants: (contest as any).max_participants,
       // Debug: Check all possible participation field names
       is_participating: (contest as any).joined || (contest as any).participating || (contest as any).is_participating || false,
       contest_code: (contest as any).contest_id || (contest as any).id || '',

@@ -56,6 +56,8 @@ export interface Contest {
   leaderboard?: {
     rankings: ContestRanking[];
   };
+  min_participants?: number;
+  max_participants?: number;
 }
 
 // Default state
@@ -132,7 +134,9 @@ export function useContests(userId?: string) {
             entry_fee: parseFloat(contest.entry_fee),
             difficulty: contest.settings?.difficulty || 'guppy',
             description: contest.description,
-            joined: false // Default - will be updated by user-specific data
+            joined: false, // Default - will be updated by user-specific data
+            min_participants: contest.min_participants,
+            max_participants: contest.max_participants
           }));
 
           setState(prevState => {
