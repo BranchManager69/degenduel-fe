@@ -858,7 +858,7 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className={`fixed right-0 top-0 h-full ${isMobile ? 'w-full' : 'w-96'} bg-dark-300/95 backdrop-blur-md border-l border-dark-300 z-50 overflow-y-auto`}
+            className={`fixed right-0 top-0 h-full ${isMobile ? 'w-full' : 'w-96'} bg-dark-300/95 backdrop-blur-md border-l border-dark-300 z-50 overflow-y-auto overflow-x-hidden`}
           >
             {/* Close button */}
             <button
