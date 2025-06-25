@@ -953,6 +953,8 @@ export const ContestLobbyV2: React.FC = () => {
                       contestStatus="live"
                       prizePool={parseFloat(contest.prizePool || '0')}
                       contestId={contestIdFromParams!}
+                      onParticipantHover={setHoveredParticipant}
+                      hoveredParticipant={hoveredParticipant}
                     />
                   </div>
                   
