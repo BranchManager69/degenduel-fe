@@ -1,8 +1,8 @@
 import React from "react";
 import { FaList, FaThLarge } from "react-icons/fa";
 
-import { TokenSearch } from "../common/TokenSearch";
 import { SearchToken } from "../../types";
+import { TokenSearch } from "../common/TokenSearch";
 
 interface TokenFiltersProps {
   viewMode?: 'card' | 'list';
@@ -38,7 +38,6 @@ export const TokenFilters: React.FC<TokenFiltersProps> = ({
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
-            <div className="text-xs font-mono text-emerald-400">VIEW.MODE:</div>
             {onViewModeChange && (
               <div className="flex items-center space-x-1 bg-dark-300/70 rounded-lg overflow-hidden border border-dark-400">
                 <button
