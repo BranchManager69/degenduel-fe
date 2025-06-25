@@ -433,6 +433,8 @@ export default {
         "pulse-brief": "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1)",
         "reveal-content": "fadeIn 0.8s ease-out forwards",
         "pulse-subtle": "pulse-subtle 3s infinite",
+        "float-up": "float-up 2s ease-out forwards",
+        "fire-flicker": "fire-flicker 0.8s ease-in-out infinite",
       },
       keyframes: {
         "pulse-subtle": {
@@ -708,6 +710,34 @@ export default {
         "cybergrid-pulse-slow": {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.8" },
+        },
+        "float-up": {
+          "0%": {
+            transform: "translateY(0) scale(0)",
+            opacity: "0",
+          },
+          "50%": {
+            transform: "translateY(-20px) scale(1)",
+            opacity: "1",
+          },
+          "100%": {
+            transform: "translateY(-40px) scale(0)",
+            opacity: "0",
+          },
+        },
+        "fire-flicker": {
+          "0%, 100%": {
+            opacity: "1",
+            transform: "scaleX(1)",
+          },
+          "33%": {
+            opacity: "0.9",
+            transform: "scaleX(1.1)",
+          },
+          "66%": {
+            opacity: "0.7",
+            transform: "scaleX(0.9)",
+          },
         },
       },
       animationDelay: {
