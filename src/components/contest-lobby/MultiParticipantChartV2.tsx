@@ -73,17 +73,18 @@ interface MultiParticipantChartV2Props {
 
 
 // Color palette for different participants (fallback when no custom design)
+// These match the BASIC tier skins from the skin system
 const PARTICIPANT_COLORS = [
-  '#10b981', // green
-  '#3b82f6', // blue  
-  '#f59e0b', // amber
-  '#ef4444', // red
-  '#8b5cf6', // violet
-  '#06b6d4', // cyan
-  '#f97316', // orange
-  '#84cc16', // lime
-  '#ec4899', // pink
-  '#6366f1', // indigo
+  '#FF4444', // Classic Red
+  '#4A90E2', // Ocean Blue
+  '#47D147', // Money Green
+  '#2C2C2C', // Shadow
+  '#CCCCCC', // Ghost (with opacity consideration)
+  '#FF4444', // Classic Red (repeat for more participants)
+  '#4A90E2', // Ocean Blue (repeat)
+  '#47D147', // Money Green (repeat)
+  '#2C2C2C', // Shadow (repeat)
+  '#CCCCCC', // Ghost (repeat)
 ];
 
 // Get line style based on participant's equipped skin or legacy line_design
@@ -94,12 +95,15 @@ const getLineStyle = (participant: any, index: number, shouldFade: boolean) => {
   const lineDesign = participant.equipped_skin?.design || participant.line_design;
   
   if (!lineDesign) {
+    // Apply basic skin properties to match the skin system
+    const isGhostColor = defaultColor === '#CCCCCC';
     return {
       stroke: shouldFade ? '#6b7280' : defaultColor,
       strokeWidth: 2,
       strokeDasharray: undefined,
       filter: undefined,
       className: undefined,
+      strokeOpacity: isGhostColor ? 0.7 : 1, // Ghost skin has 0.7 opacity
     };
   }
   

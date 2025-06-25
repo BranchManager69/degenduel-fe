@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import axiosInstance from '../../lib/axiosInstance';
 import { getFullImageUrl } from "../../utils/profileImageUtils";
 
