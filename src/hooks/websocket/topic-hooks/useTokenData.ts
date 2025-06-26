@@ -35,7 +35,7 @@
  * @updated 2025-12-06 - Implemented WebSocket pagination for pro frontend experience
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { ddApi } from '../../../services/dd-api';
 import { Token, TokenHelpers } from '../../../types';
@@ -257,11 +257,7 @@ export function useTokenData(
       // Handle individual token price updates from the new system
       // PERFORMANCE OPTIMIZATION: Skip individual updates if disabled
       if (message.topic && message.topic.startsWith('token:price:')) {
-        // Log but don't process individual updates to reduce CPU load
-        console.log(`[useTokenData] 🎯 SKIPPING INDIVIDUAL TOKEN UPDATE for ${message.topic} (disabled for performance)`);
-        return;
-        
-        /* ORIGINAL CODE - DISABLED FOR PERFORMANCE
+        // RE-ENABLED: Process individual token updates for real-time price changes
         if (message.data?.type === 'price_update') {
           const tokenAddress = message.topic.split(':')[2];
           console.log(`[useTokenData] 🎯 INDIVIDUAL TOKEN UPDATE for ${tokenAddress}: ${message.data.token.symbol} = $${message.data.token.price}`);
@@ -289,7 +285,6 @@ export function useTokenData(
           });
           return;
         }
-        */
       }
       
       // Still handle batch updates from token:price for backward compatibility
@@ -378,11 +373,60 @@ export function useTokenData(
 
       // Handle real-time market data updates (subscription data)
       if (message.type === 'DATA' && (message.topic === 'market_data' || message.topic === 'market-data')) {
+        // Check for new subtype-based updates
+        if (message.subtype === 'price_update' && message.data?.type === 'price_update') {
+          // Lightweight price-only updates (every 5 seconds)
+          const priceUpdates = message.data.data; // Note: data is nested in message.data.data
+          console.log(`[useTokenData] Received PRICE UPDATE for ${priceUpdates.length} tokens`);
+          
+          setTokens((prev: Token[]) => {
+            // Create maps for both id and address lookups
+            const priceMapById = new Map<number, any>();
+            const priceMapByAddress = new Map<string, any>();
+            
+            priceUpdates.forEach((update: any) => {
+              if (update.id) priceMapById.set(update.id, update);
+              if (update.address) priceMapByAddress.set(update.address.toLowerCase(), update);
+            });
+            
+            return prev.map((token: Token) => {
+              // Try to find update by id first, then by address
+              const priceUpdate = priceMapById.get(token.id) || 
+                                 priceMapByAddress.get((token.address || '').toLowerCase());
+              
+              if (priceUpdate) {
+                return {
+                  ...token,
+                  price: priceUpdate.price,
+                  market_cap: priceUpdate.market_cap,
+                  marketCap: priceUpdate.market_cap,
+                  change_24h: priceUpdate.change_24h,
+                  change24h: priceUpdate.change_24h,
+                  volume_24h: priceUpdate.volume_24h,
+                  volume24h: priceUpdate.volume_24h,
+                  liquidity: priceUpdate.liquidity
+                };
+              }
+              return token;
+            });
+          });
+          
+          setLastUpdate(new Date());
+          
+          dispatchWebSocketEvent('token_price_update_batch', {
+            socketType: 'price-update',
+            message: `Price update for ${priceUpdates.length} tokens`,
+            timestamp: new Date().toISOString()
+          });
+          return;
+        }
+        
+        // Handle normal/full updates (including full_update subtype)
         // Backend sends nested structure: message.data.data contains the array
         const tokenArray = message.data?.data || message.data;
         
         if (Array.isArray(tokenArray)) {
-          console.log(`[useTokenData] Received real-time market data for ${tokenArray.length} tokens`);
+          console.log(`[useTokenData] Received ${message.subtype === 'full_update' ? 'FULL UPDATE' : 'real-time market data'} for ${tokenArray.length} tokens`);
 
           // If we don't have initial data yet, treat this AS the initial data
           if (!hasInitialData) {
@@ -469,12 +513,10 @@ export function useTokenData(
   }, [handleMarketData, ws.registerListener]);
 
   // Subscribe to individual tokens when we have them
-  // const subscribedTokensRef = useRef<Set<string>>(new Set());
+  const subscribedTokensRef = useRef<Set<string>>(new Set());
   
-  // TEMPORARILY DISABLED: Individual token subscriptions to reduce message volume
-  // This was causing 300+ individual subscriptions and ~10 messages/second
-  // Instead, we'll rely on batch updates from the market_data topic
-  /*
+  // RE-ENABLED: Individual token subscriptions for real-time updates
+  // Let's see how the performance is now
   useEffect(() => {
     console.log(`[useTokenData] 🚀 SUBSCRIPTION EFFECT: connected=${ws.isConnected}, tokens=${tokens.length}`);
     if (ws.isConnected && tokens.length > 0) {
@@ -512,7 +554,6 @@ export function useTokenData(
       }
     };
   }, [ws.isConnected, tokens]);
-  */
 
   // REST-First: Load token data via REST for immediate display, WebSocket for updates
   useEffect(() => {

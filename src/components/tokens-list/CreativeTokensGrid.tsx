@@ -522,22 +522,6 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
               ))}
             </div>
             
-            {/* BOTTOM DECORATIVE ELEMENTS */}
-            <div className="mt-12 relative">
-              <div className="flex items-center justify-center">
-                <div className="h-px w-32 bg-gradient-to-r from-transparent via-yellow-500/40 to-transparent" />
-                <div className="mx-4 w-6 h-6 border-2 border-yellow-500/40 rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-yellow-500/60 rounded-full animate-ping" />
-                </div>
-                <div className="h-px w-32 bg-gradient-to-l from-transparent via-yellow-500/40 to-transparent" />
-              </div>
-              
-              <div className="text-center mt-4">
-                <p className="text-gray-500 text-sm font-medium">
-                  🚀 Powered by DegenDuel's proprietary scoring algorithm • Real-time market intelligence
-                </p>
-              </div>
-            </div>
           </div>
         )}
         

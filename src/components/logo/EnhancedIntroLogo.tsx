@@ -69,15 +69,17 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
     // Set initial state - all parts invisible and positioned for dramatic entry
     gsap.set(degenLetters, {
       opacity: 0,
-      x: isEpic ? -100 : -20,
-      rotationY: isEpic ? -90 : -45,
+      x: isExtreme ? -200 : (isEpic ? -100 : -20),
+      rotationY: isExtreme ? -120 : (isEpic ? -90 : -45),
+      scale: isExtreme ? 0.8 : 1,
       transformOrigin: "left center"
     });
 
     gsap.set(duelLetters, {
       opacity: 0,
-      x: isEpic ? 100 : 20,
-      rotationY: isEpic ? 90 : 45,
+      x: isExtreme ? 200 : (isEpic ? 100 : 20),
+      rotationY: isExtreme ? 120 : (isEpic ? 90 : 45),
+      scale: isExtreme ? 0.8 : 1,
       transformOrigin: "right center"
     });
 
@@ -94,91 +96,112 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
       .to(degenD, { 
         opacity: 1, 
         x: 0, 
-        rotationY: 0, 
-        duration: isEpic ? 0.7 : 0.5, 
-        ease: "power2.out" 
+        rotationY: 0,
+        scale: 1,
+        duration: isExtreme ? 0.5 : (isEpic ? 0.7 : 0.5), 
+        ease: isExtreme ? "power3.out" : "power2.out" 
       })
       .to(degenE, { 
         opacity: 1, 
         x: 0, 
-        rotationY: 0, 
-        duration: isEpic ? 0.6 : 0.4, 
-        ease: "back.out(1.2)" 
-      }, "-=0.5")
+        rotationY: 0,
+        scale: 1, 
+        duration: isExtreme ? 0.4 : (isEpic ? 0.6 : 0.4), 
+        ease: isExtreme ? "power3.out" : "back.out(1.2)" 
+      }, isExtreme ? "-=0.4" : "-=0.5")
       .to(degenG, { 
         opacity: 1, 
         x: 0, 
-        rotationY: 0, 
-        duration: isEpic ? 0.6 : 0.4, 
-        ease: "back.out(1.2)" 
-      }, "-=0.45")
+        rotationY: 0,
+        scale: 1, 
+        duration: isExtreme ? 0.4 : (isEpic ? 0.6 : 0.4), 
+        ease: isExtreme ? "power3.out" : "back.out(1.2)" 
+      }, isExtreme ? "-=0.35" : "-=0.45")
       .to(degenE2, { 
         opacity: 1, 
         x: 0, 
-        rotationY: 0, 
-        duration: isEpic ? 0.6 : 0.4, 
-        ease: "back.out(1.2)" 
-      }, "-=0.4")
+        rotationY: 0,
+        scale: 1, 
+        duration: isExtreme ? 0.4 : (isEpic ? 0.6 : 0.4), 
+        ease: isExtreme ? "power3.out" : "back.out(1.2)" 
+      }, isExtreme ? "-=0.3" : "-=0.4")
       .to(degenN, { 
         opacity: 1, 
         x: 0, 
-        rotationY: 0, 
-        duration: isEpic ? 0.6 : 0.4, 
-        ease: "back.out(1.2)" 
-      }, "-=0.35")
+        rotationY: 0,
+        scale: 1, 
+        duration: isExtreme ? 0.4 : (isEpic ? 0.6 : 0.4), 
+        ease: isExtreme ? "power3.out" : "back.out(1.2)" 
+      }, isExtreme ? "-=0.25" : "-=0.35")
       
-      // Brief pause before DUEL part
-      .addLabel("midPoint", "+=0.1")
+      // Brief pause before DUEL part (shorter in extreme mode)
+      .addLabel("midPoint", isExtreme ? "+=0.05" : "+=0.1")
       
-      // DUEL Part - Flying in from right with rotation
+      // DUEL Part - Flying in from right with rotation (more aggressive timing in extreme)
       .to(duelD, { 
         opacity: 1, 
         x: 0, 
-        rotationY: 0, 
-        duration: isEpic ? 0.7 : 0.5, 
-        ease: "power2.out" 
+        rotationY: 0,
+        scale: 1, 
+        duration: isExtreme ? 0.5 : (isEpic ? 0.7 : 0.5), 
+        ease: isExtreme ? "power3.out" : "power2.out" 
       }, "midPoint")
       .to(duelU, { 
         opacity: 1, 
         x: 0, 
-        rotationY: 0, 
-        duration: isEpic ? 0.6 : 0.4, 
-        ease: "back.out(1.2)" 
-      }, "midPoint+=0.2")
+        rotationY: 0,
+        scale: 1, 
+        duration: isExtreme ? 0.4 : (isEpic ? 0.6 : 0.4), 
+        ease: isExtreme ? "power3.out" : "back.out(1.2)" 
+      }, isExtreme ? "midPoint+=0.15" : "midPoint+=0.2")
       .to(duelE, { 
         opacity: 1, 
         x: 0, 
-        rotationY: 0, 
-        duration: isEpic ? 0.6 : 0.4, 
-        ease: "back.out(1.2)" 
-      }, "midPoint+=0.25")
+        rotationY: 0,
+        scale: 1, 
+        duration: isExtreme ? 0.4 : (isEpic ? 0.6 : 0.4), 
+        ease: isExtreme ? "power3.out" : "back.out(1.2)" 
+      }, isExtreme ? "midPoint+=0.2" : "midPoint+=0.25")
       .to(duelL, { 
         opacity: 1, 
         x: 0, 
-        rotationY: 0, 
-        duration: isEpic ? 0.6 : 0.4, 
-        ease: "back.out(1.2)" 
-      }, "midPoint+=0.3");
+        rotationY: 0,
+        scale: 1, 
+        duration: isExtreme ? 0.4 : (isEpic ? 0.6 : 0.4), 
+        ease: isExtreme ? "power3.out" : "back.out(1.2)" 
+      }, isExtreme ? "midPoint+=0.25" : "midPoint+=0.3");
       
-    // Add final impact for extreme mode
+    // Add final impact for extreme mode - more cinematic
     if (isExtreme) {
       tl.current
-        .to(allLetters, {
-          scale: 1.1,
-          duration: 0.2,
-          ease: "power4.out"
+        // Dramatic pause with green DEGEN and red DUEL
+        .to(degenLetters, {
+          textShadow: "0 0 30px rgba(34, 197, 94, 0.8), 0 0 60px rgba(34, 197, 94, 0.4)",
+          duration: 0.4,
+          ease: "power2.inOut"
         }, "+=0.1")
+        .to(duelLetters, {
+          textShadow: "0 0 30px rgba(239, 68, 68, 0.8), 0 0 60px rgba(239, 68, 68, 0.4)",
+          duration: 0.4,
+          ease: "power2.inOut"
+        }, "-=0.4")
+        // Subtle scale pulse (more refined)
+        .to(allLetters, {
+          scale: 1.05,
+          duration: 0.3,
+          ease: "power2.out"
+        }, "-=0.2")
         .to(allLetters, {
           scale: 1,
-          duration: 0.3,
-          ease: "elastic.out(1, 0.3)"
+          duration: 0.5,
+          ease: "power2.inOut"
         }, "+=0.1")
-        .to([degenD, duelD], {
-          textShadow: "0 0 20px rgba(255,255,255,0.8)",
-          duration: 0.3,
-          yoyo: true,
-          repeat: 1
-        }, "-=0.2");
+        // Final impact - back to original colors
+        .to(allLetters, {
+          textShadow: "0 0 20px rgba(0,0,0,0.8), 0 0 40px rgba(157, 78, 221, 0.6), 0 0 60px rgba(0, 225, 255, 0.3)",
+          duration: 0.6,
+          ease: "power2.inOut"
+        }, "-=0.4");
     }
 
     // Create ongoing animation effects after intro is completed
@@ -212,33 +235,36 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
           ease: "sine.inOut"
         }, "-=1"); // Overlap with previous animation
       
-      // Add glitch effect for extreme mode
+      // Add sophisticated energy effect for extreme mode
       if (isExtreme) {
-        // Random "glitch" effect - occasional letter flicker
-        const applyGlitch = () => {
-          // Pick a random letter
-          const randomLetter = allLetters[Math.floor(Math.random() * allLetters.length)];
-          
-          // Apply quick glitch animation
-          gsap.to(randomLetter, {
-            opacity: 0.3,
-            x: (Math.random() - 0.5) * 10,
-            duration: 0.05,
-            onComplete: () => {
-              gsap.to(randomLetter, {
-                opacity: 1,
-                x: 0,
-                duration: 0.05
-              });
+        // Enhanced pulsing with energy waves
+        loopTl.current
+          .to(degenLetters, {
+            textShadow: "0 0 15px rgba(157, 78, 221, 0.9), 0 0 30px rgba(157, 78, 221, 0.6), 0 0 45px rgba(157, 78, 221, 0.3)",
+            duration: 1.5,
+            ease: "sine.inOut",
+            stagger: {
+              each: 0.05,
+              from: "start"
             }
-          });
-          
-          // Schedule next glitch
-          setTimeout(applyGlitch, Math.random() * 5000 + 2000);
-        };
-        
-        // Start the glitch effect after the main animation completes
-        setTimeout(applyGlitch, 3000);
+          }, 2)
+          .to(duelLetters, {
+            textShadow: "0 0 15px rgba(0, 225, 255, 0.9), 0 0 30px rgba(0, 225, 255, 0.6), 0 0 45px rgba(0, 225, 255, 0.3)",
+            duration: 1.5,
+            ease: "sine.inOut",
+            stagger: {
+              each: 0.05,
+              from: "end"
+            }
+          }, "-=0.8")
+          // Subtle letter rotation for dynamic feel
+          .to([degenD, duelD], {
+            rotationZ: 1,
+            duration: 3,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: 1
+          }, "-=2");
       }
     }
 
@@ -333,10 +359,18 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
         </div>
       </div>
 
-      {/* Optional: Add an electric arc effect connecting DEGEN and DUEL for extreme mode */}
+      {/* Clean energy field for extreme mode */}
       {isExtreme && animationComplete && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-[-1] w-full h-full">
-          <div className="animate-pulse absolute top-[45%] left-[48%] w-[4%] h-[10%] bg-gradient-to-r from-[#9D4EDD] to-[#00e1ff] blur-md opacity-70" />
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Subtle energy waves */}
+          <div className="absolute top-[40%] left-[20%] w-16 h-0.5 bg-gradient-to-r from-transparent via-green-400/30 to-transparent rotate-12 animate-pulse" style={{ animationDelay: '0s', animationDuration: '3s' }} />
+          <div className="absolute top-[60%] right-[20%] w-16 h-0.5 bg-gradient-to-l from-transparent via-red-400/30 to-transparent -rotate-12 animate-pulse" style={{ animationDelay: '1.5s', animationDuration: '3.5s' }} />
+          
+          {/* Corner accent glows */}
+          <div className="absolute top-[10%] left-[5%] w-8 h-8 bg-green-500/10 rounded-full blur-md animate-pulse" style={{ animationDelay: '0s', animationDuration: '4s' }} />
+          <div className="absolute top-[10%] right-[5%] w-8 h-8 bg-red-500/10 rounded-full blur-md animate-pulse" style={{ animationDelay: '2s', animationDuration: '4.5s' }} />
+          <div className="absolute bottom-[10%] left-[5%] w-6 h-6 bg-purple-500/10 rounded-full blur-md animate-pulse" style={{ animationDelay: '1s', animationDuration: '3.8s' }} />
+          <div className="absolute bottom-[10%] right-[5%] w-6 h-6 bg-cyan-500/10 rounded-full blur-md animate-pulse" style={{ animationDelay: '3s', animationDuration: '4.2s' }} />
         </div>
       )}
     </div>

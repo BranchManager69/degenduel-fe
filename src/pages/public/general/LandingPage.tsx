@@ -13,13 +13,12 @@
 
 // CSS (now loaded from public/assets/degen-components.css via index.html)
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 // Framer Motion
 import { motion } from "framer-motion";
 // Landing page
 import { ContestSection } from "../../../components/landing/contests-preview/ContestSection";
 import { EnhancedContestSection } from "../../../components/landing/contests-preview/EnhancedContestSection";
-import { CtaSection } from "../../../components/landing/cta-section/CtaSection";
 import { TemplateSection, TemplateSection2, TemplateSection3 } from "../../../components/landing/template-section";
 // import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle"; // No longer using HeroTitle
 // Import new MarketTickerGrid component (replacing the three token display components)
@@ -53,7 +52,6 @@ const SHOW_TEMPLATE_SECTION_3 = false;
 
 // Enhanced Floating Buttons
 import FloatingButtonStack from '../../../components/layout/FloatingButtonStack'; // Enhanced floating button stack
-import FloatingDuelNowButton from '../../../components/layout/FloatingDuelNowButton'; // Floating DUEL NOW button above footer
 
 
 // Contract Address
@@ -65,10 +63,23 @@ const Features = React.lazy(() => import("../../../components/landing/features-l
 // NEW: Import WebSocket-based contest hook
 import { useContests } from "../../../hooks/websocket/topic-hooks/useContests";
 
+// Import StandaloneTokenCard for DUEL token display
+import { StandaloneTokenCard } from "../../../components/tokens-list/StandaloneTokenCard";
+
+// Import WebSocket hook for live token updates
+import { useTokenData } from "../../../hooks/websocket/topic-hooks/useTokenData";
+
+// Import contest creation buttons
+import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
+import { ChallengeFriendButton } from "../../../components/contest-browser/ChallengeFriendButton";
+import { SpectateButton } from "../../../components/contest-browser/SpectateButton";
+import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
+
 // NOT READY YET:
 
 // Landing Page
 export const LandingPage: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [animationPhase, setAnimationPhase] = useState(0);
@@ -80,6 +91,31 @@ export const LandingPage: React.FC = () => {
 
   // Countdown completion state
   const [isCountdownComplete, setIsCountdownComplete] = useState(false);
+
+  // Get live token data via WebSocket
+  const { tokens: allTokens, isLoading: tokensLoading, error: tokensError } = useTokenData("all", {}, 5000);
+  
+  // Debug log to see what's happening
+  useEffect(() => {
+    console.log('[LandingPage] Token data:', {
+      tokensCount: allTokens.length,
+      isLoading: tokensLoading,
+      error: tokensError,
+      hasDuel: allTokens.some(t => t.symbol === 'DUEL'),
+      hasSol: allTokens.some(t => t.symbol === 'SOL')
+    });
+  }, [allTokens, tokensLoading, tokensError]);
+  
+  // Extract DUEL and SOL tokens from live data with custom banner for SOL
+  const duelToken = allTokens.find(t => t.symbol === 'DUEL') || null;
+  const solTokenRaw = allTokens.find(t => t.symbol === 'SOL') || null;
+  const solToken = solTokenRaw ? {
+    ...solTokenRaw,
+    header_image_url: '/assets/media/sol_banner.png'
+  } : null;
+  
+  // Modal state for create contest
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Get cached contests immediately for instant display
   const cachedContests = useMemo(() => {
@@ -481,6 +517,7 @@ export const LandingPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [fallbackDateForTimers, websocketContractAddress, websocketContractRevealed]);
 
+
   // Define dummy variants to satisfy linter, replace with actual definitions
   const landingPageVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
   const childVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
@@ -510,14 +547,14 @@ export const LandingPage: React.FC = () => {
   return (
     <>
       {/* <ScrollToTop /> */}
-      <div className="flex flex-col min-h-screen relative" style={{ overflowX: 'clip' }}>
+      <div className="flex flex-col min-h-screen relative overflow-x-hidden">
 
 
         {/* Landing Page Content Section */}
         <section className="relative flex-1 pb-20" style={{ zIndex: 10 }}>
           
           {/* Landing Page Container - responsive width for landscape mobile */}
-          <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-0">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-0">
             
             {/* Landing Page Content */}
             <div className="text-center space-y-2 md:space-y-4">
@@ -642,38 +679,82 @@ export const LandingPage: React.FC = () => {
 
                 {/* Enhanced tagline with secondary line */}
                 <motion.div
-                  className="mt-4 mb-3 md:mt-8 md:mb-6"
+                  className="-mt-16 mb-3 md:-mt-12 md:mb-6"
                   variants={childVariants}
                 >
 
                 {/* Hero tagline with enhanced styling */}
                 <div className="text-center space-y-2">
                   <div className="relative inline-block">
-                    <h2 className="text-2xl md:text-4xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 tracking-wider uppercase relative inline-block">
-                      SIM CRYPTO TRADING BATTLES
-                      {/* Animated underline */}
-                      <motion.div 
-                        className="absolute -bottom-2 md:-bottom-3 left-0 right-0 h-0.5 md:h-1 bg-gradient-to-r from-purple-400 via-brand-400 to-purple-500 rounded-full"
-                        initial={{ width: '0%', left: '50%' }}
-                        animate={{ width: '100%', left: '0%' }}
-                        transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
-                      />
+                    <h2 className="text-3xl md:text-5xl font-black tracking-tight relative inline-block">
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#14F195] via-white to-[#9945FF]"
+                        style={{
+                          textShadow: '0 0 40px rgba(20, 241, 149, 0.5), 0 0 80px rgba(153, 69, 255, 0.3)',
+                          WebkitTextStroke: '1px rgba(255,255,255,0.1)'
+                        }}>
+                        DAILY FANTASY CRYPTO
+                      </span>
                     </h2>
                   </div>
-                  <p className="text-sm sm:text-base text-gray-300/80 font-medium mt-4 md:mt-6">
-                    Prove your skills. Win real Solana. No transactions required.
+                  <p className="text-base sm:text-lg text-gray-300 font-medium mt-3">
+                    Pick your portfolio. Lock it in. Winners take the pot.
                   </p>
                 </div>
 
                 </motion.div>
 
-                {/* CTAs - Now using the CtaSection component */}
-                <CtaSection user={user} animationPhase={animationPhase} />
+                {/* Contest Action Buttons - moved above the token cards */}
+                <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 md:gap-4 mt-8 mb-8">
+                  <CreateContestButton 
+                    onCreateClick={() => setIsCreateModalOpen(true)}
+                  />
+                  <ChallengeFriendButton 
+                    userRole={user?.is_admin ? "admin" : "user"}
+                    availableCredits={undefined}
+                    onChallengeCreated={() => {
+                      // Refresh contests or navigate
+                      console.log('Challenge created!');
+                    }}
+                  />
+                  <SpectateButton onSpectateClick={() => navigate("/contests")} />
+                </div>
 
-                {/* DUEL NOW Button - positioned between CTA and Crown Contest */}
-                <FloatingDuelNowButton
-                  enabled={true}
-                />
+                {/* DUEL Token & CTA Section - Side by side layout */}
+                <div className="mb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto items-center">
+                    {/* DUEL Token Card */}
+                    <motion.div 
+                      className="flex justify-center"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.6, delay: 0.3 }}
+                    >
+                      {duelToken ? (
+                        <div className="w-full max-w-lg mx-auto">
+                          <StandaloneTokenCard token={duelToken} />
+                        </div>
+                      ) : (
+                        <div className="w-full max-w-lg mx-auto aspect-[7/3] bg-dark-200/50 rounded-2xl animate-pulse" />
+                      )}
+                    </motion.div>
+
+                    {/* SOL Token Card */}
+                    <motion.div 
+                      className="flex justify-center"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.6, delay: 0.4 }}
+                    >
+                      {solToken ? (
+                        <div className="w-full max-w-lg mx-auto">
+                          <StandaloneTokenCard token={solToken} />
+                        </div>
+                      ) : (
+                        <div className="w-full max-w-lg mx-auto aspect-[7/3] bg-dark-200/50 rounded-2xl animate-pulse" />
+                      )}
+                    </motion.div>
+                  </div>
+                </div>
 
                 {/* Crown Contest Section - Extracted from contests */}
                 {showCrownContest && !isMaintenanceModeActive && !error && (
@@ -824,30 +905,14 @@ export const LandingPage: React.FC = () => {
                             ) : null;
                           })()}
 
-                          {/* No duels available */}
+                          {/* No contests available */}
                           {activeContests.length === 0 &&
                            openContests.length === 0 &&
                            !loading && (
-                              <div className="text-center py-16">
-                                
-                                {/* No duels available title */}
-                                <h2 className="text-2xl font-bold mb-4 font-heading tracking-wide bg-gradient-to-r from-brand-400 to-purple-500 text-transparent bg-clip-text">
-                                  No Duels Available
-                                </h2>
-                                
-                                {/* Check back soon message */}
-                                <p className="text-gray-400 mb-8">
-                                  Check back soon for new Duels.
+                              <div className="text-center py-12">
+                                <p className="text-gray-400 text-lg">
+                                  No contests to join or watch right now
                                 </p>
-
-                                {/* Create a Duel button */}
-                                <Link
-                                  to="/contests/create"
-                                  className="inline-block px-8 py-3 rounded-md bg-gradient-to-r from-brand-400 to-brand-600 text-white font-bold hover:from-brand-500 hover:to-brand-700 transition-all"
-                                >
-                                  Create a Duel
-                                </Link>
-
                               </div>
                             )}
                         </div>
@@ -872,7 +937,7 @@ export const LandingPage: React.FC = () => {
                   >
 
                     {/* Features section container - responsive width for landscape mobile */}
-                    <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="w-full max-w-xs sm:max-w-2xl md:max-w-4xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                       {/* Features component is only imported and rendered when the flag is enabled */}
                       {(() => {
 
@@ -937,6 +1002,18 @@ export const LandingPage: React.FC = () => {
         tokenSymbol={"DUEL"}
         enabled={forceShowFabs || (websocketContractRevealed && websocketContractAddress)}
         isCountdownComplete={isCountdownComplete}
+      />
+      
+      {/* Create Contest Modal */}
+      <CreateContestModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          setIsCreateModalOpen(false);
+          // Could refresh contests or navigate
+        }}
+        userRole={user?.is_admin ? "admin" : "user"}
+        availableCredits={undefined}
       />
 
     </>

@@ -25,7 +25,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChallengeFriendButton } from "../../../components/contest-browser/ChallengeFriendButton";
 import { ContestCard } from "../../../components/contest-browser/ContestCard";
-import { ContestSort } from "../../../components/contest-browser/ContestSort";
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
 import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
 import { ProminentContestCard } from "../../../components/contest-browser/ProminentContestCard";
@@ -35,22 +34,17 @@ import { useContests } from "../../../hooks/websocket/topic-hooks/useContests";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Contest } from "../../../types/index";
-import type { SortDirection, SortField } from "../../../types/sort";
 
 // Contest browser page
 export const ContestBrowser: React.FC = () => {
   const navigate = useNavigate();
   const { isAdministrator, isAuthenticated, getToken } = useMigratedAuth();
-  const [activeStatusFilter, setActiveStatusFilter] = useState("all");
-  const [sortField, setSortField] = useState<SortField>("start_time");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
-  const [showCompleted, setShowCompleted] = useState(false);
-  const [showCancelled, setShowCancelled] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [availableCredits, setAvailableCredits] = useState<number | undefined>(undefined);
   const [isRestLoading, setIsRestLoading] = useState(false);
+  const [hideCompleted, setHideCompleted] = useState(false);
+  const [hideCancelled, setHideCancelled] = useState(true);
 
   // **NEW: Use WebSocket-based contest data instead of REST API**
   const {
@@ -145,8 +139,8 @@ export const ContestBrowser: React.FC = () => {
       }
 
       const data = await ddApi.contests.getAll({
-        field: sortField,
-        direction: sortDirection,
+        field: "start_time" as any,
+        direction: "asc" as any,
       });
       
       // Update Zustand store with fallback REST API data
@@ -194,12 +188,6 @@ export const ContestBrowser: React.FC = () => {
     // But we don't depend on it for initial load
   }, []); // Only run once on mount
   
-  // Refresh data when sort changes
-  useEffect(() => {
-    if (contests.length > 0) {
-      fetchContestsViaRest();
-    }
-  }, [sortField, sortDirection]);
 
   // Manual refresh function that prefers WebSocket but falls back to REST API
   const handleManualRefresh = () => {
@@ -212,82 +200,61 @@ export const ContestBrowser: React.FC = () => {
     }
   };
 
-  // Filter and sort contests
+  // Filter and smart sort contests
   const filteredAndSortedContests = useMemo(() => {
-    let filtered = [...contests];
+    const now = new Date();
+    
+    // First, filter based on checkboxes
+    const filtered = contests.filter((contest) => {
+      const endTime = new Date(contest.end_time);
+      const isCompleted = now >= endTime || contest.status === "completed";
+      const isCancelled = contest.status === "cancelled";
 
-    // Apply status filter first - this determines what contests to show
-    if (activeStatusFilter !== "all") {
-      filtered = filtered.filter((contest) => {
-        const now = new Date();
-        const startTime = new Date(contest.start_time);
-        const endTime = new Date(contest.end_time);
+      if (isCompleted && hideCompleted) return false;
+      if (isCancelled && hideCancelled) return false;
 
-        switch (activeStatusFilter) {
-          case "live":
-            return (
-              now >= startTime &&
-              now < endTime &&
-              contest.status !== "cancelled"
-            );
-          case "upcoming":
-            return now < startTime && contest.status !== "cancelled";
-          case "completed":
-            return now >= endTime || contest.status === "completed";
-          case "cancelled":
-            return contest.status === "cancelled";
-          default:
-            return true;
-        }
-      });
-    } else {
-      // When "all" is selected, apply the completed/cancelled toggles
-      filtered = filtered.filter((contest) => {
-        const now = new Date();
-        const endTime = new Date(contest.end_time);
-        const isCompleted = now >= endTime || contest.status === "completed";
-        const isCancelled = contest.status === "cancelled";
-
-        // If it's completed and we don't want to show completed, filter it out
-        if (isCompleted && !showCompleted) return false;
-
-        // If it's cancelled and we don't want to show cancelled, filter it out
-        if (isCancelled && !showCancelled) return false;
-
-        return true;
-      });
-    }
-
-    // Apply sorting
-    return filtered.sort((a, b) => {
-      const getValue = (contest: Contest) => {
-        switch (sortField) {
-          case "start_time":
-            return new Date(contest.start_time).getTime();
-          case "participant_count":
-            return contest.participant_count;
-          case "prize_pool":
-            return Number(contest.prize_pool);
-          case "entry_fee":
-            return Number(contest.entry_fee);
-          default:
-            return 0;
-        }
-      };
-
-      const aValue = getValue(a);
-      const bValue = getValue(b);
-
-      return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+      return true;
     });
-  }, [
-    contests,
-    activeStatusFilter,
-    sortField,
-    sortDirection,
-    showCompleted,
-    showCancelled,
-  ]);
+    
+    // Then apply smart sorting
+    return filtered.sort((a, b) => {
+      const aStart = new Date(a.start_time);
+      const aEnd = new Date(a.end_time);
+      const bStart = new Date(b.start_time);
+      const bEnd = new Date(b.end_time);
+      
+      const aIsLive = now >= aStart && now < aEnd && a.status !== "cancelled";
+      const bIsLive = now >= bStart && now < bEnd && b.status !== "cancelled";
+      const aIsUpcoming = now < aStart && a.status !== "cancelled";
+      const bIsUpcoming = now < bStart && b.status !== "cancelled";
+      
+      // 1. Live contests first
+      if (aIsLive && !bIsLive) return -1;
+      if (!aIsLive && bIsLive) return 1;
+      
+      // 2. Among live contests, sort by most participants
+      if (aIsLive && bIsLive) {
+        return b.participant_count - a.participant_count;
+      }
+      
+      // 3. Upcoming contests next
+      if (aIsUpcoming && !bIsUpcoming) return -1;
+      if (!aIsUpcoming && bIsUpcoming) return 1;
+      
+      // 4. Among upcoming contests, sort by start time
+      if (aIsUpcoming && bIsUpcoming) {
+        const timeDiff = aStart.getTime() - bStart.getTime();
+        // If starting at roughly the same time (within 1 hour), use participant count as tiebreaker
+        if (Math.abs(timeDiff) < 3600000) {
+          return b.participant_count - a.participant_count;
+        }
+        return timeDiff;
+      }
+      
+      // 5. Everything else (completed) by most recent end time
+      return bEnd.getTime() - aEnd.getTime();
+    });
+  }, [contests, hideCompleted, hideCancelled]);
 
   // Show skeleton loaders ONLY if we have no contests to display
   if (loading && filteredAndSortedContests.length === 0) {
@@ -419,146 +386,62 @@ export const ContestBrowser: React.FC = () => {
             </div>
           </div>
 
-          {/* Enhanced Filter Toggle Button (Mobile) */}
-          <button
-            onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
-            className="md:hidden w-full mb-4 px-4 py-2 bg-dark-200 rounded-lg text-gray-100 flex items-center justify-between relative group hover:bg-dark-300/50 transition-colors"
-          >
-            <span className="flex items-center space-x-2 group-hover:animate-cyber-pulse">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>Sort/Filter</span>
-            </span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className={`h-5 w-5 transform transition-transform duration-300 ${
-                isFilterMenuOpen ? "rotate-180" : ""
+          {/* Filter Controls */}
+          <div className="mb-6 flex flex-wrap gap-3">
+            <button
+              onClick={() => setHideCompleted(!hideCompleted)}
+              className={`group relative px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
+                hideCompleted
+                  ? "bg-dark-300 border border-brand-500/50 text-brand-400"
+                  : "bg-dark-300/50 border border-dark-400 text-gray-400 hover:text-gray-300 hover:border-dark-300"
               }`}
-              viewBox="0 0 20 20"
-              fill="currentColor"
             >
-              <path
-                fillRule="evenodd"
-                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-
-          {/* Enhanced Filters Section */}
-          <div
-            className={`${
-              isFilterMenuOpen ? "block" : "hidden"
-            } md:block mb-8 space-y-4 bg-dark-200/50 backdrop-blur-sm p-4 rounded-lg border border-dark-300 relative group animate-fade-in`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive rounded-lg" />
-            <div className="relative z-10">
-              {/* Filter Controls */}
-              <div className="flex flex-wrap gap-4 mb-4">
-                {/* Status Filter - Now as buttons */}
-                <div className="flex-1 min-w-[200px] max-w-[300px]">
-                  <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors mb-2 block">
-                    Status
-                  </label>
-                  <div className="flex gap-2">
-                    {[
-                      { value: "all", label: "All" },
-                      { value: "upcoming", label: "Joinable" },
-                      { value: "live", label: "Live" },
-                    ].map(({ value, label }) => (
-                      <button
-                        key={value}
-                        onClick={() => setActiveStatusFilter(value)}
-                        className={`px-4 py-2 rounded-lg text-sm flex-1 transition-all duration-200 ${
-                          activeStatusFilter === value
-                            ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
-                            : "bg-dark-300/50 text-gray-400 hover:bg-dark-300 hover:text-gray-300"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-
-                {/* Include Finished Duels - Now as toggle buttons */}
-                <div className="flex-1 min-w-[200px] max-w-[300px]">
-                  <label className="text-sm text-gray-400 group-hover:text-brand-400 transition-colors mb-2 block">
-                    Include Finished
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowCompleted(!showCompleted)}
-                      className={`px-4 py-2 rounded-lg text-sm flex-1 transition-all duration-200 ${
-                        showCompleted
-                          ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                          : "bg-dark-300/50 text-gray-400 hover:bg-dark-300 hover:text-gray-300"
-                      }`}
-                    >
-                      <span className="flex items-center justify-center gap-2">
-                        {showCompleted ? "✓" : ""} Completed
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => setShowCancelled(!showCancelled)}
-                      className={`px-4 py-2 rounded-lg text-sm flex-1 transition-all duration-200 ${
-                        showCancelled
-                          ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                          : "bg-dark-300/50 text-gray-400 hover:bg-dark-300 hover:text-gray-300"
-                      }`}
-                    >
-                      <span className="flex items-center justify-center gap-2">
-                        {showCancelled ? "✓" : ""} Cancelled
-                      </span>
-                    </button>
-                  </div>
+              <div className="relative w-4 h-4">
+                <div className={`absolute inset-0 rounded border-2 transition-all duration-200 ${
+                  hideCompleted
+                    ? "bg-brand-500 border-brand-500"
+                    : "bg-dark-400/50 border-gray-600 group-hover:border-gray-500"
+                }`}>
+                  {hideCompleted && (
+                    <svg className="absolute inset-0 w-full h-full p-0.5" viewBox="0 0 20 20" fill="white">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
                 </div>
               </div>
-
-              {/* Sort Controls - Keep as is since it looks good */}
-              <div className="pt-4 border-t border-dark-400">
-                <ContestSort
-                  currentField={sortField}
-                  direction={sortDirection}
-                  onSort={(field: SortField, direction: SortDirection) => {
-                    setSortField(field);
-                    setSortDirection(direction);
-                    handleManualRefresh();
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Enhanced Active Filters Display */}
-          {activeStatusFilter !== "all" && (
-            <div className="flex flex-wrap gap-2 mb-4 animate-fade-in">
-              {activeStatusFilter !== "all" && (
-                <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-sm group hover:bg-brand-500/30 transition-all duration-300">
-                  <span className="group-hover:animate-glitch">
-                    {activeStatusFilter}
-                  </span>
-                  <button
-                    onClick={() => setActiveStatusFilter("all")}
-                    className="ml-2 hover:text-brand-200 group-hover:animate-neon-flicker"
-                  >
-                    ×
-                  </button>
-                </div>
+              <span>Hide Completed</span>
+              {hideCompleted && (
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-500/0 via-brand-500/10 to-brand-500/0 rounded-lg pointer-events-none" />
               )}
-            </div>
-          )}
+            </button>
+            
+            <button
+              onClick={() => setHideCancelled(!hideCancelled)}
+              className={`group relative px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
+                hideCancelled
+                  ? "bg-dark-300 border border-red-500/50 text-red-400"
+                  : "bg-dark-300/50 border border-dark-400 text-gray-400 hover:text-gray-300 hover:border-dark-300"
+              }`}
+            >
+              <div className="relative w-4 h-4">
+                <div className={`absolute inset-0 rounded border-2 transition-all duration-200 ${
+                  hideCancelled
+                    ? "bg-red-500 border-red-500"
+                    : "bg-dark-400/50 border-gray-600 group-hover:border-gray-500"
+                }`}>
+                  {hideCancelled && (
+                    <svg className="absolute inset-0 w-full h-full p-0.5" viewBox="0 0 20 20" fill="white">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <span>Hide Cancelled</span>
+              {hideCancelled && (
+                <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/10 to-red-500/0 rounded-lg pointer-events-none" />
+              )}
+            </button>
+          </div>
 
           {/* Enhanced Contest Grid */}
           <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">

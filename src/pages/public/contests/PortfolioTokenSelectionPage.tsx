@@ -162,6 +162,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const user = useStore((state) => state.user);
   const [locallyAddedTokens, setLocallyAddedTokens] = useState<Token[]>([]);
   const [duelToken, setDuelToken] = useState<Token | null>(null);
+  const [solToken, setSolToken] = useState<Token | null>(null);
   
   // Get footer state for dynamic positioning
   const { isCompact } = useScrollFooter(50);
@@ -246,32 +247,53 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     fetchContest();
   }, [contestId]);
 
-  // Fetch DUEL token data
+  // Fetch DUEL and SOL tokens in parallel (non-blocking)
   useEffect(() => {
-    const fetchDuelToken = async () => {
+    const fetchPriorityTokens = async () => {
       try {
-        const response = await fetch('/api/tokens/search?search=F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX&limit=1');
-        const data = await response.json();
-        if (data.tokens && data.tokens.length > 0) {
-          const duelData = data.tokens[0];
-          // Convert to Token format
+        // Fetch both tokens in parallel
+        const [duelResponse, solResponse] = await Promise.all([
+          fetch('/api/tokens/search?search=F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX&limit=1'),
+          fetch('/api/tokens/search?search=So11111111111111111111111111111111111111112&limit=1')
+        ]);
+
+        // Process DUEL token
+        const duelData = await duelResponse.json();
+        if (duelData.tokens && duelData.tokens.length > 0) {
           const duelTokenFormatted: Token = {
-            ...duelData,
-            address: duelData.address || 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX',
-            contractAddress: duelData.address || 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX',
-            market_cap: duelData.market_cap || 0,
-            volume_24h: duelData.volume_24h || 0,
-            change_24h: duelData.change_24h || 0,
-            price: Number(duelData.price) || 0,
+            ...duelData.tokens[0],
+            address: duelData.tokens[0].address || 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX',
+            contractAddress: duelData.tokens[0].address || 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX',
+            market_cap: duelData.tokens[0].market_cap || 0,
+            volume_24h: duelData.tokens[0].volume_24h || 0,
+            change_24h: duelData.tokens[0].change_24h || 0,
+            price: Number(duelData.tokens[0].price) || 0,
           };
           setDuelToken(duelTokenFormatted);
         }
+
+        // Process SOL token
+        const solData = await solResponse.json();
+        if (solData.tokens && solData.tokens.length > 0) {
+          const solTokenFormatted: Token = {
+            ...solData.tokens[0],
+            address: solData.tokens[0].address || 'So11111111111111111111111111111111111111112',
+            contractAddress: solData.tokens[0].address || 'So11111111111111111111111111111111111111112',
+            market_cap: solData.tokens[0].market_cap || 0,
+            volume_24h: solData.tokens[0].volume_24h || 0,
+            change_24h: solData.tokens[0].change_24h || 0,
+            price: Number(solData.tokens[0].price) || 0,
+            header_image_url: '/assets/media/sol_banner.png', // Use local banner
+          };
+          setSolToken(solTokenFormatted);
+        }
       } catch (error) {
-        console.error('Failed to fetch DUEL token:', error);
+        console.error('Failed to fetch priority tokens:', error);
       }
     };
     
-    fetchDuelToken();
+    // Run async without blocking
+    fetchPriorityTokens();
   }, []);
 
   useEffect(() => {
@@ -475,14 +497,20 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   // Visible tokens - only show up to displayCount (client-side pagination)
   const visibleTokens = useMemo(() => {
     const tokens = sortedTokens.slice(0, displayCount);
+    const priorityTokens: Token[] = [];
     
-    // Prepend DUEL token if not already in the list
+    // Add DUEL token first if not already in the list
     if (duelToken && !tokens.some(t => t.contractAddress === duelToken.contractAddress)) {
-      return [duelToken, ...tokens];
+      priorityTokens.push(duelToken);
     }
     
-    return tokens;
-  }, [sortedTokens, displayCount, duelToken]);
+    // Add SOL token second if not already in the list
+    if (solToken && !tokens.some(t => t.contractAddress === solToken.contractAddress)) {
+      priorityTokens.push(solToken);
+    }
+    
+    return [...priorityTokens, ...tokens];
+  }, [sortedTokens, displayCount, duelToken, solToken]);
 
   // Check if there are more tokens to display (client-side)
   const hasMoreTokens = displayCount < sortedTokens.length;

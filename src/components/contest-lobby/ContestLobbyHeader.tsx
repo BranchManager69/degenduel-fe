@@ -14,6 +14,11 @@ interface ContestLobbyHeaderProps {
   onMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  showViewToggle?: boolean;
+  viewMode?: 'carousel' | 'list';
+  onViewModeChange?: (mode: 'carousel' | 'list') => void;
+  onAction1?: () => void;
+  onAction2?: () => void;
 }
 
 export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
@@ -24,6 +29,11 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
   onMouseMove,
   onMouseEnter,
   onMouseLeave,
+  showViewToggle = false,
+  viewMode = 'carousel',
+  onViewModeChange,
+  onAction1,
+  onAction2,
 }) => {
   const headerRef = useRef<HTMLDivElement>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -56,24 +66,23 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
   
   return (
     <>
-      {/* Breadcrumb navigation */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-        <div className="flex items-center text-sm text-gray-400">
-          <a href="/" className="hover:text-brand-400 transition-colors">
-            Home
-          </a>
-          <span className="mx-2">›</span>
-          <a href="/contests" className="hover:text-brand-400 transition-colors">
-            Contests
-          </a>
-          <span className="mx-2">›</span>
-          <span className="text-gray-300">{contest.name}</span>
-        </div>
-      </div>
-      
-      {/* Content Section - now contained like detail page */}
+      {/* Content Section - contained like detail page */}
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          {/* Breadcrumb navigation - inside the main container */}
+          <div className="mb-4">
+            <div className="flex items-center text-sm text-gray-400">
+              <a href="/" className="hover:text-brand-400 transition-colors">
+                Home
+              </a>
+              <span className="mx-2">›</span>
+              <a href="/contests" className="hover:text-brand-400 transition-colors">
+                Contests
+              </a>
+              <span className="mx-2">›</span>
+              <span className="text-gray-300">{contest.name}</span>
+            </div>
+          </div>
           <motion.div
             ref={headerRef}
             className="relative rounded-lg mb-8 overflow-hidden group"
@@ -217,13 +226,65 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
               </div>
             )}
             
-            {/* Share Button */}
-            <ShareContestButton
-              contestId={contest.id.toString()}
-              contestName={contest.name}
-              prizePool={contest.prizePool || '0'}
-              className="ml-auto"
-            />
+            {/* Action Buttons */}
+            <div className="ml-auto flex items-center gap-2">
+              {/* View Toggle - only show if enabled */}
+              {showViewToggle && (
+                <>
+                  {/* View Mode Toggle Button */}
+                  <motion.button
+                    onClick={() => onViewModeChange!(viewMode === 'carousel' ? 'list' : 'carousel')}
+                    className="px-4 py-2 bg-dark-300/90 backdrop-blur-sm border border-dark-200 rounded-lg flex items-center gap-2 hover:bg-dark-200/90 transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title={viewMode === 'carousel' ? 'Switch to List View' : 'Switch to Carousel View'}
+                  >
+                    {viewMode === 'carousel' ? (
+                      <>
+                        <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <span className="text-sm text-gray-300">List View</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-sm text-gray-300">Carousel View</span>
+                      </>
+                    )}
+                  </motion.button>
+                  
+                  {/* Placeholder Action Button 1 */}
+                  <motion.button
+                    onClick={onAction1}
+                    className="w-10 h-10 bg-dark-300/90 backdrop-blur-sm border border-dark-200 rounded-lg flex items-center justify-center hover:bg-dark-200/90 transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <span className="text-gray-400">?</span>
+                  </motion.button>
+                  
+                  {/* Placeholder Action Button 2 */}
+                  <motion.button
+                    onClick={onAction2}
+                    className="w-10 h-10 bg-dark-300/90 backdrop-blur-sm border border-dark-200 rounded-lg flex items-center justify-center hover:bg-dark-200/90 transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <span className="text-gray-400">?</span>
+                  </motion.button>
+                </>
+              )}
+              
+              {/* Share Button */}
+              <ShareContestButton
+                contestId={contest.id.toString()}
+                contestName={contest.name}
+                prizePool={contest.prizePool || '0'}
+              />
+            </div>
           </motion.div>
             </div>
           </motion.div>

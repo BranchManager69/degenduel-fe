@@ -54,23 +54,26 @@ import './Terminal.voice.css';
 
 // Import utility functions
 import {
-  getDidiMemoryState,
-  resetDidiMemory
+    getDidiMemoryState,
+    resetDidiMemory
 } from './utils/didiHelpers';
 
 // Didi loves Easter
 import {
-  awardEasterEggProgress,
-  EASTER_EGG_CODE,
-  getDiscoveredPatterns,
-  getEasterEggProgress,
-  SECRET_COMMANDS
+    awardEasterEggProgress,
+    EASTER_EGG_CODE,
+    getDiscoveredPatterns,
+    getEasterEggProgress,
+    SECRET_COMMANDS
 } from './utils/easterEggHandler';
 
 // Import types
 // import { clearInterval } from 'timers'; // REMOVE incorrect NodeJS import
 import { DidiAvatar } from './DidiAvatar';
-import { TerminalProps, TerminalSize } from './types';
+import { TerminalMode, TerminalProps, TerminalSize } from './types';
+
+// NEW: Import chat room functionality for alter ego mode
+import { ChatRoomMessage, useGeneralChatRoom } from '../../hooks/websocket/topic-hooks/useGeneralChatRoom';
 
 /**
  * Terminal component
@@ -91,10 +94,38 @@ export const Terminal = ({
   onCommandExecuted,
   size = 'middle',
   isInitiallyMinimized = true,
+  mode = 'ai',
+  chatConfig,
+  onModeChange,
 }: TerminalProps) => {
   
   // Get user authentication state
   const { user } = useStore();
+  
+  // NEW: Terminal mode state management
+  const [currentMode, setCurrentMode] = useState<TerminalMode>(mode);
+  
+  // NEW: Chat room functionality for alter ego mode
+  const defaultChatConfig = { 
+    roomId: 'general-chat', 
+    roomName: 'General Chat',
+    roomType: 'general' 
+  };
+  
+  const activeChatConfig = chatConfig || defaultChatConfig;
+  
+  // NEW: Use chat room hook when in chat mode
+  const {
+    messages: chatMessages,
+    isConnected: chatConnected,
+    sendMessage: sendChatMessage,
+    joinRoom,
+    leaveRoom,
+    participantCount
+  } = useGeneralChatRoom(
+    activeChatConfig.roomId, 
+    activeChatConfig.roomType || 'general'
+  );
   
   // We no longer need to set window.contractAddress as it's now fetched from the API
   //   This is kept for backward compatibility (WHICH WE DONT EVEN FUCKING WANT) but will be phased out
@@ -279,11 +310,13 @@ export const Terminal = ({
     });
   }, [config]); // Run only when config changes
 
-  // Initialize with simple welcome message for AI chat
+  // Initialize with mode-appropriate welcome message
   useEffect(() => {
-    setConversationHistory([
-      { role: 'assistant', content: "Hi, I'm Didi! Ask me anything about DegenDuel.", tool_calls: undefined },
-    ]);
+    if (currentMode === 'ai') {
+      setConversationHistory([
+        { role: 'assistant', content: "Hi, I'm Didi! Ask me anything about DegenDuel.", tool_calls: undefined },
+      ]);
+    }
     
     // Set up global UI handler
     const handleUIAction = (action: any) => {
@@ -292,7 +325,15 @@ export const Terminal = ({
       }
     };
     setGlobalUIHandler(handleUIAction);
-  }, []);
+  }, [currentMode]);
+  
+  // NEW: Join chat room when mode changes to chat
+  useEffect(() => {
+    if (currentMode === 'chat-room' && chatConnected) {
+      joinRoom();
+      console.log(`[Terminal] Auto-joined chat room: ${activeChatConfig.roomName || activeChatConfig.roomId}`);
+    }
+  }, [currentMode, chatConnected, joinRoom, activeChatConfig]);
 
   // Auto-restore minimized terminal after a delay
   /*useEffect(() => { // REMOVED to stop auto-restore behavior
@@ -473,12 +514,56 @@ export const Terminal = ({
     // Simple toggle between large and contracted (small)
     setSizeState(sizeState === 'large' ? 'contracted' : 'large');
   };
+  
+  // NEW: Toggle between AI and Chat Room modes
+  const toggleMode = () => {
+    const newMode: TerminalMode = currentMode === 'ai' ? 'chat-room' : 'ai';
+    setCurrentMode(newMode);
+    onModeChange?.(newMode);
+    
+    if (newMode === 'chat-room') {
+      // Join chat room when switching to chat mode
+      joinRoom();
+      console.log(`[Terminal] Switched to chat room mode: ${activeChatConfig.roomName || activeChatConfig.roomId}`);
+    } else {
+      // Leave chat room when switching to AI mode
+      leaveRoom();
+      console.log('[Terminal] Switched to AI mode');
+    }
+  };
+  
+  // NEW: Convert chat messages to AI message format for display
+  const getDisplayMessages = (): AIMessage[] => {
+    if (currentMode === 'ai') {
+      return conversationHistory;
+    } else {
+      // Convert chat messages to AI message format
+      return chatMessages.map((msg: ChatRoomMessage): AIMessage => ({
+        role: msg.is_system ? 'system' : 
+              msg.user_id === user?.wallet_address ? 'user' : 'assistant',
+        content: msg.is_system ? msg.message : 
+                 `[${msg.username}]: ${msg.message}`,
+        tool_calls: undefined
+      }));
+    }
+  };
 
-  // Update handleEnterCommand to ONLY update conversationHistory for command output
+  // Update handleEnterCommand to handle both AI and Chat modes
   const handleEnterCommand = async (command: string) => {
     // Update interaction time when user sends a message
     setLastInteractionTime(new Date());
     
+    // NEW: Handle chat room mode
+    if (currentMode === 'chat-room') {
+      // In chat mode, send message directly to chat room
+      const success = sendChatMessage(command);
+      if (!success) {
+        console.warn('[Terminal] Failed to send chat message');
+      }
+      return; // Exit early for chat mode
+    }
+    
+    // AI mode handling (existing logic)
     const { activateEasterEgg } = useStore.getState();
     // Create user message (will be added to history by AI service)
     const userMessage: AIMessage = { role: 'user', content: command }; 
@@ -965,10 +1050,27 @@ export const Terminal = ({
         >
           {/* Terminal Header - Browser style window controls */}
           <div className="flex justify-between items-center mb-2 border-b border-mauve/30 pb-2">
-            <div className="text-xs font-bold">
+            <div className="text-xs font-bold flex items-center">
               <span className="text-mauve">DEGEN</span>
               <span className="text-white">TERMINAL</span>
               <span className="text-mauve-light mx-2">v6.9</span>
+              
+              {/* NEW: Mode indicator */}
+              <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                currentMode === 'ai' 
+                  ? 'bg-blue-500/20 border-blue-500/50 text-blue-300' 
+                  : 'bg-green-500/20 border-green-500/50 text-green-300'
+              }`}>
+                {currentMode === 'ai' ? 'AI' : 'CHAT'}
+              </span>
+              
+              {/* Chat room info */}
+              {currentMode === 'chat-room' && (
+                <span className="text-gray-400 ml-2 text-xs">
+                  {activeChatConfig.roomName} ({participantCount} online)
+                </span>
+              )}
+              
               {easterEggActivated && (
                 <span className="text-green-400 ml-1">UNLOCKED</span>
               )}
@@ -976,6 +1078,22 @@ export const Terminal = ({
             
             {/* Browser-style window controls */}
             <div className="flex items-center space-x-1">
+              {/* NEW: Mode toggle button (blue/green) */}
+              <button
+                type="button" 
+                onClick={toggleMode}
+                className={`h-4 w-4 rounded-full flex items-center justify-center transition-colors ${
+                  currentMode === 'ai' 
+                    ? 'bg-blue-500 hover:bg-blue-400' 
+                    : 'bg-green-500 hover:bg-green-400'
+                }`}
+                title={currentMode === 'ai' ? 'Switch to Chat Room' : 'Switch to AI Mode'}
+              >
+                <span className="text-white text-[10px] font-bold">
+                  {currentMode === 'ai' ? '💬' : '🤖'}
+                </span>
+              </button>
+              
               {/* Size toggle button (yellow) */}
               <button
                 type="button" 
@@ -1004,9 +1122,9 @@ export const Terminal = ({
           {/* Terminal Content */}
           <div ref={terminalContentRef} className="relative">
             
-            {/* Pass conversationHistory to TerminalConsole's 'messages' prop */}
+            {/* Pass display messages to TerminalConsole (AI or Chat) */}
             <TerminalConsole 
-              messages={conversationHistory} // Pass the AIMessage array
+              messages={getDisplayMessages()} // Pass the appropriate message array based on mode
               size={sizeState}
             />
             
@@ -1026,7 +1144,7 @@ export const Terminal = ({
 
       </div>
       
-      {/* Terminal Minimized State - Using Optimized Didi Avatar */}
+      {/* Terminal Minimized State - Mode-aware Didi Avatar */}
       {terminalMinimized && (
         <div
           className="fixed z-[99999] pointer-events-auto"
@@ -1036,30 +1154,49 @@ export const Terminal = ({
             transform: 'translateX(-50%) scale(0.665)',
           }}
         >
-          <DidiAvatar
-            hasUnreadMessages={hasUnreadMessages}
-            easterEggActivated={easterEggActivated}
-            glitchActive={glitchActive}
-            isDragging={isDragging}
-            onClick={() => {
-              console.log('[Terminal] Didi avatar clicked');
-              if (!isDragging) {
-                setTerminalMinimized(false);
-                setHasUnreadMessages(false);
-                setSizeState('large');
-              }
-            }}
-            onDragStart={() => {
-              console.log('[Terminal] Didi drag started');
-              setIsDragging(true);
-            }}
-            onDragEnd={() => {
-              console.log('[Terminal] Didi drag ended');
-              setTimeout(() => {
-                setIsDragging(false);
-              }, 50);
-            }}
-          />
+          {/* NEW: Show mode indicator on minimized avatar */}
+          <div className="relative">
+            <DidiAvatar
+              hasUnreadMessages={hasUnreadMessages}
+              easterEggActivated={easterEggActivated}
+              glitchActive={glitchActive}
+              isDragging={isDragging}
+              onClick={() => {
+                console.log(`[Terminal] Didi avatar clicked (${currentMode} mode)`);
+                if (!isDragging) {
+                  setTerminalMinimized(false);
+                  setHasUnreadMessages(false);
+                  setSizeState('large');
+                }
+              }}
+              onDragStart={() => {
+                console.log('[Terminal] Didi drag started');
+                setIsDragging(true);
+              }}
+              onDragEnd={() => {
+                console.log('[Terminal] Didi drag ended');
+                setTimeout(() => {
+                  setIsDragging(false);
+                }, 50);
+              }}
+            />
+            
+            {/* NEW: Mode indicator badge */}
+            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] border-2 border-black ${
+              currentMode === 'ai' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-green-500 text-white'
+            }`}>
+              {currentMode === 'ai' ? '🤖' : '💬'}
+            </div>
+            
+            {/* NEW: Chat participant count for chat mode */}
+            {currentMode === 'chat-room' && participantCount > 1 && (
+              <div className="absolute -bottom-1 -right-1 w-5 h-4 bg-green-600 text-white text-[8px] rounded-full flex items-center justify-center border border-black">
+                {participantCount}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </>

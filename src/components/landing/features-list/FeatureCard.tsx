@@ -213,7 +213,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
            <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900/90 to-black border border-gray-800/40 h-full transition-all duration-300 shadow-lg flex flex-col ${!isShowcase ? 'group-hover:border-purple-500/40 group-hover:shadow-xl' : 'border-brand-400/30 shadow-2xl shadow-brand-400/20'}`}>
             
                          {/* Dynamic Feature Illustration/Banner - Proper height for showcase theater */}
-             <div className={`relative w-full overflow-hidden shrink-0 ${isShowcase ? 'h-48 lg:h-64 xl:h-80' : 'aspect-[3/2] sm:aspect-square'}`}>
+             <div className={`relative w-full overflow-hidden shrink-0 ${isShowcase ? 'h-48 lg:h-64 xl:h-80' : 'h-24 sm:h-32 md:aspect-square'}`}>
               
               {/* Gradient overlay for consistent branding & readability */}
               <div className={`absolute inset-0 bg-gradient-to-br from-gray-900/50 via-gray-900/30 to-gray-900/70 z-10`}></div>
@@ -294,10 +294,10 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             </div>
             
             {/* Content section - Prioritize top content, allow bottom overflow */}
-            <div className={`relative z-10 flex-grow flex flex-col ${isShowcase ? 'px-4 md:px-6 py-3 md:py-4 overflow-hidden' : 'px-2 sm:px-3 py-1.5 sm:py-3'}`}>
+            <div className={`relative z-10 flex-grow flex flex-col ${isShowcase ? 'px-4 md:px-6 py-3 md:py-4 overflow-hidden' : 'px-1.5 sm:px-3 py-1 sm:py-3'}`}>
               
               {/* Feature title - Always visible at top */}
-              <h3 className={`font-bold font-russo-one text-white tracking-wide relative leading-tight flex-shrink-0 ${isShowcase ? 'text-xl md:text-2xl mb-3' : 'text-sm sm:text-lg md:text-xl mb-0.5 sm:mb-2'}`}>
+              <h3 className={`font-bold font-russo-one text-white tracking-wide relative leading-tight flex-shrink-0 ${isShowcase ? 'text-xl md:text-2xl mb-3' : 'text-sm sm:text-base md:text-lg mb-0.5 sm:mb-1'}`}>
                 {title}
                 
                 {/* Animated underline effect */}
@@ -311,7 +311,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               </h3>
               
               {/* Feature description - Always visible, flexible height */}
-              <p className={`text-gray-300 leading-snug font-sans flex-shrink-0 ${isShowcase ? 'text-base md:text-lg mb-3' : 'text-[10px] sm:text-sm leading-tight sm:leading-snug mb-1 sm:mb-2'}`}>
+              <p className={`text-gray-300 leading-snug font-sans flex-shrink-0 ${isShowcase ? 'text-base md:text-lg mb-3' : 'text-[10px] sm:text-xs md:text-sm leading-tight mb-1'}`}>
                 {description}
               </p>
 

@@ -70,10 +70,36 @@ export const CreativePortfolioGrid: React.FC<CreativePortfolioGridProps> = React
             will-change: transform, opacity;
           }
           
-          .perspective-1000 { perspective: 1000px; }
-          .transform-style-3d { transform-style: preserve-3d; }
-          .backface-hidden { backface-visibility: hidden; }
-          .rotate-y-180 { transform: rotateY(180deg); }
+          .perspective-1000 { 
+            perspective: 1000px; 
+            -webkit-perspective: 1000px;
+          }
+          .transform-style-3d { 
+            transform-style: preserve-3d; 
+            -webkit-transform-style: preserve-3d;
+          }
+          .backface-hidden { 
+            backface-visibility: hidden; 
+            -webkit-backface-visibility: hidden;
+            -moz-backface-visibility: hidden;
+          }
+          .rotate-y-180 { 
+            transform: rotateY(180deg); 
+            -webkit-transform: rotateY(180deg);
+            -moz-transform: rotateY(180deg);
+          }
+          
+          /* Firefox-specific fixes for 3D transforms */
+          @-moz-document url-prefix() {
+            .perspective-1000 {
+              transform-style: preserve-3d;
+              -moz-transform-style: preserve-3d;
+            }
+            .transform-style-3d > div {
+              transform: translateZ(0);
+              -moz-transform: translateZ(0);
+            }
+          }
         `
       }} />
 
