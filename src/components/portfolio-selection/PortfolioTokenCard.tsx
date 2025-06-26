@@ -1,8 +1,8 @@
+import { Check, ExternalLink, Info, Minus, Plus } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Token, TokenHelpers } from "../../types";
 import { formatNumber, formatPercentage, formatTokenPrice } from "../../utils/format";
-import { Info, ExternalLink, Plus, Minus, Check } from "lucide-react";
 
 interface PortfolioTokenCardProps {
   token: Token;
@@ -81,7 +81,11 @@ export const PortfolioTokenCard: React.FC<PortfolioTokenCardProps> = ({
           ${isTopThree ? 'bg-gradient-to-br from-dark-100/90 via-dark-200/80 to-dark-300/90' : 'bg-dark-200/70'}
           ${isTopThree ? 'shadow-2xl ' + rankStyle.glow : 'shadow-xl shadow-black/20'}
         `}
-        style={{ animationDelay: isNewToken && index < 500 ? `${(index % 20) * 0.05}s` : undefined }}>
+        style={{ 
+          animationDelay: isNewToken && index < 500 ? `${(index % 20) * 0.05}s` : undefined,
+          transform: 'rotateY(0deg) translateZ(1px)',
+          WebkitTransform: 'rotateY(0deg) translateZ(1px)'
+        }}>
           {/* Same front content as original */}
           {isDuel && (
             <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-transparent to-purple-600/10 animate-pulse" />
@@ -131,7 +135,15 @@ export const PortfolioTokenCard: React.FC<PortfolioTokenCardProps> = ({
                 <div className="text-sm font-bold text-white" style={{ 
                   textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
                 }}>
-                  ${formatNumber(TokenHelpers.getMarketCap(token), 'short')} MC
+                  {token.symbol === 'SOL' ? (
+                    <span className="text-lg text-yellow-400" style={{ 
+                      textShadow: '0 0 20px rgba(251, 191, 36, 0.6), 2px 2px 4px rgba(0,0,0,1)' 
+                    }}>
+                      {formatTokenPrice(TokenHelpers.getPrice(token))}
+                    </span>
+                  ) : (
+                    `${formatNumber(TokenHelpers.getMarketCap(token), 'short')} MC`
+                  )}
                 </div>
                 
                 <div className={`text-xs font-bold font-sans ${changeNum >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ 
@@ -143,11 +155,13 @@ export const PortfolioTokenCard: React.FC<PortfolioTokenCardProps> = ({
             </div>
             
             <div>
-              <div className="text-[10px] text-gray-300 whitespace-nowrap" style={{ 
-                textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
-              }}>
-                {formatTokenPrice(TokenHelpers.getPrice(token))}
-              </div>
+              {token.symbol !== 'SOL' && (
+                <div className="text-[10px] text-gray-300 whitespace-nowrap" style={{ 
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
+                }}>
+                  {formatTokenPrice(TokenHelpers.getPrice(token))}
+                </div>
+              )}
             </div>
           </div>
           
@@ -163,7 +177,11 @@ export const PortfolioTokenCard: React.FC<PortfolioTokenCardProps> = ({
         </div>
 
         {/* Back of card - Portfolio controls */}
-        <div className="absolute w-full h-full backface-hidden rotate-y-180 rounded-2xl overflow-hidden shadow bg-dark-200/95">
+        <div className="absolute w-full h-full backface-hidden rotate-y-180 rounded-2xl overflow-hidden shadow bg-dark-200/95"
+          style={{
+            transform: 'rotateY(180deg) translateZ(1px)',
+            WebkitTransform: 'rotateY(180deg) translateZ(1px)'
+          }}>
           <div className="absolute inset-0">
             {(token.header_image_url) ? (
               <>

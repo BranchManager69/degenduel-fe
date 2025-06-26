@@ -211,7 +211,22 @@ export const ContestResults: React.FC = () => {
       <div className="relative z-10 flex-grow">
         
         {/* Content Section - Main Container */}
-        <div className="container mx-auto px-4 py-4 lg:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
+          
+          {/* Breadcrumb navigation */}
+          <div className="mb-4">
+            <div className="flex items-center text-sm text-gray-400">
+              <a href="/" className="hover:text-brand-400 transition-colors">
+                Home
+              </a>
+              <span className="mx-2">›</span>
+              <a href="/contests" className="hover:text-brand-400 transition-colors">
+                Contests
+              </a>
+              <span className="mx-2">›</span>
+              <span className="text-gray-300">{contestDetails?.name || 'Contest Results'}</span>
+            </div>
+          </div>
           
           {/* Enhanced Header Section with interactive elements */}
           <div 
@@ -956,7 +971,15 @@ export const ContestResults: React.FC = () => {
                           {/* Duration */}
                           <div className="flex justify-between pb-2">
                             <span className="text-gray-400">Duration</span>
-                            <span className="text-white">24 hours</span>
+                            <span className="text-white">
+                              {(() => {
+                                const start = new Date(contestDetails.startTime);
+                                const end = new Date(contestDetails.endTime);
+                                const durationMs = end.getTime() - start.getTime();
+                                const hours = Math.round(durationMs / (1000 * 60 * 60));
+                                return hours === 24 ? '24 hours' : `${hours} hours`;
+                              })()}
+                            </span>
                           </div>
 
                         </div>
@@ -984,12 +1007,12 @@ export const ContestResults: React.FC = () => {
                           
                           <div className="flex justify-between border-b border-gray-700 pb-2">
                             <span className="text-gray-400">Start Date</span>
-                            <span className="text-white">{new Date(Date.now() - 86400000).toLocaleDateString()}</span>
+                            <span className="text-white">{new Date(contestDetails.startTime).toLocaleDateString()}</span>
                           </div>
                           
                           <div className="flex justify-between border-b border-gray-700 pb-2">
                             <span className="text-gray-400">End Date</span>
-                            <span className="text-white">{new Date().toLocaleDateString()}</span>
+                            <span className="text-white">{new Date(contestDetails.endTime).toLocaleDateString()}</span>
                           </div>
                           
                           <div className="flex justify-between border-b border-gray-700 pb-2">
@@ -999,7 +1022,7 @@ export const ContestResults: React.FC = () => {
                           
                           <div className="flex justify-between pb-2">
                             <span className="text-gray-400">Total Prize Pool</span>
-                            <span className="text-white font-mono">$1,000</span>
+                            <span className="text-white font-mono">{formatCurrency(parseFloat(contestDetails.prizePool || '0'))}</span>
                           </div>
                           
                         </div>
@@ -1134,7 +1157,12 @@ export const ContestResults: React.FC = () => {
                             
                             <div className="flex items-center justify-between">
                               <span className="text-gray-400">Average Return</span>
-                              <span className="text-white">+12.1%</span>
+                              <span className="text-white">
+                                {leaderboardEntriesForDisplay.length > 0 
+                                  ? `${(leaderboardEntriesForDisplay.reduce((sum, entry) => sum + entry.totalReturn, 0) / leaderboardEntriesForDisplay.length).toFixed(1)}%`
+                                  : 'N/A'
+                                }
+                              </span>
                             </div>
                             
                             <div className="flex items-center justify-between">

@@ -354,6 +354,9 @@ export const ContestLobbyV2: React.FC = () => {
   // Chart hover state - for coordinating between ParticipantsList and MultiParticipantChart
   const [hoveredParticipant, setHoveredParticipant] = useState<string | null>(null);
   
+  // View mode state for leaderboard tab
+  const [leaderboardViewMode, setLeaderboardViewMode] = useState<'carousel' | 'list'>('carousel');
+  
   // Switch away from Trade tab if user logs out
   useEffect(() => {
     if (!user && activeTab === 'trade') {
@@ -815,6 +818,17 @@ export const ContestLobbyV2: React.FC = () => {
           onMouseMove={handleMouseMove}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
+          showViewToggle={activeTab === 'leaderboard'}
+          viewMode={leaderboardViewMode}
+          onViewModeChange={setLeaderboardViewMode}
+          onAction1={() => {
+            // Placeholder for future action 1
+            console.log('Action 1 clicked');
+          }}
+          onAction2={() => {
+            // Placeholder for future action 2
+            console.log('Action 2 clicked');
+          }}
         />
 
         {/* Content Section */}
@@ -946,51 +960,96 @@ export const ContestLobbyV2: React.FC = () => {
               {/* Leaderboard Tab */}
               {activeTab === 'leaderboard' && (
                 <div className="space-y-6">
-                  {/* Focused Participants View - New innovative interface */}
-                  <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
-                    <FocusedParticipantsList 
-                      participants={effectiveParticipants}
-                      contestStatus="live"
-                      prizePool={parseFloat(contest.prizePool || '0')}
-                      contestId={contestIdFromParams!}
-                      onParticipantHover={setHoveredParticipant}
-                      hoveredParticipant={hoveredParticipant}
-                    />
-                  </div>
-                  
-                  {/* Main Grid Layout */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2">
-                      <MultiParticipantChartV2 
-                        contestId={contestIdFromParams!}
-                        contestStatus={contest.status === 'active' ? 'active' : 
-                                     contest.status === 'pending' ? 'upcoming' : 
-                                     contest.status === 'completed' ? 'completed' : 'cancelled'}
-                        participants={effectiveParticipants}
-                        timeInterval="1h"
-                        maxParticipants={effectiveParticipants.length}
-                        hoveredParticipant={hoveredParticipant}
-                      />
-                    </div>
-                    <div className="space-y-6">
-                      <ParticipantsList 
-                        participants={effectiveParticipants} 
-                        contestStatus="live"
-                        prizePool={parseFloat(contest.prizePool || '0')}
-                        contestId={contestIdFromParams!}
-                        onParticipantHover={setHoveredParticipant}
-                        hoveredParticipant={hoveredParticipant}
-                      />
-                    </div>
-                  </div>
+                  <AnimatePresence mode="wait">
+                    {leaderboardViewMode === 'carousel' ? (
+                      <motion.div
+                        key="carousel"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {/* Focused Participants View - Carousel Mode */}
+                        <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
+                          <FocusedParticipantsList 
+                            participants={effectiveParticipants}
+                            contestStatus="live"
+                            prizePool={parseFloat(contest.prizePool || '0')}
+                            contestId={contestIdFromParams!}
+                            onParticipantHover={setHoveredParticipant}
+                            hoveredParticipant={hoveredParticipant}
+                          />
+                        </div>
+                        
+                        {/* Chart below carousel */}
+                        <div className="mt-6">
+                          <MultiParticipantChartV2 
+                            contestId={contestIdFromParams!}
+                            contestStatus={contest.status === 'active' ? 'active' : 
+                                         contest.status === 'pending' ? 'upcoming' : 
+                                         contest.status === 'completed' ? 'completed' : 'cancelled'}
+                            participants={effectiveParticipants}
+                            timeInterval="1h"
+                            maxParticipants={effectiveParticipants.length}
+                            hoveredParticipant={hoveredParticipant}
+                          />
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="list"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {/* Main Grid Layout - List Mode */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                          <div className="lg:col-span-2">
+                            <MultiParticipantChartV2 
+                              contestId={contestIdFromParams!}
+                              contestStatus={contest.status === 'active' ? 'active' : 
+                                           contest.status === 'pending' ? 'upcoming' : 
+                                           contest.status === 'completed' ? 'completed' : 'cancelled'}
+                              participants={effectiveParticipants}
+                              timeInterval="1h"
+                              maxParticipants={effectiveParticipants.length}
+                              hoveredParticipant={hoveredParticipant}
+                            />
+                          </div>
+                          <div className="space-y-6">
+                            <ParticipantsList 
+                              participants={effectiveParticipants} 
+                              contestStatus="live"
+                              prizePool={parseFloat(contest.prizePool || '0')}
+                              contestId={contestIdFromParams!}
+                              onParticipantHover={setHoveredParticipant}
+                              hoveredParticipant={hoveredParticipant}
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               )}
 
               {/* Activity Tab */}
               {activeTab === 'activity' && (
                 <div className="space-y-6">
-                  {/* Contest Chat */}
-                  <ContestChat contestId={contestIdFromParams!} />
+                  {/* Contest Chat - COMING SOON */}
+                  <div className="relative">
+                    <div className="opacity-30 pointer-events-none select-none">
+                      <ContestChat contestId={contestIdFromParams!} />
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-lg">
+                      <div className="text-center p-8">
+                        <div className="text-4xl mb-4">💬</div>
+                        <h3 className="text-2xl font-bold text-white mb-2">Contest Chat</h3>
+                        <p className="text-lg text-gray-300">COMING SOON</p>
+                      </div>
+                    </div>
+                  </div>
                   
                   {/* Activity Content */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

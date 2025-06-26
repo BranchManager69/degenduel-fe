@@ -899,31 +899,44 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className={`fixed right-0 top-0 h-full ${isMobile ? 'w-full' : 'w-96'} bg-dark-300/95 backdrop-blur-md border-l border-dark-300 z-50 overflow-y-auto overflow-x-hidden`}
+            className={`fixed right-0 top-0 h-full ${isMobile ? 'w-full' : 'w-[480px]'} bg-dark-300/95 backdrop-blur-md border-l border-dark-300 z-50 overflow-y-auto overflow-x-hidden`}
           >
-            {/* Close button */}
-            <button
-              onClick={() => {
-                setExpandedPortfolio(false);
-                onParticipantHover?.(null);
-              }}
-              className="absolute top-4 right-4 p-2 bg-dark-400/50 rounded-lg hover:bg-dark-400 transition-colors z-10"
-            >
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            {/* Header Bar */}
+            <div className="sticky top-0 bg-dark-300/95 backdrop-blur-md border-b border-dark-200 p-4 flex items-center justify-between">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-100">
+                  {sortedParticipants[focusedIndex].nickname}
+                </h4>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className={`text-2xl font-bold ${getRankColor((sortedParticipants[focusedIndex] as any).displayRank)}`}>
+                    #{(sortedParticipants[focusedIndex] as any).displayRank || focusedIndex + 1}
+                  </span>
+                  <span className={`text-lg font-semibold ${
+                    parseFloat(sortedParticipants[focusedIndex].performance_percentage || "0") >= 0 ? "text-green-400" : "text-red-400"
+                  }`}>
+                    {parseFloat(sortedParticipants[focusedIndex].performance_percentage || "0") >= 0 ? "+" : ""}
+                    {parseFloat(sortedParticipants[focusedIndex].performance_percentage || "0").toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setExpandedPortfolio(false);
+                  onParticipantHover?.(null);
+                }}
+                className="p-2 bg-dark-400/50 rounded-lg hover:bg-dark-400 transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             
-            <div className="p-6 pt-16 max-w-full">
-              <h4 className="text-lg font-semibold text-gray-100 mb-4">
-                {sortedParticipants[focusedIndex].nickname}'s Portfolio
-              </h4>
-              
-              {/* Bio Section */}
+            <div className="p-4">
+              {/* Bio Section - Compact */}
               {sortedParticipants[focusedIndex].bio && (
-                <div className="mb-6 p-4 bg-dark-400/30 rounded-lg">
-                  <h5 className="text-sm font-semibold text-gray-300 mb-2">Bio</h5>
-                  <p className="text-gray-400 text-sm leading-relaxed">
+                <div className="mb-4 p-3 bg-dark-400/30 rounded-lg">
+                  <p className="text-gray-300 text-sm leading-relaxed">
                     {sortedParticipants[focusedIndex].bio}
                   </p>
                 </div>
@@ -938,78 +951,76 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                   <p>Failed to load portfolio data</p>
                 </div>
               ) : portfolioData[sortedParticipants[focusedIndex].wallet_address]?.portfolio ? (
-                <div>
-                  {/* Portfolio Summary */}
-                  <div className="mb-6 p-4 bg-dark-400/30 rounded-lg">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-400">Initial Value:</span>
-                        <div className="font-semibold text-gray-100 flex items-center gap-1 mt-1">
-                          <span>{parseFloat(portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.initial_value).toFixed(2)}</span>
-                          <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-4 h-4" />
-                        </div>
+                <div className="space-y-4">
+                  {/* Compact Portfolio Summary */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-dark-400/30 rounded-lg p-3">
+                      <div className="text-xs text-gray-400 mb-1">Portfolio Value</div>
+                      <div className="text-xl font-bold text-gray-100">
+                        {parseFloat(portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.current_value).toFixed(2)} SOL
                       </div>
-                      <div>
-                        <span className="text-gray-400">Current Value:</span>
-                        <div className="font-semibold text-gray-100 flex items-center gap-1 mt-1">
-                          <span>{parseFloat(portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.current_value).toFixed(2)}</span>
-                          <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-4 h-4" />
-                        </div>
+                      <div className={`text-sm mt-1 ${
+                        portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_percentage >= 0 ? '+' : ''}
+                        {portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_percentage.toFixed(2)}%
+                        <span className="text-gray-400 ml-1">
+                          ({portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_amount >= 0 ? '+' : ''}
+                          {parseFloat(portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_amount).toFixed(2)})
+                        </span>
                       </div>
-                      <div>
-                        <span className="text-gray-400">P&L:</span>
-                        <div className={`font-semibold mt-1 flex items-center gap-1 ${
-                          portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_amount >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_amount >= 0 ? '+' : ''}
-                          <span>{parseFloat(portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_amount).toFixed(2)}</span>
-                          <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-4 h-4" />
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Return:</span>
-                        <div className={`font-semibold mt-1 ${
-                          portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_percentage >= 0 ? '+' : ''}
-                          {portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_percentage.toFixed(2)}%
-                        </div>
-                      </div>
+                    </div>
+                    
+                    <div className="bg-dark-400/30 rounded-lg p-3">
+                      <div className="text-xs text-gray-400 mb-1">Prize Status</div>
+                      {(() => {
+                        const prize = prizeMap.get(sortedParticipants[focusedIndex].wallet_address) || 0;
+                        return prize > 0 ? (
+                          <>
+                            <div className="text-xl font-bold text-green-400">
+                              {prize.toFixed(2)} SOL
+                            </div>
+                            <div className="text-sm text-gray-400 mt-1">In the money!</div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-xl font-bold text-gray-500">—</div>
+                            <div className="text-sm text-gray-400 mt-1">No prize</div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                   
-                  {/* Token Holdings */}
-                  <div className="space-y-3">
-                    <h5 className="font-semibold text-gray-100 mb-3">Token Holdings</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio.map((holding: any) => (
-                        <div key={holding.token_id} className="flex items-center justify-between p-3 bg-dark-400/30 rounded-lg">
-                          <div className="flex items-center gap-3">
+                  {/* Token Holdings - Compact List */}
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-300 mb-2">Holdings ({portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio.length})</h5>
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio
+                        .sort((a: any, b: any) => b.current_value - a.current_value)
+                        .map((holding: any) => (
+                        <div key={holding.token_id} className="flex items-center justify-between p-2 bg-dark-400/20 rounded-lg hover:bg-dark-400/30 transition-colors">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
                             <img 
                               src={holding.token.image_url} 
                               alt={holding.token.symbol}
-                              className="w-10 h-10 rounded-full"
+                              className="w-8 h-8 rounded-full flex-shrink-0"
                             />
-                            <div>
-                              <div className="font-semibold text-gray-100">
-                                {holding.token.symbol}
+                            <div className="min-w-0">
+                              <div className="font-medium text-gray-100 flex items-center gap-2">
+                                <span>{holding.token.symbol}</span>
+                                <span className="text-xs text-gray-500">{holding.weight.toFixed(1)}%</span>
                               </div>
                               <div className="text-xs text-gray-400">
-                                {holding.weight.toFixed(1)}% allocation
+                                {parseFloat(holding.current_value).toFixed(2)} SOL
                               </div>
                             </div>
                           </div>
                           
-                          <div className="text-right">
-                            <div className="font-semibold text-gray-100 flex items-center gap-1">
-                              <span>{parseFloat(holding.current_value).toFixed(2)}</span>
-                              <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
-                            </div>
-                            <div className={`text-xs font-medium ${
-                              holding.pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'
-                            }`}>
-                              {holding.pnl_percentage >= 0 ? '+' : ''}{holding.pnl_percentage.toFixed(2)}%
-                            </div>
+                          <div className={`text-sm font-medium ${
+                            holding.pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {holding.pnl_percentage >= 0 ? '+' : ''}{holding.pnl_percentage.toFixed(1)}%
                           </div>
                         </div>
                       ))}

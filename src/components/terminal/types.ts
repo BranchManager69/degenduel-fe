@@ -18,6 +18,17 @@ export type TerminalSize = 'contracted' | 'middle' | 'large';
 // Layout mode options for the Terminal component
 export type TerminalLayoutMode = 'bottom-fixed' | 'sidebar' | 'floating' | 'inline' | 'modal';
 
+// NEW: Terminal operation modes
+export type TerminalMode = 'ai' | 'chat-room';
+
+// NEW: Chat room configuration
+export interface ChatRoomConfig {
+  roomId: string;
+  roomName?: string;
+  roomType?: 'contest' | 'general' | 'private' | 'trading';
+  maxParticipants?: number;
+}
+
 // Position options for different layout modes
 export interface TerminalPosition {
   side?: 'left' | 'right';
@@ -41,6 +52,10 @@ export interface TerminalProps {
   isInitiallyMinimized?: boolean;
   onStateChange?: (state: { minimized: boolean; size: TerminalSize }) => void;
   onCommand?: (command: string) => void;
+  // NEW: Alter ego props
+  mode?: TerminalMode;
+  chatConfig?: ChatRoomConfig;
+  onModeChange?: (mode: TerminalMode) => void;
 }
 
 // Define a union type for console output items - can be string or JSX

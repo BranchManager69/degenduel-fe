@@ -352,7 +352,10 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
       setExpandedParticipant(null);
     } else {
       setExpandedParticipant(walletAddress);
-      fetchPortfolioData(walletAddress);
+      // Only fetch portfolio data if contest has started (not pending)
+      if (contestStatus !== "upcoming") {
+        fetchPortfolioData(walletAddress);
+      }
     }
   };
 

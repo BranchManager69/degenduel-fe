@@ -33,47 +33,60 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
     <>
       <button
         onClick={handleOpenModal}
-        className={`group relative px-8 py-3 bg-dark-300 border-2 border-red-900/30 rounded-xl hover:border-red-500 transition-all duration-300 overflow-hidden ${className}`}
+        className={`group relative px-4 py-2 bg-gradient-to-br from-amber-950/90 via-orange-950/80 to-yellow-950/90 border-2 border-amber-700/40 rounded-xl hover:border-amber-500/80 hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300 overflow-hidden backdrop-blur-sm ${className}`}
       >
-        {/* Animated fire particles background */}
+        {/* Dynamic battle arena background */}
         <div className="absolute inset-0">
-          <div className="absolute top-0 left-1/4 w-1 h-1 bg-orange-500 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-float-up" />
-          <div className="absolute top-0 left-1/2 w-1 h-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-float-up animation-delay-300" />
-          <div className="absolute top-0 left-3/4 w-1 h-1 bg-yellow-500 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-float-up animation-delay-600" />
+          <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity duration-500">
+            {/* Battle arena grid */}
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              {/* Arena boundary lines */}
+              <rect x="10" y="10" width="80" height="80" fill="none" stroke="#d97706" strokeWidth="0.5" strokeDasharray="3,3" className="animate-pulse" />
+              <rect x="20" y="20" width="60" height="60" fill="none" stroke="#ea580c" strokeWidth="0.3" strokeDasharray="2,2" className="animate-pulse animation-delay-300" />
+              {/* Center combat zone */}
+              <circle cx="50" cy="50" r="15" fill="none" stroke="#d97706" strokeWidth="0.8" className="animate-ping" />
+              <circle cx="50" cy="50" r="8" fill="none" stroke="#f97316" strokeWidth="0.5" className="animate-pulse animation-delay-500" />
+              {/* Diagonal clash lines */}
+              <line x1="30" y1="30" x2="70" y2="70" stroke="#d97706" strokeWidth="0.4" className="animate-pulse animation-delay-200" />
+              <line x1="70" y1="30" x2="30" y2="70" stroke="#d97706" strokeWidth="0.4" className="animate-pulse animation-delay-400" />
+            </svg>
+            {/* Spark effects */}
+            <div className="absolute inset-0">
+              <div className="absolute top-1/4 left-1/3 w-1 h-1 bg-orange-400 rounded-full animate-twinkle" />
+              <div className="absolute bottom-1/4 right-1/3 w-1 h-1 bg-red-400 rounded-full animate-twinkle animation-delay-700" />
+            </div>
+          </div>
         </div>
         
-        {/* Glowing ember effect */}
-        <div className="absolute inset-0 bg-gradient-to-br from-red-600/0 via-orange-500/0 to-red-600/0 group-hover:from-red-600/10 group-hover:via-orange-500/20 group-hover:to-red-600/10 transition-all duration-500" />
-        
-        {/* Lightning strike effect on hover */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-0 bg-gradient-to-b from-white to-red-400 opacity-0 group-hover:opacity-100 group-hover:h-full transition-all duration-200" />
+        {/* Combat heat overlay */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-amber-600/0 via-orange-500/0 to-yellow-600/0 group-hover:from-amber-600/5 group-hover:via-orange-500/3 group-hover:to-yellow-600/5 mix-blend-screen transition-all duration-500" />
         
         {/* Content */}
         <div className="relative flex items-center gap-3">
-          {/* Crossed swords icon */}
+          {/* Combat swords with arena glow */}
           <div className="relative w-8 h-8">
-            <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-orange-600 rounded-full blur-md opacity-0 group-hover:opacity-70 animate-pulse" />
-            <span className="relative text-2xl group-hover:animate-pulse">⚔️</span>
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-orange-500 to-yellow-600 rounded-full blur-lg opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-300" />
+            <span className="relative text-2xl filter group-hover:drop-shadow-[0_0_8px_rgba(217,119,6,0.8)] group-hover:animate-pulse">⚔️</span>
           </div>
           
           <div className="flex flex-col items-start">
-            <span className="text-xs text-red-400/70 group-hover:text-red-400 transition-colors uppercase tracking-wider">
+            <span className="text-xs text-amber-300/80 group-hover:text-amber-200 transition-colors uppercase tracking-wider font-medium whitespace-nowrap">
               1v1 Combat
             </span>
-            <span className="font-black text-gray-200 text-lg -mt-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-red-400 group-hover:to-orange-400 transition-all duration-300">
+            <span className="font-black text-gray-100 text-lg -mt-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-amber-300 group-hover:via-orange-300 group-hover:to-yellow-300 transition-all duration-300 whitespace-nowrap">
               CHALLENGE DUEL
             </span>
           </div>
           
-          {/* VS indicator */}
-          <div className="ml-auto">
-            <span className="text-red-500 font-black text-sm group-hover:animate-pulse">VS</span>
+          {/* Combat indicator */}
+          <div className="ml-auto flex items-center">
+            <span className="text-xs text-amber-300 font-mono tracking-wider">1v1</span>
           </div>
         </div>
         
-        {/* Fire border effect */}
-        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <div className="w-full h-full bg-gradient-to-r from-red-600 via-orange-500 to-red-600 animate-fire-flicker" />
+        {/* Subtle border glow */}
+        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-40 transition-opacity duration-300">
+          <div className="absolute inset-[-1px] bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 rounded-xl blur-[2px]" />
         </div>
       </button>
 
