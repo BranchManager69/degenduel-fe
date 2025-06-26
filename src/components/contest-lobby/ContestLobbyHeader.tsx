@@ -29,7 +29,7 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   
-  const contestImage = getContestImageUrl('');
+  const contestImage = getContestImageUrl((contest as any).image_url || '');
   
   // Calculate time until start/end
   const getTimeDisplay = () => {
@@ -71,62 +71,67 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
         </div>
       </div>
       
-      <motion.div
-        ref={headerRef}
-        className="relative w-full h-80 sm:h-96 overflow-hidden group"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        onMouseMove={onMouseMove}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-      >
-      {/* Background Image with Parallax */}
-      <motion.div
-        className="absolute inset-0 z-0"
-        animate={{
-          x: isHovering ? mousePosition.x * 0.02 : 0,
-          y: isHovering ? mousePosition.y * 0.02 : 0,
-          scale: isHovering ? 1.05 : 1,
-        }}
-        transition={{ type: "spring", stiffness: 150, damping: 30 }}
-      >
-        {contestImage && !imageError ? (
-          <>
-            <img
-              src={contestImage}
-              alt={contest.name}
-              className={`w-full h-full object-cover transition-opacity duration-500 ${
-                imageLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
-              onLoad={() => setImageLoaded(true)}
-              onError={() => setImageError(true)}
-            />
-            {/* Gradient overlays for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
-          </>
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-500/20 to-purple-500/20">
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
-          </div>
-        )}
-      </motion.div>
-      
-      {/* Animated gradient effects */}
-      <div className="absolute inset-0 opacity-30 mix-blend-overlay">
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/20 to-brand-400/0 animate-data-stream" />
-      </div>
-      
-      {/* Content Container with Parallax */}
-      <motion.div
-        className="relative z-10 h-full flex flex-col justify-end p-6 sm:p-8 lg:p-12"
-        animate={{
-          x: isHovering ? mousePosition.x * -0.01 : 0,
-          y: isHovering ? mousePosition.y * -0.01 : 0,
-        }}
-        transition={{ type: "spring", stiffness: 200, damping: 30 }}
-      >
-        <div className="max-w-7xl mx-auto w-full">
+      {/* Content Section - now contained like detail page */}
+      <div className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <motion.div
+            ref={headerRef}
+            className="relative rounded-lg mb-8 overflow-hidden group"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            onMouseMove={onMouseMove}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+          >
+            {/* Contest Image with Parallax Effect - matching detail page */}
+            {contestImage && (
+              <div className="absolute inset-0 overflow-hidden rounded-lg">
+                {/* Loading state */}
+                {!imageLoaded && !imageError && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-dark-300/70 z-10">
+                    <div className="w-8 h-8 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                
+                {/* Background image with parallax */}
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.6 }}
+                  transition={{ duration: 0.8 }}
+                  className="absolute inset-0"
+                >
+                  <motion.div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      transform: isHovering ? 
+                        `scale(1.08) translateX(${mousePosition.x * 15}px) translateY(${mousePosition.y * 10}px)` : 
+                        "scale(1.02)",
+                      transition: "transform 0.3s ease-out"
+                    }}
+                  >
+                    <img
+                      src={contestImage}
+                      alt={contest.name}
+                      className="w-full h-full object-cover"
+                      onLoad={() => setImageLoaded(true)}
+                      onError={() => setImageError(true)}
+                    />
+                  </motion.div>
+                  
+                  {/* Gradient overlay for text readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-dark-200 via-dark-200/90 to-dark-200/60" />
+                </motion.div>
+              </div>
+            )}
+            
+            {/* If no image or image error, show gradient background */}
+            {(!contestImage || imageError) && (
+              <div className="absolute inset-0 bg-gradient-to-br from-dark-200/80 to-dark-300/80" />
+            )}
+            
+            {/* Banner Content - 30% shorter than detail page (196px instead of 280px) */}
+            <div className="relative z-20 p-4 sm:p-6 md:p-8 min-h-[196px] flex flex-col justify-end">
           {/* Status Badge with glow effect */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -220,12 +225,10 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
               className="ml-auto"
             />
           </motion.div>
+            </div>
+          </motion.div>
         </div>
-      </motion.div>
-      
-      {/* Bottom gradient fade for smooth transition */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent z-20" />
-    </motion.div>
+      </div>
     </>
   );
 };

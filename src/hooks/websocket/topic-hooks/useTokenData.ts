@@ -378,8 +378,11 @@ export function useTokenData(
 
       // Handle real-time market data updates (subscription data)
       if (message.type === 'DATA' && (message.topic === 'market_data' || message.topic === 'market-data')) {
-        if (Array.isArray(message.data)) {
-          console.log(`[useTokenData] Received real-time market data for ${message.data.length} tokens`);
+        // Backend sends nested structure: message.data.data contains the array
+        const tokenArray = message.data?.data || message.data;
+        
+        if (Array.isArray(tokenArray)) {
+          console.log(`[useTokenData] Received real-time market data for ${tokenArray.length} tokens`);
 
           // If we don't have initial data yet, treat this AS the initial data
           if (!hasInitialData) {
@@ -389,7 +392,7 @@ export function useTokenData(
           }
 
           // Transform update data
-          const updatedTokens = message.data.map(transformBackendTokenData);
+          const updatedTokens = tokenArray.map(transformBackendTokenData);
 
           // Update existing tokens with new price data
           setTokens((prev: Token[]) => {
@@ -521,6 +524,28 @@ export function useTokenData(
     }
   }, [hasInitialData, isRestLoaded, fetchTokensViaRest]);
 
+  // Subscribe to market-data topic when WebSocket connects
+  useEffect(() => {
+    if (ws.isConnected) {
+      console.log('[useTokenData] WebSocket connected, subscribing to market-data topic');
+      ws.subscribe(['market-data']);
+      
+      dispatchWebSocketEvent('token_data_subscribe', {
+        socketType: 'market-data',
+        message: 'Subscribed to market-data topic for real-time token updates',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Cleanup function - unsubscribe when component unmounts or WebSocket disconnects
+    return () => {
+      if (ws.isConnected) {
+        console.log('[useTokenData] Unsubscribing from market-data topic');
+        ws.unsubscribe(['market-data']);
+      }
+    };
+  }, [ws.isConnected, ws.subscribe, ws.unsubscribe]);
+
   // Handle reconnection events - retry getting data when WebSocket reconnects
   useEffect(() => {
     if (ws.isConnected && hasInitialData && tokens.length === 0) {
@@ -563,7 +588,7 @@ export function useTokenData(
     isLoading,
     close: () => {
       // Cleanup function
-      ws.unsubscribe(['market_data']);
+      ws.unsubscribe(['market-data']);
       dispatchWebSocketEvent('token_data_close', {
         socketType: 'websocket-only',
         message: 'Token data hook cleanup requested',
