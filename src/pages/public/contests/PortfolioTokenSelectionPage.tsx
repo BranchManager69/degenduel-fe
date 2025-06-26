@@ -161,6 +161,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const [hasExistingPortfolio, setHasExistingPortfolio] = useState(false);
   const user = useStore((state) => state.user);
   const [locallyAddedTokens, setLocallyAddedTokens] = useState<Token[]>([]);
+  const [duelToken, setDuelToken] = useState<Token | null>(null);
   
   // Get footer state for dynamic positioning
   const { isCompact } = useScrollFooter(50);
@@ -244,6 +245,34 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
 
     fetchContest();
   }, [contestId]);
+
+  // Fetch DUEL token data
+  useEffect(() => {
+    const fetchDuelToken = async () => {
+      try {
+        const response = await fetch('/api/tokens/search?search=F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX&limit=1');
+        const data = await response.json();
+        if (data.tokens && data.tokens.length > 0) {
+          const duelData = data.tokens[0];
+          // Convert to Token format
+          const duelTokenFormatted: Token = {
+            ...duelData,
+            address: duelData.address || 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX',
+            contractAddress: duelData.address || 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX',
+            market_cap: duelData.market_cap || 0,
+            volume_24h: duelData.volume_24h || 0,
+            change_24h: duelData.change_24h || 0,
+            price: Number(duelData.price) || 0,
+          };
+          setDuelToken(duelTokenFormatted);
+        }
+      } catch (error) {
+        console.error('Failed to fetch DUEL token:', error);
+      }
+    };
+    
+    fetchDuelToken();
+  }, []);
 
   useEffect(() => {
     const checkParticipationAndPortfolio = async () => {
@@ -445,8 +474,15 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
 
   // Visible tokens - only show up to displayCount (client-side pagination)
   const visibleTokens = useMemo(() => {
-    return sortedTokens.slice(0, displayCount);
-  }, [sortedTokens, displayCount]);
+    const tokens = sortedTokens.slice(0, displayCount);
+    
+    // Prepend DUEL token if not already in the list
+    if (duelToken && !tokens.some(t => t.contractAddress === duelToken.contractAddress)) {
+      return [duelToken, ...tokens];
+    }
+    
+    return tokens;
+  }, [sortedTokens, displayCount, duelToken]);
 
   // Check if there are more tokens to display (client-side)
   const hasMoreTokens = displayCount < sortedTokens.length;

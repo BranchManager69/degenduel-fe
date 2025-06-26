@@ -241,6 +241,81 @@ export function useContests(userId?: string) {
             timestamp: new Date().toISOString()
           });
         }
+        else if (message.subtype === 'portfolio_update' && message.data && !Array.isArray(message.data)) {
+          // Handle individual participant portfolio updates
+          const { contestId, participant } = message.data as any;
+
+          setState(prevState => {
+            const contests = [...prevState.contests];
+            const existingIndex = contests.findIndex(c => c.contest_id === contestId);
+
+            if (existingIndex >= 0 && participant) {
+              // Update the participant data in the contest's leaderboard if it exists
+              const contest = contests[existingIndex];
+              
+              if (contest.leaderboard?.rankings) {
+                // Find and update the participant in the rankings
+                const rankingIndex = contest.leaderboard.rankings.findIndex(
+                  (r: any) => r.wallet_address === participant.wallet_address || 
+                             r.user_id === participant.wallet_address
+                );
+                
+                if (rankingIndex >= 0) {
+                  // Update existing participant data
+                  const portfolioValue = parseFloat(participant.portfolio_value || '0');
+                  const performancePercentage = parseFloat(participant.performance_percentage || '0');
+                  
+                  contest.leaderboard.rankings[rankingIndex] = {
+                    ...contest.leaderboard.rankings[rankingIndex],
+                    profit_loss: portfolioValue,
+                    profit_loss_percentage: performancePercentage,
+                    nickname: participant.nickname || contest.leaderboard.rankings[rankingIndex].nickname
+                  };
+                } else {
+                  // Add new participant to rankings if not found
+                  const portfolioValue = parseFloat(participant.portfolio_value || '0');
+                  const performancePercentage = parseFloat(participant.performance_percentage || '0');
+                  
+                  contest.leaderboard.rankings.push({
+                    user_id: participant.wallet_address,
+                    nickname: participant.nickname,
+                    profit_loss: portfolioValue,
+                    profit_loss_percentage: performancePercentage,
+                    rank: contest.leaderboard.rankings.length + 1
+                  });
+                }
+                
+                // Sort rankings by profit_loss (descending)
+                contest.leaderboard.rankings.sort((a: any, b: any) => {
+                  const aValue = a.profit_loss || 0;
+                  const bValue = b.profit_loss || 0;
+                  return bValue - aValue;
+                });
+                
+                // Update ranks based on sorted order
+                contest.leaderboard.rankings.forEach((ranking: any, index: number) => {
+                  ranking.rank = index + 1;
+                });
+              }
+              
+              // Update the contest in the array
+              contests[existingIndex] = { ...contest };
+            }
+
+            return {
+              ...prevState,
+              contests
+            };
+          });
+
+          setLastUpdate(new Date());
+
+          dispatchWebSocketEvent('contest_portfolio_update', {
+            socketType: TopicType.CONTEST,
+            message: `Updated portfolio for ${participant.wallet_address} in contest ${contestId}`,
+            timestamp: new Date().toISOString()
+          });
+        }
         else if (message.subtype === 'entry' && message.data && !Array.isArray(message.data)) {
           // Process entry confirmation/rejection
           const { contest_id, entry_status } = message.data as any;

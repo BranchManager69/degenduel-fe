@@ -34,10 +34,10 @@ export const useContestLobbyWebSocket = ({
       return;
     }
 
-    // Subscribe to relevant topics (only public ones that work without auth)
+    // Subscribe to relevant topics (only contest topic as per backend guidance)
     const subscribeToTopics = () => {
-      console.log('[useContestLobbyWebSocket] Subscribing to contest topics');
-      ws.subscribe(['contest', 'contest-participants']);
+      console.log('[useContestLobbyWebSocket] Subscribing to contest topic');
+      ws.subscribe(['contest']);
     };
 
     // Handle trade executed events
@@ -68,8 +68,8 @@ export const useContestLobbyWebSocket = ({
       ['DATA'] as any[],
       (message) => {
         console.log('[🚨 CONTEST WEBSOCKET] Received message in trade listener:', JSON.stringify(message, null, 2));
-        // Listen for LEADERBOARD_UPDATE which happens after trades
-        if (message.type === 'DATA' && message.topic === 'contest' && message.action === 'LEADERBOARD_UPDATE') {
+        // Listen for leaderboard updates (no trading in this version, but keeping for future)
+        if (message.type === 'DATA' && message.topic === 'contest' && message.subtype === 'leaderboard') {
           handleTradeExecuted(message.data);
         }
       },
@@ -80,21 +80,28 @@ export const useContestLobbyWebSocket = ({
       `contest-portfolio-${contestId}`,
       ['DATA'] as any[],
       (message) => {
-        // Listen for PORTFOLIO_UPDATE from contest-participants topic
-        if (message.type === 'DATA' && message.topic === 'contest-participants' && message.action === 'PORTFOLIO_UPDATE') {
-          handlePortfolioUpdate(message.data);
+        // Listen for portfolio_update from contest topic
+        if (message.type === 'DATA' && message.topic === 'contest' && message.subtype === 'portfolio_update') {
+          // Check if this update is for our contest
+          if (message.data?.contestId === parseInt(contestId)) {
+            handlePortfolioUpdate(message.data);
+          }
         }
       },
-      ['contest-participants']
+      ['contest']
     );
 
     const unregisterContest = ws.registerListener(
       `contest-activity-${contestId}`,
       ['DATA'] as any[],
       (message) => {
-        // Listen for CONTEST_ACTIVITY from contest topic
+        // Listen for CONTEST_ACTIVITY from contest topic (when users join)
         if (message.type === 'DATA' && message.topic === 'contest' && message.action === 'CONTEST_ACTIVITY') {
-          handleContestActivity(message.data);
+          // Check if this activity is for our contest
+          if (message.data?.contestId === contestId) {
+            console.log('[useContestLobbyWebSocket] Contest activity detected:', message.data);
+            handleContestActivity(message.data);
+          }
         }
       },
       ['contest']
