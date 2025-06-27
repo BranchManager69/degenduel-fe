@@ -127,6 +127,27 @@ const coreFeatures = [
       </svg>
     ),
     isUpcoming: true
+  },
+
+  {
+    title: "Multi-Asset Portfolios",
+    description: "Mix crypto, stocks, and sports bets in one portfolio. Everything becomes a tradeable position that goes up or down.",
+    extendedDescription: 
+      "Build diverse portfolios combining crypto assets, traditional stocks, commodities, and even sports betting positions. A Lakers win becomes a 2.5x asset, a loss becomes -100%.\n\nComing soon: Mix SOL with TSLA, add Lakers ML, throw in some gold futures. The ultimate fantasy trading experience across all asset classes.",
+    icon: (
+      <svg
+        className="w-6 h-6"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="16" cy="8" r="3" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="12" cy="16" r="3" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M11 11L9 13M13 11L15 13M10 9L12 11L14 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+    isUpcoming: true
   }
 ];
 

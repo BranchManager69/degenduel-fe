@@ -106,9 +106,15 @@ export const LandingPage: React.FC = () => {
     });
   }, [allTokens, tokensLoading, tokensError]);
   
-  // Extract DUEL and SOL tokens from live data with custom banner for SOL
-  const duelToken = allTokens.find(t => t.symbol === 'DUEL') || null;
-  const solTokenRaw = allTokens.find(t => t.symbol === 'SOL') || null;
+  // Extract DUEL and SOL tokens from live data by address (not symbol!)
+  const duelToken = allTokens.find(t => 
+    t.address === 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX' || 
+    t.contractAddress === 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX'
+  ) || null;
+  const solTokenRaw = allTokens.find(t => 
+    t.address === 'So11111111111111111111111111111111111111112' || 
+    t.contractAddress === 'So11111111111111111111111111111111111111112'
+  ) || null;
   const solToken = solTokenRaw ? {
     ...solTokenRaw,
     header_image_url: '/assets/media/sol_banner.png'
