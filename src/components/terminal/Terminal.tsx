@@ -73,7 +73,7 @@ import { DidiAvatar } from './DidiAvatar';
 import { TerminalMode, TerminalProps, TerminalSize } from './types';
 
 // NEW: Import chat room functionality for alter ego mode
-import { ChatRoomMessage, useGeneralChatRoom } from '../../hooks/websocket/topic-hooks/useGeneralChatRoom';
+import { ChatMessage, useContestChat } from '../../hooks/websocket/topic-hooks/useContestChat';
 
 /**
  * Terminal component
@@ -105,27 +105,21 @@ export const Terminal = ({
   // NEW: Terminal mode state management
   const [currentMode, setCurrentMode] = useState<TerminalMode>(mode);
   
-  // NEW: Chat room functionality for alter ego mode
+  // NEW: Chat room functionality for alter ego mode  
   const defaultChatConfig = { 
-    roomId: 'general-chat', 
-    roomName: 'General Chat',
-    roomType: 'general' 
+    roomId: '768', 
+    roomName: 'Contest #768 Chat',
+    roomType: 'contest' 
   };
   
   const activeChatConfig = chatConfig || defaultChatConfig;
   
-  // NEW: Use chat room hook when in chat mode
+  // NEW: Use existing contest chat for chat room mode
   const {
     messages: chatMessages,
-    isConnected: chatConnected,
     sendMessage: sendChatMessage,
-    joinRoom,
-    leaveRoom,
-    participantCount
-  } = useGeneralChatRoom(
-    activeChatConfig.roomId, 
-    activeChatConfig.roomType || 'general'
-  );
+    participants: chatParticipants
+  } = useContestChat(activeChatConfig.roomId);
   
   // We no longer need to set window.contractAddress as it's now fetched from the API
   //   This is kept for backward compatibility (WHICH WE DONT EVEN FUCKING WANT) but will be phased out
@@ -327,13 +321,7 @@ export const Terminal = ({
     setGlobalUIHandler(handleUIAction);
   }, [currentMode]);
   
-  // NEW: Join chat room when mode changes to chat
-  useEffect(() => {
-    if (currentMode === 'chat-room' && chatConnected) {
-      joinRoom();
-      console.log(`[Terminal] Auto-joined chat room: ${activeChatConfig.roomName || activeChatConfig.roomId}`);
-    }
-  }, [currentMode, chatConnected, joinRoom, activeChatConfig]);
+  // NOTE: Contest chat automatically handles joining/leaving - no manual join needed
 
   // Auto-restore minimized terminal after a delay
   /*useEffect(() => { // REMOVED to stop auto-restore behavior
@@ -520,17 +508,11 @@ export const Terminal = ({
     const newMode: TerminalMode = currentMode === 'ai' ? 'chat-room' : 'ai';
     setCurrentMode(newMode);
     onModeChange?.(newMode);
-    
-    if (newMode === 'chat-room') {
-      // Join chat room when switching to chat mode
-      joinRoom();
-      console.log(`[Terminal] Switched to chat room mode: ${activeChatConfig.roomName || activeChatConfig.roomId}`);
-    } else {
-      // Leave chat room when switching to AI mode
-      leaveRoom();
-      console.log('[Terminal] Switched to AI mode');
-    }
+    console.log(`[Terminal] Switched to ${newMode} mode`);
   };
+  
+  // NEW: Calculate participant count
+  const participantCount = chatParticipants ? chatParticipants.length : 0;
   
   // NEW: Convert chat messages to AI message format for display
   const getDisplayMessages = (): AIMessage[] => {
@@ -538,7 +520,7 @@ export const Terminal = ({
       return conversationHistory;
     } else {
       // Convert chat messages to AI message format
-      return chatMessages.map((msg: ChatRoomMessage): AIMessage => ({
+      return chatMessages.map((msg: ChatMessage): AIMessage => ({
         role: msg.is_system ? 'system' : 
               msg.user_id === user?.wallet_address ? 'user' : 'assistant',
         content: msg.is_system ? msg.message : 

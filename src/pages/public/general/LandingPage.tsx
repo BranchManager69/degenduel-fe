@@ -66,8 +66,8 @@ import { useContests } from "../../../hooks/websocket/topic-hooks/useContests";
 // Import StandaloneTokenCard for DUEL token display
 import { StandaloneTokenCard } from "../../../components/tokens-list/StandaloneTokenCard";
 
-// Import WebSocket hook for live token updates
-import { useTokenData } from "../../../hooks/websocket/topic-hooks/useTokenData";
+// Import standardized token data hook for live token updates
+import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
 
 // Import contest creation buttons
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
@@ -93,7 +93,7 @@ export const LandingPage: React.FC = () => {
   const [isCountdownComplete, setIsCountdownComplete] = useState(false);
 
   // Get live token data via WebSocket
-  const { tokens: allTokens, isLoading: tokensLoading, error: tokensError } = useTokenData("all", {}, 5000);
+  const { tokens: allTokens, isLoading: tokensLoading, error: tokensError } = useStandardizedTokenData("all", "marketCap", {}, 5, 3000);
   
   // Debug log to see what's happening
   useEffect(() => {
@@ -937,7 +937,7 @@ export const LandingPage: React.FC = () => {
                   >
 
                     {/* Features section container - responsive width for landscape mobile */}
-                    <div className="w-full max-w-xs sm:max-w-2xl md:max-w-4xl lg:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                       {/* Features component is only imported and rendered when the flag is enabled */}
                       {(() => {
 

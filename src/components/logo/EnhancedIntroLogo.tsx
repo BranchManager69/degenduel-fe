@@ -174,14 +174,14 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
     // Add final impact for extreme mode - more cinematic
     if (isExtreme) {
       tl.current
-        // Dramatic pause with green DEGEN and red DUEL
+        // Dramatic pause with purple DEGEN and cyan DUEL
         .to(degenLetters, {
-          textShadow: "0 0 30px rgba(34, 197, 94, 0.8), 0 0 60px rgba(34, 197, 94, 0.4)",
+          textShadow: "0 0 30px rgba(157, 78, 221, 0.8), 0 0 60px rgba(157, 78, 221, 0.4)",
           duration: 0.4,
           ease: "power2.inOut"
         }, "+=0.1")
         .to(duelLetters, {
-          textShadow: "0 0 30px rgba(239, 68, 68, 0.8), 0 0 60px rgba(239, 68, 68, 0.4)",
+          textShadow: "0 0 30px rgba(0, 225, 255, 0.8), 0 0 60px rgba(0, 225, 255, 0.4)",
           duration: 0.4,
           ease: "power2.inOut"
         }, "-=0.4")
@@ -257,6 +257,10 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
               from: "end"
             }
           }, "-=0.8")
+          // Ensure the first D maintains its glow
+          .set(degenD, {
+            textShadow: "0 0 20px rgba(157, 78, 221, 0.8), 0 0 40px rgba(157, 78, 221, 0.5)"
+          }, 0)
           // Subtle letter rotation for dynamic feel
           .to([degenD, duelD], {
             rotationZ: 1,
@@ -318,7 +322,9 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
                 fontSize: '144px',
                 color: '#9D4EDD',
                 marginRight: '-0.05em',
-                lineHeight: 1
+                lineHeight: 1,
+                position: 'relative',
+                zIndex: 10
               }}
             >
               D
@@ -343,7 +349,9 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
                 fontSize: '144px',
                 color: '#FFFFFF', 
                 margin: '0 -0.05em',
-                lineHeight: 1
+                lineHeight: 1,
+                position: 'relative',
+                zIndex: 10
               }}
             >
               D
@@ -359,18 +367,127 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
         </div>
       </div>
 
-      {/* Clean energy field for extreme mode */}
+      {/* Trading atmosphere for extreme mode */}
       {isExtreme && animationComplete && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {/* Subtle energy waves */}
-          <div className="absolute top-[40%] left-[20%] w-16 h-0.5 bg-gradient-to-r from-transparent via-green-400/30 to-transparent rotate-12 animate-pulse" style={{ animationDelay: '0s', animationDuration: '3s' }} />
-          <div className="absolute top-[60%] right-[20%] w-16 h-0.5 bg-gradient-to-l from-transparent via-red-400/30 to-transparent -rotate-12 animate-pulse" style={{ animationDelay: '1.5s', animationDuration: '3.5s' }} />
+          {/* One dynamic live-building candle chart */}
+          {(() => {
+            const candleDelay = 0.1; // Fast candles
+            let currentY = 0;
+            const maxCandles = 80;
+            let momentum = 0; // For more realistic movement
+            
+            return (
+              <div
+                className="absolute flex items-end"
+                style={{
+                  bottom: '50%',
+                  left: '10%',
+                  opacity: 0.5
+                }}
+              >
+                {Array.from({ length: maxCandles }).map((_, i) => {
+                  // Create trends - sometimes bullish, sometimes bearish
+                  const trendBias = Math.sin(i * 0.1) * 0.3; // Creates waves
+                  const isGreen = Math.random() + trendBias > 0.5;
+                  
+                  // More dramatic price movements
+                  const volatility = Math.random() * 20 + 5;
+                  const bodyHeight = Math.random() * 25 + 15;
+                  const wickTop = Math.random() * 12 + 3;
+                  const wickBottom = Math.random() * 12 + 3;
+                  
+                  // Momentum-based movement - more realistic
+                  momentum = momentum * 0.9 + (isGreen ? volatility : -volatility) * 0.1;
+                  currentY += momentum;
+                  
+                  // Sometimes big moves
+                  if (Math.random() < 0.1) {
+                    currentY += isGreen ? -30 : 30; // Big jump
+                  }
+                  
+                  return (
+                    <div 
+                      key={i} 
+                      className="relative flex flex-col items-center"
+                      style={{ 
+                        transform: `translateY(${currentY}px)`,
+                        marginLeft: i === 0 ? '0' : '3px',
+                        opacity: 0,
+                        animation: `appearCandle 0.2s ease-out forwards`,
+                        animationDelay: `${i * candleDelay}s`
+                      }}
+                    >
+                      {/* Top wick */}
+                      <div
+                        style={{
+                          width: '1px',
+                          height: `${wickTop}px`,
+                          backgroundColor: isGreen ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)'
+                        }}
+                      />
+                      {/* Candle body */}
+                      <div
+                        style={{
+                          width: '6px',
+                          height: `${bodyHeight}px`,
+                          backgroundColor: isGreen ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)',
+                          boxShadow: isGreen 
+                            ? '0 0 6px rgba(34, 197, 94, 0.4)' 
+                            : '0 0 6px rgba(239, 68, 68, 0.4)'
+                        }}
+                      />
+                      {/* Bottom wick */}
+                      <div
+                        style={{
+                          width: '1px',
+                          height: `${wickBottom}px`,
+                          backgroundColor: isGreen ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)'
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
           
-          {/* Corner accent glows */}
-          <div className="absolute top-[10%] left-[5%] w-8 h-8 bg-green-500/10 rounded-full blur-md animate-pulse" style={{ animationDelay: '0s', animationDuration: '4s' }} />
-          <div className="absolute top-[10%] right-[5%] w-8 h-8 bg-red-500/10 rounded-full blur-md animate-pulse" style={{ animationDelay: '2s', animationDuration: '4.5s' }} />
-          <div className="absolute bottom-[10%] left-[5%] w-6 h-6 bg-purple-500/10 rounded-full blur-md animate-pulse" style={{ animationDelay: '1s', animationDuration: '3.8s' }} />
-          <div className="absolute bottom-[10%] right-[5%] w-6 h-6 bg-cyan-500/10 rounded-full blur-md animate-pulse" style={{ animationDelay: '3s', animationDuration: '4.2s' }} />
+          {/* Subtle moving price lines */}
+          <div 
+            className="absolute w-full h-px"
+            style={{
+              bottom: '40%',
+              background: 'linear-gradient(90deg, transparent, rgba(157, 78, 221, 0.2), transparent)',
+              animation: 'pulse 6s ease-in-out infinite'
+            }}
+          />
+          <div 
+            className="absolute w-full h-px"
+            style={{
+              bottom: '60%',
+              background: 'linear-gradient(90deg, transparent, rgba(0, 225, 255, 0.2), transparent)',
+              animation: 'pulse 8s ease-in-out infinite',
+              animationDelay: '2s'
+            }}
+          />
+          
+          {/* Add CSS for animations */}
+          <style jsx>{`
+            @keyframes appearCandle {
+              from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.8);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+              }
+            }
+            @keyframes pulse {
+              0%, 100% { opacity: 0.3; transform: scaleX(0.5); }
+              50% { opacity: 0.7; transform: scaleX(1); }
+            }
+          `}</style>
         </div>
       )}
     </div>

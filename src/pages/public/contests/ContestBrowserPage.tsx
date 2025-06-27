@@ -372,22 +372,11 @@ export const ContestBrowser: React.FC = () => {
               />
             </div>
             
-            {/* WebSocket Connection Status */}
-            <div className="flex items-center gap-2 text-xs">
-              <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-              <span className={`font-mono ${wsConnected ? 'text-emerald-400' : 'text-red-400'}`}>
-                {wsConnected ? 'LIVE.DATA' : 'OFFLINE'}
-              </span>
-              {wsLastUpdate && (
-                <span className="text-gray-500">
-                  Updated: {wsLastUpdate.toLocaleTimeString()}
-                </span>
-              )}
-            </div>
           </div>
 
           {/* Filter Controls */}
-          <div className="mb-6 flex flex-wrap gap-3">
+          <div className="mb-6 flex flex-wrap justify-between items-center gap-3">
+            <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setHideCompleted(!hideCompleted)}
               className={`group relative px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
@@ -441,6 +430,32 @@ export const ContestBrowser: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/10 to-red-500/0 rounded-lg pointer-events-none" />
               )}
             </button>
+            </div>
+            
+            {/* Enhanced WebSocket Connection Status */}
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+                <span className={`font-mono ${wsConnected ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {wsConnected ? 'WebSocket' : 'REST API'}
+                </span>
+              </div>
+              
+              {wsLastUpdate && (
+                <div className="text-gray-500">
+                  <span className="hidden sm:inline">Updated: </span>
+                  <span className="font-mono">{wsLastUpdate.toLocaleTimeString()}</span>
+                </div>
+              )}
+              
+              <div className={`px-2 py-1 rounded-md text-xs font-mono ${
+                wsConnected 
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                  : 'bg-red-500/20 text-red-300 border border-red-500/30'
+              }`}>
+                {wsConnected ? 'LIVE' : 'OFFLINE'}
+              </div>
+            </div>
           </div>
 
           {/* Enhanced Contest Grid */}
