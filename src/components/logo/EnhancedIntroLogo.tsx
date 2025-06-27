@@ -257,10 +257,6 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
               from: "end"
             }
           }, "-=0.8")
-          // Ensure the first D maintains its glow
-          .set(degenD, {
-            textShadow: "0 0 20px rgba(157, 78, 221, 0.8), 0 0 40px rgba(157, 78, 221, 0.5)"
-          }, 0)
           // Subtle letter rotation for dynamic feel
           .to([degenD, duelD], {
             rotationZ: 1,
@@ -296,10 +292,180 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
 
   return (
     <div 
-      className="relative z-10 flex justify-center items-center"
+      className="relative flex justify-center items-center"
     >
+      {/* Trading atmosphere for extreme mode - BEHIND the logo */}
+      {isExtreme && animationComplete && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* One dynamic live-building candle chart */}
+          {(() => {
+            const candleDelay = 0.05; // Fast candles
+            let currentY = 0;
+            const maxCandles = 120;
+            let momentum = 0; // For more realistic movement
+            
+            return (
+              <div
+                className="absolute flex items-end"
+                style={{
+                  bottom: 'calc(50% - 40px)',
+                  left: 'calc(-5% + 150px)',
+                  opacity: 0.55
+                }}
+              >
+                {Array.from({ length: maxCandles }).map((_, i) => {
+                  // Create realistic trends with momentum
+                  const trendStrength = Math.random();
+                  if (trendStrength > 0.85) {
+                    // Strong trend change
+                    momentum = (Math.random() - 0.5) * 40;
+                  }
+                  
+                  const isGreen = momentum > 0 ? Math.random() > 0.3 : Math.random() > 0.7;
+                  
+                  // Varied candle sizes - sometimes tiny, sometimes huge
+                  const sizeType = Math.random();
+                  let bodyHeight, wickTop, wickBottom;
+                  
+                  if (sizeType < 0.1) {
+                    // Doji - tiny body
+                    bodyHeight = Math.random() * 3 + 1;
+                    wickTop = Math.random() * 15 + 5;
+                    wickBottom = Math.random() * 15 + 5;
+                  } else if (sizeType > 0.9) {
+                    // Massive candle
+                    bodyHeight = Math.random() * 40 + 35;
+                    wickTop = Math.random() * 5 + 1;
+                    wickBottom = Math.random() * 5 + 1;
+                  } else {
+                    // Normal candle
+                    bodyHeight = Math.random() * 20 + 10;
+                    wickTop = Math.random() * 10 + 3;
+                    wickBottom = Math.random() * 10 + 3;
+                  }
+                  
+                  // Update momentum with decay
+                  momentum = momentum * 0.95 + (isGreen ? 1 : -1) * (Math.random() * 8 + 2);
+                  
+                  // Big moves on volume candles
+                  if (sizeType > 0.9) {
+                    currentY += isGreen ? -(bodyHeight * 0.8) : (bodyHeight * 0.8);
+                  } else {
+                    currentY += momentum;
+                  }
+                  
+                  // Consolidation periods
+                  if (Math.random() < 0.15) {
+                    momentum = momentum * 0.3; // Slow down
+                  }
+                  
+                  return (
+                    <div 
+                      key={i} 
+                      className="relative flex flex-col items-center"
+                      style={{ 
+                        transform: `translateY(${currentY}px)`,
+                        marginLeft: i === 0 ? '0' : '3px',
+                        opacity: 0,
+                        animation: `appearCandle 0.05s ease-out forwards, ${isGreen ? 'floatUp' : 'floatDown'} ${2 + Math.random() * 2}s ease-in-out infinite`,
+                        animationDelay: `${i * candleDelay}s, ${i * candleDelay + 0.05}s`
+                      }}
+                    >
+                      {/* Top wick */}
+                      <div
+                        style={{
+                          width: '1px',
+                          height: `${wickTop}px`,
+                          backgroundColor: isGreen ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)'
+                        }}
+                      />
+                      {/* Candle body */}
+                      <div
+                        style={{
+                          width: '6px',
+                          height: `${bodyHeight}px`,
+                          backgroundColor: isGreen ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)',
+                          boxShadow: isGreen 
+                            ? '0 0 6px rgba(34, 197, 94, 0.4)' 
+                            : '0 0 6px rgba(239, 68, 68, 0.4)'
+                        }}
+                      />
+                      {/* Bottom wick */}
+                      <div
+                        style={{
+                          width: '1px',
+                          height: `${wickBottom}px`,
+                          backgroundColor: isGreen ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)'
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+          
+          {/* Subtle moving price lines */}
+          <div 
+            className="absolute w-full h-px"
+            style={{
+              bottom: '40%',
+              background: 'linear-gradient(90deg, transparent, rgba(157, 78, 221, 0.2), transparent)',
+              animation: 'pulse 6s ease-in-out infinite'
+            }}
+          />
+          <div 
+            className="absolute w-full h-px"
+            style={{
+              bottom: '60%',
+              background: 'linear-gradient(90deg, transparent, rgba(0, 225, 255, 0.2), transparent)',
+              animation: 'pulse 8s ease-in-out infinite',
+              animationDelay: '2s'
+            }}
+          />
+          
+          {/* Add CSS for animations */}
+          <style>{`
+            @keyframes appearCandle {
+              from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.8);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+              }
+            }
+            @keyframes floatUp {
+              0%, 100% { 
+                transform: translateY(0) scale(1);
+                filter: brightness(1);
+              }
+              50% { 
+                transform: translateY(-8px) scale(1.05);
+                filter: brightness(1.2);
+              }
+            }
+            @keyframes floatDown {
+              0%, 100% { 
+                transform: translateY(0) scale(1);
+                filter: brightness(1);
+              }
+              50% { 
+                transform: translateY(8px) scale(0.95);
+                filter: brightness(0.8);
+              }
+            }
+            @keyframes pulse {
+              0%, 100% { opacity: 0.3; transform: scaleX(0.5); }
+              50% { opacity: 0.7; transform: scaleX(1); }
+            }
+          `}</style>
+        </div>
+      )}
+
       <div 
-        className="flex justify-center items-center min-h-[300px] perspective-1000"
+        className="flex justify-center items-center min-h-[300px] perspective-1000 relative z-10"
         style={{ perspective: '1000px' }}
       >
         <div
@@ -366,130 +532,6 @@ const EnhancedIntroLogo = ({ mode = 'standard' }: { mode?: 'standard' | 'epic' |
           </div>
         </div>
       </div>
-
-      {/* Trading atmosphere for extreme mode */}
-      {isExtreme && animationComplete && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {/* One dynamic live-building candle chart */}
-          {(() => {
-            const candleDelay = 0.1; // Fast candles
-            let currentY = 0;
-            const maxCandles = 80;
-            let momentum = 0; // For more realistic movement
-            
-            return (
-              <div
-                className="absolute flex items-end"
-                style={{
-                  bottom: '50%',
-                  left: '10%',
-                  opacity: 0.5
-                }}
-              >
-                {Array.from({ length: maxCandles }).map((_, i) => {
-                  // Create trends - sometimes bullish, sometimes bearish
-                  const trendBias = Math.sin(i * 0.1) * 0.3; // Creates waves
-                  const isGreen = Math.random() + trendBias > 0.5;
-                  
-                  // More dramatic price movements
-                  const volatility = Math.random() * 20 + 5;
-                  const bodyHeight = Math.random() * 25 + 15;
-                  const wickTop = Math.random() * 12 + 3;
-                  const wickBottom = Math.random() * 12 + 3;
-                  
-                  // Momentum-based movement - more realistic
-                  momentum = momentum * 0.9 + (isGreen ? volatility : -volatility) * 0.1;
-                  currentY += momentum;
-                  
-                  // Sometimes big moves
-                  if (Math.random() < 0.1) {
-                    currentY += isGreen ? -30 : 30; // Big jump
-                  }
-                  
-                  return (
-                    <div 
-                      key={i} 
-                      className="relative flex flex-col items-center"
-                      style={{ 
-                        transform: `translateY(${currentY}px)`,
-                        marginLeft: i === 0 ? '0' : '3px',
-                        opacity: 0,
-                        animation: `appearCandle 0.2s ease-out forwards`,
-                        animationDelay: `${i * candleDelay}s`
-                      }}
-                    >
-                      {/* Top wick */}
-                      <div
-                        style={{
-                          width: '1px',
-                          height: `${wickTop}px`,
-                          backgroundColor: isGreen ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)'
-                        }}
-                      />
-                      {/* Candle body */}
-                      <div
-                        style={{
-                          width: '6px',
-                          height: `${bodyHeight}px`,
-                          backgroundColor: isGreen ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)',
-                          boxShadow: isGreen 
-                            ? '0 0 6px rgba(34, 197, 94, 0.4)' 
-                            : '0 0 6px rgba(239, 68, 68, 0.4)'
-                        }}
-                      />
-                      {/* Bottom wick */}
-                      <div
-                        style={{
-                          width: '1px',
-                          height: `${wickBottom}px`,
-                          backgroundColor: isGreen ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)'
-                        }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-          
-          {/* Subtle moving price lines */}
-          <div 
-            className="absolute w-full h-px"
-            style={{
-              bottom: '40%',
-              background: 'linear-gradient(90deg, transparent, rgba(157, 78, 221, 0.2), transparent)',
-              animation: 'pulse 6s ease-in-out infinite'
-            }}
-          />
-          <div 
-            className="absolute w-full h-px"
-            style={{
-              bottom: '60%',
-              background: 'linear-gradient(90deg, transparent, rgba(0, 225, 255, 0.2), transparent)',
-              animation: 'pulse 8s ease-in-out infinite',
-              animationDelay: '2s'
-            }}
-          />
-          
-          {/* Add CSS for animations */}
-          <style jsx>{`
-            @keyframes appearCandle {
-              from {
-                opacity: 0;
-                transform: translateY(10px) scale(0.8);
-              }
-              to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-              }
-            }
-            @keyframes pulse {
-              0%, 100% { opacity: 0.3; transform: scaleX(0.5); }
-              50% { opacity: 0.7; transform: scaleX(1); }
-            }
-          `}</style>
-        </div>
-      )}
     </div>
   );
 };
