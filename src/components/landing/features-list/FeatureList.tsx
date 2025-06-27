@@ -18,10 +18,10 @@ import { FeatureCard } from "./FeatureCard";
 // Core features - Just the 4 key ones
 const coreFeatures = [
   {
-    title: "Trading Contests",
-    description: "Compete in high-stakes trading contests with equal starting capital. Your strategy and execution determine success.",
+    title: "Portfolio Contests",
+    description: "Pick your perfect crypto portfolio, lock it in, and compete for the pot. Equal starting capital, pure strategy wins.",
     extendedDescription:
-      "All participants start with identical portfolios and capital. Success depends entirely on your trading strategy and execution over the competition period.\n\nDurations range from 1-hour sprints to multi-day tournaments. Choose public contests or create private invite-only events with custom entry fees and prize structures.",
+      "All participants start with identical capital and pick their portfolio allocation. Once locked in, portfolios compete based on market performance over the contest duration.\n\nDurations range from 1-hour sprints to multi-day tournaments. Choose public contests or create private invite-only events with custom entry fees and prize structures.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -53,9 +53,9 @@ const coreFeatures = [
 
   {
     title: "1v1 Duels",
-    description: "Challenge anyone to head-to-head trading battles with custom stakes and competition parameters.",
+    description: "Challenge anyone to head-to-head portfolio battles with custom stakes and competition parameters.",
     extendedDescription: 
-      "Challenge anyone to head-to-head trading battles. Set custom stakes and competition parameters for your private duels.\n\nPerfect for settling debates about who's the better trader. Send invite links directly to opponents and prove your skills in direct competition.",
+      "Challenge anyone to head-to-head portfolio battles. Set custom stakes and competition parameters for your private duels.\n\nPerfect for settling debates about who's the better strategist. Send invite links directly to opponents and prove your skills in direct competition.",
     icon: (
       <svg
         className="w-6 h-6"
@@ -73,7 +73,7 @@ const coreFeatures = [
   
   {
     title: "Degen Dividends",
-    description: "All DegenDuel profits are directly airdropped to DUEL token holders via daily automatic Solana transfers to your wallet.",
+    description: "All DegenDuel profits are directly airdropped to DUEL token holders via daily automatic Solana transfers.",
     extendedDescription: 
       "Token holders receive daily Solana rewards automatically sent to their connected wallets. The system tracks platform revenue and redistributes 100% of profits to the DegenDuel community.\n\nDegen Dividends are based on average daily balance. Simply hold your DUEL in your registered wallet.",
     icon: (

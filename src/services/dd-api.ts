@@ -930,7 +930,7 @@ export const ddApi = {
       // Always use paginated format for better frontend compatibility
       params.append('format', options?.format || 'paginated');
 
-      const response = await api.fetch(`/tokens/trending?${params.toString()}`);
+      const response = await api.fetch(`/tokens/all?${params.toString()}`);
       const responseData = await response.json();
 
       // If format=paginated, return the full response with tokens + pagination

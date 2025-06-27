@@ -377,7 +377,21 @@ export function useTokenData(
         if (message.subtype === 'price_update' && message.data?.type === 'price_update') {
           // Lightweight price-only updates (every 5 seconds)
           const priceUpdates = message.data.data; // Note: data is nested in message.data.data
-          console.log(`[useTokenData] Received PRICE UPDATE for ${priceUpdates.length} tokens`);
+          console.log(
+            '%c[useTokenData] 💰 PRICE UPDATE received%c',
+            'background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;',
+            '',
+            {
+              tokensCount: priceUpdates.length,
+              timestamp: new Date().toISOString(),
+              sample: priceUpdates.slice(0, 3).map((t: any) => ({
+                symbol: t.symbol,
+                price: t.price,
+                change_24h: t.change_24h,
+                market_cap: t.market_cap
+              }))
+            }
+          );
           
           setTokens((prev: Token[]) => {
             // Create maps for both id and address lookups
@@ -426,7 +440,26 @@ export function useTokenData(
         const tokenArray = message.data?.data || message.data;
         
         if (Array.isArray(tokenArray)) {
-          console.log(`[useTokenData] Received ${message.subtype === 'full_update' ? 'FULL UPDATE' : 'real-time market data'} for ${tokenArray.length} tokens`);
+          if (message.subtype === 'full_update') {
+            console.log(
+              '%c[useTokenData] 📦 FULL UPDATE received%c',
+              'background: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;',
+              '',
+              {
+                tokensCount: tokenArray.length,
+                timestamp: new Date().toISOString(),
+                sample: tokenArray.slice(0, 3).map((t: any) => ({
+                  symbol: t.symbol,
+                  name: t.name,
+                  price: t.price,
+                  market_cap: t.market_cap,
+                  change_24h: t.change_24h
+                }))
+              }
+            );
+          } else {
+            console.log(`[useTokenData] Received real-time market data for ${tokenArray.length} tokens`);
+          }
 
           // If we don't have initial data yet, treat this AS the initial data
           if (!hasInitialData) {
@@ -438,8 +471,13 @@ export function useTokenData(
           // Transform update data
           const updatedTokens = tokenArray.map(transformBackendTokenData);
 
-          // Update existing tokens with new price data
+          // Update existing tokens with new data
           setTokens((prev: Token[]) => {
+            // For full_update, replace everything
+            if (message.subtype === 'full_update') {
+              return updatedTokens;
+            }
+            
             if (!preserveOrder) {
               // If not preserving order, just replace with updated tokens
               return updatedTokens;
@@ -487,9 +525,9 @@ export function useTokenData(
           setIsLoading(false);
           setHasInitialData(true);
 
-          dispatchWebSocketEvent('token_data_websocket_update', {
-            socketType: 'market_data',
-            message: `Received ${updatedTokens.length} token updates via WebSocket`,
+          dispatchWebSocketEvent(message.subtype === 'full_update' ? 'token_full_update' : 'token_data_websocket_update', {
+            socketType: message.subtype || 'market_data',
+            message: `Received ${message.subtype === 'full_update' ? 'FULL' : ''} ${updatedTokens.length} token updates via WebSocket`,
             timestamp: new Date().toISOString()
           });
         }
