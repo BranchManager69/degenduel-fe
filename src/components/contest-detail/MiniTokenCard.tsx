@@ -61,7 +61,7 @@ export const MiniTokenCard: React.FC<MiniTokenCardProps> = ({
     <div
       className="aspect-square w-full cursor-pointer group select-none"
       onClick={handleCardToggle}
-      onTouchStart={handleCardToggle}
+      onTouchEnd={handleCardToggle}
       style={{ position: 'relative' }}
     >
       <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg transition-all duration-300">
