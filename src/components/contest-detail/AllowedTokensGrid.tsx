@@ -30,7 +30,7 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
     'marketCap', 
     { status: 'active' }, 
     20,  // maxHotTokens (not used here)
-    200  // maxTopTokens - get 200 tokens to have a good selection
+    3000  // maxTopTokens - fetch the full token pool
   );
 
   // Randomize tokens for variety
