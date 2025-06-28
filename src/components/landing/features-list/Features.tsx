@@ -135,13 +135,14 @@ const Features: React.FC = () => {
           {/* Features section header */}
           <SectionHeader 
             title="What is DegenDuel?"
-            subtitle="Experience crypto trading like never before - competitive, fun, and rewarding."
+            subtitle="A new way to play the markets."
           />
 
           {/* Features List Component - Remove padding constraints */}
           <div className="relative z-10 max-w-7xl mx-auto">
             <FeatureList />
           </div>
+          
         </motion.div>
       </div>
     </MeasureRender>

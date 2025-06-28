@@ -163,6 +163,8 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const [locallyAddedTokens, setLocallyAddedTokens] = useState<Token[]>([]);
   const [duelToken, setDuelToken] = useState<Token | null>(null);
   const [solToken, setSolToken] = useState<Token | null>(null);
+  const [usdcToken, setUsdcToken] = useState<Token | null>(null);
+  const [wbtcToken, setWbtcToken] = useState<Token | null>(null);
   
   // Get footer state for dynamic positioning
   const { isCompact } = useScrollFooter(50);
@@ -247,14 +249,16 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     fetchContest();
   }, [contestId]);
 
-  // Fetch DUEL and SOL tokens in parallel (non-blocking)
+  // Fetch DUEL, SOL, USDC, and WBTC tokens in parallel (non-blocking)
   useEffect(() => {
     const fetchPriorityTokens = async () => {
       try {
-        // Fetch both tokens in parallel
-        const [duelResponse, solResponse] = await Promise.all([
+        // Fetch all special tokens in parallel
+        const [duelResponse, solResponse, usdcResponse, wbtcResponse] = await Promise.all([
           fetch('/api/tokens/search?search=F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX&limit=1'),
-          fetch('/api/tokens/search?search=So11111111111111111111111111111111111111112&limit=1')
+          fetch('/api/tokens/search?search=So11111111111111111111111111111111111111112&limit=1'),
+          fetch('/api/tokens/search?search=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&limit=1'),
+          fetch('/api/tokens/search?search=3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh&limit=1')
         ]);
 
         // Process DUEL token
@@ -286,6 +290,36 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
             header_image_url: '/assets/media/sol_banner.png', // Use local banner
           };
           setSolToken(solTokenFormatted);
+        }
+
+        // Process USDC token
+        const usdcData = await usdcResponse.json();
+        if (usdcData.tokens && usdcData.tokens.length > 0) {
+          const usdcTokenFormatted: Token = {
+            ...usdcData.tokens[0],
+            address: usdcData.tokens[0].address || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+            contractAddress: usdcData.tokens[0].address || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+            market_cap: usdcData.tokens[0].market_cap || 0,
+            volume_24h: usdcData.tokens[0].volume_24h || 0,
+            change_24h: usdcData.tokens[0].change_24h || 0,
+            price: Number(usdcData.tokens[0].price) || 0,
+          };
+          setUsdcToken(usdcTokenFormatted);
+        }
+
+        // Process WBTC token
+        const wbtcData = await wbtcResponse.json();
+        if (wbtcData.tokens && wbtcData.tokens.length > 0) {
+          const wbtcTokenFormatted: Token = {
+            ...wbtcData.tokens[0],
+            address: wbtcData.tokens[0].address || '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh',
+            contractAddress: wbtcData.tokens[0].address || '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh',
+            market_cap: wbtcData.tokens[0].market_cap || 0,
+            volume_24h: wbtcData.tokens[0].volume_24h || 0,
+            change_24h: wbtcData.tokens[0].change_24h || 0,
+            price: Number(wbtcData.tokens[0].price) || 0,
+          };
+          setWbtcToken(wbtcTokenFormatted);
         }
       } catch (error) {
         console.error('Failed to fetch priority tokens:', error);
@@ -429,18 +463,36 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
 
   // Combine tokens from the hook with locally added ones from search
   const allDisplayableTokens = useMemo(() => {
-    const combined = [...locallyAddedTokens, ...tokens];
+    // Start with special tokens
+    const specialTokensList = [];
+    if (duelToken) specialTokensList.push(duelToken);
+    if (solToken) specialTokensList.push(solToken);
+    if (usdcToken) specialTokensList.push(usdcToken);
+    if (wbtcToken) specialTokensList.push(wbtcToken);
+    
+    const combined = [...specialTokensList, ...locallyAddedTokens, ...tokens];
     const tokenMap = new Map<string, Token>();
+    
+    // First add special tokens to preserve order
+    for (const token of specialTokensList) {
+      const address = TokenHelpers.getAddress(token);
+      if (address) {
+        tokenMap.set(address, token);
+      }
+    }
+    
+    // Then add other tokens
     for (const token of combined) {
         const address = TokenHelpers.getAddress(token);
-        // Filter by minimum market cap of $100,000
+        // Filter by minimum market cap of $100,000 (but always include special tokens)
         const marketCap = Number(token.market_cap) || 0;
-        if (address && !tokenMap.has(address) && marketCap >= 100000) {
+        const isSpecialToken = specialTokensList.some(st => TokenHelpers.getAddress(st) === address);
+        if (address && !tokenMap.has(address) && (marketCap >= 100000 || isSpecialToken)) {
             tokenMap.set(address, token);
         }
     }
     return Array.from(tokenMap.values());
-  }, [tokens, locallyAddedTokens]);
+  }, [tokens, locallyAddedTokens, duelToken, solToken, usdcToken, wbtcToken]);
 
   // Smart token ordering: selected tokens first, then rest with progressive loading
   const memoizedTokens = useMemo(() => {
@@ -499,18 +551,22 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     const tokens = sortedTokens.slice(0, displayCount);
     const priorityTokens: Token[] = [];
     
-    // Add DUEL token first if not already in the list
-    if (duelToken && !tokens.some(t => t.contractAddress === duelToken.contractAddress)) {
-      priorityTokens.push(duelToken);
-    }
+    // Add special tokens in order: DUEL, SOL, USDC, WBTC
+    const specialTokensToAdd = [
+      { token: duelToken, order: 0 },
+      { token: solToken, order: 1 },
+      { token: usdcToken, order: 2 },
+      { token: wbtcToken, order: 3 }
+    ];
     
-    // Add SOL token second if not already in the list
-    if (solToken && !tokens.some(t => t.contractAddress === solToken.contractAddress)) {
-      priorityTokens.push(solToken);
+    for (const { token } of specialTokensToAdd) {
+      if (token && !tokens.some(t => t.contractAddress === token.contractAddress)) {
+        priorityTokens.push(token);
+      }
     }
     
     return [...priorityTokens, ...tokens];
-  }, [sortedTokens, displayCount, duelToken, solToken]);
+  }, [sortedTokens, displayCount, duelToken, solToken, usdcToken, wbtcToken]);
 
   // Check if there are more tokens to display (client-side)
   const hasMoreTokens = displayCount < sortedTokens.length;

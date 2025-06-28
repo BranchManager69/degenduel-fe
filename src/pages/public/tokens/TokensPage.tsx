@@ -88,35 +88,52 @@ export const TokensPage: React.FC = () => {
   // NO CLIENT-SIDE SORTING - Trust backend order
   // Backend already sorted by degenduel_score (best to worst)
 
-  // DUEL token data state
-  const [duelToken, setDuelToken] = useState<Token | null>(null);
+  // Special tokens data state
+  const [specialTokens, setSpecialTokens] = useState<Token[]>([]);
   
-  // Fetch DUEL token data
+  // Fetch special tokens data (DUEL, SOL, USDC, WBTC)
   useEffect(() => {
-    const fetchDuelToken = async () => {
-      try {
-        const response = await fetch('/api/tokens/search?search=F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX&limit=1');
-        const data = await response.json();
-        if (data.tokens && data.tokens.length > 0) {
-          const duelData = data.tokens[0];
-          // Convert to Token format
-          const duelTokenFormatted: Token = {
-            ...duelData,
-            address: duelData.address || 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX',
-            contractAddress: duelData.address || 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX',
-            market_cap: duelData.market_cap || 0,
-            volume_24h: duelData.volume_24h || 0,
-            change_24h: duelData.change_24h || 0,
-            price: Number(duelData.price) || 0,
-          };
-          setDuelToken(duelTokenFormatted);
+    const fetchSpecialTokens = async () => {
+      const tokenAddresses = [
+        { symbol: 'DUEL', address: 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX' },
+        { symbol: 'SOL', address: 'So11111111111111111111111111111111111111112' },
+        { symbol: 'USDC', address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' },
+        { symbol: 'WBTC', address: '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh' }
+      ];
+      
+      const fetchPromises = tokenAddresses.map(async ({ symbol, address }) => {
+        try {
+          const response = await fetch(`/api/tokens/search?search=${address}&limit=1`);
+          const data = await response.json();
+          if (data.tokens && data.tokens.length > 0) {
+            const tokenData = data.tokens[0];
+            // Convert to Token format
+            const tokenFormatted: Token = {
+              ...tokenData,
+              address: tokenData.address || address,
+              contractAddress: tokenData.address || address,
+              market_cap: tokenData.market_cap || 0,
+              volume_24h: tokenData.volume_24h || 0,
+              change_24h: tokenData.change_24h || 0,
+              price: Number(tokenData.price) || 0,
+              // Add special SOL banner
+              ...(symbol === 'SOL' ? { header_image_url: '/assets/media/sol_banner.png' } : {})
+            };
+            return tokenFormatted;
+          }
+          return null;
+        } catch (error) {
+          console.error(`Failed to fetch ${symbol} token:`, error);
+          return null;
         }
-      } catch (error) {
-        console.error('Failed to fetch DUEL token:', error);
-      }
+      });
+      
+      const results = await Promise.all(fetchPromises);
+      const validTokens = results.filter(token => token !== null) as Token[];
+      setSpecialTokens(validTokens);
     };
     
-    fetchDuelToken();
+    fetchSpecialTokens();
   }, []);
 
   // Sort all tokens by the selected field
@@ -163,13 +180,25 @@ export const TokensPage: React.FC = () => {
 
   // All tokens sorted (but not all displayed)
   const allSortedTokens = useMemo(() => {
-    // Prepend DUEL token if not already in the list
-    if (duelToken && !sortedTokens.some(t => t.contractAddress === duelToken.contractAddress)) {
-      return [duelToken, ...sortedTokens];
+    // Filter out special tokens from the regular list
+    const specialAddresses = specialTokens.map(t => t.contractAddress?.toLowerCase());
+    const filteredTokens = sortedTokens.filter(t => 
+      !specialAddresses.includes(t.contractAddress?.toLowerCase())
+    );
+    
+    // Prepend special tokens in order: DUEL, SOL, USDC, WBTC
+    const orderedSpecialTokens = [];
+    const specialOrder = ['DUEL', 'SOL', 'USDC', 'WBTC'];
+    
+    for (const symbol of specialOrder) {
+      const token = specialTokens.find(t => t.symbol === symbol);
+      if (token) {
+        orderedSpecialTokens.push(token);
+      }
     }
     
-    return sortedTokens;
-  }, [sortedTokens, duelToken]);
+    return [...orderedSpecialTokens, ...filteredTokens];
+  }, [sortedTokens, specialTokens]);
   
   // Visible tokens - only show up to displayCount
   const visibleTokens = useMemo(() => {

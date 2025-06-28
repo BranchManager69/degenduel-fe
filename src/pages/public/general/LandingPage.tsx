@@ -726,7 +726,7 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 {/* DUEL Token & CTA Section - Side by side layout */}
-                <div className="mb-8">
+                <div className="mt-24 md:mt-32 mb-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto items-center">
                     {/* DUEL Token Card */}
                     <motion.div 

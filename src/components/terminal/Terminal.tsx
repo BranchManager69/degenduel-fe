@@ -57,6 +57,12 @@ import {
     getDidiMemoryState,
     resetDidiMemory
 } from './utils/didiHelpers';
+import {
+    getDidiPosition,
+    calculateTransitionDuration,
+    generateTransition,
+    type DidiPosition
+} from './utils/didiPositions';
 
 // Didi loves Easter
 import {
@@ -176,6 +182,15 @@ export const Terminal = ({
   
   // Get current location for page context
   const location = useLocation();
+  
+  // State for Didi's position - initialized after location is available
+  const [didiPosition, setDidiPosition] = useState<DidiPosition>(() => 
+    getDidiPosition(location.pathname)
+  );
+  const [didiTransition, setDidiTransition] = useState<string>('none');
+  
+  // State for test component cycling
+  // const [testComponentIndex, setTestComponentIndex] = useState(0);
   
   // Check if tokens have loaded (look for token grid or any token data in DOM)
   const checkTokensLoaded = () => {
@@ -564,7 +579,7 @@ export const Terminal = ({
         type: 'create_component' as const,
         component: 'token_watchlist',
         id: 'test-watchlist-' + Date.now(),
-        placement: 'below_terminal' as const,
+        placement: 'floating' as const,
         title: 'Test Token Watchlist',
         data: {
           tokens: [
@@ -836,6 +851,30 @@ export const Terminal = ({
     // Don't reset hasShownProactiveMessage - let it stay true for the entire session
   }, [location.pathname]);
 
+  // Update Didi's position when location changes
+  useEffect(() => {
+    const newPosition = getDidiPosition(location.pathname);
+    const oldPosition = didiPosition;
+    
+    // Calculate transition duration based on distance
+    const duration = calculateTransitionDuration(oldPosition, newPosition);
+    
+    // Set transition before updating position
+    setDidiTransition(generateTransition(duration));
+    
+    // Small delay to ensure transition is applied
+    setTimeout(() => {
+      setDidiPosition(newPosition);
+    }, 10);
+    
+    // Remove transition after animation completes
+    setTimeout(() => {
+      setDidiTransition('none');
+    }, duration * 1000 + 100);
+    
+    console.log('[Terminal] Didi moving to new position for path:', location.pathname, newPosition);
+  }, [location.pathname]);
+
   // Track user interactions to update last interaction time
   useEffect(() => {
     const handleUserInteraction = () => {
@@ -1060,6 +1099,59 @@ export const Terminal = ({
             
             {/* Browser-style window controls */}
             <div className="flex items-center space-x-1">
+              {/* Development component test dropdown */}
+              {process.env.NODE_ENV === 'development' && (
+                <select
+                  onChange={(e) => {
+                    if (!e.target.value) return;
+                    
+                    const testAction = {
+                      type: 'create_component' as const,
+                      component: e.target.value as any,
+                      id: `test-${e.target.value}-${Date.now()}`,
+                      placement: 'floating' as const,
+                      title: `Test ${e.target.options[e.target.selectedIndex].text}`,
+                      data: {
+                        // Generic test data that works for most components
+                        tokens: [
+                          { symbol: 'SOL', address: 'So11111111111111111111111111111111111111112', price: 23.45, change_24h: 5.2, volume_24h: 1234567890 },
+                          { symbol: 'ETH', address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', price: 1650.30, change_24h: -2.1, volume_24h: 987654321 }
+                        ],
+                        contestId: '768',
+                        participants: [
+                          { username: 'TestUser1', rank: 1, score: 1500, profit: 25.5 },
+                          { username: 'TestUser2', rank: 2, score: 1200, profit: 12.3 }
+                        ]
+                      }
+                    };
+                    
+                    if (dynamicUIRef.current) {
+                      dynamicUIRef.current.handleUIAction(testAction);
+                    }
+                    
+                    // Reset dropdown
+                    e.target.value = '';
+                  }}
+                  className="h-4 text-[10px] bg-purple-500 text-white border-none rounded cursor-pointer hover:bg-purple-400 transition-colors"
+                  title="Test Dynamic Components"
+                  defaultValue=""
+                >
+                  <option value="" disabled>Test</option>
+                  <option value="token_watchlist">Watchlist</option>
+                  <option value="portfolio_chart">Portfolio</option>
+                  <option value="market_heatmap">Heatmap</option>
+                  <option value="trading_signals">Signals</option>
+                  <option value="contest_leaderboard">Leaderboard</option>
+                  <option value="token_analysis">Analysis</option>
+                  <option value="performance_metrics">Performance</option>
+                  <option value="liquidity_pools">Liquidity</option>
+                  <option value="live_activity_feed">Activity</option>
+                  <option value="user_comparison">Comparison</option>
+                  <option value="alert_panel">Alerts</option>
+                  <option value="token_tracking_monitor">DADDIOS</option>
+                </select>
+              )}
+              
               {/* NEW: Mode toggle button (blue/green) */}
               <button
                 type="button" 
@@ -1131,9 +1223,8 @@ export const Terminal = ({
         <div
           className="fixed z-[99999] pointer-events-auto"
           style={{
-            left: '62.5%',
-            bottom: '2px',
-            transform: 'translateX(-50%) scale(0.665)',
+            ...didiPosition,
+            transition: didiTransition,
           }}
         >
           {/* NEW: Show mode indicator on minimized avatar */}

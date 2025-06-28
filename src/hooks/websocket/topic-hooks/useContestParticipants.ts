@@ -28,6 +28,9 @@ interface Participant {
   is_current_user?: boolean;
   is_ai_agent?: boolean;
   is_banned?: boolean;
+  is_admin?: boolean;
+  is_superadmin?: boolean;
+  role?: string;
   
   // Portfolio breakdown
   portfolio?: Array<{

@@ -42,7 +42,7 @@ export interface ContestRanking {
 export interface Contest {
   contest_id: string;
   name: string;
-  status: 'registration' | 'active' | 'ended';
+  status: 'registration' | 'active' | 'ended' | 'cancelled' | 'pending' | 'completed';
   start_time: string;
   end_time: string;
   prize_pool: number;
@@ -58,6 +58,8 @@ export interface Contest {
   };
   min_participants?: number;
   max_participants?: number;
+  cancellation_reason?: string;
+  cancelled_at?: string;
 }
 
 // Default state
@@ -136,14 +138,16 @@ export function useContests(userId?: string) {
             description: contest.description,
             joined: false, // Default - will be updated by user-specific data
             min_participants: contest.min_participants,
-            max_participants: contest.max_participants
+            max_participants: contest.max_participants,
+            cancellation_reason: contest.cancellation_reason, // Include cancellation_reason
+            cancelled_at: contest.cancelled_at // Also include cancelled_at for completeness
           }));
 
           setState(prevState => {
             // Filter contests based on status
             const activeContests = contests.filter((c: Contest) => c.status === 'active');
-            const upcomingContests = contests.filter((c: Contest) => c.status === 'registration');
-            const pastContests = contests.filter((c: Contest) => c.status === 'ended');
+            const upcomingContests = contests.filter((c: Contest) => c.status === 'registration' || c.status === 'pending');
+            const pastContests = contests.filter((c: Contest) => c.status === 'ended' || c.status === 'completed' || c.status === 'cancelled');
 
             return {
               contests,
@@ -185,8 +189,8 @@ export function useContests(userId?: string) {
 
             // Filter contests based on status
             const activeContests = contests.filter(c => c.status === 'active');
-            const upcomingContests = contests.filter(c => c.status === 'registration');
-            const pastContests = contests.filter(c => c.status === 'ended');
+            const upcomingContests = contests.filter(c => c.status === 'registration' || c.status === 'pending');
+            const pastContests = contests.filter(c => c.status === 'ended' || c.status === 'completed' || c.status === 'cancelled');
 
             // Filter user contests if userId is provided
             const userContests = userId

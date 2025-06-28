@@ -19,6 +19,7 @@ import { useStore } from "../../../store/useStore";
 import { User } from "../../../types";
 import { TwitterLoginButton, DiscordLoginButton, TelegramLoginButton, BiometricAuthButton } from "../../auth";
 import { getFullImageUrl } from "../../../utils/profileImageUtils";
+import { getUserRoleColors } from "../../../utils/roleColors";
 import { AdminControls } from "./UserMenuAdminControls";
 
 // Import shared menu components and configuration
@@ -53,55 +54,28 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
 
   const buttonStyles = useMemo(() => {
-    // Super Admin styling takes precedence - keep distinct for security visibility
-    if (isSuperAdmin) {
-      return {
-        bg: "bg-red-800/60",
-        text: "text-orange-300",
-        border: "border-red-600/50",
-        hover: {
-          bg: "group-hover:bg-red-700/70",
-          text: "group-hover:text-orange-200",
-          border: "group-hover:border-red-500/60",
-          glow: "",
-        },
-        ring: "",
-        shine: "",
-      };
-    }
-
-    // Admin styling - keep distinct for visibility
-    if (isAdministrator) {
-      return {
-        bg: "bg-amber-800/60",
-        text: "text-amber-300",
-        border: "border-amber-600/50",
-        hover: {
-          bg: "group-hover:bg-amber-700/70",
-          text: "group-hover:text-amber-200",
-          border: "group-hover:border-amber-500/60",
-          glow: "",
-        },
-        ring: "",
-        shine: "",
-      };
-    }
-
-    // All regular users get purple theme to match DUEL
+    // Create a user object with the auth flags for the color utility
+    const userWithAuthFlags = user ? {
+      ...user,
+      is_superadmin: isSuperAdmin,
+      is_admin: isAdministrator && !isSuperAdmin  // Only true for regular admins, not super admins
+    } : null;
+    
+    const roleColors = getUserRoleColors(userWithAuthFlags);
+    
+    // Add empty string defaults for optional properties
     return {
-      bg: "bg-purple-800/60",
-      text: "text-purple-200",
-      border: "border-purple-600/50",
-      hover: {
-        bg: "group-hover:bg-purple-700/70",
-        text: "group-hover:text-purple-100",
-        border: "group-hover:border-purple-500/60",
-        glow: "",
-      },
-      ring: "",
+      ...roleColors,
+      ring: roleColors.glow || "",
       shine: "",
+      hover: roleColors.hover || {
+        bg: "",
+        text: "",
+        border: "",
+        glow: ""
+      }
     };
-  }, [isAdministrator, isSuperAdmin]);
+  }, [user, isAdministrator, isSuperAdmin]);
 
   const displayName = useMemo(() => {
     if (!user) return 'User';

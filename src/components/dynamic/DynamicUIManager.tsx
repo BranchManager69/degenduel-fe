@@ -619,17 +619,24 @@ const DynamicUIManagerCore = React.forwardRef<DynamicUIManagerHandle, DynamicUIM
       {/* Inline Components */}
       {renderComponentsForPlacement('inline')}
 
-      {/* Development Debug Panel */}
+      {/* Development Debug Panel - Moved to top left to avoid footer */}
       {process.env.NODE_ENV === 'development' && enablePerformanceMonitoring && (
-        <div className="fixed bottom-4 left-4 bg-black/80 p-3 rounded text-xs text-white font-mono max-w-sm">
-          <div className="font-bold mb-1">Dynamic Components ({componentStates.size})</div>
-          {Array.from(componentStates.values()).map(comp => (
-            <div key={comp.id} className="text-green-400 flex justify-between">
-              <span>{comp.type}:{comp.id.slice(-8)}</span>
-              <span className="text-blue-400">{comp.placement}</span>
-              <span className="text-yellow-400">{comp.lifecycle}</span>
-            </div>
-          ))}
+        <div className="fixed top-20 left-4 bg-black/90 p-3 rounded text-xs text-white font-mono max-w-sm border border-purple-500/30 shadow-lg">
+          <div className="font-bold mb-1 text-purple-300">Dynamic Components ({componentStates.size})</div>
+          {componentStates.size === 0 ? (
+            <div className="text-gray-400">No active components</div>
+          ) : (
+            Array.from(componentStates.values()).map(comp => (
+              <div key={comp.id} className="text-green-400 flex justify-between gap-2">
+                <span className="truncate">{comp.type}:{comp.id.slice(-8)}</span>
+                <span className="text-blue-400">{comp.placement}</span>
+                <span className="text-yellow-400">{comp.lifecycle}</span>
+              </div>
+            ))
+          )}
+          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-400 text-[10px]">
+            Tip: Use "test-ui" command in Didi
+          </div>
         </div>
       )}
     </div>

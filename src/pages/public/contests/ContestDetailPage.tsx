@@ -153,7 +153,7 @@ export const ContestDetails: React.FC = () => {
 
   // Check if this is a Crown Contest (Numero Uno) - same logic as ContestBrowserPage
   const isCrownContest = useMemo(() => {
-    if (!contest) return false;
+    if (!contest || !contest.name) return false;
     const upperName = contest.name.toUpperCase();
     return upperName.includes('NUMERO UNO') || 
            upperName.includes('NUMERO  UNO') || // double space
@@ -344,7 +344,10 @@ export const ContestDetails: React.FC = () => {
               rank: p.rank,
               is_current_user: p.wallet_address === user?.wallet_address,
               is_ai_agent: false,
-              profile_image_url: null
+              profile_image_url: null,
+              role: p.role || "user", // Add role field
+              is_admin: p.is_admin || false,
+              is_superadmin: p.is_superadmin || false
             }));
             
             setAnalyticsParticipants(transformedAnalyticsParticipants);
