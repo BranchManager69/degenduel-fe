@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import axiosInstance from '../../lib/axiosInstance';
 import { getFullImageUrl } from "../../utils/profileImageUtils";
+import { getUserNameColor, getRoleBadgeClasses, getUserRoleLabel } from "../../utils/roleColors";
 
 interface Participant {
   wallet_address: string;
@@ -17,6 +18,9 @@ interface Participant {
   };
   is_current_user?: boolean;
   is_ai_agent?: boolean;
+  is_admin?: boolean;
+  is_superadmin?: boolean;
+  role?: string;
   bio?: string | null;
   line_design?: {
     color?: string;
@@ -669,13 +673,28 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                           participant.nickname.length > 8 ? (isMobile ? 'text-lg' : 'text-2xl') :
                           displayConfig.fontSize.username
                         } font-bold ${
+                          participant.role === "admin" || participant.role === "superadmin" || participant.is_superadmin || participant.is_admin ? getUserNameColor(participant) :
                           participant.is_current_user ? 'text-brand-300' : 'text-gray-100'
                         }`}
                         style={{
                           textShadow: '2px 2px 4px rgba(0,0,0,0.9)',
-                          WebkitTextStroke: '1px rgba(0,0,0,0.8)'
+                          WebkitTextStroke: '1px rgba(0,0,0,0.8)',
+                          ...(participant.role === "superadmin" || participant.is_superadmin) ? {
+                            fontSize: '120%' // Make super admin names 20% larger
+                          } : {}
                         }}>
-                          {participant.nickname}
+                          {(participant.role === "superadmin" || participant.is_superadmin) ? (
+                            <>
+                              <span style={{ fontSize: "140%" }}>
+                                {participant.nickname.charAt(0).toUpperCase()}
+                              </span>
+                              <span style={{ textTransform: "uppercase" }}>
+                                {participant.nickname.slice(1).toUpperCase()}
+                              </span>
+                            </>
+                          ) : (
+                            participant.nickname
+                          )}
                         </span>
                       </div>
                     </div>
@@ -748,15 +767,38 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                             participant.nickname.length > 10 ? (isMobile ? 'text-xl' : 'text-3xl') :
                             displayConfig.fontSize.expanded.name
                           } mb-2 ${
+                            participant.role === "admin" || participant.role === "superadmin" || participant.is_superadmin || participant.is_admin ? getUserNameColor(participant) :
                             participant.is_current_user ? "text-brand-400" :
                             participant.is_ai_agent ? "text-cyan-400" :
                             "text-gray-100"
                           }`}
                           style={{
                             textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-                            WebkitTextStroke: '1px rgba(0,0,0,0.8)'
+                            WebkitTextStroke: '1px rgba(0,0,0,0.8)',
+                            ...(participant.role === "superadmin" || participant.is_superadmin) ? {
+                              fontSize: '120%', // Make super admin names 20% larger
+                              textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000',
+                              WebkitTextStroke: '0.5px rgba(0,0,0,0.8)'
+                            } : {}
                           }}>
-                            {participant.nickname}
+                            {(participant.role === "superadmin" || participant.is_superadmin) ? (
+                              <>
+                                <span style={{ fontSize: "140%" }}>
+                                  {participant.nickname.charAt(0).toUpperCase()}
+                                </span>
+                                <span style={{ textTransform: "uppercase" }}>
+                                  {participant.nickname.slice(1).toUpperCase()}
+                                </span>
+                              </>
+                            ) : (
+                              participant.nickname
+                            )}
+                            {/* Status badges */}
+                            {getUserRoleLabel(participant) && (
+                              <span className={`ml-2 ${getRoleBadgeClasses(participant)}`}>
+                                {getUserRoleLabel(participant)}
+                              </span>
+                            )}
                           </h4>
                           
                           {participant.user_level && (

@@ -12,9 +12,10 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useState } from 'react';
-import { FloatingBelieveButton } from './FloatingBelieveButton';
+//import { FloatingBelieveButton } from './FloatingBelieveButton';
 import { FloatingDexscreenerButton } from './FloatingDexscreenerButton';
 import { FloatingJupButton } from './FloatingJupButton';
+import { FloatingTelegramButton } from './FloatingTelegramButton';
 import { FloatingTwitterButton } from './FloatingTwitterButton';
 
 interface FloatingButtonStackProps {
@@ -48,9 +49,14 @@ const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({
 
   // Button configurations
   const buttons = [
+    // { 
+    //   id: 'believe', 
+    //   component: FloatingBelieveButton, 
+    //   color: 'emerald'
+    // },
     { 
-      id: 'believe', 
-      component: FloatingBelieveButton, 
+      id: 'jupiter', 
+      component: FloatingJupButton, 
       color: 'emerald'
     },
     { 
@@ -64,9 +70,9 @@ const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({
       color: 'blue'
     },
     { 
-      id: 'jupiter', 
-      component: FloatingJupButton, 
-      color: 'emerald'
+      id: 'telegram', 
+      component: FloatingTelegramButton, 
+      color: 'blue'
     }
   ];
 

@@ -45,10 +45,10 @@ export const StandaloneTokenCard: React.FC<StandaloneTokenCardProps> = ({ token 
       <style dangerouslySetInnerHTML={{
         __html: `
           @keyframes bannerScan {
-            0%, 100% { object-position: center center; }
-            25% { object-position: left center; }
-            50% { object-position: center center; }
-            75% { object-position: right center; }
+            0%, 100% { object-position: center 95%; }
+            25% { object-position: left 95%; }
+            50% { object-position: center 95%; }
+            75% { object-position: right 95%; }
           }
           
           @keyframes fadeUpIn {
@@ -97,16 +97,10 @@ export const StandaloneTokenCard: React.FC<StandaloneTokenCardProps> = ({ token 
           <div className={`absolute w-full h-full backface-hidden rounded-2xl overflow-hidden shadow group cursor-pointer backdrop-blur-xl
             hover:scale-[1.03] z-10
             ${isDuel ? 'ring-2 ring-purple-500/60 shadow-[0_0_20px_rgba(147,51,234,0.4),_10px_10px_30px_rgba(255,255,255,0.3)]' : ''}
-            ${token.symbol === 'SOL' ? 'shadow-[0_0_25px_rgba(255,215,0,0.5)]' : ''}
+            ${token.symbol === 'SOL' ? 'ring-2 ring-[#14F195]/60 shadow-[0_0_20px_rgba(20,241,149,0.4),_0_0_30px_rgba(153,69,255,0.3)]' : ''}
             bg-gradient-to-br from-dark-100/90 via-dark-200/80 to-dark-300/90
-            ${isDuel ? '' : 'shadow-2xl'} ${isDuel ? '' : rankStyle.glow}
+            ${!isDuel && token.symbol !== 'SOL' ? 'shadow-2xl' : ''} ${!isDuel && token.symbol !== 'SOL' ? rankStyle.glow : ''}
           `}>
-            {/* SOL gradient border */}
-            {token.symbol === 'SOL' && (
-              <div className="absolute inset-0 rounded-2xl p-[2px] bg-gradient-to-r from-white/60 to-cyan-500/60">
-                <div className="w-full h-full rounded-2xl bg-dark-200/90" />
-              </div>
-            )}
             {/* DUEL SPECIAL EFFECT */}
             {isDuel && (
               <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-transparent to-purple-600/10 animate-pulse" />
@@ -119,9 +113,9 @@ export const StandaloneTokenCard: React.FC<StandaloneTokenCardProps> = ({ token 
                   <img 
                     src={token.header_image_url || ''} 
                     alt={token.symbol}
-                    className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                    className="absolute inset-0 w-full h-full object-cover transform scale-110 group-hover:scale-125 transition-transform duration-700"
                     style={{ 
-                      objectPosition: 'center center',
+                      objectPosition: 'center 95%',
                       animation: 'bannerScan 60s ease-in-out infinite'
                     }}
                   />
@@ -138,43 +132,40 @@ export const StandaloneTokenCard: React.FC<StandaloneTokenCardProps> = ({ token 
             </div>
 
             {/* MAIN CONTENT - BOLD AND CLEAN */}
-            <div className="relative z-10 p-6 h-full flex flex-col">
-              {/* MARKET CAP AND 24H CHANGE - PUSHED DOWN */}
-              <div className="flex items-center justify-between gap-4 mt-auto">
-                {/* BIG MARKET CAP OR PRICE FOR SOL - LEFT */}
-                <div className="text-center flex-1">
-                  {token.symbol === 'SOL' ? (
-                    <>
-                      <div className="text-2xl font-bold text-white" style={{ 
-                        textShadow: '4px 4px 8px rgba(0,0,0,0.9), 2px 2px 4px rgba(0,0,0,1)' 
-                      }}>
-                        ${TokenHelpers.getPrice(token).toFixed(2)}
-                      </div>
-                      <div className="text-xs text-gray-400 uppercase tracking-wider mt-1">SOL Price</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold text-white" style={{ 
-                        textShadow: '4px 4px 8px rgba(0,0,0,0.9), 2px 2px 4px rgba(0,0,0,1)' 
-                      }}>
-                        ${formatNumber(TokenHelpers.getMarketCap(token), 'short')}
-                      </div>
-                      <div className="text-xs text-gray-400 uppercase tracking-wider mt-1">Market Cap</div>
-                    </>
-                  )}
-                </div>
-                
-                {/* MASSIVE PERCENTAGE CHANGE - RIGHT */}
-                <div className="text-center flex-1">
-                  <div className={`text-3xl font-black ${changeNum >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ 
-                    textShadow: changeNum >= 0 
-                      ? '0 0 30px rgba(34, 197, 94, 0.6), 4px 4px 8px rgba(0,0,0,1)' 
-                      : '0 0 30px rgba(239, 68, 68, 0.6), 4px 4px 8px rgba(0,0,0,1)'
+            <div className="relative z-10 p-6 h-full flex flex-col justify-end">
+              {/* 24H CHANGE - BOTTOM RIGHT - ONLY SHOW IF POSITIVE */}
+              {changeNum >= 0 && (
+                <div className="absolute right-6 bottom-6 text-right">
+                  <div className="text-3xl font-black text-green-400" style={{ 
+                    textShadow: '0 0 30px rgba(34, 197, 94, 0.6), 4px 4px 8px rgba(0,0,0,1)'
                   }}>
-                    {changeNum >= 0 ? '+' : ''}{formatPercentage(TokenHelpers.getPriceChange(token), false)}
+                    +{formatPercentage(TokenHelpers.getPriceChange(token), false)}
                   </div>
-                  <div className="text-xs text-gray-400 uppercase tracking-wider mt-1">24h Change</div>
+                  <div className="text-xs text-gray-400 uppercase tracking-wider mt-1">24h</div>
                 </div>
+              )}
+
+              {/* MARKET CAP OR PRICE - VERY BOTTOM LEFT */}
+              <div className="pb-0">
+                {token.symbol === 'SOL' ? (
+                  <>
+                    <div className="text-4xl font-bold text-white" style={{ 
+                      textShadow: '4px 4px 8px rgba(0,0,0,0.9), 2px 2px 4px rgba(0,0,0,1)' 
+                    }}>
+                      ${TokenHelpers.getPrice(token).toFixed(2)}
+                    </div>
+                    <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">SOL Price</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-4xl font-bold text-white" style={{ 
+                      textShadow: '4px 4px 8px rgba(0,0,0,0.9), 2px 2px 4px rgba(0,0,0,1)' 
+                    }}>
+                      ${formatNumber(TokenHelpers.getMarketCap(token), 'short')}
+                    </div>
+                    <div className="text-sm text-gray-400 uppercase tracking-wider mt-1"><b>DUEL</b> Market Cap</div>
+                  </>
+                )}
               </div>
             </div>
             

@@ -622,7 +622,10 @@ export const ContestLobbyV2: React.FC = () => {
             performancePercentage: entry.performance_percentage,
             isCurrentUser: entry.wallet_address === user?.wallet_address,
             isAiAgent: entry.is_ai_agent || false,
-            prizeAwarded: entry.prize_awarded || null
+            prizeAwarded: entry.prize_awarded || null,
+            role: entry.role || "user", // Add role field
+            is_admin: entry.is_admin || false,
+            is_superadmin: entry.is_superadmin || false
           }));
           
           return {
@@ -715,7 +718,10 @@ export const ContestLobbyV2: React.FC = () => {
       rank: index + 1, // Now properly ranked by performance
       is_ai_agent: false,
       is_current_user: user?.wallet_address === p.wallet_address,
-      prize_awarded: null
+      prize_awarded: null,
+      role: p.role || "user", // Add role field
+      is_admin: p.is_admin || false,
+      is_superadmin: p.is_superadmin || false
     }));
     
     console.log('[ContestLobbyV2] Transformed and sorted participants:', transformed);

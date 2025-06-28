@@ -37,10 +37,10 @@ export type {
 /* Types */
 
 // Contest Types
-export type ContestStatus = 
-  | "pending" 
-  | "active" 
-  | "completed" 
+export type ContestStatus =
+  | "pending"
+  | "active"
+  | "completed"
   | "cancelled";
 
 // Contest Difficulty Levels - REMOVED as new API uses string
@@ -98,6 +98,9 @@ export interface Contest {
   participants?: Array<{
     address: string;
     username?: string;
+    nickname?: string;
+    role?: string;
+    profile_image_url?: string;
     score?: number;
   }>;
   contest_code: string;
@@ -145,14 +148,14 @@ export interface Token {
   address: string;
   symbol: string;
   name: string;
-  
+
   // Status & Classification
   is_active?: boolean;
   priority_score?: number;
   degenduel_score?: number;
   trend_category?: string;
   momentum_indicator?: string;
-  
+
   // Visual/Metadata
   image_url?: string | null;
   header_image_url?: string | null;
@@ -160,22 +163,22 @@ export interface Token {
   color?: string;
   description?: string | null;
   tags?: string[];
-  
+
   // Supply Information
   total_supply?: number | null;
   raw_supply?: number | null;
   decimals: number;
-  
+
   // Discovery & Tracking
   first_seen_on_jupiter_at?: string | null;
   pairCreatedAt?: string | null;
   metadata_status?: string;
   refresh_interval_seconds?: number;
-  
+
   // Timestamps
   created_at?: string;
   updated_at?: string;
-  
+
   // FORMAT 1: Standard Tokens (/api/tokens, WebSocket) - NESTED STRUCTURE
   token_prices?: {
     price: string;           // STRING format
@@ -186,7 +189,7 @@ export interface Token {
     fdv: string;            // STRING format
     updated_at: string;
   } | null;
-  
+
   // Enhanced data in nested structure
   refresh_metadata?: {
     enhanced_market_data?: {
@@ -210,7 +213,7 @@ export interface Token {
       };
     };
   };
-  
+
   // Social links in array format
   token_socials?: Array<{
     id: number;
@@ -219,7 +222,7 @@ export interface Token {
     url: string;
     created_at: string;
   }>;
-  
+
   // Token bucket memberships
   token_bucket_memberships?: Array<{
     id: number;
@@ -232,7 +235,7 @@ export interface Token {
       description: string;
     };
   }>;
-  
+
   // FORMAT 2: Trending Tokens (/api/tokens/trending) - FLATTENED STRUCTURE
   // Direct price data as numbers
   price?: number;             // NUMBER format (trending)
@@ -241,7 +244,7 @@ export interface Token {
   volume_24h?: number | null; // NUMBER format (trending)
   liquidity?: number;         // NUMBER format (trending)
   fdv?: number;              // NUMBER format (trending)
-  
+
   // Flattened enhanced data
   priceChanges?: {
     m5: number;   // REAL backend keys!
@@ -249,21 +252,21 @@ export interface Token {
     h6: number;
     h24: number;
   };
-  
+
   volumes?: {
     m5: number;
     h1: number;
     h6: number;
     h24: number;
   };
-  
+
   transactions?: {
     m5: { buys: number; sells: number };
     h1: { buys: number; sells: number };
     h6: { buys: number; sells: number };
     h24: { buys: number; sells: number };
   };
-  
+
   // Flattened social data
   socials?: {
     twitter?: string;
@@ -271,12 +274,12 @@ export interface Token {
     discord?: string;
     website?: string;
   };
-  
+
   websites?: Array<{
     label: string;
     url: string;
   }>;
-  
+
   // Legacy compatibility fields
   contractAddress?: string;   // Alias for address
   totalSupply?: string;       // Legacy
@@ -477,11 +480,11 @@ export const TokenHelpers = {
     if (token.images?.imageUrl) return token.images.imageUrl;
     if (token.images?.headerImage) return token.images.headerImage;
     if (token.images?.openGraphImage) return token.images.openGraphImage;
-    
+
     // Check for direct fields
     if (token.image_url) return token.image_url;
     if (token.header_image_url) return token.header_image_url;
-    
+
     return null;
   }
 };
@@ -500,12 +503,12 @@ export interface Transaction {
   id: number;
   wallet_address: string;
   type:
-    | "CONTEST_ENTRY"
-    | "PRIZE_PAYOUT"
-    | "DEPOSIT"
-    | "WITHDRAWAL"
-    | "REFERRAL_BONUS"
-    | "PROMOTION";
+  | "CONTEST_ENTRY"
+  | "PRIZE_PAYOUT"
+  | "DEPOSIT"
+  | "WITHDRAWAL"
+  | "REFERRAL_BONUS"
+  | "PROMOTION";
   amount: number;
   balance_before: number;
   balance_after: number;
@@ -623,11 +626,11 @@ export interface IpBanUpdateParams {
 // Error Types
 export type WalletError = {
   code:
-    | "WALLET_NOT_FOUND"
-    | "CONNECTION_FAILED"
-    | "USER_REJECTED"
-    | "API_ERROR"
-    | "UNAUTHORIZED";
+  | "WALLET_NOT_FOUND"
+  | "CONNECTION_FAILED"
+  | "USER_REJECTED"
+  | "API_ERROR"
+  | "UNAUTHORIZED";
   message: string;
 };
 
@@ -695,16 +698,16 @@ export interface ContestSettings {
 
 // This ContestDetails definition is the one aligned with the new API
 export interface ContestDetails {
-  id: string; 
+  id: string;
   name: string;
   description: string;
   status: "pending" | "active" | "completed" | "cancelled";
-  startTime: string; 
-  endTime: string; 
-  entryFee: string; 
+  startTime: string;
+  endTime: string;
+  entryFee: string;
   prizePool: string;
   totalPrizePool?: string; // Backend-calculated: prizePool + accumulated entry fees
-  currency: string; 
+  currency: string;
   participantCount: number;
   settings: ContestSettings; // Uses the new ContestSettings definition above
   isCurrentUserParticipating: boolean;

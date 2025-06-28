@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import axiosInstance from '../../lib/axiosInstance';
 import { formatCurrency } from "../../lib/utils";
 import { getFullImageUrl } from "../../utils/profileImageUtils";
+import { getFlairLabel, getRoleBadgeClasses, getUserNameColorWithFlair, getUserRoleLabel } from "../../utils/roleColors";
 import { PublicUserSearch } from "../common/PublicUserSearch";
 
 // New unified participant structure from backend API
@@ -33,6 +34,10 @@ interface Participant {
   is_current_user?: boolean;
   is_ai_agent?: boolean;
   is_banned?: boolean;
+  is_admin?: boolean;
+  is_superadmin?: boolean;
+  role?: string;
+  flair?: 'victor' | 'whale' | 'legend' | null;
   
   // Portfolio breakdown
   portfolio?: Array<{
@@ -68,6 +73,15 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
   onParticipantHover,
   hoveredParticipant,
 }) => {
+  // // Debug role data
+  // useEffect(() => {
+  //   console.log('[ParticipantsList] Participants with roles:', participants.map(p => ({
+  //     nickname: p.nickname,
+  //     role: p.role,
+  //     is_admin: p.is_admin,
+  //     is_superadmin: p.is_superadmin
+  //   })));
+  // }, [participants]);
   const [searchQuery, setSearchQuery] = useState("");
   const [, setSelectedUser] = useState<any>(null);
   const [showCompactView] = useState(false);
@@ -464,6 +478,11 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
 
                   {/* Edge-to-edge profile picture background */}
                   <div className="absolute inset-0 overflow-hidden">
+                    {/* Super admin background color - behind everything */}
+                    {(participant.role === "superadmin" || participant.is_superadmin) && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-900/40 via-yellow-800/20 to-transparent" />
+                    )}
+                    
                     {participant.profile_image_url ? (
                       <div className="relative w-full h-full">
                       {/* Profile image - zoomed and fading to right */}
@@ -530,17 +549,33 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                     <div className="ml-20 flex-1 flex items-center justify-between">
                       <div className="flex flex-col">
                         <div
-                          className={`text-lg font-bold transition-colors ${
-                            participant.is_current_user ? "text-brand-400" :
-                            participant.is_ai_agent ? "text-cyan-400" :
-                            position === 1 ? "text-yellow-300" :
-                            position === 2 ? "text-gray-100" :
-                            position === 3 ? "text-orange-300" :
-                            "text-gray-100"
+                          className={`font-bold transition-colors ${
+                            getUserNameColorWithFlair(participant)
                           }`}
+                          style={{
+                            fontSize: (participant.role === "superadmin" || participant.is_superadmin) ? "1.375rem" : "1.125rem",
+                            textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000',
+                            WebkitTextStroke: (participant.role === "superadmin" || participant.is_superadmin) ? '0.5px rgba(0,0,0,0.8)' : '0.3px rgba(0,0,0,0.6)'
+                          }}
                         >
                           {participant.nickname}
+                          {/* Level display - simple and clean */}
+                          {participant.user_level && (
+                            <span className="ml-2 text-sm text-brand-400/80 font-mono">
+                              Lv{participant.user_level.level_number}
+                            </span>
+                          )}
                           {/* Status badges */}
+                          {getUserRoleLabel(participant) && (
+                            <span className={`ml-2 ${getRoleBadgeClasses(participant)}`}>
+                              {getUserRoleLabel(participant)}
+                            </span>
+                          )}
+                          {participant.flair && getFlairLabel(participant.flair) && (
+                            <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-800/60 text-gray-300 border border-gray-600/50">
+                              {getFlairLabel(participant.flair)}
+                            </span>
+                          )}
                           {participant.is_current_user && (
                             <span className="ml-2 text-xs bg-brand-500 text-white px-2 py-1 rounded-md font-black tracking-wide">YOU</span>
                           )}
@@ -549,25 +584,6 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                           )}
                         </div>
 
-                        {/* Enhanced level display */}
-                        {participant.user_level && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-sm text-brand-400 font-bold tracking-wide">
-                              LV.{participant.user_level.level_number}
-                            </span>
-                            <span className="text-sm text-gray-300 font-medium">
-                              {participant.user_level.title}
-                            </span>
-                            {!showCompactView && participant.experience_points && (
-                              <div className="w-16 h-1.5 bg-dark-400 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-gradient-to-r from-brand-400 to-brand-500 transition-all duration-500 shadow-sm"
-                                  style={{ width: `${Math.min((participant.experience_points % 1000) / 10, 100)}%` }}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
 
                       {/* Score display */}
@@ -630,8 +646,50 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                         className="bg-dark-300/30 border-x border-b border-dark-300/50 rounded-b-lg overflow-hidden"
                       >
                         <div className="p-4">
+                          {/* Experience Section - Above Portfolio */}
+                          {participant.user_level && (
+                            <div className="mb-4 p-3 bg-gradient-to-r from-dark-400/50 to-dark-400/30 rounded-lg border border-dark-300/50">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-brand-400 font-black text-2xl">
+                                      LV{participant.user_level.level_number}
+                                    </span>
+                                    <span className="text-gray-300 font-semibold">
+                                      {participant.user_level.title}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {participant.total_contests_entered || 0} contests • {participant.contests_won || 0} wins
+                                </div>
+                              </div>
+                              
+                              {participant.experience_points !== undefined && (
+                                <div className="relative">
+                                  <div className="w-full h-6 bg-dark-500/50 rounded-full overflow-hidden border-2 border-dark-300">
+                                    <div className="relative h-full">
+                                      <div
+                                        className="h-full bg-gradient-to-r from-brand-400 via-brand-500 to-brand-400 transition-all duration-500"
+                                        style={{ width: `${Math.min((participant.experience_points % 1000) / 10, 100)}%` }}
+                                      />
+                                      {/* Animated shine effect */}
+                                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                                    </div>
+                                  </div>
+                                  {/* XP text inside the bar */}
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-xs font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                                      {participant.experience_points % 1000} / 1000 XP
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
                           <h4 className="text-lg font-semibold text-gray-100 mb-3">
-                            {participant.nickname}'s Portfolio
+                            Portfolio Breakdown
                           </h4>
                           
                           {isLoadingPortfolio ? (

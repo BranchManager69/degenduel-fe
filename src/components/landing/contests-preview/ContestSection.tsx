@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 // Import the ContestCard from the contest-browser directory to use the unified card
 import type { Contest } from "../../../types/index";
 import { ContestCard } from "../../contest-browser/ContestCard";
-import { ProminentContestCard } from "../../contest-browser/ProminentContestCard";
+import { DuelCard } from "../../contest-browser/DuelCard";
 
 interface ContestSectionProps {
   title: string;
@@ -134,46 +134,30 @@ export const ContestSection: React.FC<ContestSectionProps> = ({
           </div>
         </div>
 
-        {/* Contest Grid with enhanced perspective */}
-        <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 [perspective:1500px]">
-          {contests.map((contest, index) => (
-            <div
-              key={contest.id}
-              className="opacity-0 translate-x-full rotate-y-12 animate-contest-card-entrance group/card"
-              style={{
-                animationDelay: `${index * 150}ms`,
-                animationFillMode: "forwards",
-                transformStyle: "preserve-3d",
-              }}
-            >
-              {/* Card glow effect */}
-              <div className="absolute -inset-2 bg-gradient-to-r from-brand-500/0 via-brand-400/10 to-purple-500/0 rounded-lg blur-xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
-
-              <div
-                className="relative"
-                style={{ zIndex: contests.length - index }}
-              >
-                {/* Check if this is a Crown Contest (Numero Uno) */}
-                {(() => {
-                  const upperName = contest.name.toUpperCase();
-                  const isCrownContest = upperName.includes('NUMERO UNO') || 
-                                        upperName.includes('NUMERO  UNO') || // double space
-                                        upperName.includes('NUMERO\tUNO') || // tab
-                                        upperName.includes('NUMEROUNO'); // no space
-                  
-                  return isCrownContest ? (
-                    <ProminentContestCard 
-                      contest={contest} 
-                      featuredLabel="👑 CROWN CONTEST"
-                      onClick={() => navigate(`/contests/${contest.id}`)}
-                    />
-                  ) : (
-                    <ContestCard contest={contest} onClick={() => navigate(`/contests/${contest.id}`)} />
-                  );
-                })()}
-              </div>
-            </div>
-          ))}
+        {/* Contest Grid - clean and simple */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {contests.map((contest) => {
+            // Check if this is a duel (2-person contest)
+            const isDuel = contest.max_participants === 2;
+            
+            if (isDuel) {
+              return (
+                <DuelCard
+                  key={contest.id}
+                  contest={contest as any}
+                  onClick={() => navigate(`/contests/${contest.id}`)}
+                />
+              );
+            }
+            
+            return (
+              <ContestCard
+                key={contest.id}
+                contest={contest}
+                onClick={() => navigate(`/contests/${contest.id}`)}
+              />
+            );
+          })}
         </div>
       </div>
     </section>

@@ -330,6 +330,7 @@ export default {
       },
       animation: {
         shine: "shine 2s linear infinite",
+        shimmer: "shimmer 2s linear infinite",
         "fade-in": "fade-in 0.5s ease-out",
         ticker: "ticker 30s linear infinite",
         float: "float 4s ease-in-out infinite",
@@ -451,6 +452,10 @@ export default {
         shine: {
           "0%": { "background-position": "300% center" },
           "100%": { "background-position": "0% center" },
+        },
+        shimmer: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
         },
         "gradient-pulse": {
           "0%, 100%": { 

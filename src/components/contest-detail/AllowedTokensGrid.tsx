@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MiniTokenCard } from "./MiniTokenCard";
 import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
 import { TokenHelpers } from "../../types";
+import { MiniTokenCard } from "./MiniTokenCard";
 
 interface AllowedTokensGridProps {
   maxInitialDisplay?: number;
@@ -18,10 +18,10 @@ interface AllowedTokensGridProps {
  * - Responsive grid sizing
  */
 export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
-  maxInitialDisplay = 12,
+  maxInitialDisplay = 10,
   className = ""
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(maxInitialDisplay);
   const navigate = useNavigate();
   
   // Get enough tokens to properly fill the display
@@ -29,34 +29,29 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
     "all", 
     'marketCap', 
     { status: 'active' }, 
-    5,  // maxHotTokens (not used here)
-    24  // maxTopTokens - get 24 tokens to have a good selection
+    20,  // maxHotTokens (not used here)
+    200  // maxTopTokens - get 200 tokens to have a good selection
   );
 
   // Randomize tokens for variety
   const actualTokens = useMemo(() => {
-    // Use tokens from the API
     if (allTokens && allTokens.length > 0) {
-      // Shuffle the tokens array for random selection
-      const shuffled = [...allTokens].sort(() => Math.random() - 0.5);
+      // Only include tokens with an image
+      const filtered = allTokens.filter(token => !!token.image_url);
+      const shuffled = [...filtered].sort(() => Math.random() - 0.5);
       return shuffled.map(token => token.symbol);
     }
-    
-    // Fallback to popular tokens if API fails
-    return ['SOL', 'BONK', 'WIF', 'PEPE', 'DOGE', 'SHIB', 'BOME', 'POPCAT', 'MEW', 'FROG'];
+    return [];
   }, [allTokens]);
-  
+
   // Determine which tokens to show
   const tokensToShow = useMemo(() => {
-    if (isExpanded || actualTokens.length <= maxInitialDisplay) {
-      return actualTokens;
-    }
-    return actualTokens.slice(0, maxInitialDisplay);
-  }, [actualTokens, isExpanded, maxInitialDisplay]);
-  
-  const hasMoreTokens = actualTokens.length > maxInitialDisplay;
-  const hiddenCount = actualTokens.length - maxInitialDisplay;
-  
+    return actualTokens.slice(0, visibleCount);
+  }, [actualTokens, visibleCount]);
+
+  const hasMoreTokens = visibleCount < actualTokens.length;
+  const canShowLess = visibleCount > maxInitialDisplay;
+
   // Loading state
   if (isLoading) {
     return (
@@ -87,17 +82,16 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
   
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Compact grid - BIGGER icons, TIGHTER spacing */}
-      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-1.5">
+      {/* Compact grid - TIGHTER spacing (2px gap) */}
+      <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-[2px]">
         {tokensToShow.map((tokenSymbol, index) => {
           const token = allTokens?.find(t => t.symbol === tokenSymbol);
-          
           return (
             <div 
               key={tokenSymbol} 
-              className="w-12 h-12 sm:w-14 sm:h-14 animate-slide-in-up"
+              className="w-12 h-12 sm:w-14 sm:h-14 animate-slide-in-up transition-all duration-300"
               style={{
-                animationDelay: `${index * 50}ms`,
+                animationDelay: `${index * 30}ms`,
                 animationFillMode: 'both'
               }}
             >
@@ -106,9 +100,8 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
                 tokenImage={token?.image_url || undefined}
                 bannerImage={token?.header_image_url || undefined}
                 isPositive={(token?.change_24h ? Number(token.change_24h) : 0) >= 0}
-                activityLevel="medium" // Default to medium activity for hot tokens
+                activityLevel="medium"
                 onClick={() => {
-                  // Navigate to token detail page
                   if (token) {
                     navigate(`/tokens/${TokenHelpers.getAddress(token)}`);
                   }
@@ -117,56 +110,28 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
             </div>
           );
         })}
-        
-        {/* Expand/Collapse Button */}
-        {hasMoreTokens && (
-          <div 
-            className="w-12 h-12 sm:w-14 sm:h-14 animate-slide-in-up"
-            style={{
-              animationDelay: `${Math.min(tokensToShow.length, maxInitialDisplay) * 50}ms`,
-              animationFillMode: 'both'
-            }}
-          >
+      </div>
+      {/* Show More / Show Less controls below the grid */}
+      <div className="flex justify-end text-xs text-gray-500">
+        <div className="flex gap-2">
+          {hasMoreTokens && (
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="w-full h-full rounded-lg bg-dark-300/60 hover:bg-dark-300/80 border border-brand-400/30 hover:border-brand-400/50 transition-all duration-300 flex items-center justify-center group"
+              onClick={() => setVisibleCount(v => Math.min(v + maxInitialDisplay, actualTokens.length))}
+              className="text-brand-400 hover:text-brand-300 transition-colors font-medium"
             >
-              {isExpanded ? (
-                // Collapse icon
-                <svg className="w-4 h-4 text-brand-400 group-hover:text-brand-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                </svg>
-              ) : (
-                // Expand icon showing count
-                <div className="flex flex-col items-center justify-center">
-                  <svg className="w-3 h-3 text-brand-400 group-hover:text-brand-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  <span className="text-xs text-brand-400 group-hover:text-brand-300 font-mono leading-none">
-                    {hiddenCount}
-                  </span>
-                </div>
-              )}
+              Show 10 More
             </button>
-          </div>
-        )}
+          )}
+          {canShowLess && (
+            <button
+              onClick={() => setVisibleCount(maxInitialDisplay)}
+              className="text-brand-400 hover:text-brand-300 transition-colors font-medium"
+            >
+              Show Less
+            </button>
+          )}
+        </div>
       </div>
-      
-      {/* Summary text - more natural language */}
-      <div className="flex items-center justify-between text-xs text-gray-500">
-        <span>
-          Popular tokens in contests
-        </span>
-        {hasMoreTokens && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-brand-400 hover:text-brand-300 transition-colors font-medium"
-          >
-            {isExpanded ? 'Show Less' : `Show ${hiddenCount} More`}
-          </button>
-        )}
-      </div>
-      
       {/* Custom CSS for slide-in animation */}
       <style dangerouslySetInnerHTML={{
         __html: `
@@ -180,9 +145,8 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
               transform: translateY(0) scale(1);
             }
           }
-          
           .animate-slide-in-up {
-            animation: slide-in-up 0.4s ease-out;
+            animation: slide-in-up 0.3s ease-out;
           }
         `
       }} />

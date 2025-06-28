@@ -37,7 +37,7 @@ interface FeatureCardProps {
 
 // Default feature illustrations if none provided
 const DEGENDUEL_FEATURES_IMAGES = {
-  "Trading Contests": "/assets/media/features/trading-contests.png",                // ✅
+  "Portfolio Contests": "/assets/media/features/trading-contests.png",                // ✅
   "Degen Dividends": "/assets/media/features/degen-dividends.png",                  // Placeholder for Degen Dividends
   "Real-Time On-Chain Data": "/assets/media/features/real-time-on-chain-data.png",  // Placeholder for Real-Time On-Chain Data
   "Instant SOL Settlement": "/assets/media/features/instant-sol-settlement.png",    // Placeholder for Instant SOL Settlement
@@ -209,11 +209,11 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
           whileHover={!prefersReducedMotion && !isShowcase ? { y: -4, transition: { duration: 0.2 } } : {}}
         >
           
-                     {/* Dramatic Feature Card - Different styling for showcase mode */}
+           {/* Dramatic Feature Card - Different styling for showcase mode */}
            <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-900/90 to-black border border-gray-800/40 h-full transition-all duration-300 shadow-lg flex flex-col ${!isShowcase ? 'group-hover:border-purple-500/40 group-hover:shadow-xl' : 'border-brand-400/30 shadow-2xl shadow-brand-400/20'}`}>
             
-                         {/* Dynamic Feature Illustration/Banner - Proper height for showcase theater */}
-             <div className={`relative w-full overflow-hidden shrink-0 ${isShowcase ? 'h-48 lg:h-64 xl:h-80' : 'h-64 sm:h-72 md:h-80'}`}>
+              {/* Dynamic Feature Illustration/Banner - Proper height for showcase theater */}
+              <div className={`relative w-full overflow-hidden shrink-0 ${isShowcase ? 'h-48 lg:h-64 xl:h-80' : 'h-64 sm:h-72 md:h-80'}`}>
               
               {/* Gradient overlay for consistent branding & readability */}
               <div className={`absolute inset-0 bg-gradient-to-br from-gray-900/50 via-gray-900/30 to-gray-900/70 z-10`}></div>
@@ -349,6 +349,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               </div>
             )}
           </div>
+          
         </motion.div>
         
         {/* Accent line animation - Only for grid mode */}

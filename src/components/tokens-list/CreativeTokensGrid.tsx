@@ -107,7 +107,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     const rankStyle = getRankStyle(displayRank);
     
     return (
-      <div className="aspect-[5/3] w-full perspective-1000">
+      <div className="aspect-[16/9] sm:aspect-[5/3] w-full perspective-1000">
         <div 
           className={`relative w-full h-full transition-transform duration-500 transform-style-3d
             ${isFlipped ? 'rotate-y-180' : ''}
@@ -155,13 +155,13 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
           
         </div>
 
-        {/* MAIN CONTENT */}
-        <div className="relative z-10 p-3 h-full flex flex-col justify-between">
+        {/* MAIN CONTENT - Responsive padding */}
+        <div className="relative z-10 p-2 sm:p-3 h-full flex flex-col justify-between">
           {/* MIDDLE - TOKEN INFO WITH RANK */}
           <div className="flex-1 flex flex-col justify-center">
             <div className="mb-1">
               <div className="flex items-start justify-between">
-                <h3 className={`${token.symbol.length >= 9 ? 'text-3xl' : 'text-4xl'} font-bold text-white`} style={{ 
+                <h3 className={`${token.symbol.length >= 9 ? 'text-xl sm:text-3xl' : 'text-2xl sm:text-4xl'} font-bold text-white`} style={{ 
                   textShadow: '6px 6px 12px rgba(0,0,0,1), -4px -4px 8px rgba(0,0,0,1), 3px 3px 6px rgba(0,0,0,1), 0px 0px 10px rgba(0,0,0,0.9)', 
                   WebkitTextStroke: '1.5px rgba(0,0,0,0.7)' 
                 }}>
@@ -188,7 +188,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
                   </span>
                 )}
               </div>
-              <p className="text-gray-300 text-sm truncate mt-1" style={{
+              <p className="text-gray-300 text-xs sm:text-sm truncate mt-1" style={{
                 textShadow: '2px 2px 4px rgba(0,0,0,0.9)'
               }}>
                 {token.name}
@@ -198,14 +198,14 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
             {/* MARKET CAP AND CHANGE - side by side */}
             <div className="flex items-center justify-between">
               {/* Market Cap - left side */}
-              <div className="text-base font-bold text-white" style={{ 
+              <div className="text-sm sm:text-base font-bold text-white" style={{ 
                 textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
               }}>
                 ${formatNumber(TokenHelpers.getMarketCap(token), 'short')} MC
               </div>
               
               {/* Percentage change - right side */}
-              <div className={`text-sm font-bold font-sans ${changeNum >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ 
+              <div className={`text-xs sm:text-sm font-bold font-sans ${changeNum >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ 
                 textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
               }}>
                 {changeNum >= 0 ? '↗' : '↘'} {formatPercentage(TokenHelpers.getPriceChange(token), false)}
@@ -515,8 +515,8 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
         {trendingTokens.length > 0 && (
           <div className="mb-16">
             
-            {/* PREMIUM GRID LAYOUT */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {/* PREMIUM GRID LAYOUT - 2 cols on mobile for better space usage */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
               {trendingTokens.map((token, index) => (
                 <HottestTokenCard key={token.contractAddress} token={token} index={index} backContent={backContent} />
               ))}

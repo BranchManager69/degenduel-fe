@@ -57,6 +57,20 @@ export const ContestCard: React.FC<ContestCardProps> = ({
     }
   }
 
+  // Debug logging for free cancelled contests with "0"
+  if (Number(contest.entry_fee) === 0 && displayStatus === "cancelled") {
+    console.log('[CONTEST CARD DEBUG] Free cancelled contest data:', {
+      id: contest.id,
+      name: contest.name,
+      prize_pool: contest.prize_pool,
+      current_prize_pool: contest.current_prize_pool,
+      total_prize_pool: contest.total_prize_pool,
+      entry_fee: contest.entry_fee,
+      displayStatus,
+      all_fields: contest
+    });
+  }
+
   // Set up image animation - now handled directly in the parallax effect
   useEffect(() => {
     // No longer need to set animateImage since we use the parallax effect
@@ -84,10 +98,6 @@ export const ContestCard: React.FC<ContestCardProps> = ({
     // Reset to center position when not hovering
     setMousePosition({ x: 0, y: 0 });
   };
-
-  // Determine if dual buttons will be shown
-  // const isUpcomingNotEntered = displayStatus === "pending" && !contest.is_participating;
-  // const showDualButtons = isUpcomingNotEntered || displayStatus === "completed";
 
   return (
     <div
@@ -121,7 +131,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
             <motion.div
               initial={{ opacity: 0, filter: "blur(20px)" }}
               animate={{ opacity: 0.15, filter: "blur(10px)" }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 1.6 }}
               className="absolute inset-0 bg-gradient-to-br from-dark-300 to-dark-400"
               onAnimationComplete={() => setImageBlurhash(true)}
             />
@@ -132,7 +142,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
             <motion.div 
               initial={{ opacity: 0 }}
               animate={imageLoaded ? { opacity: 0.15 } : { opacity: 0 }}
-              transition={{ duration: 0.8 }}
+              transition={{ duration: 1.6 }}
               className="absolute inset-0"
               style={{ 
                 // Subtle 3D rotation based on mouse position
@@ -186,6 +196,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
               
               {/* Gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-dark-200 via-dark-200/95 to-transparent" />
+
             </motion.div>
           )}
         </div>
@@ -205,7 +216,11 @@ export const ContestCard: React.FC<ContestCardProps> = ({
       {/* Enhanced Header with Banner Style - Mobile Responsive */}
       <div className="relative px-4 pt-4 pb-14 sm:px-6 sm:pt-6 sm:pb-14 space-y-2">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+          
+          {/* Contest Name and Status */}
           <div className="space-y-0.5 flex-1 min-w-0 mb-2 sm:mb-0">
+
+            {/* Contest Name */}
             <h3 
               className={`font-black text-white pr-2 group-hover:text-brand-300 transition-colors hover:text-brand-400 cursor-pointer text-left font-sans tracking-tight leading-tight ${
                 contest.name.length > 50 ? 'text-sm sm:text-base lg:text-lg' :
@@ -217,8 +232,12 @@ export const ContestCard: React.FC<ContestCardProps> = ({
             >
               {contest.name}
             </h3>
+            
+            {/* Contest Status */}
             <p className="text-sm font-medium text-brand-300 text-left">
-              {hasEnded ? (
+              {hasEnded && displayStatus === "cancelled" ? (
+                "Contest Cancelled"
+              ) : hasEnded ? (
                 "Contest Ended"
               ) : displayStatus === "cancelled" ? (
                 <span className="line-through text-gray-500 italic">
@@ -248,11 +267,10 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                 </>
               )}
             </p>
+
           </div>
 
-          {/* No separate badge needed - now integrated into button */}
-
-          {/* Share button - top right but below status indicator */}
+          {/* Share ("Shill") button - top right but below status indicator */}
           <div className="absolute top-16 right-1 z-30 opacity-70 hover:opacity-100 transition-opacity">
             <button
               onClick={(e) => {
@@ -261,7 +279,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                 navigator.clipboard.writeText(shareUrl);
               }}
               className="p-1.5 text-brand-300 hover:text-brand-400 transition-colors"
-              title="Share contest"
+              title="Shill"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
@@ -274,6 +292,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
             {/* Live Indicator - Edge corner effect */}
             {displayStatus === "active" && (
               <div className="relative overflow-hidden">
+                
                 {/* Corner triangle background */}
                 <div className="w-0 h-0 border-l-[70px] border-l-transparent border-t-[70px] border-t-green-500/50"></div>
                 
@@ -287,31 +306,33 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                 <div className="absolute top-2 right-2 transform rotate-45 origin-center">
                   <span className="text-[13px] font-black text-green-300 uppercase tracking-wider drop-shadow-[0_2px_6px_rgba(34,197,94,0.8)]">LIVE</span>
                 </div>
+
               </div>
             )}
             
             {/* Upcoming Indicator - Edge corner effect */}
             {displayStatus === "pending" && (
               <div className="relative overflow-hidden">
+
                 {/* Corner triangle background */}
                 <div className="w-0 h-0 border-l-[70px] border-l-transparent border-t-[70px] border-t-blue-500/50"></div>
                 
                 {/* Animated glow effect */}
                 <div className="absolute top-0 right-0 w-0 h-0 border-l-[70px] border-l-transparent border-t-[70px] border-t-blue-400/30 group-hover:border-t-blue-400/60 transition-all duration-500"></div>
                 
-                {/* Shimmer animation */}
-                <div className="absolute top-0 right-0 w-0 h-0 border-l-[70px] border-l-transparent border-t-[70px] border-t-blue-300/20 animate-shimmer"></div>
                 
                 {/* Status text positioned in corner */}
                 <div className="absolute top-2 right-2 transform rotate-45 origin-center">
                   <span className="text-[13px] font-black text-blue-300 uppercase tracking-wider drop-shadow-[0_2px_6px_rgba(59,130,246,0.8)]">SOON</span>
                 </div>
+
               </div>
             )}
             
             {/* Completed Indicator - Edge corner effect */}
             {displayStatus === "completed" && (
               <div className="relative overflow-hidden">
+
                 {/* Corner triangle background */}
                 <div className="w-0 h-0 border-l-[70px] border-l-transparent border-t-[70px] border-t-gray-500/50"></div>
                 
@@ -325,14 +346,16 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                 <div className="absolute top-2 right-2 transform rotate-45 origin-center">
                   <span className="text-[13px] font-black text-gray-300 uppercase tracking-wider drop-shadow-[0_2px_6px_rgba(156,163,175,0.8)]">DONE</span>
                 </div>
+
               </div>
             )}
           </div>
+
         </div>
 
         {/* Contest Description - aligned to top - Mobile Responsive */}
         <div className="relative py-0 flex flex-col justify-start min-h-[2.5rem] sm:min-h-[3rem]">
-          {displayStatus === "cancelled" && contest.cancellation_reason ? (
+          {displayStatus === "cancelled" ? (
             <div className="relative h-full w-full overflow-hidden">
               {/* More compact cancellation stamp */}
               <motion.div 
@@ -389,8 +412,9 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                       transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
                     >
                       <span className="font-semibold mr-1 uppercase">REASON:</span>
-                      {contest.cancellation_reason.charAt(0).toUpperCase() + 
-                       contest.cancellation_reason.slice(1).toLowerCase()}
+                      {contest.cancellation_reason 
+                        ? contest.cancellation_reason.charAt(0).toUpperCase() + contest.cancellation_reason.slice(1).toLowerCase()
+                        : "No reason provided"}
                     </motion.div>
                   </div>
                   
@@ -413,7 +437,9 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                       transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 3 }}
                     />
                   </motion.div>
+
                 </motion.div>
+
               </motion.div>
               
               {/* Original description more visible behind */}
@@ -423,6 +449,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
               >
                 {contest.description || "No description available"}
               </p>
+
             </div>
           ) : (
             <p
@@ -435,141 +462,201 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           )}
         </div>
 
-        {/* Entry Fee and Prize Pool - Clean Typography Layout */}
-        <div className="space-y-4 mt-2 mb-3">
-          {/* Entry Fee */}
-          <div className="flex items-baseline justify-between">
-            <span className="text-xs font-medium text-blue-300 uppercase tracking-wider">Entry Fee</span>
-            <div className="flex items-center gap-2">
-              {Number(contest.entry_fee) === 0 ? (
-                <span className="text-xl font-bold text-green-400 uppercase tracking-wide">FREE</span>
-              ) : (
-                <>
-                  <span className={`text-xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-blue-300"} tracking-tight`}>
-                    {formatCurrency(Number(contest.entry_fee)).replace(' SOL', '')}
-                  </span>
-                  <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-5 h-5" />
-                </>
-              )}
-            </div>
-          </div>
-          
-          {/* Prize Pool */}
-          <div className="flex items-baseline justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-amber-300 uppercase tracking-wider">Prize Pool</span>
-              {/* Info icon with hover trigger */}
-              {Number(contest.entry_fee) > 0 && (
-                <div className="relative group/tooltip" style={{isolation: 'isolate'}}>
-                  <svg className="w-3 h-3 text-purple-400/70 hover:text-purple-300/90 transition-colors cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                  </svg>
-                  
-                  {/* Tooltip - uses transform to break out of card stacking context */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-200 pointer-events-none" style={{zIndex: 9999, position: 'absolute', transform: 'translateX(-50%) translateY(-100%) translateZ(0)'}}>
-                    <div className="bg-dark-200/95 backdrop-blur-sm border border-brand-500/20 rounded-lg px-3 py-2 text-xs text-gray-300 whitespace-nowrap shadow-2xl">
-                      <div className="relative">
-                        <span className="block font-medium text-brand-300 mb-1">Maximum Prize Pool</span>
-                        <span className="block">with a full roster of competitors.</span>
-                        <span className="block">The more players, the bigger the rewards!</span>
-                      </div>
-                      {/* Arrow pointing down */}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
-                        <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-dark-200/95"></div>
-                        <div className="absolute -top-[7px] -left-[6px] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-brand-500/20"></div>
-                      </div>
+        {/* Prize Pool Thermometer - All-in-One Visualization */}
+        <div className="relative bg-dark-300/30 rounded-lg p-4 mt-2 mb-3 border border-dark-400/50 overflow-hidden">
+          {Number(contest.entry_fee) === 0 ? (
+            /* For FREE contests - matching paid contest layout */
+            <div className="space-y-3">
+              {/* Top: Entry fee and Max Prize - matching paid layout */}
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500">Entry:</span>
+                  <span className="text-gray-300">0</span>
+                  <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                  <span className="text-xs font-bold text-green-400 uppercase ml-1">FREE</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {contest.prize_pool && Number(contest.prize_pool) > 0 ? (
+                    <>
+                      <span className="text-amber-300/60">Prize Pool:</span>
+                      <span className="font-bold text-amber-300">
+                        {formatCurrency(Number(contest.prize_pool)).replace(' SOL', '')}
+                      </span>
+                      <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                    </>
+                  ) : (
+                    <span className="text-xs text-gray-500">Bragging rights only</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Thermometer Container - participant progress */}
+              <div className="relative h-12 bg-dark-500/40 rounded-lg overflow-hidden border border-white/10">
+                {/* Background gradient */}
+                <div className={`absolute inset-0 ${
+                  displayStatus === "cancelled"
+                    ? "bg-gradient-to-r from-red-900/20 via-red-800/20 to-red-700/20"
+                    : "bg-gradient-to-r from-green-900/20 via-green-800/20 to-green-700/20"
+                }`}></div>
+                
+                {/* Filled portion representing participants */}
+                <motion.div
+                  className={`absolute inset-y-0 left-0 ${
+                    displayStatus === "active" 
+                      ? "bg-gradient-to-r from-green-500 via-green-400 to-green-500" 
+                      : displayStatus === "pending"
+                      ? "bg-gradient-to-r from-green-400 via-green-300 to-green-400"
+                      : displayStatus === "cancelled"
+                      ? "bg-gradient-to-r from-red-500 via-red-400 to-red-500"
+                      : "bg-gradient-to-r from-gray-500 via-gray-400 to-gray-500"
+                  }`}
+                  initial={{ width: "0%" }}
+                  animate={{ 
+                    width: `${Math.min((contest.participant_count / contest.max_participants) * 100, 100)}%` 
+                  }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                >
+                  {/* Shimmer effect for active contests */}
+                  {displayStatus === "active" && (
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shimmer"></div>
+                    </div>
+                  )}
+                </motion.div>
+
+                {/* Participant count display */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className={`px-3 py-1 rounded-md ${
+                    contest.participant_count > 0 ? 'bg-dark-900/80 backdrop-blur-sm' : ''
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm ${displayStatus === "cancelled" ? "text-red-400" : "text-gray-100"}`}>
+                        {contest.participant_count}/{contest.max_participants} players
+                      </span>
+                      {contest.participant_count === contest.max_participants && (
+                        <span className="text-xs font-bold text-green-400 uppercase ml-2">FULL!</span>
+                      )}
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Visual multiplier - now on the left and subtle */}
-              {displayStatus !== "cancelled" && Number(contest.entry_fee) > 0 && (
-                <span className="text-sm text-amber-500/60 mr-1">
-                  ({contest.max_participants}x)
-                </span>
-              )}
-              <span className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-amber-300"} tracking-tight`}>
-                {formatCurrency(
-                  Number(contest.entry_fee) > 0 
-                    ? Number(contest.entry_fee) * contest.max_participants
-                    : Number(contest.prize_pool || "0")
-                ).replace(' SOL', '')}
-              </span>
-              <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
 
-        {/* Players Progress with enhanced styling */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Competition</span>
-            <div className="flex-1 h-px bg-gradient-to-r from-gray-400/30 to-transparent"></div>
-          </div>
-          
-          {/* Enhanced Progress Bar with Text Inside */}
-          <div className={`relative h-7 rounded-full overflow-hidden group border backdrop-blur-sm ${
-            displayStatus === "cancelled" 
-              ? "bg-gray-900/40 border-gray-500/30" 
-              : displayStatus === "active"
-              ? "bg-gray-900/40 border-green-500/30"
-              : displayStatus === "pending"
-              ? "bg-gray-900/40 border-blue-500/30"
-              : displayStatus === "completed"
-              ? "bg-gray-900/40 border-gray-500/30"
-              : "bg-gray-900/40 border-gray-500/30"
-          }`}>
-            {/* Background with inner shadow */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-gray-900/80 to-black/60 rounded-full">
-              <div className="absolute inset-0 shadow-inner rounded-full"></div>
+                {/* Scale markers */}
+                <div className="absolute inset-0 flex justify-between px-1">
+                  {[...Array(10)].map((_, i) => (
+                    <div key={i} className="w-px h-full bg-black/10"></div>
+                  ))}
+                </div>
+              </div>
             </div>
-            
-            {/* Progress fill */}
-            <div
-              className={`absolute inset-0 rounded-full transition-all duration-500 ease-out ${
-                displayStatus === "cancelled" 
-                  ? "bg-gray-500/60" 
-                  : displayStatus === "active"
-                  ? "bg-gradient-to-r from-green-600/90 via-green-500 to-green-600/90"
-                  : displayStatus === "pending"
-                  ? "bg-gradient-to-r from-blue-600/90 via-blue-500 to-blue-600/90"
-                  : displayStatus === "completed"
-                  ? "bg-gradient-to-r from-gray-600/90 via-gray-500 to-gray-600/90"
-                  : "bg-gradient-to-r from-gray-500/90 via-gray-400 to-gray-500/90"
-              }`}
-              style={{
-                width: `${(contest.participant_count / contest.max_participants) * 100}%`,
-              }}
-            >
-              {/* Animated shine on progress bar */}
-              {displayStatus !== "cancelled" && (
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 rounded-full"></div>
-              )}
-            </div>
-            
-            {/* Text inside progress bar */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className={`text-sm font-bold tracking-wide drop-shadow-lg ${displayStatus === "cancelled" ? "text-gray-400" : "text-white"}`} style={{textShadow: '1px 0 0 black, -1px 0 0 black, 0 1px 0 black, 0 -1px 0 black'}}>
-                {contest.participant_count}/{contest.max_participants}
-              </span>
-            </div>
-          </div>
-          
-          {/* Status indicator - only for special statuses */}
-          {(contest.participant_count === contest.max_participants || contest.participant_count > contest.max_participants * 0.8) && (
-            <div className="text-center">
-              {contest.participant_count === contest.max_participants ? (
-                <span className="text-xs font-bold text-green-400 uppercase tracking-wide">Contest Full</span>
-              ) : (
-                <span className="text-xs font-bold text-yellow-400 uppercase tracking-wide">Filling Fast</span>
-              )}
+          ) : (
+            /* For PAID contests - thermometer visualization */
+            <div className="space-y-3">
+              {/* Top: Max Prize Pool */}
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500">Entry:</span>
+                  <span className="text-gray-300">{formatCurrency(Number(contest.entry_fee)).replace(' SOL', '')}</span>
+                  <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-amber-300/60">Max Prize:</span>
+                  <span className="font-bold text-amber-300">
+                    {formatCurrency(Number(contest.entry_fee) * contest.max_participants).replace(' SOL', '')}
+                  </span>
+                  <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                </div>
+              </div>
+
+              {/* Thermometer Container */}
+              <div className="relative h-12 bg-dark-500/40 rounded-lg overflow-hidden border border-white/10">
+                {/* Background gradient */}
+                <div className={`absolute inset-0 ${
+                  displayStatus === "cancelled"
+                    ? "bg-gradient-to-r from-red-900/20 via-red-800/20 to-red-700/20"
+                    : "bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-amber-900/20"
+                }`}></div>
+                
+                {/* Filled portion representing current prize pool */}
+                <motion.div
+                  className={`absolute inset-y-0 left-0 ${
+                    displayStatus === "active" 
+                      ? "bg-gradient-to-r from-blue-500 via-purple-500 to-amber-500" 
+                      : displayStatus === "pending"
+                      ? "bg-gradient-to-r from-blue-400 via-purple-400 to-amber-400"
+                      : displayStatus === "cancelled"
+                      ? "bg-gradient-to-r from-red-500 via-red-400 to-red-500"
+                      : "bg-gradient-to-r from-gray-500 via-gray-400 to-gray-500"
+                  }`}
+                  initial={{ width: "0%" }}
+                  animate={{ 
+                    width: `${Math.min((contest.participant_count / contest.max_participants) * 100, 100)}%` 
+                  }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                >
+                  {/* Shimmer effect for active contests */}
+                  {displayStatus === "active" && (
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shimmer"></div>
+                    </div>
+                  )}
+                </motion.div>
+
+                {/* Current prize pool display */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className={`px-3 py-1 rounded-md ${
+                    contest.participant_count > 0 ? 'bg-dark-900/80 backdrop-blur-sm' : ''
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      {contest.participant_count > 0 && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <span className={`text-lg font-bold ${displayStatus === "cancelled" ? "text-red-400" : "text-white"}`}>
+                              {formatCurrency(Number(contest.entry_fee) * contest.participant_count).replace(' SOL', '')}
+                            </span>
+                            <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-4 h-4" />
+                          </div>
+                          <span className={`text-xs ${displayStatus === "cancelled" ? "text-red-400" : "text-gray-400"}`}>
+                            ({contest.participant_count}/{contest.max_participants})
+                          </span>
+                        </>
+                      )}
+                      {contest.participant_count === 0 && (
+                        <span className={`text-sm ${displayStatus === "cancelled" ? "text-red-400" : "text-gray-500"}`}>
+                          {displayStatus === "cancelled" ? 
+                            `0/${contest.max_participants} players` : 
+                            `${contest.max_participants} spots available`
+                          }
+                        </span>
+                      )}
+                      {contest.participant_count === contest.max_participants && (
+                        <span className="text-xs font-bold text-green-400 uppercase ml-2">FULL!</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scale markers */}
+                <div className="absolute inset-0 flex justify-between px-1">
+                  {[...Array(10)].map((_, i) => (
+                    <div key={i} className="w-px h-full bg-black/10"></div>
+                  ))}
+                </div>
+              </div>
+
             </div>
           )}
         </div>
 
-        {/* Action button - now full width */}
+        {/* Animation for shimmer effect */}
+        <style>{`
+          @keyframes shimmer {
+            0% { transform: translateX(-100%) skewX(-12deg); }
+            100% { transform: translateX(200%) skewX(-12deg); }
+          }
+          .animate-shimmer {
+            animation: shimmer 2s infinite;
+          }
+        `}</style>
       </div>
 
       {/* Edge-to-edge button container */}
@@ -585,6 +672,8 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           isParticipating={contest.is_participating}
         />
       </div>
-    </div>
+    </div> 
   );
 };
+
+export default ContestCard;
