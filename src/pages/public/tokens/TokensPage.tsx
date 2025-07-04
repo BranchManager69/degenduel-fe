@@ -9,12 +9,11 @@ import { AuthDebugPanel } from "../../../components/debug";
 import { TokenErrorBoundary } from "../../../components/shared/TokenErrorBoundary";
 import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
 import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeTokensGrid";
-import { OptimizedTokensHeader } from "../../../components/tokens-list/OptimizedTokensHeader";
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
 import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
 import { useStore } from "../../../store/useStore";
-import { SearchToken, Token, TokenHelpers, TokenResponseMetadata } from "../../../types";
+import { SearchToken, Token, TokenHelpers } from "../../../types";
 import { resetToDefaultMeta } from "../../../utils/ogImageUtils";
 
 
@@ -50,18 +49,11 @@ export const TokensPage: React.FC = () => {
     tokens: allTokens,
     isLoading,
     error,
-    lastUpdate,
     pagination,
     getTokenBySymbol,
     refresh
   } = useStandardizedTokenData("all", "marketCap", {}, 5, 3000); // Load all tokens for accurate sorting
   
-  // Token metadata for compatibility
-  const metadata = useMemo<TokenResponseMetadata>(() => ({
-    timestamp: lastUpdate?.toISOString() || new Date().toISOString(),
-    _cached: false,
-    _stale: false,
-  }), [lastUpdate]);
 
   // Token selection handler - removed to enable card flipping
   // Cards will now flip instead of navigating
