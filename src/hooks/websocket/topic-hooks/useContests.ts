@@ -140,7 +140,8 @@ export function useContests(userId?: string) {
             min_participants: contest.min_participants,
             max_participants: contest.max_participants,
             cancellation_reason: contest.cancellation_reason, // Include cancellation_reason
-            cancelled_at: contest.cancelled_at // Also include cancelled_at for completeness
+            cancelled_at: contest.cancelled_at, // Also include cancelled_at for completeness
+            image_url: contest.image_url // Include image_url from WebSocket data
           }));
 
           setState(prevState => {

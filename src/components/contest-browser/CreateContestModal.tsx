@@ -55,6 +55,8 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [showAdvancedOptions, setShowAdvancedOptions] = React.useState(false);
+  const [isSelecting, setIsSelecting] = React.useState(false);
+  const modalRef = React.useRef<HTMLDivElement>(null);
   
   // Get user data and DUEL token balance
   const user = useStore(state => state.user);
@@ -569,8 +571,39 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   return createPortal(
     <div className="fixed inset-0 z-50">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="fixed inset-0 flex items-end sm:items-center justify-center" onClick={onClose}>
-        <div className="bg-dark-200/80 backdrop-blur-lg rounded-t-2xl sm:rounded-lg w-full sm:max-w-lg lg:max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[90vh] border border-dark-100/20 relative group overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div 
+        className="fixed inset-0 flex items-end sm:items-center justify-center" 
+        onClick={(e) => {
+          // Don't close if we're selecting text
+          if (isSelecting) {
+            setIsSelecting(false);
+            return;
+          }
+          // Only close if clicking on the backdrop itself, not its children
+          if (e.target === e.currentTarget) {
+            onClose();
+          }
+        }}
+        onMouseUp={() => {
+          // Reset selection state after mouse up
+          if (isSelecting) {
+            setTimeout(() => setIsSelecting(false), 100);
+          }
+        }}
+      >
+        <div 
+          ref={modalRef}
+          className="bg-dark-200/80 backdrop-blur-lg rounded-t-2xl sm:rounded-lg w-full sm:max-w-lg lg:max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[90vh] border border-dark-100/20 relative group overflow-hidden" 
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={() => {
+            // Track if user starts selecting text inside modal
+            const selection = window.getSelection();
+            if (selection && selection.toString().length === 0) {
+              // Starting a new selection
+              setIsSelecting(true);
+            }
+          }}
+        >
           {/* Shimmer effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 pointer-events-none" />
           

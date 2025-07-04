@@ -33,7 +33,7 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
     <>
       <button
         onClick={handleOpenModal}
-        className={`group relative px-4 py-2 bg-gradient-to-br from-amber-950/90 via-orange-950/80 to-yellow-950/90 border-2 border-amber-700/40 rounded-xl hover:border-amber-500/80 hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300 overflow-hidden backdrop-blur-sm ${className}`}
+        className={`group relative px-4 py-2 bg-gradient-to-br from-amber-950/90 via-orange-950/80 to-yellow-950/90 border-2 border-amber-700/40 rounded-xl hover:border-amber-500/80 hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300 overflow-hidden backdrop-blur-sm sm:scale-100 scale-75 ${className}`}
       >
         {/* Dynamic battle arena background */}
         <div className="absolute inset-0">

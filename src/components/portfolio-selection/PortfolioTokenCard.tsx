@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Token, TokenHelpers } from "../../types";
 import { formatNumber, formatPercentage, formatTokenPrice } from "../../utils/format";
+import { IsolatedAnimatedImage } from "./IsolatedAnimatedImage";
 
 interface PortfolioTokenCardProps {
   token: Token;
@@ -94,14 +95,9 @@ export const PortfolioTokenCard: React.FC<PortfolioTokenCardProps> = ({
           <div className="absolute inset-0 overflow-hidden">
             {(token.header_image_url) ? (
               <>
-                <img 
+                <IsolatedAnimatedImage 
                   src={token.header_image_url || ''} 
                   alt={token.symbol}
-                  className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                  style={{ 
-                    objectPosition: 'center center',
-                    animation: 'bannerScan 60s ease-in-out infinite'
-                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/20 transition-all duration-500" />
               </>

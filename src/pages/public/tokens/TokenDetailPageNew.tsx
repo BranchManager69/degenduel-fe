@@ -34,6 +34,9 @@ export const TokenDetailPageNew: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [wsError, setWsError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [, forceUpdate] = useState(0); // Force re-render for timer
+  const [updateCount, setUpdateCount] = useState(0); // Count WebSocket updates
+  const [updateSource, setUpdateSource] = useState<string>(""); // Track where updates come from
 
   // Fetch single token directly from the new efficient endpoint!
   useEffect(() => {
@@ -54,6 +57,8 @@ export const TokenDetailPageNew: React.FC = () => {
         const data = await response.json();
         console.log('[TokenDetailPageNew] Single token loaded:', data);
         setToken(data);
+        setLastUpdate(new Date());
+        setUpdateSource("REST API (initial load)");
       } catch (err: any) {
         console.error('[TokenDetailPageNew] Failed to fetch token:', err);
         setWsError(err.message);
@@ -97,6 +102,8 @@ export const TokenDetailPageNew: React.FC = () => {
           liquidity: parseFloat(updatedToken.liquidity || '0')
         }));
         setLastUpdate(new Date());
+        setUpdateCount(prev => prev + 1);
+        setUpdateSource(`WebSocket: token:price:${address}`);
         return;
       }
     }
@@ -120,6 +127,8 @@ export const TokenDetailPageNew: React.FC = () => {
             liquidity: parseFloat(updatedToken.liquidity || '0')
           }));
           setLastUpdate(new Date());
+          setUpdateCount(prev => prev + 1);
+          setUpdateSource("WebSocket: token:price (batch)");
         }
       }
       return;
@@ -137,6 +146,8 @@ export const TokenDetailPageNew: React.FC = () => {
           console.log('[TokenDetailPageNew] Received general market update for token');
           setToken(updatedToken);
           setLastUpdate(new Date());
+          setUpdateCount(prev => prev + 1);
+          setUpdateSource("WebSocket: market-data");
         }
       }
     }
@@ -163,12 +174,22 @@ export const TokenDetailPageNew: React.FC = () => {
     // Also subscribe to the general token:price channel to see if we get anything
     console.log(`[TokenDetailPageNew] 🔔 ALSO subscribing to general token:price channel`);
     ws.subscribe(['token:price']);
+    
 
     return () => {
       unregister();
       ws.unsubscribe([tokenTopic]);
     };
   }, [ws.isConnected, address, handleTokenUpdate]);
+
+  // Timer to update the "X seconds ago" display
+  useEffect(() => {
+    const timer = setInterval(() => {
+      forceUpdate(prev => prev + 1);
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!address) {
@@ -316,9 +337,15 @@ export const TokenDetailPageNew: React.FC = () => {
                 </div>
                 
                 {/* Real-time indicator */}
-                <div className="flex items-center gap-2 mt-2 text-sm text-gray-400">
-                  <div className={`w-2 h-2 rounded-full ${ws.isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} />
-                  {ws.isConnected ? 'Live updates' : 'Connecting...'} • {lastUpdate ? `Updated ${Math.floor((Date.now() - lastUpdate.getTime()) / 1000)}s ago` : 'Loading...'}
+                <div className="flex flex-col gap-1 mt-2 text-sm text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${ws.isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} />
+                    {ws.isConnected ? 'Live updates' : 'Connecting...'} • {lastUpdate ? `Updated ${Math.floor((Date.now() - lastUpdate.getTime()) / 1000)}s ago` : 'Loading...'}
+                  </div>
+                  {/* Debug info */}
+                  <div className="text-xs">
+                    Source: {updateSource || "None yet"} | WebSocket updates: {updateCount}
+                  </div>
                 </div>
 
                 {/* Trading Actions */}

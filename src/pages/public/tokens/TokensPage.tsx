@@ -2,8 +2,9 @@
 
 import { RefreshCw } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { TokenSearch } from "../../../components/common/TokenSearch";
+import { ServerCrashDisplay } from "../../../components/common/ServerCrashDisplay";
 import { AuthDebugPanel } from "../../../components/debug";
 import { TokenErrorBoundary } from "../../../components/shared/TokenErrorBoundary";
 import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
@@ -314,44 +315,57 @@ export const TokensPage: React.FC = () => {
         </>
       )}
 
-      {/* Header */}
+      {/* Header Section matching contests page */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <OptimizedTokensHeader
-          metadata={metadata}
-        />
-        
-        
-        {/* Simplified Controls */}
-        <div className="mt-6 flex justify-center relative">
-          <div className="flex items-center gap-3">
-            <TokenSearch
-              onSelectToken={handleTokenSearchSelect}
-              placeholder="Search tokens..."
-              variant="modern"
-              showPriceData={false}
-              className="w-64"
-            />
-            <select
-              value={sortField}
-              onChange={(e) => handleSortChange(e.target.value, sortDirection)}
-              className="px-3 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white text-sm focus:outline-none focus:border-brand-400"
-            >
-              <option value="degenduelScore">🔥 Trending</option>
-              <option value="marketCap">Market Cap</option>
-              <option value="volume">Volume</option>
-              <option value="change">24h Change</option>
-              <option value="price">Price</option>
-            </select>
-            <button
-              onClick={handleRefresh}
-              className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-dark-200/50 transition-colors"
-              title="Refresh"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-          </div>
+        {/* Breadcrumb navigation */}
+        <div className="mb-4 flex items-center text-sm text-gray-400">
+          <Link to="/" className="hover:text-brand-400 transition-colors">
+            Home
+          </Link>
+          <span className="mx-2">›</span>
+          <span className="text-gray-300">Tokens</span>
         </div>
-        
+
+        {/* Enhanced Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group">
+            <span className="relative z-10 group-hover:animate-glitch">
+              Browse Tokens
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
+          </h1>
+          
+          {/* Controls moved to header - only show if not error state */}
+          {!error && (
+            <div className="flex items-center gap-3">
+              <TokenSearch
+                onSelectToken={handleTokenSearchSelect}
+                placeholder="Search tokens..."
+                variant="modern"
+                showPriceData={false}
+                className="w-64"
+              />
+              <select
+                value={sortField}
+                onChange={(e) => handleSortChange(e.target.value, sortDirection)}
+                className="px-3 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white text-sm focus:outline-none focus:border-brand-400"
+              >
+                <option value="degenduelScore">🔥 Trending</option>
+                <option value="marketCap">Market Cap</option>
+                <option value="volume">Volume</option>
+                <option value="change">24h Change</option>
+                <option value="price">Price</option>
+              </select>
+              <button
+                onClick={handleRefresh}
+                className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-dark-200/50 transition-colors"
+                title="Refresh"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -370,15 +384,26 @@ export const TokensPage: React.FC = () => {
               </div>
             </div>
           ) : error ? (
-            // Error State
-            <Card className="bg-dark-300/50 backdrop-blur-sm border-red-500/20">
-              <CardContent className="p-8 text-center">
-                <p className="text-red-400 mb-4">{error}</p>
-                <Button onClick={handleRefresh} variant="outline">
-                  Try Again
-                </Button>
-              </CardContent>
-            </Card>
+            // Error State - Show server crash animation for WebSocket errors
+            error.includes("WebSocket") || error.includes("1006") ? (
+              <div className="py-12">
+                <ServerCrashDisplay 
+                  error={error}
+                  onRetry={handleRefresh}
+                  isRetrying={isLoading}
+                />
+              </div>
+            ) : (
+              // Regular error display for other errors
+              <Card className="bg-dark-300/50 backdrop-blur-sm border-red-500/20">
+                <CardContent className="p-8 text-center">
+                  <p className="text-red-400 mb-4">{error}</p>
+                  <Button onClick={handleRefresh} variant="outline">
+                    Try Again
+                  </Button>
+                </CardContent>
+              </Card>
+            )
           ) : visibleTokens.length === 0 ? (
             // No Results State
             <Card className="bg-dark-300/50 backdrop-blur-sm border-dark-400">

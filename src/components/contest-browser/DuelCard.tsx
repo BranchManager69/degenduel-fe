@@ -121,8 +121,14 @@ export const DuelCard: React.FC<DuelCardProps> = ({ contest, onClick }) => {
           : "border-red-500/60 hover:border-red-400/80 shadow-red-500/20"
       }`}
     >
-      {/* Background energy effect */}
-      <div className="absolute inset-0 opacity-30">
+      {/* Background with cybergrid fallback */}
+      <div className="absolute inset-0 overflow-hidden">
+        <img 
+          src="/assets/media/banners/concepts/concept0_cybergrid.png"
+          alt="Background"
+          className="w-full h-full object-cover opacity-20"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-dark-200/60 via-dark-200/85 to-dark-200/98" />
         <div className="absolute inset-0 bg-gradient-to-r from-purple-900/20 via-transparent to-blue-900/20"></div>
         {displayStatus === "active" && (
           <div className="absolute inset-0 bg-gradient-to-r from-green-900/10 via-transparent to-green-900/10 animate-pulse"></div>

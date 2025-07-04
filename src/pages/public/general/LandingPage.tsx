@@ -68,12 +68,17 @@ import { StandaloneTokenCard } from "../../../components/tokens-list/StandaloneT
 
 // Import standardized token data hook for live token updates
 import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
+// Import specific tokens hook for performance
+import { useSpecificTokens } from "../../../hooks/data/useSpecificTokens";
 
 // Import contest creation buttons
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
 import { ChallengeFriendButton } from "../../../components/contest-browser/ChallengeFriendButton";
 import { SpectateButton } from "../../../components/contest-browser/SpectateButton";
 import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
+
+// Import ServerCrashDisplay for error handling
+import { ServerCrashDisplay } from "../../../components/common/ServerCrashDisplay";
 
 // NOT READY YET:
 
@@ -92,28 +97,35 @@ export const LandingPage: React.FC = () => {
   // Countdown completion state
   const [isCountdownComplete, setIsCountdownComplete] = useState(false);
 
-  // Get live token data via WebSocket
-  const { tokens: allTokens, isLoading: tokensLoading, error: tokensError } = useStandardizedTokenData("all", "marketCap", {}, 5, 3000);
+  // PERFORMANCE FIX: Only fetch the specific tokens we need (DUEL and SOL)
+  // This prevents subscribing to 2090 WebSocket topics
+  const DUEL_ADDRESS = 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX';
+  const SOL_ADDRESS = 'So11111111111111111111111111111111111111112';
+  
+  const { 
+    tokens: specificTokens, 
+    isLoading: tokensLoading, 
+    error: tokensError 
+  } = useSpecificTokens([DUEL_ADDRESS, SOL_ADDRESS], { enableLiveUpdates: true });
   
   // Debug log to see what's happening
   useEffect(() => {
-    console.log('[LandingPage] Token data:', {
-      tokensCount: allTokens.length,
+    console.log('[LandingPage] Specific token data:', {
+      tokensCount: specificTokens.length,
       isLoading: tokensLoading,
       error: tokensError,
-      hasDuel: allTokens.some(t => t.symbol === 'DUEL'),
-      hasSol: allTokens.some(t => t.symbol === 'SOL')
+      tokens: specificTokens.map(t => ({ symbol: t.symbol, address: t.address }))
     });
-  }, [allTokens, tokensLoading, tokensError]);
+  }, [specificTokens, tokensLoading, tokensError]);
   
-  // Extract DUEL and SOL tokens from live data by address (not symbol!)
-  const duelToken = allTokens.find(t => 
-    t.address === 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX' || 
-    t.contractAddress === 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX'
+  // Extract DUEL and SOL tokens from specific data
+  const duelToken = specificTokens.find(t => 
+    t.address === DUEL_ADDRESS || 
+    t.contractAddress === DUEL_ADDRESS
   ) || null;
-  const solTokenRaw = allTokens.find(t => 
-    t.address === 'So11111111111111111111111111111111111111112' || 
-    t.contractAddress === 'So11111111111111111111111111111111111111112'
+  const solTokenRaw = specificTokens.find(t => 
+    t.address === SOL_ADDRESS || 
+    t.contractAddress === SOL_ADDRESS
   ) || null;
   const solToken = solTokenRaw ? {
     ...solTokenRaw,
@@ -727,39 +739,53 @@ export const LandingPage: React.FC = () => {
 
                 {/* DUEL Token & CTA Section - Side by side layout */}
                 <div className="mt-24 md:mt-32 mb-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto items-center">
-                    {/* DUEL Token Card */}
-                    <motion.div 
-                      className="flex justify-center"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.6, delay: 0.3 }}
+                  {/* Show ServerCrashDisplay if tokens error (server down) - but NOT if we're already showing the contest error */}
+                  {tokensError && !error ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6 }}
                     >
-                      {duelToken ? (
-                        <div className="w-full max-w-lg mx-auto">
-                          <StandaloneTokenCard token={duelToken} />
-                        </div>
-                      ) : (
-                        <div className="w-full max-w-lg mx-auto aspect-[7/3] bg-dark-200/50 rounded-2xl animate-pulse" />
-                      )}
+                      <ServerCrashDisplay 
+                        error={tokensError}
+                        onRetry={() => window.location.reload()}
+                      />
                     </motion.div>
+                  ) : !tokensError ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto items-center">
+                      {/* DUEL Token Card */}
+                      <motion.div 
+                        className="flex justify-center"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.6, delay: 0.3 }}
+                      >
+                        {duelToken ? (
+                          <div className="w-full max-w-lg mx-auto">
+                            <StandaloneTokenCard token={duelToken} />
+                          </div>
+                        ) : (
+                          <div className="w-full max-w-lg mx-auto aspect-[7/3] bg-dark-200/50 rounded-2xl animate-pulse" />
+                        )}
+                      </motion.div>
 
-                    {/* SOL Token Card */}
-                    <motion.div 
-                      className="flex justify-center"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.6, delay: 0.4 }}
-                    >
-                      {solToken ? (
-                        <div className="w-full max-w-lg mx-auto">
-                          <StandaloneTokenCard token={solToken} />
-                        </div>
-                      ) : (
-                        <div className="w-full max-w-lg mx-auto aspect-[7/3] bg-dark-200/50 rounded-2xl animate-pulse" />
-                      )}
-                    </motion.div>
-                  </div>
+                      {/* SOL Token Card */}
+                      <motion.div 
+                        className="flex justify-center"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.6, delay: 0.4 }}
+                      >
+                        {solToken ? (
+                          <div className="w-full max-w-lg mx-auto">
+                            <StandaloneTokenCard token={solToken} />
+                          </div>
+                        ) : (
+                          <div className="w-full max-w-lg mx-auto aspect-[7/3] bg-dark-200/50 rounded-2xl animate-pulse" />
+                        )}
+                      </motion.div>
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Crown Contest Section - Extracted from contests */}
@@ -841,53 +867,42 @@ export const LandingPage: React.FC = () => {
                   ) : error ? (
                     <div className="relative">
                       <div className="w-full max-w-none sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
-                        <div className="bg-dark-200/70 backdrop-blur-sm rounded-xl p-4 border border-dark-300/60 shadow-lg">
-                          <div className="text-center py-4">
-                            <div className="text-red-400 mb-2">
-                              {error}
+                        <ServerCrashDisplay 
+                          error={error}
+                          onRetry={handleManualRefresh}
+                          isRetrying={loading}
+                        />
+                        
+                        {/* Debug info (admin only) */}
+                        {isAdministrator && (
+                          <details className="mt-3 text-left bg-dark-300/50 p-3 rounded-lg border border-gray-700/50 text-xs max-w-2xl mx-auto">
+                            <summary className="text-gray-400 cursor-pointer">Debug Information</summary>
+                            
+                            {/* Debug info */}
+                            <div className="mt-2 text-gray-300 space-y-1 font-mono pl-2">
+                             
+                              {/* Last fetch attempt */}
+                              <div>Last Fetch Attempt:
+                                <span className="text-blue-400">
+                                  {contestDebugInfo.lastFetchAttempt}
+                                </span>
+                              </div>
+                              
+                              {/* Error details */}
+                              <div>Error Details:</div>
+                              <pre className="text-red-400 whitespace-pre-wrap ml-2 text-xs bg-dark-400/30 p-2 rounded-md">
+                                {contestDebugInfo.errorDetails || "No specific error details available"}
+                              </pre>
+
+                              {/* API response */}
+                              <div>API Response:</div>
+                              <pre className="text-gray-400 whitespace-pre-wrap ml-2 text-xs bg-dark-400/30 p-2 rounded-md">
+                                {contestDebugInfo.contestApiResponse || "No API response recorded"}
+                              </pre>
+
                             </div>
-                            
-                            {/* Debug info (admin only) */}
-                            {isAdministrator && (
-                              <details className="mt-3 text-left bg-dark-300/50 p-3 rounded-lg border border-gray-700/50 text-xs">
-                                <summary className="text-gray-400 cursor-pointer">Debug Information</summary>
-                                
-                                {/* Debug info */}
-                                <div className="mt-2 text-gray-300 space-y-1 font-mono pl-2">
-                                 
-                                  {/* Last fetch attempt */}
-                                  <div>Last Fetch Attempt:
-                                    <span className="text-blue-400">
-                                      {contestDebugInfo.lastFetchAttempt}
-                                    </span>
-                                  </div>
-                                  
-                                  {/* Error details */}
-                                  <div>Error Details:</div>
-                                  <pre className="text-red-400 whitespace-pre-wrap ml-2 text-xs bg-dark-400/30 p-2 rounded-md">
-                                    {contestDebugInfo.errorDetails || "No specific error details available"}
-                                  </pre>
-
-                                  {/* API response */}
-                                  <div>API Response:</div>
-                                  <pre className="text-gray-400 whitespace-pre-wrap ml-2 text-xs bg-dark-400/30 p-2 rounded-md">
-                                    {contestDebugInfo.contestApiResponse || "No API response recorded"}
-                                  </pre>
-
-                                </div>
-                              </details>
-                            )}
-                            
-                            {/* Retry loading button */}
-                            <button 
-                              onClick={handleManualRefresh}
-                              className="mt-4 px-4 py-2 bg-gradient-to-r from-brand-500 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
-                            >
-                              Retry {wsConnected ? '(WebSocket)' : '(REST API)'}
-                            </button>
-
-                          </div>
-                        </div>
+                          </details>
+                        )}
                       </div>
                     </div>
                   ) : (

@@ -29,6 +29,76 @@ export const formatCurrency = (amount: string | number): string => {
   return `${num.toFixed(2).replace(/\.?0+$/, "")} SOL`;
 };
 
+// Helper: Format SOL values (similar to formatCurrency but specifically for SOL)
+export const formatSOL = (amount: string | number | null | undefined): string => {
+  if (amount === null || amount === undefined) return "-- SOL";
+
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (isNaN(num)) return "0 SOL";
+
+  // For very small amounts (less than 0.01), show all decimal places up to 6
+  if (num < 0.01) {
+    return `${num.toFixed(6).replace(/\.?0+$/, "")} SOL`;
+  }
+
+  // For amounts between 0.01 and 1, show 3 decimal places
+  if (num < 1) {
+    return `${num.toFixed(3).replace(/\.?0+$/, "")} SOL`;
+  }
+
+  // For larger amounts, show 2 decimal places
+  return `${num.toFixed(2).replace(/\.?0+$/, "")} SOL`;
+};
+
+// Helper: Format USD values
+export const formatUSD = (amount: string | number | null | undefined): string => {
+  if (amount === null || amount === undefined) return "--";
+
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (isNaN(num)) return "$0.00";
+
+  // For very small amounts (less than 0.01), show up to 4 decimal places
+  if (num < 0.01) {
+    return `$${num.toFixed(4).replace(/\.?0+$/, "")}`;
+  }
+
+  // For larger amounts, show 2 decimal places with thousand separators
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(num);
+};
+
+// Helper: Format portfolio value with currency preference
+export const formatPortfolioValue = (
+  usdValue: number | null | undefined,
+  solValue: number | null | undefined,
+  preferSOL: boolean = true
+): string => {
+  if (preferSOL && solValue !== null && solValue !== undefined) {
+    return formatSOL(solValue);
+  }
+
+  if (usdValue !== null && usdValue !== undefined) {
+    return formatUSD(usdValue);
+  }
+
+  return "--";
+};
+
+// Helper: Format percentage change
+export const formatPercentage = (percentage: string | number | null | undefined): string => {
+  if (percentage === null || percentage === undefined) return "--";
+
+  const num = typeof percentage === "string" ? parseFloat(percentage) : percentage;
+  if (isNaN(num)) return "0.00%";
+
+  const sign = num >= 0 ? "+" : "";
+  return `${sign}${num.toFixed(2)}%`;
+};
+
 // Helper: Format market cap
 export function formatMarketCap(marketCap: number): string {
   if (marketCap >= 1_000_000_000) {
@@ -102,56 +172,56 @@ export function calculatePortfolioValue(holdings: any[], prices: any): number {
 }
 
 // Helper: Is contest currently underway? (active)
-export function isContestCurrentlyUnderway(contest: { 
-  status: ContestStatus; 
-  start_time?: string; 
-  end_time?: string; 
+export function isContestCurrentlyUnderway(contest: {
+  status: ContestStatus;
+  start_time?: string;
+  end_time?: string;
 }): boolean {
   // If we have timestamp information, use it for more accurate status determination
   if (contest.start_time && contest.end_time) {
     const now = new Date();
     const startTime = new Date(contest.start_time);
     const endTime = new Date(contest.end_time);
-    
+
     const hasStarted = now >= startTime;
     const hasEnded = now >= endTime;
-    
+
     // Contest is truly underway if it has started but not ended, regardless of status field
     // Only respect cancelled status to avoid showing cancelled contests as active
     if (contest.status === "cancelled") {
       return false;
     }
-    
+
     return hasStarted && !hasEnded;
   }
-  
+
   // Fallback to status-only check if no timestamps available
   return contest.status === "active";
 }
 
 // Helper: Is contest joinable? (pending)
-export function isContestJoinable(contest: { 
-  status: ContestStatus; 
-  start_time?: string; 
-  end_time?: string; 
+export function isContestJoinable(contest: {
+  status: ContestStatus;
+  start_time?: string;
+  end_time?: string;
 }): boolean {
   // If we have timestamp information, use it for more accurate status determination
   if (contest.start_time && contest.end_time) {
     const now = new Date();
     const startTime = new Date(contest.start_time);
     const endTime = new Date(contest.end_time);
-    
+
     const hasStarted = now >= startTime;
     const hasEnded = now >= endTime;
-    
+
     // Contest is joinable if it hasn't started yet and isn't cancelled
     if (contest.status === "cancelled") {
       return false;
     }
-    
+
     return !hasStarted && !hasEnded;
   }
-  
+
   // Fallback to status-only check if no timestamps available
   return contest.status === "pending";
 }
@@ -162,47 +232,47 @@ export function isContestCancelled(contest: { status: ContestStatus }): boolean 
 }
 
 // Helper: Is contest completed? (completed and winner(s) resolved)
-export function isContestCompleted(contest: { 
-  status: ContestStatus; 
-  start_time?: string; 
-  end_time?: string; 
+export function isContestCompleted(contest: {
+  status: ContestStatus;
+  start_time?: string;
+  end_time?: string;
 }): boolean {
   // If we have timestamp information, use it for more accurate status determination
   if (contest.start_time && contest.end_time) {
     const now = new Date();
     const endTime = new Date(contest.end_time);
-    
+
     const hasEnded = now >= endTime;
-    
+
     // Contest is completed if it has ended, regardless of status field
     // (unless it was cancelled before completion)
     return hasEnded || contest.status === "completed";
   }
-  
+
   // Fallback to status-only check if no timestamps available
   return contest.status === "completed";
 }
 
 // Helper: Get actual contest status based on timestamps (matching ContestCard logic)
-export function getActualContestStatus(contest: { 
-  status: ContestStatus; 
-  start_time?: string; 
-  end_time?: string; 
+export function getActualContestStatus(contest: {
+  status: ContestStatus;
+  start_time?: string;
+  end_time?: string;
 }): ContestStatus {
   // Always respect cancelled status
   if (contest.status === "cancelled") {
     return "cancelled";
   }
-  
+
   // If we have timestamp information, use it for accurate status determination
   if (contest.start_time && contest.end_time) {
     const now = new Date();
     const startTime = new Date(contest.start_time);
     const endTime = new Date(contest.end_time);
-    
+
     const hasStarted = now >= startTime;
     const hasEnded = now >= endTime;
-    
+
     if (hasEnded) {
       return "completed";
     } else if (hasStarted) {
@@ -211,7 +281,7 @@ export function getActualContestStatus(contest: {
       return "pending";
     }
   }
-  
+
   // Fallback to stored status if no timestamps available
   return contest.status;
 }
