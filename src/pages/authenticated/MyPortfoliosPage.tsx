@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import {
   FaChartPie,
+  FaCoins,
+  FaDollarSign,
   FaFilter,
   FaSortAmountDown,
   FaSortAmountUp,
@@ -21,31 +23,60 @@ import {
 import { SearchInput } from "../../components/ui/SearchInput";
 import { Select } from "../../components/ui/Select";
 import { useUserContests } from "../../hooks/data/legacy/useUserContests";
-import { formatCurrency } from "../../lib/utils";
+import { formatPercentage, formatPortfolioValue, formatSOL, formatUSD } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 
-// Interface for portfolio data
+// Updated interfaces to match new API structure
+interface TokenHolding {
+  contractAddress: string;
+  weight: number;
+  quantity: number | null;
+  valueUSD: number;
+  valueSOL: number | null;
+  name?: string;
+  symbol?: string;
+  price?: number;
+  priceChange?: number;
+  logoUrl?: string;
+}
+
+interface PerformanceMetrics {
+  initialBalanceUSD: number;
+  finalBalanceUSD: number;
+  initialBalanceSOL: number | null;
+  finalBalanceSOL: number | null;
+  pnlUSD: number;
+  pnlSOL: number | null;
+  pnlPercent: number;
+  prizeAmount: string | null;
+  roi: string;
+  ranking?: number;
+}
+
 interface Portfolio {
   contestId: string;
   contestName: string;
   status: "active" | "pending" | "completed" | "cancelled";
   startTime: string;
   endTime: string;
-  tokens: {
-    contractAddress: string;
-    weight: number;
-    name?: string;
-    symbol?: string;
-    price?: number;
-    priceChange?: number;
-    logoUrl?: string;
-  }[];
-  performance?: {
-    value: number;
-    change: number;
-    ranking?: number;
+  portfolioValueUSD: number;
+  portfolioValueSOL: number | null;
+  tokens: TokenHolding[];
+  performance?: PerformanceMetrics;
+  hasPortfolio: boolean;
+}
+
+interface APIResponse {
+  portfolios: any[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
   };
+  sol_price_used: number | null;
+  timestamp: string;
 }
 
 export const MyPortfoliosPage: React.FC = () => {
@@ -60,6 +91,8 @@ export const MyPortfoliosPage: React.FC = () => {
   const [sortBy, setSortBy] = useState("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [preferSOL, setPreferSOL] = useState(true); // Currency display preference
+  const [solPrice, setSolPrice] = useState<number | null>(null);
 
   // This check is redundant since we're already inside AuthenticatedRoute
   // But keep a simpler version just in case
@@ -69,6 +102,57 @@ export const MyPortfoliosPage: React.FC = () => {
     }
   }, [user, navigate]);
 
+  // Transform API response to Portfolio interface
+  const transformAPIResponse = (apiData: APIResponse): Portfolio[] => {
+    return apiData.portfolios
+      .filter((p: any) => p.has_portfolio && p.portfolio?.length > 0)
+      .map((p: any) => {
+        // Map tokens with enhanced data
+        const tokensWithInfo: TokenHolding[] = p.portfolio.map((item: any) => ({
+          contractAddress: item.token?.address || item.token_id,
+          weight: item.weight,
+          quantity: item.quantity || null,
+          valueUSD: item.value_usd || 0,
+          valueSOL: item.value_sol || null,
+          name: item.token?.name || "Unknown Token",
+          symbol: item.token?.symbol || "???",
+          price: parseFloat(item.token?.price || "0"),
+          priceChange: parseFloat(item.token?.change_24h || "0"),
+          logoUrl: item.token?.image_url || "/images/tokens/default.png",
+        }));
+
+        // Build enhanced performance object if available
+        let performance: PerformanceMetrics | undefined;
+        if (p.contest.status === "completed" && p.performance) {
+          performance = {
+            initialBalanceUSD: p.performance.initial_balance_usd || parseFloat(p.performance.initial_balance || "0"),
+            finalBalanceUSD: p.performance.final_balance_usd || parseFloat(p.performance.final_balance || "0"),
+            initialBalanceSOL: p.performance.initial_balance_sol || null,
+            finalBalanceSOL: p.performance.final_balance_sol || null,
+            pnlUSD: p.performance.pnl_usd || 0,
+            pnlSOL: p.performance.pnl_sol || null,
+            pnlPercent: p.performance.pnl_percent || parseFloat(p.performance.roi?.replace("%", "") || "0"),
+            prizeAmount: p.performance.prize_amount || null,
+            roi: p.performance.roi || "0%",
+            ranking: p.final_rank || p.rank,
+          };
+        }
+
+        return {
+          contestId: String(p.contest_id),
+          contestName: p.contest.name,
+          status: p.contest.status as "active" | "pending" | "completed" | "cancelled",
+          startTime: p.contest.start_time,
+          endTime: p.contest.end_time,
+          portfolioValueUSD: p.portfolio_value_usd || parseFloat(p.portfolio_value || "0"),
+          portfolioValueSOL: p.portfolio_value_sol || null,
+          tokens: tokensWithInfo,
+          performance,
+          hasPortfolio: p.has_portfolio,
+        } as Portfolio;
+      });
+  };
+
   // Fetch all portfolios in a single efficient API call
   useEffect(() => {
     const fetchPortfolios = async () => {
@@ -77,8 +161,8 @@ export const MyPortfoliosPage: React.FC = () => {
       try {
         setLoading(true);
 
-        // Use the new batch API to get all portfolios in one request
-        const response = await ddApi.portfolio.getAllUserPortfolios(
+        // Use the enhanced batch API to get all portfolios in one request
+        const response: APIResponse = await ddApi.portfolio.getAllUserPortfolios(
           user.wallet_address,
           {
             limit: 100, // Get up to 100 portfolios at once
@@ -87,41 +171,11 @@ export const MyPortfoliosPage: React.FC = () => {
           }
         );
 
+        // Store SOL price for reference
+        setSolPrice(response.sol_price_used);
+
         // Transform the backend response to our Portfolio interface
-        const validPortfolios = response.portfolios
-          .filter((p: any) => p.has_portfolio && p.portfolio?.length > 0)
-          .map((p: any) => {
-            // Map tokens with all their metadata
-            const tokensWithInfo = p.portfolio.map((item: any) => ({
-              contractAddress: item.token?.address || item.token_id,
-              weight: item.weight,
-              name: item.token?.name || "Unknown Token",
-              symbol: item.token?.symbol || "???",
-              price: parseFloat(item.token?.price || "0"),
-              priceChange: parseFloat(item.token?.change_24h || "0"),
-              logoUrl: item.token?.image_url || "/images/tokens/default.png",
-            }));
-
-            // Build performance object if available
-            let performance;
-            if (p.contest.status === "completed" && p.performance) {
-              performance = {
-                value: parseFloat(p.performance.final_balance || p.portfolio_value || "0"),
-                change: parseFloat(p.performance.roi?.replace("%", "") || "0"),
-                ranking: p.final_rank || p.rank,
-              };
-            }
-
-            return {
-              contestId: String(p.contest_id),
-              contestName: p.contest.name,
-              status: p.contest.status as "active" | "pending" | "completed" | "cancelled",
-              startTime: p.contest.start_time,
-              endTime: p.contest.end_time,
-              tokens: tokensWithInfo,
-              performance,
-            } as Portfolio;
-          });
+        const validPortfolios = transformAPIResponse(response);
 
         setPortfolios(validPortfolios);
         setError(null);
@@ -144,7 +198,7 @@ export const MyPortfoliosPage: React.FC = () => {
     fetchPortfolios();
   }, [contests, contestsLoading, user?.wallet_address]);
 
-  // Filter and sort portfolios
+  // Enhanced filter and sort portfolios
   const filteredAndSortedPortfolios = React.useMemo(() => {
     // First filter by search term and status
     const filtered = portfolios.filter((portfolio) => {
@@ -168,7 +222,7 @@ export const MyPortfoliosPage: React.FC = () => {
       return matchesSearch && matchesStatus;
     });
 
-    // Then sort
+    // Enhanced sorting with new data
     return filtered.sort((a, b) => {
       if (sortBy === "date") {
         const aDate = new Date(a.startTime).getTime();
@@ -176,8 +230,13 @@ export const MyPortfoliosPage: React.FC = () => {
         return sortDirection === "asc" ? aDate - bDate : bDate - aDate;
       } else if (sortBy === "performance" && a.performance && b.performance) {
         return sortDirection === "asc"
-          ? a.performance.change - b.performance.change
-          : b.performance.change - a.performance.change;
+          ? a.performance.pnlPercent - b.performance.pnlPercent
+          : b.performance.pnlPercent - a.performance.pnlPercent;
+      } else if (sortBy === "value") {
+        // Sort by portfolio value (use SOL if available and preferred, otherwise USD)
+        const aValue = (preferSOL && a.portfolioValueSOL) ? a.portfolioValueSOL : a.portfolioValueUSD;
+        const bValue = (preferSOL && b.portfolioValueSOL) ? b.portfolioValueSOL : b.portfolioValueUSD;
+        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
       } else if (sortBy === "name") {
         return sortDirection === "asc"
           ? a.contestName.localeCompare(b.contestName)
@@ -189,7 +248,7 @@ export const MyPortfoliosPage: React.FC = () => {
       }
       return 0;
     });
-  }, [portfolios, searchTerm, sortBy, sortDirection, statusFilter]);
+  }, [portfolios, searchTerm, sortBy, sortDirection, statusFilter, preferSOL]);
 
   // Helper function to get status styling
   const getStatusStyle = (status: string) => {
@@ -220,18 +279,58 @@ export const MyPortfoliosPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-
       <div className="relative z-10 py-8 container mx-auto px-4">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-            <FaChartPie className="text-brand-400" /> My Portfolios
-          </h1>
-          <p className="text-gray-400 mt-2">
-            Manage and track all your contest portfolios
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+                <FaChartPie className="text-brand-400" /> My Portfolios
+              </h1>
+              <p className="text-gray-400 mt-2">
+                Manage and track all your contest portfolios
+              </p>
+            </div>
+            
+            {/* Currency Toggle */}
+            <div className="flex items-center gap-2 bg-dark-200/50 rounded-lg p-2">
+              <Button
+                variant={preferSOL ? "primary" : "ghost"}
+                size="sm"
+                onClick={() => setPreferSOL(true)}
+                className={`flex items-center gap-2 ${
+                  preferSOL 
+                    ? "bg-brand-500 text-white" 
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                <FaCoins className="h-4 w-4" />
+                SOL
+              </Button>
+              <Button
+                variant={!preferSOL ? "primary" : "ghost"}
+                size="sm"
+                onClick={() => setPreferSOL(false)}
+                className={`flex items-center gap-2 ${
+                  !preferSOL 
+                    ? "bg-brand-500 text-white" 
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                <FaDollarSign className="h-4 w-4" />
+                USD
+              </Button>
+            </div>
+          </div>
+          
+          {/* SOL Price Display */}
+          {solPrice && (
+            <div className="mt-2 text-sm text-gray-500">
+              SOL Price: {formatUSD(solPrice)}
+            </div>
+          )}
         </header>
 
-        {/* Filters & Search */}
+        {/* Enhanced Filters & Search */}
         <div className="mb-8 flex flex-col md:flex-row gap-4">
           <div className="flex-grow">
             <SearchInput
@@ -267,6 +366,7 @@ export const MyPortfoliosPage: React.FC = () => {
                 options={[
                   { value: "date", label: "Date" },
                   { value: "name", label: "Contest Name" },
+                  { value: "value", label: "Portfolio Value" },
                   { value: "tokens", label: "Number of Tokens" },
                   { value: "performance", label: "Performance" }
                 ]}
@@ -380,7 +480,7 @@ export const MyPortfoliosPage: React.FC = () => {
             </Card>
           )}
 
-        {/* Portfolio cards grid */}
+        {/* Enhanced Portfolio cards grid */}
         {!loading && filteredAndSortedPortfolios.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAndSortedPortfolios.map((portfolio) => (
@@ -409,55 +509,101 @@ export const MyPortfoliosPage: React.FC = () => {
                 </CardHeader>
 
                 <CardContent className="space-y-4 relative">
-                  {/* Portfolio performance summary for completed contests */}
-                  {portfolio.status === "completed" &&
-                    portfolio.performance && (
-                      <div
-                        className={`p-4 rounded-lg ${
-                          portfolio.performance.change >= 0
-                            ? "bg-green-500/10 border border-green-500/20"
-                            : "bg-red-500/10 border border-red-500/20"
-                        }`}
-                      >
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-sm text-gray-400 mb-1">
-                              Final Value
+                  {/* Enhanced Portfolio performance summary for completed contests */}
+                  {portfolio.status === "completed" && portfolio.performance && (
+                    <div
+                      className={`p-4 rounded-lg ${
+                        portfolio.performance.pnlPercent >= 0
+                          ? "bg-green-500/10 border border-green-500/20"
+                          : "bg-red-500/10 border border-red-500/20"
+                      }`}
+                    >
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-400 mb-1">
+                            Final Value
+                          </p>
+                          <p className="text-lg font-bold text-white">
+                            {formatPortfolioValue(
+                              portfolio.performance.finalBalanceUSD,
+                              portfolio.performance.finalBalanceSOL,
+                              preferSOL
+                            )}
+                          </p>
+                          {/* Show both currencies if available */}
+                          {portfolio.performance.finalBalanceSOL && (
+                            <p className="text-xs text-gray-500">
+                              {preferSOL 
+                                ? formatUSD(portfolio.performance.finalBalanceUSD)
+                                : formatSOL(portfolio.performance.finalBalanceSOL)
+                              }
                             </p>
-                            <p className="text-lg font-bold text-white">
-                              {formatCurrency(portfolio.performance.value)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-400 mb-1">
-                              Performance
-                            </p>
-                            <p
-                              className={`text-lg font-bold ${
-                                portfolio.performance.change >= 0
-                                  ? "text-green-400"
-                                  : "text-red-400"
-                              }`}
-                            >
-                              {portfolio.performance.change >= 0 ? "+" : ""}
-                              {portfolio.performance.change.toFixed(2)}%
-                            </p>
-                          </div>
+                          )}
                         </div>
+                        <div>
+                          <p className="text-sm text-gray-400 mb-1">
+                            Performance
+                          </p>
+                          <p
+                            className={`text-lg font-bold ${
+                              portfolio.performance.pnlPercent >= 0
+                                ? "text-green-400"
+                                : "text-red-400"
+                            }`}
+                          >
+                            {formatPercentage(portfolio.performance.pnlPercent)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatPortfolioValue(
+                              portfolio.performance.pnlUSD,
+                              portfolio.performance.pnlSOL,
+                              preferSOL
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Prize and Ranking */}
+                      <div className="mt-3 flex justify-between items-center">
                         {portfolio.performance.ranking && (
-                          <div className="mt-2 text-center">
-                            <span className="text-sm text-gray-400">
-                              Final Ranking:
-                            </span>
-                            <span className="text-white font-bold ml-1">
-                              #{portfolio.performance.ranking}
-                            </span>
-                          </div>
+                          <span className="text-sm text-gray-400">
+                            Rank: <span className="text-white font-bold">#{portfolio.performance.ranking}</span>
+                          </span>
+                        )}
+                        {portfolio.performance.prizeAmount && parseFloat(portfolio.performance.prizeAmount) > 0 && (
+                          <span className="text-sm text-yellow-400 font-medium">
+                            🏆 Prize: {formatSOL(portfolio.performance.prizeAmount)}
+                          </span>
                         )}
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                  {/* Token list */}
+                  {/* Current Portfolio Value for Active/Pending contests */}
+                  {(portfolio.status === "active" || portfolio.status === "pending") && (
+                    <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-400 mb-1">Portfolio Value</p>
+                        <p className="text-xl font-bold text-white">
+                          {formatPortfolioValue(
+                            portfolio.portfolioValueUSD,
+                            portfolio.portfolioValueSOL,
+                            preferSOL
+                          )}
+                        </p>
+                        {portfolio.portfolioValueSOL && (
+                          <p className="text-xs text-gray-500">
+                            {preferSOL 
+                              ? formatUSD(portfolio.portfolioValueUSD)
+                              : formatSOL(portfolio.portfolioValueSOL)
+                            }
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Enhanced Token list */}
                   <div>
                     <h4 className="text-sm font-medium text-gray-400 mb-3">
                       Portfolio Allocation ({portfolio.tokens.length} tokens)
@@ -467,9 +613,7 @@ export const MyPortfoliosPage: React.FC = () => {
                         <div key={i} className="flex items-center gap-3">
                           <div className="w-8 h-8 relative rounded-full bg-dark-300 overflow-hidden flex-shrink-0">
                             <img
-                              src={
-                                token.logoUrl || "/images/tokens/default.png"
-                              }
+                              src={token.logoUrl || "/images/tokens/default.png"}
                               alt={token.symbol}
                               className="w-full h-full object-cover"
                               onError={(e) => {
@@ -485,10 +629,19 @@ export const MyPortfoliosPage: React.FC = () => {
                             <p className="text-xs text-gray-400 truncate">
                               {token.name}
                             </p>
+                            {/* Show quantity if available */}
+                            {token.quantity && (
+                              <p className="text-xs text-gray-500">
+                                {token.quantity.toLocaleString()} tokens
+                              </p>
+                            )}
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-gray-200">
                               {token.weight}%
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {formatPortfolioValue(token.valueUSD, token.valueSOL, preferSOL)}
                             </p>
                             {token.priceChange !== undefined && (
                               <p
@@ -498,8 +651,7 @@ export const MyPortfoliosPage: React.FC = () => {
                                     : "text-red-400"
                                 }`}
                               >
-                                {token.priceChange >= 0 ? "+" : ""}
-                                {token.priceChange.toFixed(2)}%
+                                {formatPercentage(token.priceChange)}
                               </p>
                             )}
                           </div>

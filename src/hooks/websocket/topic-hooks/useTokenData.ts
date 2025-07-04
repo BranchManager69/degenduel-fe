@@ -106,7 +106,8 @@ export function useTokenData(
   _tokensToSubscribe: string[] | "all" = "all", // Now unused - kept for interface compatibility
   filters?: TokenDataFilters,
   limit: number = 50, // Default to 50 for proper pagination
-  preserveOrder: boolean = true // Preserve REST API order when updating via WebSocket
+  preserveOrder: boolean = true, // Preserve REST API order when updating via WebSocket
+  disableLiveUpdates: boolean = false // NEW: Allow disabling live WebSocket updates
 ) {
   // State for token data
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -244,6 +245,11 @@ export function useTokenData(
 
   // WebSocket handler for ALL token data (initial + updates + paginated responses)
   const handleMarketData = useCallback((message: any) => {
+    // CRITICAL PERFORMANCE FIX: Skip all WebSocket updates if disabled
+    if (disableLiveUpdates) {
+      return;
+    }
+    
     try {
       console.log(`[useTokenData] 🔥 RECEIVED MESSAGE:`, {
         type: message.type,
@@ -537,10 +543,16 @@ export function useTokenData(
       setError('Failed to process market data');
       setIsLoading(false);
     }
-  }, [filters, isRestLoaded, hasInitialData, preserveOrder]);
+  }, [filters, isRestLoaded, hasInitialData, preserveOrder, disableLiveUpdates]);
 
   // Register WebSocket listener for ALL market data + individual token updates
   useEffect(() => {
+    // CRITICAL: Don't register listener if live updates are disabled
+    if (disableLiveUpdates) {
+      console.log('[useTokenData] Live updates disabled - skipping WebSocket listener registration');
+      return;
+    }
+    
     const unregister = ws.registerListener(
       'token-data-market-updates',
       ['DATA'] as any[], // Use consistent v69 unified format
@@ -548,7 +560,7 @@ export function useTokenData(
       // No topic filter - let all messages through so we can handle individual token updates
     );
     return unregister;
-  }, [handleMarketData, ws.registerListener]);
+  }, [handleMarketData, ws.registerListener, disableLiveUpdates]);
 
   // Subscribe to individual tokens when we have them
   const subscribedTokensRef = useRef<Set<string>>(new Set());
@@ -556,6 +568,12 @@ export function useTokenData(
   // RE-ENABLED: Individual token subscriptions for real-time updates
   // Let's see how the performance is now
   useEffect(() => {
+    // CRITICAL: Skip individual subscriptions if live updates are disabled
+    if (disableLiveUpdates) {
+      console.log('[useTokenData] Live updates disabled - skipping individual token subscriptions');
+      return;
+    }
+    
     console.log(`[useTokenData] 🚀 SUBSCRIPTION EFFECT: connected=${ws.isConnected}, tokens=${tokens.length}`);
     if (ws.isConnected && tokens.length > 0) {
       // Subscribe to individual token updates
@@ -591,7 +609,7 @@ export function useTokenData(
         subscribedTokensRef.current.clear();
       }
     };
-  }, [ws.isConnected, tokens]);
+  }, [ws.isConnected, tokens, disableLiveUpdates]);
 
   // REST-First: Load token data via REST for immediate display, WebSocket for updates
   useEffect(() => {

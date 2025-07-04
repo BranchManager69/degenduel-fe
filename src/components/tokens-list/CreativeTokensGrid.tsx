@@ -10,6 +10,8 @@ interface CreativeTokensGridProps {
   featuredTokens?: Token[]; // NEW: Separate stable featured tokens
   selectedTokenSymbol?: string | null;
   backContent?: 'details' | 'portfolio'; // Control what shows on card back
+  renderBackContent?: (token: Token) => React.ReactNode; // NEW: Custom back content renderer
+  selectedTokens?: Map<string, number>; // NEW: For portfolio selection highlighting
 }
 
 /**
@@ -20,7 +22,9 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
   tokens, 
   featuredTokens = [], // NEW: Default to empty array
   selectedTokenSymbol,
-  backContent = 'details' // Default to current detailed view
+  backContent = 'details', // Default to current detailed view
+  renderBackContent,
+  selectedTokens
 }) => {
   const selectedTokenRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -106,6 +110,10 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     
     const rankStyle = getRankStyle(displayRank);
     
+    // Check if token is selected in portfolio mode
+    const isPortfolioSelected = selectedTokens?.has(TokenHelpers.getAddress(token)) || false;
+    const portfolioWeight = selectedTokens?.get(TokenHelpers.getAddress(token)) || 0;
+    
     return (
       <div className="aspect-[16/9] sm:aspect-[5/3] w-full perspective-1000">
         <div 
@@ -117,7 +125,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
           {/* Front of card */}
           <div className={`absolute w-full h-full backface-hidden rounded-2xl overflow-hidden shadow group cursor-pointer backdrop-blur-xl
             ${isNewToken ? 'token-card-animation' : ''}
-            ${isSelected ? 'ring-4 ring-yellow-500/60 scale-105 z-30' : 'hover:scale-[1.03] z-10'}
+            ${isSelected ? 'ring-4 ring-yellow-500/60 scale-105 z-30' : isPortfolioSelected ? 'ring-4 ring-emerald-500/60 scale-[1.02] z-20' : 'hover:scale-[1.03] z-10'}
             ${isDuel ? 'ring-2 ring-purple-500/60 shadow-[0_0_20px_rgba(147,51,234,0.4)]' : ''}
             ${isTopThree ? 'bg-gradient-to-br from-dark-100/90 via-dark-200/80 to-dark-300/90' : 'bg-dark-200/70'}
             ${isTopThree ? 'shadow-2xl ' + rankStyle.glow : 'shadow-xl shadow-black/20'}
@@ -232,6 +240,13 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[300%] transition-transform duration-1000" />
             </div>
+            
+            {/* Portfolio Selection Indicator */}
+            {isPortfolioSelected && (
+              <div className="absolute top-2 right-2 bg-emerald-500 rounded-full p-2 shadow-lg">
+                <div className="text-white font-bold text-sm">{portfolioWeight}%</div>
+              </div>
+            )}
           </div>
 
           {/* Back of card */}
@@ -266,7 +281,10 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
             </div>
             
             <div className="relative z-10 h-full flex flex-col p-2">
-              {backContent === 'details' ? (
+              {backContent === 'portfolio' && renderBackContent ? (
+                // Custom portfolio content
+                renderBackContent(token)
+              ) : backContent === 'details' ? (
                 <>
                   {/* Header */}
                   <div className="mb-1">

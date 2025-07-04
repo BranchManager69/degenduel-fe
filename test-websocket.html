@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Contest Data Test</h1>
+    <pre id="output"></pre>
+    <script>
+        const output = document.getElementById('output');
+        
+        // Connect to DegenDuel WebSocket
+        const ws = new WebSocket('wss://degenduel.me/ws');
+        
+        ws.onopen = () => {
+            output.textContent += 'Connected to WebSocket\n';
+            
+            // Subscribe to contest topic
+            ws.send(JSON.stringify({
+                action: 'subscribe',
+                topics: ['contest']
+            }));
+            
+            // Request contest data
+            setTimeout(() => {
+                ws.send(JSON.stringify({
+                    topic: 'contest',
+                    action: 'getContests',
+                    data: { limit: 1 }
+                }));
+            }, 100);
+        };
+        
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            output.textContent += '\n\nReceived:\n' + JSON.stringify(data, null, 2);
+            
+            // Close after we get contest data
+            if (data.action === 'getContests' && data.data) {
+                setTimeout(() => ws.close(), 100);
+            }
+        };
+        
+        ws.onerror = (error) => {
+            output.textContent += '\nError: ' + error;
+        };
+        
+        ws.onclose = () => {
+            output.textContent += '\n\nConnection closed';
+        };
+    </script>
+</body>
+</html>

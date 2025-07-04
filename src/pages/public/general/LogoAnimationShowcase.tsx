@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import DoubleDLogo from '../../../components/logo/DoubleDLogo';
+import DoubleDLogoClean from '../../../components/logo/DoubleDLogoClean';
 import EnhancedIntroLogo from '../../../components/logo/EnhancedIntroLogo';
+import EnhancedIntroLogoClean from '../../../components/logo/EnhancedIntroLogoClean';
 
 type AnimationMode = 'standard' | 'epic' | 'extreme';
 type BackgroundMode = 'black' | 'white' | 'gradient' | 'transparent' | 'green';
-type LogoType = 'full' | 'dd';
+type LogoType = 'full' | 'dd' | 'dd-clean' | 'full-clean';
 
 export const LogoAnimationShowcase: React.FC = () => {
   const [mode, setMode] = useState<AnimationMode>('epic');
@@ -71,8 +73,12 @@ export const LogoAnimationShowcase: React.FC = () => {
         <div className="w-full max-w-7xl px-4">
           {logoType === 'full' ? (
             <EnhancedIntroLogo key={key} mode={mode} />
-          ) : (
+          ) : logoType === 'full-clean' ? (
+            <EnhancedIntroLogoClean key={key} mode={mode} />
+          ) : logoType === 'dd' ? (
             <DoubleDLogo key={key} mode={mode} />
+          ) : (
+            <DoubleDLogoClean key={key} mode={mode} />
           )}
         </div>
       </div>
@@ -109,6 +115,32 @@ export const LogoAnimationShowcase: React.FC = () => {
                 }`}
               >
                 DD Only
+              </button>
+              <button
+                onClick={() => {
+                  setLogoType('dd-clean');
+                  restartAnimation();
+                }}
+                className={`px-3 py-1 rounded text-sm ${
+                  logoType === 'dd-clean'
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                DD Clean
+              </button>
+              <button
+                onClick={() => {
+                  setLogoType('full-clean');
+                  restartAnimation();
+                }}
+                className={`px-3 py-1 rounded text-sm ${
+                  logoType === 'full-clean'
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                Full Clean
               </button>
             </div>
           </div>

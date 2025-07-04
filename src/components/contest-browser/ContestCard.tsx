@@ -177,7 +177,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                     }
                     // Set fallback image source
                     const target = e.target as HTMLImageElement;
-                    target.src = '/images/contests/placeholder.png';
+                    target.src = '/assets/media/banners/concepts/concept0_cybergrid.png';
                     setImageError(true);
                   }}
                   initial={{ scale: 1.2, filter: "blur(8px)" }}
@@ -204,7 +204,17 @@ export const ContestCard: React.FC<ContestCardProps> = ({
       
       {/* Fallback background for cards without images */}
       {!getContestImageUrl(contest.image_url) && (
-        <div className="absolute inset-0 bg-gradient-to-br from-dark-300/50 to-dark-400/50" />
+        <div className="absolute inset-0 overflow-hidden">
+          <img 
+            src="/assets/media/banners/concepts/concept0_cybergrid.png"
+            alt={contest.name}
+            className="w-full h-full object-cover opacity-40"
+          />
+          {/* Stronger gradient that shows more image at top */}
+          <div className="absolute inset-0 bg-gradient-to-b from-dark-200/60 via-dark-200/85 to-dark-200/98" />
+          {/* Extra dark overlay at bottom for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-dark-200 via-dark-200/80 to-transparent" />
+        </div>
       )}
 
       {/* Animated gradient overlay */}

@@ -28,6 +28,7 @@ import { DuelCard } from "../../../components/contest-browser/DuelCard";
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
 import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
 import { AuthDebugPanel } from "../../../components/debug";
+import { ServerCrashDisplay } from "../../../components/common/ServerCrashDisplay";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContests } from "../../../hooks/websocket/topic-hooks/useContests";
 import { ddApi } from "../../../services/dd-api";
@@ -43,7 +44,7 @@ export const ContestBrowser: React.FC = () => {
   const [availableCredits, setAvailableCredits] = useState<number | undefined>(undefined);
   const [isRestLoading, setIsRestLoading] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
-  const [hideCancelled, setHideCancelled] = useState(false);
+  const [hideCancelled, setHideCancelled] = useState(true);
   const [detailedChallenges, setDetailedChallenges] = useState<Record<string, any>>({});
 
   // **NEW: Use WebSocket-based contest data instead of REST API**
@@ -84,7 +85,7 @@ export const ContestBrowser: React.FC = () => {
       // Debug: Check all possible participation field names
       is_participating: (contest as any).joined || (contest as any).participating || (contest as any).is_participating || false,
       contest_code: (contest as any).contest_id || (contest as any).id || '',
-      image_url: undefined,
+      image_url: (contest as any).image_url,
       participants: [],
       cancellation_reason: (contest as any).cancellation_reason || undefined,
       created_at: new Date().toISOString(),
@@ -92,8 +93,9 @@ export const ContestBrowser: React.FC = () => {
     })) as unknown as Contest[];
   }, [wsContests]);
 
-  // Smart loading state - show loading only if we have no data and are actively loading
-  const loading = (wsLoading || isRestLoading) && contests.length === 0;
+  // Smart loading state - show loading only if REST is loading and we have no data
+  // WebSocket should NEVER block the UI
+  const loading = isRestLoading && contests.length === 0;
   const error = wsError || (!wsConnected && !wsLoading && !isRestLoading && contests.length === 0 ? "Failed to load contests" : null);
 
   // Fetch user credits
@@ -243,6 +245,7 @@ export const ContestBrowser: React.FC = () => {
       fetchDetailedChallenges(contests);
     }
   }, [contests]);
+
   
 
   // Manual refresh function that prefers WebSocket but falls back to REST API
@@ -320,15 +323,26 @@ export const ContestBrowser: React.FC = () => {
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center text-red-500 animate-glitch p-8 bg-dark-200/50 rounded-lg">
-          <p>{error}</p>
-          <button
-            onClick={handleManualRefresh}
-            className="mt-4 px-4 py-2 bg-dark-400/50 hover:bg-dark-400 rounded text-emerald-400 text-sm transition-all duration-300 hover:scale-105"
-          >
-            Retry Connection
-          </button>
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-100">
+            Browse Contests
+          </h1>
         </div>
+
+        <ServerCrashDisplay 
+          error={error}
+          onRetry={handleManualRefresh}
+          isRetrying={isRestLoading}
+        />
+        
+        {/* Show REST API is still working if applicable */}
+        {isRestLoading && (
+          <p className="text-xs text-gray-500 mt-4 text-center">
+            <span className="inline-block w-2 h-2 bg-yellow-400 rounded-full animate-pulse mr-1"></span>
+            Attempting recovery via backup connection...
+          </p>
+        )}
       </div>
     );
   }
@@ -352,7 +366,7 @@ export const ContestBrowser: React.FC = () => {
           </div>
 
           {/* Enhanced Header Section */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative group">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group">
               <span className="relative z-10 group-hover:animate-glitch">
                 Browse Contests
@@ -474,8 +488,6 @@ export const ContestBrowser: React.FC = () => {
                 return b.participant_count - a.participant_count;
               });
 
-              if (activeContests.length === 0) return null;
-
               return (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
@@ -483,31 +495,37 @@ export const ContestBrowser: React.FC = () => {
                     <div className="flex-1 h-px bg-green-900/50"></div>
                     <span className="text-sm text-green-500">({activeContests.length})</span>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {activeContests.map((contest) => {
-                      const isDuel = contest.max_participants === 2;
-                      const detailedData = detailedChallenges[contest.id.toString()];
-                      
-                      return (
-                        <div
-                          key={contest.id}
-                          className="transform hover:scale-[1.03] transition-transform duration-300"
-                        >
-                          {isDuel ? (
-                            <DuelCard
-                              contest={{...contest, ...detailedData} as any}
-                              onClick={() => navigate(`/contests/${contest.id}`)}
-                            />
-                          ) : (
-                            <ContestCard
-                              contest={contest}
-                              onClick={() => navigate(`/contests/${contest.id}`)}
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {activeContests.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      No active contests right now
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {activeContests.map((contest) => {
+                        const isDuel = contest.max_participants === 2;
+                        const detailedData = detailedChallenges[contest.id.toString()];
+                        
+                        return (
+                          <div
+                            key={contest.id}
+                            className="transform hover:scale-[1.03] transition-transform duration-300"
+                          >
+                            {isDuel ? (
+                              <DuelCard
+                                contest={{...contest, ...detailedData} as any}
+                                onClick={() => navigate(`/contests/${contest.id}`)}
+                              />
+                            ) : (
+                              <ContestCard
+                                contest={contest}
+                                onClick={() => navigate(`/contests/${contest.id}`)}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -532,8 +550,6 @@ export const ContestBrowser: React.FC = () => {
                 return timeDiff;
               });
 
-              if (pendingContests.length === 0) return null;
-
               return (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
@@ -541,31 +557,37 @@ export const ContestBrowser: React.FC = () => {
                     <div className="flex-1 h-px bg-blue-900/50"></div>
                     <span className="text-sm text-blue-500">({pendingContests.length})</span>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {pendingContests.map((contest) => {
-                      const isDuel = contest.max_participants === 2;
-                      const detailedData = detailedChallenges[contest.id.toString()];
-                      
-                      return (
-                        <div
-                          key={contest.id}
-                          className="transform hover:scale-[1.03] transition-transform duration-300"
-                        >
-                          {isDuel ? (
-                            <DuelCard
-                              contest={{...contest, ...detailedData} as any}
-                              onClick={() => navigate(`/contests/${contest.id}`)}
-                            />
-                          ) : (
-                            <ContestCard
-                              contest={contest}
-                              onClick={() => navigate(`/contests/${contest.id}`)}
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {pendingContests.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      No upcoming contests scheduled
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {pendingContests.map((contest) => {
+                        const isDuel = contest.max_participants === 2;
+                        const detailedData = detailedChallenges[contest.id.toString()];
+                        
+                        return (
+                          <div
+                            key={contest.id}
+                            className="transform hover:scale-[1.03] transition-transform duration-300"
+                          >
+                            {isDuel ? (
+                              <DuelCard
+                                contest={{...contest, ...detailedData} as any}
+                                onClick={() => navigate(`/contests/${contest.id}`)}
+                              />
+                            ) : (
+                              <ContestCard
+                                contest={contest}
+                                onClick={() => navigate(`/contests/${contest.id}`)}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })()}

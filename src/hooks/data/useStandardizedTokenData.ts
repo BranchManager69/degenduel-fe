@@ -186,7 +186,8 @@ export function useStandardizedTokenData(
   _initialSortMethod: TokenSortMethod = 'marketCap', // Unused but kept for interface compatibility
   initialFilter: TokenFilter = { status: 'active' },
   maxHotTokens: number = 5,
-  maxTopTokens: number = 6
+  maxTopTokens: number = 6,
+  disableLiveUpdates: boolean = false // NEW: Pass through to disable WebSocket updates
 ): UseStandardizedTokenDataReturn {
   // Extract Jupiter tag filters for backend
   const backendFilters = {
@@ -207,7 +208,7 @@ export function useStandardizedTokenData(
     loadMore,
     pagination,
     isLoading: underlyingIsLoading
-  } = useTokenData(tokensToSubscribe, backendFilters, maxTopTokens);
+  } = useTokenData(tokensToSubscribe, backendFilters, maxTopTokens, true, disableLiveUpdates);
 
   const [connectionState, setConnectionState] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

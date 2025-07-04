@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Token, TokenHelpers } from "../../types";
 import { PortfolioTokenCard } from "./PortfolioTokenCard";
+import "./portfolio-animations.css";
 
 interface CreativePortfolioGridProps {
   tokens: Token[];
@@ -43,66 +44,6 @@ export const CreativePortfolioGrid: React.FC<CreativePortfolioGridProps> = React
 
   return (
     <div className="relative">
-      {/* CSS for animations */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @keyframes bannerScan {
-            0%, 100% { object-position: center center; }
-            25% { object-position: left center; }
-            50% { object-position: center center; }
-            75% { object-position: right center; }
-          }
-          
-          @keyframes fadeUpIn {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          
-          .token-card-animation {
-            animation: fadeUpIn 0.6s ease-out forwards;
-            opacity: 0;
-            will-change: transform, opacity;
-          }
-          
-          .perspective-1000 { 
-            perspective: 1000px; 
-            -webkit-perspective: 1000px;
-          }
-          .transform-style-3d { 
-            transform-style: preserve-3d; 
-            -webkit-transform-style: preserve-3d;
-          }
-          .backface-hidden { 
-            backface-visibility: hidden; 
-            -webkit-backface-visibility: hidden;
-            -moz-backface-visibility: hidden;
-          }
-          .rotate-y-180 { 
-            transform: rotateY(180deg); 
-            -webkit-transform: rotateY(180deg);
-            -moz-transform: rotateY(180deg);
-          }
-          
-          /* Firefox-specific fixes for 3D transforms */
-          @-moz-document url-prefix() {
-            .perspective-1000 {
-              transform-style: preserve-3d;
-              -moz-transform-style: preserve-3d;
-            }
-            .transform-style-3d > div {
-              transform: translateZ(0);
-              -moz-transform: translateZ(0);
-            }
-          }
-        `
-      }} />
-
       {/* Main grid container - All tokens use PortfolioTokenCard */}
       <div ref={containerRef} className="relative z-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

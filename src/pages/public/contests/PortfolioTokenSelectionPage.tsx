@@ -16,7 +16,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import PortfolioPreviewModal from "../../../components/portfolio-selection/PortfolioPreviewModal";
 import { PortfolioSummary } from "../../../components/portfolio-selection/PortfolioSummary";
 import { TokenFilters } from "../../../components/portfolio-selection/TokenFilters";
-import { CreativePortfolioGrid } from "../../../components/portfolio-selection/CreativePortfolioGrid";
+import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeTokensGrid";
+import { PortfolioTokenCardBack } from "../../../components/portfolio-selection/PortfolioTokenCardBack";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Skeleton } from "../../../components/ui/Skeleton";
@@ -133,13 +134,32 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   console.log("🔌 PortfolioTokenSelectionPage: Using standardized token data hook (WebSocket)");
   
   const {
-    tokens,
+    tokens: rawTokens,
     isLoading: tokenListLoading,
     error: tokensError,
     isConnected: isTokenDataConnected,
     lastUpdate,
     refresh: refreshTokens
-  } = useStandardizedTokenData("all", "marketCap", {}, 5, 3000); // Load all 3000 tokens like TokensPage
+  } = useStandardizedTokenData("all", "marketCap", {}, 5, 3000, true); // Load all 3000 tokens like TokensPage, DISABLE LIVE UPDATES
+  
+  // FREEZE THE TOKENS - Only update when we get a completely new list, not price updates
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [hasLoadedInitialTokens, setHasLoadedInitialTokens] = useState(false);
+  
+  useEffect(() => {
+    // Only update tokens when:
+    // 1. We don't have any tokens yet (initial load)
+    // 2. The number of tokens changes significantly (new tokens added/removed)
+    if (!hasLoadedInitialTokens && rawTokens.length > 0) {
+      console.log("🔒 PortfolioTokenSelectionPage: Loading initial tokens and FREEZING them");
+      setTokens(rawTokens);
+      setHasLoadedInitialTokens(true);
+    } else if (hasLoadedInitialTokens && Math.abs(rawTokens.length - tokens.length) > 10) {
+      console.log("🔒 PortfolioTokenSelectionPage: Significant token count change, updating frozen list");
+      setTokens(rawTokens);
+    }
+    // DELIBERATELY NOT updating on price changes!
+  }, [rawTokens.length, hasLoadedInitialTokens]); // Only depend on length, not the array itself
   
   // Jupiter filters don't work with the centralized hook right now
   // The backend already filters duplicates for us
@@ -1056,6 +1076,38 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
         return; // Don't show error state for this non-critical error
       }
 
+      // Handle contest-specific errors
+      if (errorMsg.includes("cancelled")) {
+        setTransactionState({
+          status: "error",
+          message: "Contest Cancelled",
+          error: "This contest has been cancelled and is no longer accepting entries.",
+          signature: confirmedSignature || transactionState.signature,
+        });
+
+        toast.error("This contest has been cancelled and is no longer accepting entries.", { duration: 5000 });
+        
+        // Navigate back to contests list after a delay
+        setTimeout(() => {
+          navigate('/contests');
+        }, 3000);
+        
+        return;
+      }
+
+      // Handle other contest status errors
+      if (errorMsg.includes("status") && (errorMsg.includes("completed") || errorMsg.includes("ended"))) {
+        setTransactionState({
+          status: "error",
+          message: "Contest Ended",
+          error: "This contest has already ended and is no longer accepting entries.",
+          signature: confirmedSignature || transactionState.signature,
+        });
+
+        toast.error("This contest has already ended.", { duration: 5000 });
+        return;
+      }
+
       // Handle all other errors normally
       let friendlyErrorMsg = errorMsg;
       
@@ -1768,21 +1820,45 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
 
                     {/* Enhanced Token Grid - Visual rich cards with infinite scroll */}
                     <div className="relative">
-                      <CreativePortfolioGrid
+                      <CreativeTokensGrid
                         tokens={visibleTokens}
+                        backContent="portfolio"
                         selectedTokens={selectedTokens}
-                        onTokenSelect={(contractAddress, weight) => {
-                          if (weight === 0) {
-                            handleTokenSelect(contractAddress);
-                          } else {
-                            setSelectedTokens(prev => {
-                              const newMap = new Map(prev);
-                              newMap.set(contractAddress, weight);
-                              return newMap;
-                            });
-                          }
+                        renderBackContent={(token) => {
+                          const contractAddress = TokenHelpers.getAddress(token);
+                          const isSelected = selectedTokens.has(contractAddress);
+                          const currentWeight = selectedTokens.get(contractAddress) || 0;
+                          
+                          return (
+                            <PortfolioTokenCardBack
+                              token={token}
+                              isSelected={isSelected}
+                              currentWeight={currentWeight}
+                              onToggleSelection={() => {
+                                if (isSelected) {
+                                  handleTokenSelect(contractAddress);
+                                } else {
+                                  // Add with default weight
+                                  const usedWeight = Array.from(selectedTokens.values()).reduce((sum, w) => sum + w, 0);
+                                  const remainingWeight = 100 - usedWeight;
+                                  const defaultWeight = remainingWeight >= 20 ? 20 : remainingWeight >= 10 ? 10 : remainingWeight;
+                                  
+                                  if (defaultWeight > 0) {
+                                    setSelectedTokens(prev => {
+                                      const newMap = new Map(prev);
+                                      newMap.set(contractAddress, defaultWeight);
+                                      return newMap;
+                                    });
+                                    toast.success(`${token.symbol} added with ${defaultWeight}% weight`, { duration: 2000 });
+                                  } else {
+                                    toast.error(`Portfolio is full (${usedWeight}%). Remove tokens first.`, { duration: 4000 });
+                                  }
+                                }
+                              }}
+                              onWeightChange={(delta) => handleWeightChange(contractAddress, currentWeight + delta)}
+                            />
+                          );
                         }}
-                        onWeightChange={handleWeightChange}
                       />
                       
                       {/* Load More Trigger - Subtle infinite scroll indicator */}
