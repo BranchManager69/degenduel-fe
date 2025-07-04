@@ -66,10 +66,8 @@ import { useContests } from "../../../hooks/websocket/topic-hooks/useContests";
 // Import StandaloneTokenCard for DUEL token display
 import { StandaloneTokenCard } from "../../../components/tokens-list/StandaloneTokenCard";
 
-// Import standardized token data hook for live token updates
-import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
 // Import specific tokens hook for performance
-import { useSpecificTokens } from "../../../hooks/data/useSpecificTokens";
+import { useGlobalTokens } from "../../../hooks/data/useGlobalTokens";
 
 // Import contest creation buttons
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
@@ -97,28 +95,19 @@ export const LandingPage: React.FC = () => {
   // Countdown completion state
   const [isCountdownComplete, setIsCountdownComplete] = useState(false);
 
-  // PERFORMANCE FIX: Only fetch the specific tokens we need (DUEL and SOL)
-  // This prevents subscribing to 2090 WebSocket topics
+  // SMART SOLUTION: Use the global token data that UnifiedTicker already loaded
+  // No need for separate API calls when we already have all the data!
   const DUEL_ADDRESS = 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX';
   const SOL_ADDRESS = 'So11111111111111111111111111111111111111112';
   
+  // Use the global token data stream
   const { 
     tokens: specificTokens, 
-    isLoading: tokensLoading, 
+    isLoading: tokensLoading,
     error: tokensError 
-  } = useSpecificTokens([DUEL_ADDRESS, SOL_ADDRESS], { enableLiveUpdates: true });
+  } = useGlobalTokens([DUEL_ADDRESS, SOL_ADDRESS]);
   
-  // Debug log to see what's happening
-  useEffect(() => {
-    console.log('[LandingPage] Specific token data:', {
-      tokensCount: specificTokens.length,
-      isLoading: tokensLoading,
-      error: tokensError,
-      tokens: specificTokens.map(t => ({ symbol: t.symbol, address: t.address }))
-    });
-  }, [specificTokens, tokensLoading, tokensError]);
-  
-  // Extract DUEL and SOL tokens from specific data
+  // Extract DUEL and SOL tokens
   const duelToken = specificTokens.find(t => 
     t.address === DUEL_ADDRESS || 
     t.contractAddress === DUEL_ADDRESS
@@ -131,6 +120,20 @@ export const LandingPage: React.FC = () => {
     ...solTokenRaw,
     header_image_url: '/assets/media/sol_banner.png'
   } : null;
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('[LandingPage] Token loading debug:', {
+      tokensLoading,
+      tokensError,
+      specificTokensCount: specificTokens.length,
+      specificTokens: specificTokens.map(t => ({ symbol: t.symbol, address: t.address })),
+      hasDuel: !!duelToken,
+      hasSol: !!solToken,
+      duelToken,
+      solToken
+    });
+  }, [specificTokens, tokensLoading, tokensError, duelToken, solToken]);
   
   // Modal state for create contest
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

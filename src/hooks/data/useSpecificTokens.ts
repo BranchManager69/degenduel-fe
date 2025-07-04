@@ -41,16 +41,38 @@ export function useSpecificTokens(
       setIsLoading(true);
       setError(null);
 
+      console.log('[useSpecificTokens] Fetching tokens for addresses:', tokenAddresses);
+
       // Fetch all tokens (unfortunately the API doesn't support filtering by address)
-      const response = await ddApi.tokens.getAll();
+      // Need to fetch with a higher limit to ensure we get DUEL and SOL
+      // SOL might be ranked lower, so we need more tokens
+      const response = await ddApi.tokens.getAll({ 
+        limit: 2000, // Increase limit significantly to ensure we get SOL
+        format: 'paginated' 
+      });
       const allTokens = Array.isArray(response) ? response : response.tokens || [];
+      
+      console.log('[useSpecificTokens] API returned', allTokens.length, 'total tokens');
 
       // Filter to only the tokens we need
-      const specificTokens = allTokens.filter((token: Token) => 
-        tokenAddresses.includes(token.address) || 
-        tokenAddresses.includes(token.contractAddress)
-      );
+      const specificTokens = allTokens.filter((token: Token) => {
+        const matches = tokenAddresses.includes(token.address) || 
+          (token.contractAddress && tokenAddresses.includes(token.contractAddress));
+        if (matches) {
+          console.log('[useSpecificTokens] Found matching token:', token.symbol, token.address);
+        }
+        // Special debug for SOL
+        if (token.symbol === 'SOL' || token.address === 'So11111111111111111111111111111111111111112') {
+          console.log('[useSpecificTokens] Found SOL token but match status:', matches, 'token:', {
+            symbol: token.symbol,
+            address: token.address,
+            contractAddress: token.contractAddress
+          });
+        }
+        return matches;
+      });
 
+      console.log('[useSpecificTokens] Filtered to', specificTokens.length, 'specific tokens');
       setTokens(specificTokens);
     } catch (err: any) {
       console.error('[useSpecificTokens] Failed to fetch tokens:', err);

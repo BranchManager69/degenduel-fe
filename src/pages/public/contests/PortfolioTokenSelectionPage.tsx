@@ -955,8 +955,11 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
           
           // Handle specific wallet errors
           let errorMessage = "Transaction failed";
+          let isUserCancellation = false;
+          
           if (err.code === 4001 || err.message?.includes("User rejected")) {
             errorMessage = "Transaction cancelled by user";
+            isUserCancellation = true;
           } else if (err.message?.includes("Insufficient funds")) {
             errorMessage = "Insufficient SOL balance for transaction";
           } else if (err.message?.includes("blockhash not found")) {
@@ -970,7 +973,11 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
             message: "Transaction failed",
             error: errorMessage,
           });
-          throw new Error(errorMessage);
+          
+          // Throw error with special flag for user cancellations
+          const error = new Error(errorMessage);
+          (error as any).isUserCancellation = isUserCancellation;
+          throw error;
         }
 
         // 2. Submit contest entry and portfolio in one atomic operation
@@ -1022,6 +1029,16 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
       // navigate(`/contests/${contestId}`);
     } catch (error: any) {
       const errorMsg = error.message || "Failed to enter contest";
+
+      // Handle user cancellation FIRST - this is not a real error
+      if (error.isUserCancellation) {
+        setTransactionState({
+          status: "idle",
+          message: "",
+        });
+        toast("Transaction cancelled", { duration: 2000 });
+        return;
+      }
 
       // Handle session expiration (401) errors
       if (error.status === 401 || errorMsg.includes("401") || errorMsg.includes("No session token") || errorMsg.includes("unauthorized")) {

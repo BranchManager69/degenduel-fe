@@ -35,7 +35,7 @@
  * @updated 2025-12-06 - Implemented WebSocket pagination for pro frontend experience
  */
 
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { ddApi } from '../../../services/dd-api';
 import { Token, TokenHelpers } from '../../../types';
@@ -565,6 +565,11 @@ export function useTokenData(
   // Subscribe to individual tokens when we have them
   const subscribedTokensRef = useRef<Set<string>>(new Set());
   
+  // Memoize token addresses to prevent unnecessary effect runs
+  const tokenAddressesString = useMemo(() => {
+    return tokens.map(t => t.address).filter(Boolean).sort().join(',');
+  }, [tokens]);
+  
   // RE-ENABLED: Individual token subscriptions for real-time updates
   // Let's see how the performance is now
   useEffect(() => {
@@ -580,7 +585,9 @@ export function useTokenData(
       const tokenAddresses = tokens.map(t => t.address).filter(Boolean);
       console.log(`[useTokenData] 📋 Found ${tokenAddresses.length} token addresses:`, tokenAddresses.slice(0, 5));
       const newSubscriptions: string[] = [];
+      const toUnsubscribe: string[] = [];
       
+      // Find new tokens to subscribe to
       tokenAddresses.forEach(address => {
         if (!subscribedTokensRef.current.has(address)) {
           newSubscriptions.push(`token:price:${address}`);
@@ -588,8 +595,24 @@ export function useTokenData(
         }
       });
       
+      // Find tokens we no longer need (that were removed from the list)
+      const currentAddressSet = new Set(tokenAddresses);
+      subscribedTokensRef.current.forEach(subscribedAddress => {
+        if (!currentAddressSet.has(subscribedAddress)) {
+          toUnsubscribe.push(`token:price:${subscribedAddress}`);
+          subscribedTokensRef.current.delete(subscribedAddress);
+        }
+      });
+      
+      // Unsubscribe from removed tokens
+      if (toUnsubscribe.length > 0) {
+        console.log(`[useTokenData] 🔕 UNSUBSCRIBING from ${toUnsubscribe.length} removed token channels`);
+        ws.unsubscribe(toUnsubscribe);
+      }
+      
+      // Subscribe to new tokens
       if (newSubscriptions.length > 0) {
-        console.log(`[useTokenData] 🔔 SUBSCRIBING to ${newSubscriptions.length} individual token channels:`, newSubscriptions);
+        console.log(`[useTokenData] 🔔 SUBSCRIBING to ${newSubscriptions.length} new token channels:`, newSubscriptions.slice(0, 5));
         const success = ws.subscribe(newSubscriptions);
         console.log(`[useTokenData] 📡 Subscription result:`, success);
         
@@ -601,15 +624,19 @@ export function useTokenData(
       }
     }
     
-    // Cleanup function
+    // Cleanup function - only runs when component unmounts or live updates are disabled
     return () => {
-      if (subscribedTokensRef.current.size > 0) {
-        const topics = Array.from(subscribedTokensRef.current).map(addr => `token:price:${addr}`);
-        ws.unsubscribe(topics);
-        subscribedTokensRef.current.clear();
+      // Only unsubscribe if we're truly unmounting (not just re-rendering)
+      if (!ws.isConnected || disableLiveUpdates) {
+        if (subscribedTokensRef.current.size > 0) {
+          const topics = Array.from(subscribedTokensRef.current).map(addr => `token:price:${addr}`);
+          console.log(`[useTokenData] 🧹 CLEANUP: Unsubscribing from ${topics.length} channels`);
+          ws.unsubscribe(topics);
+          subscribedTokensRef.current.clear();
+        }
       }
     };
-  }, [ws.isConnected, tokens, disableLiveUpdates]);
+  }, [ws.isConnected, tokenAddressesString, ws.subscribe, ws.unsubscribe, disableLiveUpdates]);
 
   // REST-First: Load token data via REST for immediate display, WebSocket for updates
   useEffect(() => {
