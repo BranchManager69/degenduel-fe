@@ -122,6 +122,35 @@ export const UnifiedWebSocketProvider: React.FC<{
   // Track which components have subscribed to which topics for cleanup
   const componentSubscriptionsRef = useRef<Map<string, Set<string>>>(new Map());
   
+  // Track pending subscription acknowledgments
+  const pendingSubscriptionAcks = useRef<Map<string, {
+    topics: string[],
+    timestamp: number,
+    retryCount: number,
+    timeoutId?: NodeJS.Timeout
+  }>>(new Map());
+  
+  // Subscription error codes
+  const SUBSCRIPTION_ERROR_CODES = {
+    REQUIRES_TOPIC: 4003,
+    NO_VALID_TOPICS: 4004,
+    UNSUBSCRIBE_REQUIRES_TOPIC: 4005,
+    AUTH_REQUIRED: 4010,
+    ADMIN_REQUIRED: 4012
+  };
+  
+  // Permanent error codes that should not be retried
+  const PERMANENT_ERROR_CODES = new Set([
+    SUBSCRIPTION_ERROR_CODES.NO_VALID_TOPICS,  // 4004 - Don't retry empty subscriptions
+    SUBSCRIPTION_ERROR_CODES.AUTH_REQUIRED,    // 4010
+    SUBSCRIPTION_ERROR_CODES.ADMIN_REQUIRED    // 4012
+  ]);
+  
+  // Generate unique request ID for tracking
+  const generateRequestId = () => {
+    return `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+  
   // Get default configuration
   const defaultUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v69/ws`; // doubt that this is the best practices method but it works for now
   const connectionUrl = params?.url || defaultUrl;
@@ -306,6 +335,15 @@ export const UnifiedWebSocketProvider: React.FC<{
       if (message.type === DDExtendedMessageType.ACKNOWLEDGMENT && 
           message.operation === 'subscribe' && 
           message.status === 'success') {
+        // Clear pending ACK if we have a requestId
+        if (message.requestId && pendingSubscriptionAcks.current.has(message.requestId)) {
+          const pending = pendingSubscriptionAcks.current.get(message.requestId);
+          if (pending?.timeoutId) {
+            clearTimeout(pending.timeoutId);
+          }
+          pendingSubscriptionAcks.current.delete(message.requestId);
+          console.log(`[WebSocket] Subscription acknowledged for topics:`, message.topics);
+        }
         return;
       }
 
@@ -349,10 +387,114 @@ export const UnifiedWebSocketProvider: React.FC<{
         return;
       }
       
+      // Handle subscription-related errors
+      if (message.type === DDExtendedMessageType.ERROR && 
+          message.requestId && 
+          pendingSubscriptionAcks.current.has(message.requestId)) {
+        
+        const pending = pendingSubscriptionAcks.current.get(message.requestId)!;
+        
+        // Clear the timeout
+        if (pending.timeoutId) {
+          clearTimeout(pending.timeoutId);
+        }
+        
+        // Check if this is a permanent error
+        if (PERMANENT_ERROR_CODES.has(message.code)) {
+          console.error(`[WebSocket] Permanent subscription error (${message.code}):`, message.message);
+          pendingSubscriptionAcks.current.delete(message.requestId);
+        } else {
+          // Retry for non-permanent errors
+          console.warn(`[WebSocket] Subscription error (${message.code}), will retry:`, message.message);
+          retrySubscription(message.requestId);
+        }
+        
+        return;
+      }
+      
       // Distribute other messages to listeners
       distributeMessage(message);
     } catch (error) {
       console.error('Error processing WebSocket message:', error, 'Raw data:', event.data);
+    }
+  };
+  
+  // Check for pending ACK after timeout
+  const checkPendingAck = (requestId: string) => {
+    const pending = pendingSubscriptionAcks.current.get(requestId);
+    
+    if (!pending) {
+      return; // Already acknowledged or handled
+    }
+    
+    if (pending.retryCount < 2) {
+      console.warn(`[WebSocket] No ACK received for subscription ${requestId}, retrying...`);
+      retrySubscription(requestId);
+    } else {
+      console.error(`[WebSocket] Subscription failed after 3 attempts for topics:`, pending.topics);
+      pendingSubscriptionAcks.current.delete(requestId);
+    }
+  };
+  
+  // Retry a failed subscription
+  const retrySubscription = async (requestId: string) => {
+    const pending = pendingSubscriptionAcks.current.get(requestId);
+    
+    if (!pending || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    
+    // Safety check - don't retry empty topic arrays
+    if (!pending.topics || pending.topics.length === 0) {
+      console.error(`[WebSocket] Cannot retry subscription ${requestId} with empty topics`);
+      pendingSubscriptionAcks.current.delete(requestId);
+      return;
+    }
+    
+    // Clear old timeout
+    if (pending.timeoutId) {
+      clearTimeout(pending.timeoutId);
+    }
+    
+    // Update retry count and timestamp
+    pending.retryCount++;
+    pending.timestamp = Date.now();
+    
+    // Calculate backoff: 1s, 2s, then fail
+    const timeoutDelay = 1000 * pending.retryCount;
+    
+    // Get current auth token if authenticated  
+    let authToken: string | undefined;
+    if (authService.isAuthenticated()) {
+      try {
+        const token = await authService.getToken(TokenType.WS_TOKEN);
+        authToken = token || undefined;
+      } catch (error) {
+        console.warn('[WebSocket] Failed to get auth token for retry:', error);
+        authToken = undefined;
+      }
+    }
+    
+    // Resend subscription with same requestId
+    const message = {
+      type: 'SUBSCRIBE',
+      topics: pending.topics,
+      requestId,
+      ...(authToken && { authToken })
+    };
+    
+    console.log(`[WebSocket] Retrying subscription ${requestId} with topics:`, pending.topics);
+    
+    try {
+      wsRef.current.send(JSON.stringify(message));
+      
+      // Set new timeout
+      pending.timeoutId = setTimeout(() => checkPendingAck(requestId), timeoutDelay);
+      
+      console.log(`[WebSocket] Retry ${pending.retryCount + 1} sent for ${requestId}`);
+    } catch (error) {
+      console.error('[WebSocket] Failed to retry subscription:', error);
+      pendingSubscriptionAcks.current.delete(requestId);
     }
   };
   
@@ -364,15 +506,33 @@ export const UnifiedWebSocketProvider: React.FC<{
     // Stop heartbeat
     stopHeartbeat();
     
-    // Clear subscription tracking on disconnect
-    console.log('[WebSocket] Clearing subscription tracking due to disconnection');
-    currentTopicsRef.current.clear();
-    pendingSubscriptionsRef.current.clear();
+    // IMPORTANT: Move active subscriptions to pending queue for reconnection
+    console.log('[WebSocket] Preserving active subscriptions for reconnection');
+    if (currentTopicsRef.current.size > 0) {
+      // Add all current topics to pending queue
+      currentTopicsRef.current.forEach(topic => {
+        pendingSubscriptionsRef.current.add(topic);
+      });
+      console.log(`[WebSocket] Preserved ${currentTopicsRef.current.size} active subscriptions`);
+      
+      // Now clear current topics since we're disconnected
+      currentTopicsRef.current.clear();
+    }
+    
+    // Clear component tracking but keep pending subscriptions
     componentSubscriptionsRef.current.clear();
     
     // Clear any pending debounce timers
     subscriptionDebounceRef.current.forEach(timer => clearTimeout(timer));
     subscriptionDebounceRef.current.clear();
+    
+    // Clear pending subscription ACKs
+    pendingSubscriptionAcks.current.forEach(pending => {
+      if (pending.timeoutId) {
+        clearTimeout(pending.timeoutId);
+      }
+    });
+    pendingSubscriptionAcks.current.clear();
     
     // Set appropriate connection state
     if (source === 'error' || (event instanceof CloseEvent && (event.code === 1006 || event.code >= 4000))) {
@@ -603,7 +763,11 @@ export const UnifiedWebSocketProvider: React.FC<{
     }
     
     try {
-      wsRef.current.send(JSON.stringify(message));
+      const messageStr = JSON.stringify(message);
+      if (message.type === 'SUBSCRIBE') {
+        console.log('[WebSocket] Sending subscription:', messageStr);
+      }
+      wsRef.current.send(messageStr);
       return true;
     } catch (error) {
       console.error('Error sending WebSocket message:', error);
@@ -664,21 +828,34 @@ export const UnifiedWebSocketProvider: React.FC<{
       const finalTopics = newTopics.filter(topic => !currentTopicsRef.current.has(topic));
       if (finalTopics.length === 0) {
         console.log('[WebSocket] All topics already subscribed during debounce');
+        console.log('Current subscribed topics:', Array.from(currentTopicsRef.current));
+        console.log('Attempted topics:', newTopics);
         return;
       }
       
-      if (process.env.NODE_ENV === 'development') {
-        console.group(`🔗 [WebSocket] Subscribing to ${finalTopics.length} topics`);
-        console.log('Topics:', finalTopics);
-        console.log('Component:', componentId || 'unknown');
-        console.groupEnd();
-      }
+      console.group(`🔗 [WebSocket] Subscribing to ${finalTopics.length} topics`);
+      console.log('Topics:', finalTopics);
+      console.log('Component:', componentId || 'unknown');
+      console.groupEnd();
+      
+      // Generate request ID for tracking
+      const requestId = generateRequestId();
+      
+      // Track pending ACK
+      pendingSubscriptionAcks.current.set(requestId, {
+        topics: finalTopics,
+        timestamp: Date.now(),
+        retryCount: 0
+      });
+      
+      console.log(`[WebSocket] Preparing subscription ${requestId} for topics:`, finalTopics);
       
       // Create the base message with only new topics
       const createSubscribeMessage = (authToken?: string) => {
         const message: any = {
           type: 'SUBSCRIBE',
-          topics: [...finalTopics] // Use only new topics to prevent duplicates
+          topics: [...finalTopics], // Use only new topics to prevent duplicates
+          requestId
         };
         
         if (authToken) {
@@ -698,24 +875,12 @@ export const UnifiedWebSocketProvider: React.FC<{
               // Mark topics as subscribed
               finalTopics.forEach(topic => currentTopicsRef.current.add(topic));
               
-              // Track component subscriptions for cleanup
-              if (componentId) {
-                if (!componentSubscriptionsRef.current.has(componentId)) {
-                  componentSubscriptionsRef.current.set(componentId, new Set());
-                }
-                finalTopics.forEach(topic => 
-                  componentSubscriptionsRef.current.get(componentId)!.add(topic)
-                );
+              // Set timeout for ACK
+              const timeoutId = setTimeout(() => checkPendingAck(requestId), 1000);
+              const pending = pendingSubscriptionAcks.current.get(requestId);
+              if (pending) {
+                pending.timeoutId = timeoutId;
               }
-            }
-          })
-          .catch(() => {
-            // Send without token if token retrieval fails
-            const message = createSubscribeMessage();
-            const success = sendMessage(message);
-            if (success) {
-              // Mark topics as subscribed
-              finalTopics.forEach(topic => currentTopicsRef.current.add(topic));
               
               // Track component subscriptions for cleanup
               if (componentId) {
@@ -726,6 +891,38 @@ export const UnifiedWebSocketProvider: React.FC<{
                   componentSubscriptionsRef.current.get(componentId)!.add(topic)
                 );
               }
+            } else {
+              // Failed to send, remove from tracking
+              pendingSubscriptionAcks.current.delete(requestId);
+            }
+          })
+          .catch(() => {
+            // Send without token if token retrieval fails
+            const message = createSubscribeMessage();
+            const success = sendMessage(message);
+            if (success) {
+              // Mark topics as subscribed
+              finalTopics.forEach(topic => currentTopicsRef.current.add(topic));
+              
+              // Set timeout for ACK
+              const timeoutId = setTimeout(() => checkPendingAck(requestId), 1000);
+              const pending = pendingSubscriptionAcks.current.get(requestId);
+              if (pending) {
+                pending.timeoutId = timeoutId;
+              }
+              
+              // Track component subscriptions for cleanup
+              if (componentId) {
+                if (!componentSubscriptionsRef.current.has(componentId)) {
+                  componentSubscriptionsRef.current.set(componentId, new Set());
+                }
+                finalTopics.forEach(topic => 
+                  componentSubscriptionsRef.current.get(componentId)!.add(topic)
+                );
+              }
+            } else {
+              // Failed to send, remove from tracking
+              pendingSubscriptionAcks.current.delete(requestId);
             }
           });
         return;
@@ -738,6 +935,13 @@ export const UnifiedWebSocketProvider: React.FC<{
         // Mark topics as subscribed
         finalTopics.forEach(topic => currentTopicsRef.current.add(topic));
         
+        // Set timeout for ACK
+        const timeoutId = setTimeout(() => checkPendingAck(requestId), 1000);
+        const pending = pendingSubscriptionAcks.current.get(requestId);
+        if (pending) {
+          pending.timeoutId = timeoutId;
+        }
+        
         // Track component subscriptions for cleanup
         if (componentId) {
           if (!componentSubscriptionsRef.current.has(componentId)) {
@@ -747,6 +951,9 @@ export const UnifiedWebSocketProvider: React.FC<{
             componentSubscriptionsRef.current.get(componentId)!.add(topic)
           );
         }
+      } else {
+        // Failed to send, remove from tracking
+        pendingSubscriptionAcks.current.delete(requestId);
       }
       
       // Remove debounce timer
