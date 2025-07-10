@@ -112,7 +112,7 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
 
   // WebSocket subscription
   useEffect(() => {
-    if (!ws.isConnected || !token) {
+    if (!ws.isConnected) {
       return;
     }
 
@@ -142,7 +142,7 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
         isSubscribed.current = false;
       }
     };
-  }, [ws, token, topic, tokenAddress, handleTokenUpdate]);
+  }, [ws, topic, tokenAddress, handleTokenUpdate]);
 
   return {
     token,
