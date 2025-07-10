@@ -49,11 +49,11 @@ export const POSITION_CONFIGS: PositionConfig[] = [
   {
     pattern: /\/tokens/,
     position: {
-      left: '20px',
+      right: '20px',
       bottom: '20px',
       transform: 'scale(0.665)',
     },
-    description: 'Tokens page - bottom left corner',
+    description: 'Tokens page - bottom right corner',
   },
   {
     pattern: /\/profile/,
@@ -85,11 +85,56 @@ export const POSITION_CONFIGS: PositionConfig[] = [
   {
     pattern: /\/contests\/\d+\/detail/,
     position: {
-      left: '20px',
+      right: '20px',
       top: '200px',
       transform: 'scale(0.665)',
     },
-    description: 'Contest detail page - left side middle',
+    description: 'Contest detail page - right side middle',
+  },
+  {
+    pattern: /\/my-portfolios/,
+    position: {
+      right: '20px',
+      bottom: '20px',
+      transform: 'scale(0.665)',
+    },
+    description: 'My portfolios page - bottom right corner',
+  },
+  {
+    pattern: /\/wallet/,
+    position: {
+      right: '20px',
+      top: '120px',
+      transform: 'scale(0.665)',
+    },
+    description: 'Wallet page - top right',
+  },
+  {
+    pattern: /\/contest-credits/,
+    position: {
+      right: '20px',
+      bottom: '80px',
+      transform: 'scale(0.665)',
+    },
+    description: 'Contest credits page - bottom right, higher up',
+  },
+  {
+    pattern: /\/contests\/create/,
+    position: {
+      right: '20px',
+      top: '180px',
+      transform: 'scale(0.665)',
+    },
+    description: 'Create contest page - right side upper middle',
+  },
+  {
+    pattern: /\/contests\/\d+\/select-tokens/,
+    position: {
+      right: '20px',
+      bottom: '20px',
+      transform: 'scale(0.665)',
+    },
+    description: 'Token selection page - bottom right corner',
   },
 ];
 

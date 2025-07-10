@@ -15,7 +15,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Loader2, WifiOff } from "lucide-react";
 import React, { ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
+import { useTickerTokens } from "../../hooks/websocket/topic-hooks/useTickerTokens";
 import { useLaunchEvent } from "../../hooks/websocket/topic-hooks/useLaunchEvent";
 import { getContestImageUrl } from "../../lib/imageUtils";
 import { useStore } from "../../store/useStore";
@@ -48,9 +48,9 @@ export const UnifiedTicker: React.FC<Props> = ({
   
   // We'll add the debug effect later after originalTickerItems is defined
   
-  // Use standardized token data - load all tokens for accurate sorting
+  // Use optimized ticker tokens - only top 50 by change
   const { tokens: allTokens, isLoading: finalTokensLoading, isConnected: finalDataConnected } = 
-    useStandardizedTokenData("all", "change", {}, 5, 3000); // Load all tokens
+    useTickerTokens({ limit: 50, sort: 'change24h' });
 
   // Helper functions
   const formatTimeUntilStart = (startTime: string): string => {
@@ -112,23 +112,13 @@ export const UnifiedTicker: React.FC<Props> = ({
       .slice(0, 10);
   }, [currentContests]);
 
-  // Sort tokens by price change (biggest movers first) and limit to maxTokens
+  // Backend now handles all sorting and filtering - just use what we get
   const displayTokens = useMemo(() => {
     if (!allTokens) return [];
     
-    // Filter tokens by minimum market cap of $100,000
-    const filteredTokens = allTokens.filter((token: Token) => {
-      const marketCap = Number(token.market_cap) || 0;
-      return marketCap >= 100000;
-    });
-    
-    const sortedTokens = [...filteredTokens].sort((a, b) => {
-      const changeA = TokenHelpers.getPriceChange(a);
-      const changeB = TokenHelpers.getPriceChange(b);
-      return changeB - changeA; // Sort by actual change, biggest gains first
-    });
-    
-    return sortedTokens.slice(0, maxTokens);
+    // Backend already sorted by change24h and limited to top 50
+    // We can further limit if needed for UI purposes
+    return allTokens.slice(0, maxTokens);
   }, [allTokens, maxTokens]);
 
   useEffect(() => {

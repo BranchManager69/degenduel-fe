@@ -157,6 +157,8 @@ const HowItWorks = lazy(() => import('./pages/public/general/HowItWorks').then(m
 const LoginPage = lazy(() => import('./pages/public/general/LoginPage'));
 const TermsOfService = lazy(() => import('./pages/public/general/TermsOfService').then(module => ({ default: module.TermsOfService })));
 const PrivacyPolicy = lazy(() => import('./pages/public/general/PrivacyPolicy').then(module => ({ default: module.PrivacyPolicy })));
+const WhitepaperPage = lazy(() => import('./pages/public/general/WhitepaperPage').then(module => ({ default: module.WhitepaperPage })));
+const RoadmapPage = lazy(() => import('./pages/public/general/RoadmapPage').then(module => ({ default: module.RoadmapPage })));
 const Maintenance = lazy(() => import('./pages/public/general/Maintenance').then(module => ({ default: module.Maintenance })));
 const NotFound = lazy(() => import('./pages/public/general/NotFound').then(module => ({ default: module.NotFound })));
 const PublicProfile = lazy(() => import('./pages/public/general/PublicProfile').then(module => ({ default: module.PublicProfile })));
@@ -430,6 +432,8 @@ const AppContent: React.FC = () => {
           <Route path="/contact" element={<Suspense fallback={<LoadingFallback />}><Contact /></Suspense>} />
           <Route path="/terms" element={<Suspense fallback={<LoadingFallback />}><TermsOfService /></Suspense>} />
           <Route path="/privacy" element={<Suspense fallback={<LoadingFallback />}><PrivacyPolicy /></Suspense>} />
+          <Route path="/whitepaper" element={<Suspense fallback={<LoadingFallback />}><WhitepaperPage /></Suspense>} />
+          <Route path="/roadmap" element={<Suspense fallback={<LoadingFallback />}><RoadmapPage /></Suspense>} />
           <Route path="/important-update" element={<Suspense fallback={<LoadingFallback />}><ImportantUpdate /></Suspense>} />
           <Route path="/developer-updates" element={<Suspense fallback={<LoadingFallback />}><DeveloperUpdates /></Suspense>} />
           <Route path="/blinks-demo" element={<Suspense fallback={<LoadingFallback />}><BlinksDemo /></Suspense>} />
