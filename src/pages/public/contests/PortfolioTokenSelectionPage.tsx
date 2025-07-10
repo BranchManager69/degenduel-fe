@@ -362,18 +362,14 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
         setLoadingEntryStatus(true);
         
         // Step 1: Check participation status (public endpoint)
-        console.error("🔍🔍🔍 CHECKING PARTICIPATION:", contestId, user.wallet_address, "🔍🔍🔍");
         const participationData = await ddApi.contests.checkParticipation(contestId, user.wallet_address);
-        console.error("📊📊📊 PARTICIPATION DATA:", participationData, "📊📊📊");
         
         if (participationData.participating) {
           setHasExistingPortfolio(true);
           
           // Step 2: Try to get existing portfolio (authenticated endpoint)
           try {
-            console.error("🔴🔴🔴 FETCHING PORTFOLIO FOR EXISTING PARTICIPANT 🔴🔴🔴");
             const portfolioData = await ddApi.portfolio.get(Number(contestId));
-            console.error("🟢🟢🟢 PORTFOLIO DATA RECEIVED:", portfolioData, "🟢🟢🟢");
 
             // Create map using contract addresses instead of symbols
             const existingPortfolio = new Map<string, number>(
@@ -383,7 +379,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
             );
 
             setSelectedTokens(existingPortfolio);
-            console.error("✅✅✅ LOADED EXISTING PORTFOLIO WITH", existingPortfolio.size, "TOKENS ✅✅✅");
             
             // ============================================================================
             // FETCH MISSING TOKENS FROM EXISTING PORTFOLIO
@@ -451,12 +446,10 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
             }
             
           } catch (portfolioError: any) {
-            console.error("⚠️⚠️⚠️ PORTFOLIO FETCH FAILED (USER IN CONTEST BUT NO PORTFOLIO YET) ⚠️⚠️⚠️", portfolioError);
             // User is in contest but no portfolio yet - that's fine
             setSelectedTokens(new Map());
           }
         } else {
-          console.error("❌❌❌ USER NOT PARTICIPATING IN CONTEST ❌❌❌");
           setHasExistingPortfolio(false);
           setSelectedTokens(new Map());
         }

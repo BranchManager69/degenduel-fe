@@ -81,7 +81,15 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
   const HottestTokenCard = ({ token, index, backContent = 'details' }: { token: Token, index: number, backContent?: 'details' | 'portfolio' }) => {
     const navigate = useNavigate();
     const isSelected = token.symbol.toLowerCase() === selectedTokenSymbol?.toLowerCase();
-    const [isFlipped, setIsFlipped] = useState(false);
+    const contractAddress = TokenHelpers.getAddress(token);
+    // Use token address as key to maintain flip state across re-renders
+    const [isFlipped, setIsFlipped] = useState(() => {
+      // Check if this card is in portfolio mode and has a selection
+      if (backContent === 'portfolio' && selectedTokens?.has(contractAddress)) {
+        return true; // Keep portfolio cards flipped if they're selected
+      }
+      return false;
+    });
     
     // Check if this is DUEL token (forced at position 0)
     const isDuel = token.symbol === 'DUEL' && index === 0;

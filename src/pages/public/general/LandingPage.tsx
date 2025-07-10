@@ -66,8 +66,8 @@ import { useContests } from "../../../hooks/websocket/topic-hooks/useContests";
 // Import StandaloneTokenCard for DUEL token display
 import { StandaloneTokenCard } from "../../../components/tokens-list/StandaloneTokenCard";
 
-// Import specific tokens hook for performance
-import { useGlobalTokens } from "../../../hooks/data/useGlobalTokens";
+// Import individual token hook for precise subscriptions
+import { useIndividualToken } from "../../../hooks/websocket/topic-hooks/useIndividualToken";
 
 // Import contest creation buttons
 import { CreateContestButton } from "../../../components/contest-browser/CreateContestButton";
@@ -95,45 +95,32 @@ export const LandingPage: React.FC = () => {
   // Countdown completion state
   const [isCountdownComplete, setIsCountdownComplete] = useState(false);
 
-  // SMART SOLUTION: Use the global token data that UnifiedTicker already loaded
-  // No need for separate API calls when we already have all the data!
+  // Use individual token subscriptions for precise data
   const DUEL_ADDRESS = 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX';
   const SOL_ADDRESS = 'So11111111111111111111111111111111111111112';
   
-  // Use the global token data stream
+  // Subscribe to individual tokens for guaranteed data
   const { 
-    tokens: specificTokens, 
-    isLoading: tokensLoading,
-    error: tokensError 
-  } = useGlobalTokens([DUEL_ADDRESS, SOL_ADDRESS]);
+    token: duelToken, 
+    isLoading: duelLoading,
+    error: duelError 
+  } = useIndividualToken(DUEL_ADDRESS);
   
-  // Extract DUEL and SOL tokens
-  const duelToken = specificTokens.find(t => 
-    t.address === DUEL_ADDRESS || 
-    t.contractAddress === DUEL_ADDRESS
-  ) || null;
-  const solTokenRaw = specificTokens.find(t => 
-    t.address === SOL_ADDRESS || 
-    t.contractAddress === SOL_ADDRESS
-  ) || null;
+  const { 
+    token: solTokenRaw, 
+    isLoading: solLoading,
+    error: solError 
+  } = useIndividualToken(SOL_ADDRESS);
+  
+  // Add custom header image to SOL
   const solToken = solTokenRaw ? {
     ...solTokenRaw,
     header_image_url: '/assets/media/sol_banner.png'
   } : null;
   
-  // Debug logging
-  useEffect(() => {
-    console.log('[LandingPage] Token loading debug:', {
-      tokensLoading,
-      tokensError,
-      specificTokensCount: specificTokens.length,
-      specificTokens: specificTokens.map(t => ({ symbol: t.symbol, address: t.address })),
-      hasDuel: !!duelToken,
-      hasSol: !!solToken,
-      duelToken,
-      solToken
-    });
-  }, [specificTokens, tokensLoading, tokensError, duelToken, solToken]);
+  // Combined loading and error states
+  const tokensLoading = duelLoading || solLoading;
+  const tokensError = duelError || solError;
   
   // Modal state for create contest
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -743,7 +730,7 @@ export const LandingPage: React.FC = () => {
                 {/* DUEL Token & CTA Section - Side by side layout */}
                 <div className="mt-24 md:mt-32 mb-8">
                   {/* Show ServerCrashDisplay if tokens error (server down) - but NOT if we're already showing the contest error */}
-                  {tokensError && !error ? (
+                  {tokensError && !error && !tokensLoading ? (
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
