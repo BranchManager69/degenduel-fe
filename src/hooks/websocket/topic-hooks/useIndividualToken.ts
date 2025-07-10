@@ -11,10 +11,10 @@
  * @created 2025-01-15
  */
 
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { Token } from '../../../types';
-import { ddApi } from '../../../services/dd-api';
+//import { ddApi } from '../../../services/dd-api';
 
 interface UseIndividualTokenReturn {
   token: Token | null;
@@ -30,11 +30,11 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  
+
   const ws = useWebSocket();
   const isSubscribed = useRef(false);
   const topic = `token:price:${tokenAddress}`;
-  
+
   // Transform backend token to frontend Token type
   const transformToken = useCallback((data: any): Token => {
     return {
@@ -60,23 +60,23 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
       websites: data.websites || []
     };
   }, [tokenAddress]);
-  
+
   // Fetch initial token data via REST
   const fetchToken = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       console.log(`[useIndividualToken] Fetching initial data for ${tokenAddress}`);
-      
+
       // Use the direct token endpoint!
       const response = await fetch(`/api/tokens/${tokenAddress}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch token: ${response.statusText}`);
       }
-      
+
       const tokenData = await response.json();
-      
+
       if (tokenData) {
         setToken(transformToken(tokenData));
         setLastUpdate(new Date());
@@ -92,46 +92,46 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
       setIsLoading(false);
     }
   }, [tokenAddress, transformToken]);
-  
+
   // Handle incoming token updates
   const handleTokenUpdate = useCallback((message: any) => {
     if (message.type === 'DATA' && message.topic === topic && message.data) {
       console.log(`[useIndividualToken] Received update for ${tokenAddress}:`, message.data);
-      
+
       const updatedToken = transformToken(message.data);
       setToken(updatedToken);
       setLastUpdate(new Date());
       setError(null);
     }
   }, [topic, tokenAddress, transformToken]);
-  
+
   // Initial fetch
   useEffect(() => {
     fetchToken();
   }, [fetchToken]);
-  
+
   // WebSocket subscription
   useEffect(() => {
     if (!ws.isConnected || !token) {
       return;
     }
-    
+
     console.log(`[useIndividualToken] Subscribing to ${topic}`);
-    
+
     // Subscribe to specific token using traditional topics array
     ws.sendMessage({
       type: "SUBSCRIBE",
       topics: [topic]
     });
     isSubscribed.current = true;
-    
+
     // Register listener
     const unregister = ws.registerListener(
       `individual-token-${tokenAddress}`,
       ['DATA'] as any[],
       handleTokenUpdate
     );
-    
+
     return () => {
       unregister();
       if (isSubscribed.current && ws.isConnected) {
@@ -143,7 +143,7 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
       }
     };
   }, [ws, token, topic, tokenAddress, handleTokenUpdate]);
-  
+
   return {
     token,
     isLoading,
