@@ -57,7 +57,21 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
       header_image_url: data.header_image_url || "",
       socials: data.socials || {},
       status: "active" as const,
-      websites: data.websites || []
+      websites: data.websites || [],
+      // Additional fields for the detail page
+      price_changes: data.price_changes || data.priceChanges,
+      priceChanges: data.priceChanges || data.price_changes,
+      volumes: data.volumes,
+      transactions: data.transactions,
+      total_supply: data.total_supply,
+      totalSupply: data.totalSupply || String(data.total_supply || 0),
+      description: data.description,
+      color: data.color,
+      tags: data.tags || [],
+      pairCreatedAt: data.pairCreatedAt,
+      first_seen_on_jupiter_at: data.first_seen_on_jupiter_at,
+      priority_score: data.priority_score,
+      priorityScore: data.priorityScore || data.priority_score
     };
   }, [tokenAddress]);
 

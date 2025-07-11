@@ -11,7 +11,7 @@
  */
 
 import { motion } from "framer-motion";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
@@ -20,186 +20,24 @@ import { formatNumber } from "../../../utils/format";
 import { setupTokenOGMeta, resetToDefaultMeta } from "../../../utils/ogImageUtils";
 import { TokenHelpers } from "../../../types";
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
-import { useWebSocket } from "../../../contexts/UnifiedWebSocketContext";
-import { DDExtendedMessageType } from "../../../hooks/websocket/types";
+import { useIndividualToken } from "../../../hooks/websocket/topic-hooks/useIndividualToken";
 
 export const TokenDetailPageNew: React.FC = () => {
   const [copySuccess, setCopySuccess] = useState(false);
   const { address } = useParams<{ address: string }>();
-  const [error, setError] = useState<string | null>(null);
-  const ws = useWebSocket();
 
-  // State for single token data
-  const [token, setToken] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [wsError, setWsError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [, forceUpdate] = useState(0); // Force re-render for timer
-  const [updateCount, setUpdateCount] = useState(0); // Count WebSocket updates
-  const [updateSource, setUpdateSource] = useState<string>(""); // Track where updates come from
+  // Use the individual token hook for proper WebSocket subscription
+  const {
+    token,
+    isLoading,
+    isConnected,
+    error: wsError,
+    lastUpdate
+  } = useIndividualToken(address || '');
 
-  // Fetch single token directly from the new efficient endpoint!
-  useEffect(() => {
-    const fetchToken = async () => {
-      if (!address) return;
-      
-      setIsLoading(true);
-      setWsError(null);
-      
-      try {
-        console.log('[TokenDetailPageNew] Fetching single token:', address);
-        const response = await fetch(`/api/tokens/${address}`);
-        
-        if (!response.ok) {
-          throw new Error(`Token not found: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('[TokenDetailPageNew] Single token loaded:', data);
-        setToken(data);
-        setLastUpdate(new Date());
-        setUpdateSource("REST API (initial load)");
-      } catch (err: any) {
-        console.error('[TokenDetailPageNew] Failed to fetch token:', err);
-        setWsError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchToken();
-  }, [address]);
-
-  // WebSocket handler for token updates
-  const handleTokenUpdate = useCallback((message: any) => {
-    // LOG EVERYTHING to debug
-    console.log(`[TokenDetailPageNew] 🚨 RAW MESSAGE RECEIVED:`, JSON.stringify(message, null, 2));
-    
-    console.log(`[TokenDetailPageNew] 🔥 RECEIVED MESSAGE for ${address}:`, {
-      type: message.type,
-      topic: message.topic,
-      dataType: message.data?.type,
-      hasToken: !!message.data?.token,
-      tokenSymbol: message.data?.token?.symbol,
-      tokenPrice: message.data?.token?.price
-    });
-
-    // Handle individual token price updates - NEW FORMAT!
-    if (message.topic && message.topic.startsWith('token:price:')) {
-      const tokenAddress = message.topic.split(':')[2];
-      if (tokenAddress.toLowerCase() === address?.toLowerCase() && message.data?.type === 'price_update') {
-        console.log(`[TokenDetailPageNew] Received individual price update for ${message.data.token.symbol}: $${message.data.token.price}`);
-        const updatedToken = message.data.token;
-        setToken((prevToken: any) => ({
-          ...prevToken,
-          ...updatedToken,
-          // Ensure numeric values
-          price: parseFloat(updatedToken.price || '0'),
-          previousPrice: parseFloat(updatedToken.previousPrice || '0'),
-          change_24h: parseFloat(updatedToken.change_24h || '0'),
-          market_cap: parseFloat(updatedToken.market_cap || '0'),
-          volume_24h: parseFloat(updatedToken.volume_24h || '0'),
-          liquidity: parseFloat(updatedToken.liquidity || '0')
-        }));
-        setLastUpdate(new Date());
-        setUpdateCount(prev => prev + 1);
-        setUpdateSource(`WebSocket: token:price:${address}`);
-        return;
-      }
-    }
-    
-    // Fallback: Handle batch updates from token:price (backward compatibility)
-    if (message.topic === 'token:price') {
-      if (message.data?.type === 'batch_update') {
-        // Find our token in the batch
-        const updatedToken = message.data.tokens.find((t: any) => 
-          t.address?.toLowerCase() === address?.toLowerCase()
-        );
-        
-        if (updatedToken) {
-          console.log('[TokenDetailPageNew] Found token in batch update:', updatedToken.symbol);
-          setToken((prevToken: any) => ({
-            ...prevToken,
-            ...updatedToken,
-            change_24h: parseFloat(updatedToken.change_24h || '0'),
-            market_cap: parseFloat(updatedToken.market_cap || '0'),
-            volume_24h: parseFloat(updatedToken.volume_24h || '0'),
-            liquidity: parseFloat(updatedToken.liquidity || '0')
-          }));
-          setLastUpdate(new Date());
-          setUpdateCount(prev => prev + 1);
-          setUpdateSource("WebSocket: token:price (batch)");
-        }
-      }
-      return;
-    }
-    
-    // Fallback: Handle general market data updates
-    if (message.type === 'DATA' && (message.topic === 'market_data' || message.topic === 'market-data')) {
-      if (Array.isArray(message.data)) {
-        // Find our token in the update
-        const updatedToken = message.data.find((t: any) => 
-          t.address?.toLowerCase() === address?.toLowerCase()
-        );
-        
-        if (updatedToken) {
-          console.log('[TokenDetailPageNew] Received general market update for token');
-          setToken(updatedToken);
-          setLastUpdate(new Date());
-          setUpdateCount(prev => prev + 1);
-          setUpdateSource("WebSocket: market-data");
-        }
-      }
-    }
-  }, [address]);
-
-  // Subscribe to WebSocket updates
-  useEffect(() => {
-    if (!ws.isConnected || !address) return;
-
-    // Register handler for all token updates
-    const unregister = ws.registerListener(
-      'token-detail-updates',
-      [DDExtendedMessageType.DATA, DDExtendedMessageType.SYSTEM],
-      handleTokenUpdate
-      // No topic filter - we'll handle all messages and filter by topic in the handler
-    );
-    
-    // Subscribe to the INDIVIDUAL token channel!
-    const tokenTopic = `token:price:${address}`;
-    console.log(`[TokenDetailPageNew] 🔔 SUBSCRIBING to individual token channel: ${tokenTopic}`);
-    const success = ws.subscribe([tokenTopic]);
-    console.log(`[TokenDetailPageNew] 📡 Subscription result:`, success);
-    
-    // Also subscribe to the general token:price channel to see if we get anything
-    console.log(`[TokenDetailPageNew] 🔔 ALSO subscribing to general token:price channel`);
-    ws.subscribe(['token:price']);
-    
-
-    return () => {
-      unregister();
-      ws.unsubscribe([tokenTopic]);
-    };
-  }, [ws.isConnected, address, handleTokenUpdate]);
-
-  // Timer to update the "X seconds ago" display
-  useEffect(() => {
-    const timer = setInterval(() => {
-      forceUpdate(prev => prev + 1);
-    }, 1000);
-    
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
-    if (!address) {
-      setError("Token contract address is required");
-      return;
-    }
-
-    if (!isLoading && !token && !wsError) {
-      setError(`Token with address ${address} not found`);
-    } else if (token) {
+    if (token) {
       // Setup OG meta tags when token is found
       setupTokenOGMeta(
         token.symbol,
@@ -211,7 +49,7 @@ export const TokenDetailPageNew: React.FC = () => {
     return () => {
       resetToDefaultMeta();
     };
-  }, [address, token, isLoading, wsError]);
+  }, [token]);
 
   // Loading state
   if (isLoading) {
@@ -230,14 +68,17 @@ export const TokenDetailPageNew: React.FC = () => {
   }
 
   // Error state
-  if (error || wsError || !token) {
+  if (!address || wsError || (!isLoading && !token)) {
     return (
       <div className="flex flex-col min-h-screen bg-dark-100">
         <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
           <Card className="bg-dark-200/50 backdrop-blur-sm border-red-500/20">
             <div className="p-8 text-center">
               <h2 className="text-2xl font-bold text-red-400 mb-4">Error</h2>
-              <p className="text-gray-400">{error || wsError || "Token not found"}</p>
+              <p className="text-gray-400">
+                {!address ? "Token contract address is required" : 
+                 wsError || `Token with address ${address} not found`}
+              </p>
               <Link to="/tokens" className="mt-4 inline-block text-brand-400 hover:text-brand-300">
                 ← Back to Tokens
               </Link>
@@ -248,6 +89,9 @@ export const TokenDetailPageNew: React.FC = () => {
     );
   }
 
+  // At this point, token is guaranteed to be non-null due to error check above
+  if (!token) return null; // TypeScript safety - this should never happen
+  
   // Calculate additional metrics
   const priceChange24h = TokenHelpers.getPriceChange(token);
   const isPositive = priceChange24h >= 0;
@@ -337,15 +181,14 @@ export const TokenDetailPageNew: React.FC = () => {
                 </div>
                 
                 {/* Real-time indicator */}
-                <div className="flex flex-col gap-1 mt-2 text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${ws.isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} />
-                    {ws.isConnected ? 'Live updates' : 'Connecting...'} • {lastUpdate ? `Updated ${Math.floor((Date.now() - lastUpdate.getTime()) / 1000)}s ago` : 'Loading...'}
-                  </div>
-                  {/* Debug info */}
-                  <div className="text-xs">
-                    Source: {updateSource || "None yet"} | WebSocket updates: {updateCount}
-                  </div>
+                <div className="flex items-center gap-2 mt-2 text-sm text-gray-400">
+                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} />
+                  {isConnected ? 'Live updates' : 'Connecting...'}
+                  {lastUpdate && (
+                    <span className="text-xs">
+                      • Updated {Math.floor((Date.now() - lastUpdate.getTime()) / 1000)}s ago
+                    </span>
+                  )}
                 </div>
 
                 {/* Trading Actions */}
@@ -437,7 +280,7 @@ export const TokenDetailPageNew: React.FC = () => {
                   <div>
                     <p className="text-gray-400 text-sm mb-3">Links</p>
                     <div className="space-y-2">
-                      {(token.websites?.length > 0 || TokenHelpers.getSocials(token).length > 0) ? (
+                      {((token.websites?.length ?? 0) > 0 || TokenHelpers.getSocials(token).length > 0) ? (
                         <>
                           {token.websites?.map((website: any, idx: number) => (
                             <a

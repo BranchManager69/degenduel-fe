@@ -43,7 +43,7 @@ export const ContestButton: React.FC<ContestButtonProps> = ({ id, type, isPartic
   } else if (isUpcoming) {
     contestButtonDestination = `/contests/${id}`;
   } else if (isComplete) {
-    contestButtonDestination = `/contests/${id}/results`;
+    contestButtonDestination = `/contests/${id}/live`;
   } else if (isCancelled) {
     contestButtonDestination = `/contests/${id}`;
   }
