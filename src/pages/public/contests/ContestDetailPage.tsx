@@ -498,10 +498,9 @@ export const ContestDetails: React.FC = () => {
         prev ? { ...prev, status: "completed" } : null,
       );
     } else if (contest.status === "pending") {
-      // Contest just started
-      setContest((prev: Contest | null) =>
-        prev ? { ...prev, status: "active" } : null,
-      );
+      // Contest just started - navigate to live page
+      console.log("Contest countdown complete - navigating to live page");
+      navigate(`/contests/${contest.id}/live`);
     }
   };
 
@@ -533,9 +532,9 @@ export const ContestDetails: React.FC = () => {
     // User is already participating - determine where to navigate based on contest status
     if (isParticipating) {
       if (contestStatus === "ended") {
-        // Navigate to results page for completed contests
-        console.log("Navigating to contest results page");
-        navigate(`/contests/${contest.id}/results`);
+        // Navigate to live page for completed contests
+        console.log("Navigating to contest live page");
+        navigate(`/contests/${contest.id}/live`);
         return;
       } else if (contestStatus === "live") {
         // Navigate to lobby/live view for active contests
@@ -552,8 +551,9 @@ export const ContestDetails: React.FC = () => {
 
     // User is not participating
     if (contestStatus === "ended") {
-      // Contest is over, can't join
-      setError("This contest has ended and is no longer accepting entries.");
+      // Contest is over, navigate to live page to view results
+      console.log("Navigating to contest live page for non-participant");
+      navigate(`/contests/${contest.id}/live`);
       return;
     } else if (contestStatus === "live") {
       // Contest is in progress, can't join
@@ -881,10 +881,12 @@ export const ContestDetails: React.FC = () => {
                   <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                     <button
                       onClick={handleJoinContest}
-                      disabled={displayStatus === "completed" || displayStatus === "cancelled"}
+                      disabled={displayStatus === "cancelled"}
                       className={`px-8 py-3 font-medium rounded-lg transition-all text-center ${
-                        displayStatus === "completed" || displayStatus === "cancelled"
+                        displayStatus === "cancelled"
                           ? "bg-dark-400 text-gray-500 cursor-not-allowed"
+                          : displayStatus === "completed"
+                          ? "bg-dark-300 hover:bg-dark-200 text-brand-400"
                           : isParticipating
                           ? "bg-dark-300 hover:bg-dark-200 text-brand-400"
                           : "bg-brand-500 hover:bg-brand-600 text-white"

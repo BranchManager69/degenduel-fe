@@ -184,6 +184,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
   const [error, setError] = useState<string | null>(null);
   const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
   const [showParticipantSelector, setShowParticipantSelector] = useState(false);
+  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
 
   // Fetch leaderboard chart data
   useEffect(() => {
@@ -285,6 +286,94 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
 
     fetchLeaderboardChart();
   }, [contestId, contestStatus, timeInterval, maxParticipants, user?.wallet_address, participants?.length]);
+
+  // Auto-refresh chart data every 30 seconds
+  useEffect(() => {
+    // Only set up auto-refresh for active or completed contests
+    if (contestStatus !== 'active' && contestStatus !== 'completed') {
+      return;
+    }
+
+    console.log('[MultiParticipantChartV2] Setting up 30-second auto-refresh');
+    
+    // Initial fetch has already happened from the effect above
+    // Set up interval for subsequent fetches
+    const refreshInterval = setInterval(() => {
+      console.log('[MultiParticipantChartV2] Auto-refreshing chart data...');
+      
+      const fetchUpdatedData = async () => {
+        if (!participants || !participants.length) return;
+        
+        setIsAutoRefreshing(true);
+        
+        try {
+          const intervalHours = {
+            '5m': 1,
+            '15m': 1,
+            '1h': 6,
+            '4h': 24,
+            '24h': 24
+          }[timeInterval] || 24;
+
+          const response = await fetch(
+            `/api/portfolio-analytics/contests/${contestId}/performance/timeline?hours=${intervalHours}`,
+            {
+              credentials: 'same-origin'
+            }
+          );
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch chart data: ${response.status}`);
+          }
+
+          const data = await response.json();
+          
+          // Transform the timeline data
+          const participantMap = new Map<string, LeaderboardChartParticipant>();
+          const latestSnapshot = data.snapshots[data.snapshots.length - 1];
+          const latestParticipants = latestSnapshot ? Object.entries(latestSnapshot.participants) : [];
+          
+          latestParticipants.sort((a, b) => (b[1] as any).value - (a[1] as any).value);
+          
+          latestParticipants.forEach(([walletAddress, participantData]: [string, any], index) => {
+            const history = data.snapshots.map((snapshot: any) => ({
+              timestamp: snapshot.timestamp,
+              portfolio_value: snapshot.participants[walletAddress]?.value || 0
+            }));
+            
+            participantMap.set(walletAddress, {
+              wallet_address: walletAddress,
+              nickname: participantData.username,
+              current_rank: index + 1,
+              history: history
+            });
+          });
+
+          const chartParticipants = Array.from(participantMap.values())
+            .slice(0, maxParticipants);
+          
+          setChartData(chartParticipants);
+          // Don't auto-select on refresh to preserve user's selection
+          if (selectedParticipants.size === 0) {
+            autoSelectAllParticipants(chartParticipants);
+          }
+        } catch (err) {
+          console.error('[MultiParticipantChartV2] Auto-refresh failed:', err);
+          // Don't update error state on auto-refresh failures to avoid disrupting the UI
+        } finally {
+          setIsAutoRefreshing(false);
+        }
+      };
+      
+      fetchUpdatedData();
+    }, 30000); // 30 seconds
+
+    // Cleanup interval on unmount or when dependencies change
+    return () => {
+      console.log('[MultiParticipantChartV2] Clearing auto-refresh interval');
+      clearInterval(refreshInterval);
+    };
+  }, [contestId, contestStatus, timeInterval, maxParticipants, participants?.length, selectedParticipants.size]);
 
   // Get initial values for relative calculations
   const initialValues = useMemo(() => {
@@ -760,19 +849,92 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
           </div>
         )}
 
-        {/* Real-time update indicator - only for active contests */}
-        {contestStatus === 'active' && isLoading && chartData.length > 0 && (
-          <div className="absolute top-2 right-2 flex items-center gap-2 text-xs text-gray-400 z-10">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            Live Updates
-          </div>
-        )}
-        
-        {/* Completed contest indicator */}
-        {contestStatus === 'completed' && (
-          <div className="absolute top-2 right-2 flex items-center gap-2 text-xs text-gray-400 z-10">
-            <div className="w-2 h-2 bg-gray-400 rounded-full" />
-            Final Results
+        {/* Real-time update indicator with auto-refresh status */}
+        {(contestStatus === 'active' || contestStatus === 'completed') && (
+          <div className="absolute top-2 right-2 flex items-center gap-3 text-xs text-gray-400 z-10">
+            {/* Auto-refresh indicator */}
+            {isAutoRefreshing ? (
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                <span>Refreshing...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full" />
+                <span>
+                  {contestStatus === 'active' ? 'Live' : 'Final'} • Auto-refresh: 30s
+                </span>
+              </div>
+            )}
+            
+            {/* Manual refresh button */}
+            <button
+              onClick={() => {
+                console.log('[MultiParticipantChartV2] Manual refresh triggered');
+                if (isAutoRefreshing) return; // Prevent multiple simultaneous refreshes
+                
+                setIsAutoRefreshing(true);
+                
+                const manualRefresh = async () => {
+                  try {
+                    const intervalHours = {
+                      '5m': 1,
+                      '15m': 1,
+                      '1h': 6,
+                      '4h': 24,
+                      '24h': 24
+                    }[timeInterval] || 24;
+
+                    const response = await fetch(
+                      `/api/portfolio-analytics/contests/${contestId}/performance/timeline?hours=${intervalHours}`,
+                      { credentials: 'same-origin' }
+                    );
+                    
+                    if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+
+                    const data = await response.json();
+                    const participantMap = new Map<string, LeaderboardChartParticipant>();
+                    const latestSnapshot = data.snapshots[data.snapshots.length - 1];
+                    const latestParticipants = latestSnapshot ? Object.entries(latestSnapshot.participants) : [];
+                    
+                    latestParticipants.sort((a, b) => (b[1] as any).value - (a[1] as any).value);
+                    
+                    latestParticipants.forEach(([walletAddress, participantData]: [string, any], index) => {
+                      const history = data.snapshots.map((snapshot: any) => ({
+                        timestamp: snapshot.timestamp,
+                        portfolio_value: snapshot.participants[walletAddress]?.value || 0
+                      }));
+                      
+                      participantMap.set(walletAddress, {
+                        wallet_address: walletAddress,
+                        nickname: participantData.username,
+                        current_rank: index + 1,
+                        history: history
+                      });
+                    });
+
+                    const chartParticipants = Array.from(participantMap.values()).slice(0, maxParticipants);
+                    setChartData(chartParticipants);
+                    if (selectedParticipants.size === 0) {
+                      autoSelectAllParticipants(chartParticipants);
+                    }
+                  } catch (err) {
+                    console.error('[MultiParticipantChartV2] Manual refresh failed:', err);
+                  } finally {
+                    setIsAutoRefreshing(false);
+                  }
+                };
+                
+                manualRefresh();
+              }}
+              className={`p-1 rounded transition-colors ${isAutoRefreshing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-dark-200'}`}
+              disabled={isAutoRefreshing}
+              title="Refresh now"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
           </div>
         )}
 

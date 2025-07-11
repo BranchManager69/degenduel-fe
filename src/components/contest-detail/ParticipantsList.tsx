@@ -1,11 +1,22 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
 import axiosInstance from '../../lib/axiosInstance';
 import { formatCurrency } from "../../lib/utils";
 import { getFullImageUrl } from "../../utils/profileImageUtils";
 import { getFlairLabel, getRoleBadgeClasses, getUserNameColorWithFlair, getUserRoleLabel } from "../../utils/roleColors";
 import { PublicUserSearch } from "../common/PublicUserSearch";
+import { useWebSocket } from "../../contexts/UnifiedWebSocketContext";
+
+// Token price data from WebSocket
+interface TokenPriceData {
+  address: string;
+  price: string;
+  market_cap: string;
+  change_24h: string;
+  volume_24h: string;
+  last_updated: number;
+}
 
 // New unified participant structure from backend API
 interface Participant {
@@ -44,6 +55,7 @@ interface Participant {
     token_symbol: string;
     token_name: string;
     token_image?: string;
+    token_address?: string;
     weight: number;
     current_value: string;
     performance_percentage: string;
@@ -88,6 +100,9 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
   const [expandedParticipant, setExpandedParticipant] = useState<string | null>(null);
   const [portfolioData, setPortfolioData] = useState<Record<string, any>>({});
   const [loadingPortfolio, setLoadingPortfolio] = useState<Record<string, boolean>>({});
+  const [tokenPrices, setTokenPrices] = useState<Map<string, TokenPriceData>>(new Map());
+  const subscribedTokensRef = useRef<Set<string>>(new Set());
+  const ws = useWebSocket();
   
   // Track previous ranks for animation
   const [previousRanks, setPreviousRanks] = useState<Map<string, number>>(new Map());
@@ -353,6 +368,8 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
     try {
       const response = await axiosInstance.get(`/contests/${contestId}/portfolio/${walletAddress}`);
       setPortfolioData(prev => ({ ...prev, [walletAddress]: response.data }));
+      // Subscribe to token prices after portfolio data is loaded
+      subscribeToTokenPrices(response.data);
     } catch (error) {
       console.error('Failed to fetch portfolio data:', error);
       setPortfolioData(prev => ({ ...prev, [walletAddress]: null }));
@@ -361,10 +378,102 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
     }
   };
 
+  // Handle WebSocket token price updates
+  const handleTokenPriceUpdate = useCallback((data: any) => {
+    if (data.address && data.price !== undefined) {
+      setTokenPrices(prev => {
+        const newMap = new Map(prev);
+        newMap.set(data.address, {
+          address: data.address,
+          price: String(data.price),
+          market_cap: String(data.market_cap || 0),
+          change_24h: String(data.change_24h || 0),
+          volume_24h: String(data.volume_24h || 0),
+          last_updated: Date.now()
+        });
+        return newMap;
+      });
+    }
+  }, []);
+
+  // Subscribe to token prices when portfolio is expanded
+  const subscribeToTokenPrices = useCallback((portfolio: any) => {
+    if (!portfolio?.portfolio || !ws) return;
+
+    const tokenAddresses = portfolio.portfolio
+      .map((holding: any) => holding.token?.address || holding.token_address)
+      .filter(Boolean);
+
+    const newSubscriptions = tokenAddresses.filter((addr: string) => !subscribedTokensRef.current.has(addr));
+    
+    if (newSubscriptions.length > 0) {
+      const topics = newSubscriptions.map((addr: string) => `token:price:${addr}`);
+      console.log('[ParticipantsList] Subscribing to token prices:', topics);
+      ws.subscribe(topics);
+      newSubscriptions.forEach((addr: string) => subscribedTokensRef.current.add(addr));
+    }
+  }, [ws]);
+
+  // Unsubscribe from token prices when portfolio is collapsed
+  const unsubscribeFromTokenPrices = useCallback((portfolio: any) => {
+    if (!portfolio?.portfolio || !ws) return;
+
+    const tokenAddresses = portfolio.portfolio
+      .map((holding: any) => holding.token?.address || holding.token_address)
+      .filter(Boolean);
+
+    const topicsToUnsubscribe = tokenAddresses
+      .filter((addr: string) => subscribedTokensRef.current.has(addr))
+      .map((addr: string) => `token:price:${addr}`);
+
+    if (topicsToUnsubscribe.length > 0) {
+      console.log('[ParticipantsList] Unsubscribing from token prices:', topicsToUnsubscribe);
+      ws.unsubscribe(topicsToUnsubscribe);
+      tokenAddresses.forEach((addr: string) => subscribedTokensRef.current.delete(addr));
+    }
+  }, [ws]);
+
+  // Listen for WebSocket token price updates
+  useEffect(() => {
+    if (!ws) return;
+
+    const cleanup = ws.registerListener(
+      'participant-token-prices',
+      ['DATA'] as any[],
+      (message: any) => {
+        if (message.topic && message.topic.startsWith('token:price:')) {
+          handleTokenPriceUpdate(message.data);
+        }
+      }
+    );
+
+    return cleanup;
+  }, [ws, handleTokenPriceUpdate]);
+
+  // Cleanup subscriptions on unmount
+  useEffect(() => {
+    return () => {
+      if (subscribedTokensRef.current.size > 0 && ws) {
+        const topics = Array.from(subscribedTokensRef.current).map(addr => `token:price:${addr}`);
+        console.log('[ParticipantsList] Cleanup: Unsubscribing from all token prices');
+        ws.unsubscribe(topics);
+        subscribedTokensRef.current.clear();
+      }
+    };
+  }, [ws]);
+
   const handleParticipantClick = (walletAddress: string) => {
-    if (expandedParticipant === walletAddress) {
+    const wasExpanded = expandedParticipant === walletAddress;
+    
+    if (wasExpanded) {
+      // Collapsing - unsubscribe from token prices
+      const portfolio = portfolioData[walletAddress];
+      if (portfolio) {
+        unsubscribeFromTokenPrices(portfolio);
+      }
       setExpandedParticipant(null);
     } else {
+      // Expanding - fetch portfolio and subscribe to prices
       setExpandedParticipant(walletAddress);
       // Only fetch portfolio data if contest has started (not pending)
       if (contestStatus !== "upcoming") {
@@ -741,37 +850,72 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                               {/* Token Holdings */}
                               <div className="space-y-2">
                                 <h4 className="font-semibold text-gray-100 mb-2">Token Holdings</h4>
-                                {portfolio.portfolio.map((holding: any) => (
-                                  <div key={holding.token_id} className="flex items-center justify-between p-3 bg-dark-400/30 rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                      <img 
-                                        src={holding.token.image_url} 
-                                        alt={holding.token.symbol}
-                                        className="w-8 h-8 rounded-full"
-                                      />
-                                      <div>
+                                {portfolio.portfolio.map((holding: any) => {
+                                  const tokenAddress = holding.token?.address || holding.token_address;
+                                  const priceData = tokenPrices.get(tokenAddress);
+                                  const change24h = priceData ? parseFloat(priceData.change_24h) : 0;
+                                  
+                                  return (
+                                    <div key={holding.token_id} className="flex items-center justify-between p-3 bg-dark-400/30 rounded-lg">
+                                      <div className="flex items-center gap-3 flex-1">
+                                        <img 
+                                          src={holding.token.image_url} 
+                                          alt={holding.token.symbol}
+                                          className="w-8 h-8 rounded-full"
+                                        />
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-gray-100">
+                                              {holding.token.symbol}
+                                            </span>
+                                            {priceData && (
+                                              <span className={`text-xs font-medium ${
+                                                change24h >= 0 ? 'text-green-400' : 'text-red-400'
+                                              }`}>
+                                                {change24h >= 0 ? '+' : ''}{change24h.toFixed(2)}%
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-3 text-xs text-gray-400">
+                                            <span>{holding.weight.toFixed(1)}% allocation</span>
+                                            {priceData && (
+                                              <>
+                                                <span className="text-gray-500">•</span>
+                                                <span>${parseFloat(priceData.price).toFixed(4)}</span>
+                                                {priceData.market_cap && parseFloat(priceData.market_cap) > 0 && (
+                                                  <>
+                                                    <span className="text-gray-500">•</span>
+                                                    <span>MCap: {formatCurrency(priceData.market_cap)}</span>
+                                                  </>
+                                                )}
+                                              </>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="text-right ml-4">
                                         <div className="font-semibold text-gray-100">
-                                          {holding.token.symbol}
+                                          {formatCurrency(holding.current_value)}
                                         </div>
-                                        <div className="text-xs text-gray-400">
-                                          {holding.weight.toFixed(1)}% allocation
+                                        <div className={`text-xs font-medium ${
+                                          holding.pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'
+                                        }`}>
+                                          {holding.pnl_percentage >= 0 ? '+' : ''}{holding.pnl_percentage.toFixed(2)}% P&L
                                         </div>
                                       </div>
                                     </div>
-                                    
-                                    <div className="text-right">
-                                      <div className="font-semibold text-gray-100">
-                                        {formatCurrency(holding.current_value)}
-                                      </div>
-                                      <div className={`text-xs font-medium ${
-                                        holding.pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'
-                                      }`}>
-                                        {holding.pnl_percentage >= 0 ? '+' : ''}{holding.pnl_percentage.toFixed(2)}%
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
+                              
+                              {/* Real-time update indicator */}
+                              {subscribedTokensRef.current.size > 0 && (
+                                <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
+                                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                                  <span>Prices updating in real-time</span>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <div className="text-center py-4 text-gray-400">

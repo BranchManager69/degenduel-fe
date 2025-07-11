@@ -370,7 +370,7 @@ export const ContestLobbyV2: React.FC = () => {
   const [hoveredParticipant, setHoveredParticipant] = useState<string | null>(null);
   
   // View mode state for leaderboard tab
-  const [leaderboardViewMode, setLeaderboardViewMode] = useState<'carousel' | 'list'>('carousel');
+  const [leaderboardViewMode, setLeaderboardViewMode] = useState<'carousel' | 'list'>('list');
   
   // Switch away from Trade tab if user logs out
   useEffect(() => {

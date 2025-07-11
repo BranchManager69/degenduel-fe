@@ -12,43 +12,31 @@
  */
 
 import { motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
 import { Card } from "../../../components/ui/Card";
-import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
+import { useIndividualToken } from "../../../hooks/websocket/topic-hooks/useIndividualToken";
 import { formatNumber } from "../../../utils/format";
 import { setupTokenOGMeta, resetToDefaultMeta, getTokenOGImageUrl, OGImage } from "../../../utils/ogImageUtils";
 import { TokenHelpers } from "../../../types";
 
 export const TokenDetailPage: React.FC = () => {
   const { address } = useParams<{ address: string }>();
-  const [error, setError] = useState<string | null>(null);
 
-  // Use the standardized token data hook to get all tokens
+  // Use the individual token hook to get data for this specific token
   const {
-    tokens,
+    token,
     isLoading,
     isConnected,
-    error: wsError
-  } = useStandardizedTokenData("all");
-
-  // Get the specific token by contract address
-  const token = address ? tokens.find(t => 
-    (t.address && t.address.toLowerCase() === address.toLowerCase()) || 
-    (t.contractAddress && t.contractAddress.toLowerCase() === address.toLowerCase())
-  ) : null;
+    error: wsError,
+    lastUpdate,
+    refresh
+  } = useIndividualToken(address || '');
 
   useEffect(() => {
-    if (!address) {
-      setError("Token contract address is required");
-      return;
-    }
-
-    if (!isLoading && !token && isConnected) {
-      setError(`Token with address ${address} not found`);
-    } else if (token) {
+    if (token) {
       // Setup OG meta tags when token is found
       setupTokenOGMeta(
         token.symbol,
@@ -61,7 +49,7 @@ export const TokenDetailPage: React.FC = () => {
       // Reset to default meta tags when leaving the page
       resetToDefaultMeta();
     };
-  }, [address, token, isLoading, isConnected]);
+  }, [token]);
 
   // Loading state
   if (isLoading) {
@@ -80,7 +68,7 @@ export const TokenDetailPage: React.FC = () => {
   }
 
   // Error state
-  if (error || wsError || !token) {
+  if (!address || wsError || (!isLoading && !token)) {
     return (
       <div className="flex flex-col min-h-screen">
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -88,7 +76,8 @@ export const TokenDetailPage: React.FC = () => {
             <div className="p-8 text-center">
               <h2 className="text-2xl font-bold text-red-400 mb-4">Error</h2>
               <p className="text-gray-300 mb-6">
-                {error || wsError || `Token with address ${address} not found`}
+                {!address ? "Token contract address is required" : 
+                 wsError || `Token with address ${address} not found`}
               </p>
               <Link 
                 to="/tokens" 
@@ -103,6 +92,9 @@ export const TokenDetailPage: React.FC = () => {
     );
   }
 
+  // At this point, token is guaranteed to be non-null due to error check above
+  if (!token) return null; // TypeScript safety - this should never happen
+  
   // Generate OG image URL for social sharing
   const ogImageUrl = getTokenOGImageUrl(token.symbol);
 
@@ -119,13 +111,23 @@ export const TokenDetailPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            {/* Back Button */}
-            <Link 
-              to="/tokens" 
-              className="inline-flex items-center text-gray-400 hover:text-white mb-6 transition-colors"
-            >
-              ← Back to Tokens
-            </Link>
+            {/* Header with Back Button and Connection Status */}
+            <div className="flex items-center justify-between mb-6">
+              <Link 
+                to="/tokens" 
+                className="inline-flex items-center text-gray-400 hover:text-white transition-colors"
+              >
+                ← Back to Tokens
+              </Link>
+              
+              {/* WebSocket Connection Status */}
+              <div className="flex items-center gap-2 text-xs">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+                <span className={`font-mono ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+                  {isConnected ? 'Live Updates' : 'Offline'}
+                </span>
+              </div>
+            </div>
 
             {/* Token Header with Banner */}
             <div className="relative bg-dark-300/50 backdrop-blur-sm rounded-xl overflow-hidden border border-dark-400">
@@ -179,6 +181,24 @@ export const TokenDetailPage: React.FC = () => {
                     }`}>
                       {TokenHelpers.getPriceChange(token) >= 0 ? '+' : ''}
                       {formatNumber(TokenHelpers.getPriceChange(token), 0, true)}%
+                    </div>
+                    
+                    {/* Last Update and Refresh */}
+                    <div className="mt-2 flex items-center justify-end gap-2">
+                      {lastUpdate && (
+                        <span className="text-xs text-gray-400">
+                          Updated: {lastUpdate.toLocaleTimeString()}
+                        </span>
+                      )}
+                      <button
+                        onClick={refresh}
+                        className="p-1 hover:bg-dark-200 rounded transition-colors"
+                        title="Refresh data"
+                      >
+                        <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
                     </div>
                     
                     {/* Trading Action Buttons */}
@@ -319,12 +339,22 @@ export const TokenDetailPage: React.FC = () => {
                     </div>
 
                     {/* Enhanced Price Changes with Visual Indicators */}
-                    {token.priceChanges && (
+                    {(token.priceChanges || token.price_changes) && (
                       <div className="mt-6">
                         <h3 className="text-lg font-semibold text-white mb-3">Multi-Timeframe Performance</h3>
                         <div className="grid grid-cols-4 gap-3">
                           {['5m', '1h', '6h', '24h'].map((period) => {
-                            const change = Number(token.priceChanges?.[period as keyof typeof token.priceChanges] || 0);
+                            // Handle both formats: m5/h1/h6/h24 and 5m/1h/6h/24h
+                            const priceChanges = token.priceChanges || token.price_changes || {};
+                            const periodKey = period === '5m' ? 'm5' : 
+                                           period === '1h' ? 'h1' : 
+                                           period === '6h' ? 'h6' : 
+                                           period === '24h' ? 'h24' : period;
+                            const change = Number(
+                              priceChanges[period as keyof typeof priceChanges] || 
+                              priceChanges[periodKey as keyof typeof priceChanges] || 
+                              0
+                            );
                             const isPositive = change >= 0;
                             return (
                               <div 
@@ -358,14 +388,25 @@ export const TokenDetailPage: React.FC = () => {
                       <div className="mt-6">
                         <h3 className="text-lg font-semibold text-white mb-3">Volume Analytics</h3>
                         <div className="grid grid-cols-4 gap-2">
-                          {['5m', '1h', '6h', '24h'].map((period) => (
-                            <div key={period} className="text-center bg-dark-400/20 rounded p-2">
-                              <p className="text-gray-400 text-xs uppercase">{period}</p>
-                              <p className="text-sm font-semibold text-white">
-                                ${formatNumber(token.volumes?.[period as keyof typeof token.volumes] || "0", "short")}
-                              </p>
-                            </div>
-                          ))}
+                          {['5m', '1h', '6h', '24h'].map((period) => {
+                            // Handle both formats: m5/h1/h6/h24 and 5m/1h/6h/24h
+                            const volumes = token.volumes || {};
+                            const periodKey = period === '5m' ? 'm5' : 
+                                           period === '1h' ? 'h1' : 
+                                           period === '6h' ? 'h6' : 
+                                           period === '24h' ? 'h24' : period;
+                            const volume = volumes[period as keyof typeof volumes] || 
+                                         volumes[periodKey as keyof typeof volumes] || 
+                                         0;
+                            return (
+                              <div key={period} className="text-center bg-dark-400/20 rounded p-2">
+                                <p className="text-gray-400 text-xs uppercase">{period}</p>
+                                <p className="text-sm font-semibold text-white">
+                                  ${formatNumber(volume, "short")}
+                                </p>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -502,17 +543,28 @@ export const TokenDetailPage: React.FC = () => {
                       <div className="mt-6">
                         <p className="text-gray-400 text-sm mb-3">Transaction Activity</p>
                         <div className="grid grid-cols-2 gap-2">
-                          {['5m', '1h', '6h', '24h'].map((period) => (
-                            <div key={period} className="text-center bg-dark-400/20 rounded p-2">
-                              <p className="text-gray-400 text-xs uppercase">{period}</p>
-                              <p className="text-sm font-semibold text-white">
-                                {typeof token.transactions?.[period as keyof typeof token.transactions] === 'object' 
-                                  ? `${(token.transactions[period as keyof typeof token.transactions] as any)?.buys || 0}/${(token.transactions[period as keyof typeof token.transactions] as any)?.sells || 0}`
-                                  : String(token.transactions?.[period as keyof typeof token.transactions] || 0)
-                                }
-                              </p>
-                            </div>
-                          ))}
+                          {['5m', '1h', '6h', '24h'].map((period) => {
+                            // Handle both formats: m5/h1/h6/h24 and 5m/1h/6h/24h
+                            const transactions = token.transactions || {};
+                            const periodKey = period === '5m' ? 'm5' : 
+                                           period === '1h' ? 'h1' : 
+                                           period === '6h' ? 'h6' : 
+                                           period === '24h' ? 'h24' : period;
+                            const txData = transactions[period as keyof typeof transactions] || 
+                                         transactions[periodKey as keyof typeof transactions];
+                            
+                            return (
+                              <div key={period} className="text-center bg-dark-400/20 rounded p-2">
+                                <p className="text-gray-400 text-xs uppercase">{period}</p>
+                                <p className="text-sm font-semibold text-white">
+                                  {typeof txData === 'object' && txData !== null
+                                    ? `${(txData as any).buys || 0}/${(txData as any).sells || 0}`
+                                    : String(txData || 0)
+                                  }
+                                </p>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}

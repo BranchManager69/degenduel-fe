@@ -252,6 +252,14 @@ export interface Token {
     h6: number;
     h24: number;
   };
+  
+  // Alternative field name used by some endpoints
+  price_changes?: {
+    "5m"?: number;
+    "1h"?: number;
+    "6h"?: number;
+    "24h"?: number;
+  };
 
   volumes?: {
     m5: number;
