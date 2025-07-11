@@ -11,7 +11,9 @@ import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
 import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeTokensGrid";
 import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
-import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
+import { useBatchTokens } from "../../../hooks/websocket/topic-hooks/useBatchTokens";
+import { useVisibleTokenSubscriptions } from "../../../hooks/websocket/topic-hooks/useVisibleTokenSubscriptions";
+import { useWebSocket } from "../../../contexts/UnifiedWebSocketContext";
 import { useStore } from "../../../store/useStore";
 import { SearchToken, Token, TokenHelpers } from "../../../types";
 import { resetToDefaultMeta } from "../../../utils/ogImageUtils";
@@ -44,15 +46,11 @@ export const TokensPage: React.FC = () => {
   const [sortField, setSortField] = useState<string>("change");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   
-  // Single data source - backend handles everything!
-  const {
-    tokens: allTokens,
-    isLoading,
-    error,
-    pagination,
-    getTokenBySymbol,
-    refresh
-  } = useStandardizedTokenData("all", "marketCap", {}, 5, 3000); // Load all tokens for accurate sorting
+  // Main tokens state
+  const [mainTokens, setMainTokens] = useState<Token[]>([]);
+  const [totalTokenCount, setTotalTokenCount] = useState(0);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
 
   // Token selection handler - removed to enable card flipping
@@ -60,74 +58,140 @@ export const TokensPage: React.FC = () => {
 
   // Modal close handler removed - no longer needed
 
-  // Load more tokens - now handles client-side pagination
-  const loadMoreTokens = useCallback(() => {
-    if (isLoadingMore) return;
+  // Load more tokens - fetches next batch from API
+  const loadMoreTokens = useCallback(async () => {
+    if (isLoadingMore || mainTokens.length >= totalTokenCount) return;
     
-    console.log('[TokensPage] Loading more tokens (client-side pagination)');
+    console.log('[TokensPage] Loading more tokens from API');
     setIsLoadingMore(true);
     
-    // Increase the display count
-    setDisplayCount(prev => prev + TOKENS_PER_PAGE);
-    
-    // Reset loading state after a short delay
-    setTimeout(() => {
+    try {
+      // Calculate offset based on current tokens
+      const offset = mainTokens.length;
+      
+      // Fetch next batch
+      const response = await fetch(`/api/tokens/trending?limit=${TOKENS_PER_PAGE}&offset=${offset}&format=paginated`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch more tokens: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.tokens && Array.isArray(data.tokens)) {
+        // Transform and append new tokens
+        const newTokens = data.tokens.map((token: any) => ({
+          ...token,
+          contractAddress: token.address || token.contractAddress,
+          marketCap: String(token.market_cap || token.marketCap || 0),
+          volume24h: String(token.volume_24h || token.volume24h || 0),
+          change24h: String(token.change_24h || token.change24h || 0),
+          status: token.is_active === false ? "inactive" : "active"
+        } as Token));
+        
+        // Add to existing tokens
+        setMainTokens(prev => [...prev, ...newTokens]);
+        
+        // Update display count to show new tokens
+        setDisplayCount(prev => prev + newTokens.length);
+      }
+    } catch (err: any) {
+      console.error('[TokensPage] Failed to load more tokens:', err);
+      // Don't set error state for pagination failures
+    } finally {
       setIsLoadingMore(false);
-    }, 100); // Shorter delay since we're not fetching from server
-  }, [isLoadingMore]);
+    }
+  }, [isLoadingMore, mainTokens.length, totalTokenCount]);
 
   // Token selection logic removed - using dedicated pages now
 
   // NO CLIENT-SIDE SORTING - Trust backend order
   // Backend already sorted by degenduel_score (best to worst)
 
-  // Special tokens data state
-  const [specialTokens, setSpecialTokens] = useState<Token[]>([]);
+  // Special tokens addresses
+  const SPECIAL_TOKEN_ADDRESSES = [
+    'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', // DUEL
+    'So11111111111111111111111111111111111111112',     // SOL
+    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',   // USDC
+    '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh'    // WBTC
+  ];
   
-  // Fetch special tokens data (DUEL, SOL, USDC, WBTC)
-  useEffect(() => {
-    const fetchSpecialTokens = async () => {
-      const tokenAddresses = [
-        { symbol: 'DUEL', address: 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX' },
-        { symbol: 'SOL', address: 'So11111111111111111111111111111111111111112' },
-        { symbol: 'USDC', address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' },
-        { symbol: 'WBTC', address: '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh' }
-      ];
-      
-      const fetchPromises = tokenAddresses.map(async ({ symbol, address }) => {
-        try {
-          const response = await fetch(`/api/tokens/search?search=${address}&limit=1`);
-          const data = await response.json();
-          if (data.tokens && data.tokens.length > 0) {
-            const tokenData = data.tokens[0];
-            // Convert to Token format
-            const tokenFormatted: Token = {
-              ...tokenData,
-              address: tokenData.address || address,
-              contractAddress: tokenData.address || address,
-              market_cap: tokenData.market_cap || 0,
-              volume_24h: tokenData.volume_24h || 0,
-              change_24h: tokenData.change_24h || 0,
-              price: Number(tokenData.price) || 0,
-              // Add special SOL banner
-              ...(symbol === 'SOL' ? { header_image_url: '/assets/media/sol_banner.png' } : {})
-            };
-            return tokenFormatted;
-          }
-          return null;
-        } catch (error) {
-          console.error(`Failed to fetch ${symbol} token:`, error);
-          return null;
+  // Use batch tokens hook for special tokens
+  const { 
+    tokens: specialTokensMap, 
+    isLoading: specialTokensLoading
+  } = useBatchTokens(SPECIAL_TOKEN_ADDRESSES);
+  
+  // Convert map to array and maintain order
+  const specialTokens = useMemo(() => {
+    const tokens: Token[] = [];
+    for (const address of SPECIAL_TOKEN_ADDRESSES) {
+      const token = specialTokensMap.get(address);
+      if (token) {
+        // Add special SOL banner
+        if (address === 'So11111111111111111111111111111111111111112') {
+          tokens.push({
+            ...token,
+            header_image_url: '/assets/media/sol_banner.png'
+          });
+        } else {
+          tokens.push(token);
         }
-      });
-      
-      const results = await Promise.all(fetchPromises);
-      const validTokens = results.filter(token => token !== null) as Token[];
-      setSpecialTokens(validTokens);
+      }
+    }
+    return tokens;
+  }, [specialTokensMap]);
+  
+  // All tokens including special ones
+  const allTokens = mainTokens;
+  
+  // Combined loading state
+  const isCombinedLoading = isInitialLoading || specialTokensLoading;
+  
+  // Initial load - fetch first batch of tokens
+  useEffect(() => {
+    const loadInitialTokens = async () => {
+      try {
+        setIsInitialLoading(true);
+        setError(null);
+        
+        console.log('[TokensPage] Loading initial tokens via trending API');
+        
+        // Fetch first batch with fixed initial limit
+        const response = await fetch(`/api/tokens/trending?limit=50&offset=0&format=paginated`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch tokens: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.tokens && Array.isArray(data.tokens)) {
+          // Transform and save tokens directly
+          const transformedTokens = data.tokens.map((token: any) => ({
+            ...token,
+            contractAddress: token.address || token.contractAddress,
+            marketCap: String(token.market_cap || token.marketCap || 0),
+            volume24h: String(token.volume_24h || token.volume24h || 0),
+            change24h: String(token.change_24h || token.change24h || 0),
+            status: token.is_active === false ? "inactive" : "active"
+          } as Token));
+          
+          setMainTokens(transformedTokens);
+          
+          // Store total count for pagination
+          if (data.pagination) {
+            setTotalTokenCount(data.pagination.total);
+          }
+        }
+      } catch (err: any) {
+        console.error('[TokensPage] Failed to load initial tokens:', err);
+        setError(err.message || 'Failed to load tokens');
+      } finally {
+        setIsInitialLoading(false);
+      }
     };
     
-    fetchSpecialTokens();
-  }, []);
+    loadInitialTokens();
+  }, []); // Only run once on mount
 
   // Sort all tokens by the selected field
   const sortedTokens = useMemo(() => {
@@ -198,8 +262,24 @@ export const TokensPage: React.FC = () => {
     return allSortedTokens.slice(0, displayCount);
   }, [allSortedTokens, displayCount]);
 
-  // Check if there are more tokens to display (client-side)
-  const hasMoreTokens = displayCount < allSortedTokens.length;
+  // Handle token updates from WebSocket
+  const handleTokenUpdate = useCallback((updatedToken: Token) => {
+    setMainTokens(prev => prev.map(token => 
+      (token.address === updatedToken.address || token.contractAddress === updatedToken.contractAddress) 
+        ? updatedToken 
+        : token
+    ));
+  }, []);
+
+  // Subscribe to visible tokens for real-time price updates
+  useVisibleTokenSubscriptions({
+    tokens: visibleTokens,
+    onTokenUpdate: handleTokenUpdate,
+    enabled: true
+  });
+
+  // Check if there are more tokens to load from server
+  const hasMoreTokens = mainTokens.length < totalTokenCount;
 
   // NO CLIENT-SIDE SEARCH/FILTERING - Backend handles everything
 
@@ -211,8 +291,10 @@ export const TokensPage: React.FC = () => {
     
     if (tokenAddress || tokenSymbol) {
       // Find the token to get its symbol for the URL
-      const token = getTokenBySymbol(tokenAddress || tokenSymbol || '') || 
-                   allTokens.find(t => t.contractAddress?.toLowerCase() === (tokenAddress || tokenSymbol || '').toLowerCase());
+      const token = allTokens.find(t => 
+        t.symbol?.toLowerCase() === (tokenAddress || tokenSymbol || '').toLowerCase() ||
+        t.contractAddress?.toLowerCase() === (tokenAddress || tokenSymbol || '').toLowerCase()
+      );
       
       if (token) {
         // Redirect to the dedicated token page using contract address
@@ -222,7 +304,7 @@ export const TokensPage: React.FC = () => {
         navigate(location.pathname, { replace: true });
       }
     }
-  }, [location.search, allTokens, getTokenBySymbol, navigate, location.pathname]);
+  }, [location.search, allTokens, navigate, location.pathname]);
   
   // Setup OG meta tags
   useEffect(() => {
@@ -241,7 +323,7 @@ export const TokensPage: React.FC = () => {
     
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMoreTokens && !isLoadingMore && !isLoading) {
+        if (entries[0].isIntersecting && hasMoreTokens && !isLoadingMore && !isCombinedLoading) {
           console.log('[TokensPage] Intersection detected, loading more tokens');
           loadMoreTokens();
         }
@@ -259,7 +341,7 @@ export const TokensPage: React.FC = () => {
         observer.unobserve(loadMoreTriggerRef.current);
       }
     };
-  }, [hasMoreTokens, isLoadingMore, isLoading, loadMoreTokens]);
+  }, [hasMoreTokens, isLoadingMore, isCombinedLoading, loadMoreTokens]);
 
   // Note: handleSearchChange removed since we now use TokenSearch component
 
@@ -270,9 +352,49 @@ export const TokensPage: React.FC = () => {
   }, []);
 
   // Refresh data
-  const handleRefresh = useCallback(() => {
-    refresh();
-  }, [refresh]);
+  const handleRefresh = useCallback(async () => {
+    console.log('[TokensPage] Manual refresh triggered');
+    
+    // Reset everything and trigger fresh load
+    setMainTokens([]);
+    setDisplayCount(50);
+    setTotalTokenCount(0);
+    
+    // Reload initial tokens
+    try {
+      setIsInitialLoading(true);
+      setError(null);
+      
+      const response = await fetch(`/api/tokens/trending?limit=50&offset=0&format=paginated`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tokens: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.tokens && Array.isArray(data.tokens)) {
+        const transformedTokens = data.tokens.map((token: any) => ({
+          ...token,
+          contractAddress: token.address || token.contractAddress,
+          marketCap: String(token.market_cap || token.marketCap || 0),
+          volume24h: String(token.volume_24h || token.volume24h || 0),
+          change24h: String(token.change_24h || token.change24h || 0),
+          status: token.is_active === false ? "inactive" : "active"
+        } as Token));
+        
+        setMainTokens(transformedTokens);
+        
+        if (data.pagination) {
+          setTotalTokenCount(data.pagination.total);
+        }
+      }
+    } catch (err: any) {
+      console.error('[TokensPage] Failed to refresh tokens:', err);
+      setError(err.message || 'Failed to load tokens');
+    } finally {
+      setIsInitialLoading(false);
+    }
+  }, []);
 
   // Handle token search selection
   const handleTokenSearchSelect = useCallback((token: SearchToken) => {
@@ -292,12 +414,12 @@ export const TokensPage: React.FC = () => {
         <>
           <AuthDebugPanel />
           {/* Pagination Debug Info */}
-          {pagination && (
+          {totalTokenCount > 0 && (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
               <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 text-xs font-mono">
                 <div className="text-blue-300">📊 Pagination Debug:</div>
                 <div className="text-blue-200 mt-1">
-                  Showing: {visibleTokens.length} of {allSortedTokens.length} | Total Available: {pagination?.total || allSortedTokens.length} | 
+                  Loaded: {mainTokens.length} | Showing: {visibleTokens.length} | Total Available: {totalTokenCount} | 
                   HasMore: {hasMoreTokens ? '✅' : '❌'} | 
                   Sort: {sortField} ({sortDirection})
                 </div>
@@ -366,7 +488,7 @@ export const TokensPage: React.FC = () => {
           
           {/* Regular Token List View */}
           {/* Loading State */}
-          {isLoading && visibleTokens.length === 0 ? (
+          {isCombinedLoading && visibleTokens.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <div className="w-16 h-16 mb-4 mx-auto">
@@ -382,7 +504,7 @@ export const TokensPage: React.FC = () => {
                 <ServerCrashDisplay 
                   error={error}
                   onRetry={handleRefresh}
-                  isRetrying={isLoading}
+                  isRetrying={isCombinedLoading}
                 />
               </div>
             ) : (
