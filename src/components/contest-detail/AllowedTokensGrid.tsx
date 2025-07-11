@@ -1,7 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStandardizedTokenData } from "../../hooks/data/useStandardizedTokenData";
-import { TokenHelpers } from "../../types";
+import { Token, TokenHelpers } from "../../types";
 import { MiniTokenCard } from "./MiniTokenCard";
 
 interface AllowedTokensGridProps {
@@ -22,27 +21,44 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
   className = ""
 }) => {
   const [visibleCount, setVisibleCount] = useState(maxInitialDisplay);
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   
-  // Get enough tokens to properly fill the display
-  const { tokens: allTokens, isLoading, error } = useStandardizedTokenData(
-    "all", 
-    'marketCap', 
-    { status: 'active' }, 
-    20,  // maxHotTokens (not used here)
-    3000  // maxTopTokens - fetch the full token pool
-  );
+  // Fetch a small sample of tokens efficiently
+  useEffect(() => {
+    const fetchSampleTokens = async () => {
+      try {
+        setIsLoading(true);
+        // Fetch just 50 trending tokens for the example grid
+        const response = await fetch('/api/tokens/trending?limit=50&offset=0&format=paginated');
+        if (!response.ok) {
+          throw new Error('Failed to fetch tokens');
+        }
+        
+        const data = await response.json();
+        if (data.tokens && Array.isArray(data.tokens)) {
+          // Filter tokens with images and randomize for variety
+          const tokensWithImages = data.tokens.filter((token: any) => token.image_url);
+          const shuffled = [...tokensWithImages].sort(() => Math.random() - 0.5);
+          setTokens(shuffled);
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch sample tokens:', err);
+        setError(err.message || 'Failed to load tokens');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchSampleTokens();
+  }, []);
 
-  // Randomize tokens for variety
+  // Get token symbols for display
   const actualTokens = useMemo(() => {
-    if (allTokens && allTokens.length > 0) {
-      // Only include tokens with an image
-      const filtered = allTokens.filter(token => !!token.image_url);
-      const shuffled = [...filtered].sort(() => Math.random() - 0.5);
-      return shuffled.map(token => token.symbol);
-    }
-    return [];
-  }, [allTokens]);
+    return tokens.map(token => token.symbol);
+  }, [tokens]);
 
   // Determine which tokens to show
   const tokensToShow = useMemo(() => {
@@ -85,7 +101,7 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
       {/* Compact grid - TIGHTER spacing (2px gap) */}
       <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-[2px]">
         {tokensToShow.map((tokenSymbol, index) => {
-          const token = allTokens?.find(t => t.symbol === tokenSymbol);
+          const token = tokens.find((t: Token) => t.symbol === tokenSymbol);
           return (
             <div 
               key={tokenSymbol} 

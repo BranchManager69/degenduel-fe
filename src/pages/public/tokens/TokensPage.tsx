@@ -13,7 +13,6 @@ import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
 import { useBatchTokens } from "../../../hooks/websocket/topic-hooks/useBatchTokens";
 import { useVisibleTokenSubscriptions } from "../../../hooks/websocket/topic-hooks/useVisibleTokenSubscriptions";
-import { useWebSocket } from "../../../contexts/UnifiedWebSocketContext";
 import { useStore } from "../../../store/useStore";
 import { SearchToken, Token, TokenHelpers } from "../../../types";
 import { resetToDefaultMeta } from "../../../utils/ogImageUtils";

@@ -11,7 +11,7 @@
  * @created 2025-01-11
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { Token } from '../../../types';
 
@@ -29,16 +29,18 @@ export function useVisibleTokenSubscriptions({
   const ws = useWebSocket();
   const subscribedTokensRef = useRef<Set<string>>(new Set());
 
-  // Subscribe to visible tokens
-  useEffect(() => {
-    if (!ws.isConnected || !enabled || tokens.length === 0) {
-      return;
-    }
-
-    // Get unique token addresses
-    const tokenAddresses = tokens
+  // Memoize token addresses to prevent unnecessary re-runs
+  const tokenAddresses = useMemo(() => {
+    return tokens
       .map(t => t.address || t.contractAddress)
       .filter(Boolean) as string[];
+  }, [tokens]);
+
+  // Subscribe to visible tokens
+  useEffect(() => {
+    if (!ws.isConnected || !enabled || tokenAddresses.length === 0) {
+      return;
+    }
 
     const newSubscriptions: string[] = [];
     const toUnsubscribe: string[] = [];
@@ -74,14 +76,14 @@ export function useVisibleTokenSubscriptions({
 
     // Cleanup on unmount or when disabled
     return () => {
-      if (subscribedTokensRef.current.size > 0 && (!ws.isConnected || !enabled)) {
+      if (subscribedTokensRef.current.size > 0) {
         const topics = Array.from(subscribedTokensRef.current).map(addr => `token:price:${addr}`);
         console.log(`[useVisibleTokenSubscriptions] Cleanup: Unsubscribing from ${topics.length} tokens`);
         ws.unsubscribe(topics);
         subscribedTokensRef.current.clear();
       }
     };
-  }, [ws.isConnected, tokens, ws.subscribe, ws.unsubscribe, enabled]);
+  }, [ws.isConnected, tokenAddresses, ws.subscribe, ws.unsubscribe, enabled]);
 
   // Handle token updates
   useEffect(() => {
