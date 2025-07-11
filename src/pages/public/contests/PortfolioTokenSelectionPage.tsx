@@ -21,7 +21,8 @@ import { PortfolioTokenCardBack } from "../../../components/portfolio-selection/
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Skeleton } from "../../../components/ui/Skeleton";
-import { useStandardizedTokenData } from "../../../hooks/data/useStandardizedTokenData";
+import { useBatchTokens } from "../../../hooks/websocket/topic-hooks/useBatchTokens";
+import { useVisibleTokenSubscriptions } from "../../../hooks/websocket/topic-hooks/useVisibleTokenSubscriptions";
 import { useScrollFooter } from "../../../hooks/ui/useScrollFooter";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
@@ -130,46 +131,243 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const { id: contestId } = useParams();
   const navigate = useNavigate();
   
-  // Use the standardized token data hook - WebSocket based for performance
-  console.log("🔌 PortfolioTokenSelectionPage: Using standardized token data hook (WebSocket)");
+  // Special tokens that should always be available
+  const SPECIAL_TOKEN_ADDRESSES = [
+    'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', // DUEL
+    'So11111111111111111111111111111111111111112',   // SOL  
+    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',  // USDC
+    '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh'   // WBTC
+  ];
   
-  const {
-    tokens: rawTokens,
-    isLoading: tokenListLoading,
-    error: tokensError,
-    isConnected: isTokenDataConnected,
-    lastUpdate,
-    refresh: refreshTokens
-  } = useStandardizedTokenData("all", "marketCap", {}, 5, 3000, true); // Load all 3000 tokens like TokensPage, DISABLE LIVE UPDATES
+  // Use batch tokens hook for special tokens
+  const { 
+    tokens: specialTokensMap, 
+    isLoading: specialTokensLoading
+  } = useBatchTokens(SPECIAL_TOKEN_ADDRESSES);
   
-  // FREEZE THE TOKENS - Only update when we get a completely new list, not price updates
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [hasLoadedInitialTokens, setHasLoadedInitialTokens] = useState(false);
-  
-  useEffect(() => {
-    // Only update tokens when:
-    // 1. We don't have any tokens yet (initial load)
-    // 2. The number of tokens changes significantly (new tokens added/removed)
-    if (!hasLoadedInitialTokens && rawTokens.length > 0) {
-      console.log("🔒 PortfolioTokenSelectionPage: Loading initial tokens and FREEZING them");
-      setTokens(rawTokens);
-      setHasLoadedInitialTokens(true);
-    } else if (hasLoadedInitialTokens && Math.abs(rawTokens.length - tokens.length) > 10) {
-      console.log("🔒 PortfolioTokenSelectionPage: Significant token count change, updating frozen list");
-      setTokens(rawTokens);
+  // Convert map to array and maintain order
+  const specialTokens = useMemo(() => {
+    const tokens: Token[] = [];
+    for (const address of SPECIAL_TOKEN_ADDRESSES) {
+      const token = specialTokensMap.get(address);
+      if (token) {
+        // Add special SOL banner
+        if (address === 'So11111111111111111111111111111111111111112') {
+          tokens.push({
+            ...token,
+            header_image_url: '/assets/media/sol_banner.png'
+          });
+        } else {
+          tokens.push(token);
+        }
+      }
     }
-    // DELIBERATELY NOT updating on price changes!
-  }, [rawTokens.length, hasLoadedInitialTokens]); // Only depend on length, not the array itself
+    return tokens;
+  }, [specialTokensMap]);
   
-  // Jupiter filters don't work with the centralized hook right now
-  // The backend already filters duplicates for us
-
-  console.log("📊 PortfolioTokenSelectionPage: WebSocket token data state:", {
-    tokenCount: tokens.length,
-    tokenListLoading,
-    tokensError,
-    isTokenDataConnected
+  // State for paginated token loading (like TokensPage) - declare before using
+  const [mainTokens, setMainTokens] = useState<Token[]>([]);
+  const [totalTokenCount, setTotalTokenCount] = useState(0);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [displayCount, setDisplayCount] = useState(50);
+  const TOKENS_PER_PAGE = 50;
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
+  
+  // Initial load - fetch first batch of tokens
+  useEffect(() => {
+    const loadInitialTokens = async () => {
+      try {
+        setIsInitialLoading(true);
+        
+        console.log('[PortfolioTokenSelectionPage] Loading initial tokens via trending API');
+        
+        // Fetch first batch with fixed initial limit
+        const response = await fetch(`/api/tokens/trending?limit=50&offset=0&format=paginated`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch tokens: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.tokens && Array.isArray(data.tokens)) {
+          // Transform and save tokens directly
+          const transformedTokens = data.tokens.map((token: any) => ({
+            ...token,
+            contractAddress: token.address || token.contractAddress,
+            marketCap: String(token.market_cap || token.marketCap || 0),
+            volume24h: String(token.volume_24h || token.volume24h || 0),
+            change24h: String(token.change_24h || token.change24h || 0),
+            status: token.is_active === false ? "inactive" : "active"
+          } as Token));
+          
+          setMainTokens(transformedTokens);
+          
+          // Store total count for pagination
+          if (data.pagination) {
+            setTotalTokenCount(data.pagination.total);
+          }
+        }
+      } catch (err: any) {
+        console.error('[PortfolioTokenSelectionPage] Failed to load initial tokens:', err);
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+    
+    loadInitialTokens();
+  }, []); // Only run once on mount
+  
+  // All tokens including special ones
+  const allTokens = useMemo(() => {
+    const specialAddresses = specialTokens.map(t => t.contractAddress?.toLowerCase());
+    const filteredMainTokens = mainTokens.filter(t => 
+      !specialAddresses.includes(t.contractAddress?.toLowerCase())
+    );
+    return [...specialTokens, ...filteredMainTokens];
+  }, [specialTokens, mainTokens]);
+  
+  // Visible tokens - only show up to displayCount
+  const tokens = useMemo(() => {
+    return allTokens.slice(0, displayCount);
+  }, [allTokens, displayCount]);
+  
+  // Handle token updates from WebSocket
+  const handleTokenUpdate = useCallback((updatedToken: Token) => {
+    setMainTokens(prev => prev.map(token => 
+      (token.address === updatedToken.address || token.contractAddress === updatedToken.contractAddress) 
+        ? updatedToken 
+        : token
+    ));
+  }, []);
+  
+  // Subscribe to visible tokens for real-time price updates
+  useVisibleTokenSubscriptions({
+    tokens,
+    onTokenUpdate: handleTokenUpdate,
+    enabled: true
   });
+  
+  // Combined loading state
+  const tokenListLoading = isInitialLoading || specialTokensLoading;
+  const isTokenDataConnected = true; // Always true with new approach
+  const tokensError: string | null = null;
+  const lastUpdate = new Date();
+  
+  // Refresh tokens function
+  const refreshTokens = useCallback(async () => {
+    console.log('[PortfolioTokenSelectionPage] Manual refresh triggered');
+    
+    // Reset everything and trigger fresh load
+    setMainTokens([]);
+    setDisplayCount(50);
+    setTotalTokenCount(0);
+    
+    // Reload initial tokens
+    try {
+      setIsInitialLoading(true);
+      
+      const response = await fetch(`/api/tokens/trending?limit=50&offset=0&format=paginated`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tokens: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.tokens && Array.isArray(data.tokens)) {
+        const transformedTokens = data.tokens.map((token: any) => ({
+          ...token,
+          contractAddress: token.address || token.contractAddress,
+          marketCap: String(token.market_cap || token.marketCap || 0),
+          volume24h: String(token.volume_24h || token.volume24h || 0),
+          change24h: String(token.change_24h || token.change24h || 0),
+          status: token.is_active === false ? "inactive" : "active"
+        } as Token));
+        
+        setMainTokens(transformedTokens);
+        
+        if (data.pagination) {
+          setTotalTokenCount(data.pagination.total);
+        }
+      }
+    } catch (err: any) {
+      console.error('[PortfolioTokenSelectionPage] Failed to refresh tokens:', err);
+    } finally {
+      setIsInitialLoading(false);
+    }
+  }, []);
+  
+  // Load more tokens - fetches next batch from API
+  const loadMoreTokens = useCallback(async () => {
+    if (isLoadingMore || mainTokens.length >= totalTokenCount) return;
+    
+    console.log('[PortfolioTokenSelectionPage] Loading more tokens from API');
+    setIsLoadingMore(true);
+    
+    try {
+      // Calculate offset based on current tokens
+      const offset = mainTokens.length;
+      
+      // Fetch next batch
+      const response = await fetch(`/api/tokens/trending?limit=${TOKENS_PER_PAGE}&offset=${offset}&format=paginated`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch more tokens: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.tokens && Array.isArray(data.tokens)) {
+        // Transform and append new tokens
+        const newTokens = data.tokens.map((token: any) => ({
+          ...token,
+          contractAddress: token.address || token.contractAddress,
+          marketCap: String(token.market_cap || token.marketCap || 0),
+          volume24h: String(token.volume_24h || token.volume24h || 0),
+          change24h: String(token.change_24h || token.change24h || 0),
+          status: token.is_active === false ? "inactive" : "active"
+        } as Token));
+        
+        // Add to existing tokens
+        setMainTokens(prev => [...prev, ...newTokens]);
+        
+        // Update display count to show new tokens
+        setDisplayCount(prev => prev + newTokens.length);
+      }
+    } catch (err: any) {
+      console.error('[PortfolioTokenSelectionPage] Failed to load more tokens:', err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, mainTokens.length, totalTokenCount]);
+  
+  // Check if there are more tokens to load from server
+  const hasMoreTokens = mainTokens.length < totalTokenCount;
+  
+  // Set up infinite scroll observer
+  useEffect(() => {
+    if (!loadMoreTriggerRef.current) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreTokens && !isLoadingMore && !tokenListLoading) {
+          console.log('[PortfolioTokenSelectionPage] Intersection detected, loading more tokens');
+          loadMoreTokens();
+        }
+      },
+      { 
+        threshold: 0.1,
+        rootMargin: '200px' // Start loading when 200px away from bottom
+      }
+    );
+    
+    observer.observe(loadMoreTriggerRef.current);
+    
+    return () => {
+      if (loadMoreTriggerRef.current) {
+        observer.unobserve(loadMoreTriggerRef.current);
+      }
+    };
+  }, [hasMoreTokens, isLoadingMore, tokenListLoading, loadMoreTokens]);
   
   const [selectedTokens, setSelectedTokens] = useState<Map<string, number>>(
     new Map(),
@@ -188,12 +386,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   
   // Get footer state for dynamic positioning
   const { isCompact } = useScrollFooter(50);
-  
-  // Client-side pagination state (matching TokensPage)
-  const [displayCount, setDisplayCount] = useState(50); // Start by showing 50 tokens
-  const TOKENS_PER_PAGE = 50; // Load 50 more each time
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
   
   // Modern wallet adapter for transactions
   const { publicKey, signTransaction, connected, connect } = useWallet();
@@ -216,9 +408,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     status: "idle",
     message: "",
   });
-
-  // Now using WebSocket-based standardized token data for better performance!
-  console.log("🚀 PortfolioTokenSelectionPage: Using WebSocket-based standardized token data");
   
   // Reset transaction state when user changes (fixes stuck button after login)
   useEffect(() => {
@@ -464,7 +653,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     };
 
     checkParticipationAndPortfolio();
-  }, [contestId, user?.wallet_address, tokens]);
+  }, [contestId, user?.wallet_address]);
 
   useEffect(() => {
     console.log("Current contest state:", {
@@ -474,115 +663,32 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     });
   }, [contestId, contest]);
 
-  // Combine tokens from the hook with locally added ones from search
+  // Handle locally added tokens from search
   const allDisplayableTokens = useMemo(() => {
-    // Start with special tokens
-    const specialTokensList = [];
-    if (duelToken) specialTokensList.push(duelToken);
-    if (solToken) specialTokensList.push(solToken);
-    if (usdcToken) specialTokensList.push(usdcToken);
-    if (wbtcToken) specialTokensList.push(wbtcToken);
-    
-    const combined = [...specialTokensList, ...locallyAddedTokens, ...tokens];
+    const combined = [...tokens, ...locallyAddedTokens];
     const tokenMap = new Map<string, Token>();
     
-    // First add special tokens to preserve order
-    for (const token of specialTokensList) {
-      const address = TokenHelpers.getAddress(token);
-      if (address) {
-        tokenMap.set(address, token);
-      }
-    }
-    
-    // Then add other tokens
+    // Deduplicate tokens by address
     for (const token of combined) {
         const address = TokenHelpers.getAddress(token);
-        // Filter by minimum market cap of $100,000 (but always include special tokens)
-        const marketCap = Number(token.market_cap) || 0;
-        const isSpecialToken = specialTokensList.some(st => TokenHelpers.getAddress(st) === address);
-        if (address && !tokenMap.has(address) && (marketCap >= 100000 || isSpecialToken)) {
+        if (!tokenMap.has(address)) {
             tokenMap.set(address, token);
         }
     }
     return Array.from(tokenMap.values());
-  }, [tokens, locallyAddedTokens, duelToken, solToken, usdcToken, wbtcToken]);
-
-  // Smart token ordering: selected tokens first, then rest with progressive loading
-  const memoizedTokens = useMemo(() => {
-    console.log("🔄 PortfolioTokenSelectionPage: Processing tokens, count:", allDisplayableTokens.length);
-    
-    // Get selected token addresses
-    const selectedAddresses = Array.from(selectedTokens.keys());
-    
-    // Split tokens: selected ones first, then unselected
-    const selectedTokensList = allDisplayableTokens.filter(token => 
-      selectedAddresses.includes(TokenHelpers.getAddress(token))
-    );
-    const unselectedTokensList = allDisplayableTokens.filter(token => 
-      !selectedAddresses.includes(TokenHelpers.getAddress(token))
-    );
-    
-    // Put selected tokens at top for immediate visibility and clicking
-    const orderedTokens = [...selectedTokensList, ...unselectedTokensList];
-    
-    console.log("🔄 PortfolioTokenSelectionPage: Ordered tokens:", {
-      selected: selectedTokensList.length,
-      unselected: unselectedTokensList.length,
-      total: orderedTokens.length
-    });
-    
-    return orderedTokens;
-  }, [allDisplayableTokens, selectedTokens]);
+  }, [tokens, locallyAddedTokens]);
 
   // Sort state for this page only - default to 'change24h' to show hot movers first
   const [sortBy, setSortBy] = useState<'default' | 'marketCap' | 'volume' | 'change24h' | 'price'>('change24h');
   
-  // Apply sorting to the memoized tokens
-  const sortedTokens = useMemo(() => {
-    if (sortBy === 'default') {
-      return memoizedTokens; // Keep backend order (DegenDuel score)
-    }
-    
-    return [...memoizedTokens].sort((a, b) => {
-      switch (sortBy) {
-        case 'marketCap':
-          return (Number(b.market_cap) || 0) - (Number(a.market_cap) || 0);
-        case 'volume':
-          return (Number(b.volume_24h) || 0) - (Number(a.volume_24h) || 0);
-        case 'change24h':
-          return (Number(b.change_24h) || 0) - (Number(a.change_24h) || 0);
-        case 'price':
-          return (Number(b.price) || 0) - (Number(a.price) || 0);
-        default:
-          return 0;
-      }
-    });
-  }, [memoizedTokens, sortBy]);
+  // For backward compatibility, alias tokens as sortedTokens
+  // (backend already sorts by degenduel_score)
+  const sortedTokens = tokens;
+  const memoizedTokens = tokens; // Also alias for backward compatibility
 
-  // Visible tokens - only show up to displayCount (client-side pagination)
-  const visibleTokens = useMemo(() => {
-    const tokens = sortedTokens.slice(0, displayCount);
-    const priorityTokens: Token[] = [];
-    
-    // Add special tokens in order: DUEL, SOL, USDC, WBTC
-    const specialTokensToAdd = [
-      { token: duelToken, order: 0 },
-      { token: solToken, order: 1 },
-      { token: usdcToken, order: 2 },
-      { token: wbtcToken, order: 3 }
-    ];
-    
-    for (const { token } of specialTokensToAdd) {
-      if (token && !tokens.some(t => t.contractAddress === token.contractAddress)) {
-        priorityTokens.push(token);
-      }
-    }
-    
-    return [...priorityTokens, ...tokens];
-  }, [sortedTokens, displayCount, duelToken, solToken, usdcToken, wbtcToken]);
+  // visibleTokens are just tokens (already paginated and includes special tokens)
+  const visibleTokens = tokens;
 
-  // Check if there are more tokens to display (client-side)
-  const hasMoreTokens = displayCount < sortedTokens.length;
 
   // Token selection handler - will be defined after offline mode variables
 
@@ -1201,21 +1307,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const isOfflineMode = !isTokenDataConnected && !isInWsGracePeriod;
   const showOfflineIndicator = isOfflineMode && memoizedTokens.length > 0;
 
-  // Load more tokens - now handles client-side pagination (matching TokensPage)
-  const loadMoreTokens = useCallback(() => {
-    if (isLoadingMore) return;
-    
-    console.log('[PortfolioTokenSelectionPage] Loading more tokens (client-side pagination)');
-    setIsLoadingMore(true);
-    
-    // Increase the display count
-    setDisplayCount(prev => prev + TOKENS_PER_PAGE);
-    
-    // Reset loading state after a short delay
-    setTimeout(() => {
-      setIsLoadingMore(false);
-    }, 100); // Shorter delay since we're not fetching from server
-  }, [isLoadingMore]);
 
   // Enhanced token selection handler with offline support
   const handleTokenSelect = useCallback(
@@ -1446,32 +1537,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
       });
     }
   }, [memoizedTokens, handleTokenSelect, selectedTokens]);
-
-  // Set up infinite scroll observer
-  useEffect(() => {
-    if (!loadMoreTriggerRef.current) return;
-    
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMoreTokens && !isLoadingMore && !tokenListLoading) {
-          console.log('[PortfolioTokenSelectionPage] Intersection detected, loading more tokens');
-          loadMoreTokens();
-        }
-      },
-      { 
-        threshold: 0.1,
-        rootMargin: '200px' // Start loading when 200px away from bottom
-      }
-    );
-    
-    observer.observe(loadMoreTriggerRef.current);
-    
-    return () => {
-      if (loadMoreTriggerRef.current) {
-        observer.unobserve(loadMoreTriggerRef.current);
-      }
-    };
-  }, [hasMoreTokens, isLoadingMore, tokenListLoading, loadMoreTokens]);
 
   // FIXED: Never block UI for connection issues when we have cached data
   const displayError = tokensError && memoizedTokens.length === 0 ? tokensError : null;
