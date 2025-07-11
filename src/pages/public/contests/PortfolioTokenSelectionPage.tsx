@@ -174,6 +174,9 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const TOKENS_PER_PAGE = 50;
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
   
+  // Track tokens added via search that aren't in the main list
+  const [searchAddedTokens, setSearchAddedTokens] = useState<Map<string, Token>>(new Map());
+  
   // Initial load - fetch first batch of tokens
   useEffect(() => {
     const loadInitialTokens = async () => {
@@ -218,14 +221,26 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     loadInitialTokens();
   }, []); // Only run once on mount
   
-  // All tokens including special ones
+  // All tokens including special ones and search results
   const allTokens = useMemo(() => {
     const specialAddresses = specialTokens.map(t => t.contractAddress?.toLowerCase());
     const filteredMainTokens = mainTokens.filter(t => 
       !specialAddresses.includes(t.contractAddress?.toLowerCase())
     );
-    return [...specialTokens, ...filteredMainTokens];
-  }, [specialTokens, mainTokens]);
+    
+    // Merge search-added tokens with main tokens
+    const searchTokensArray = Array.from(searchAddedTokens.values());
+    const mergedTokens = [...specialTokens, ...searchTokensArray, ...filteredMainTokens];
+    
+    // Deduplicate by address
+    const seen = new Set<string>();
+    return mergedTokens.filter(token => {
+      const address = (token.address || token.contractAddress)?.toLowerCase();
+      if (!address || seen.has(address)) return false;
+      seen.add(address);
+      return true;
+    });
+  }, [specialTokens, mainTokens, searchAddedTokens]);
   
   // Visible tokens - only show up to displayCount
   const tokens = useMemo(() => {
@@ -234,12 +249,23 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   
   // Handle token updates from WebSocket
   const handleTokenUpdate = useCallback((updatedToken: Token) => {
+    // Update main tokens
     setMainTokens(prev => prev.map(token => 
       (token.address === updatedToken.address || token.contractAddress === updatedToken.contractAddress) 
         ? updatedToken 
         : token
     ));
-  }, []);
+    
+    // Update search-added tokens
+    const address = updatedToken.address || updatedToken.contractAddress;
+    if (address && searchAddedTokens.has(address)) {
+      setSearchAddedTokens(prev => {
+        const newMap = new Map(prev);
+        newMap.set(address, updatedToken);
+        return newMap;
+      });
+    }
+  }, [searchAddedTokens]);
   
   // Subscribe to visible tokens for real-time price updates
   useVisibleTokenSubscriptions({
@@ -378,11 +404,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [hasExistingPortfolio, setHasExistingPortfolio] = useState(false);
   const user = useStore((state) => state.user);
-  const [locallyAddedTokens, setLocallyAddedTokens] = useState<Token[]>([]);
-  const [duelToken, setDuelToken] = useState<Token | null>(null);
-  const [solToken, setSolToken] = useState<Token | null>(null);
-  const [usdcToken, setUsdcToken] = useState<Token | null>(null);
-  const [wbtcToken, setWbtcToken] = useState<Token | null>(null);
   
   // Get footer state for dynamic positioning
   const { isCompact } = useScrollFooter(50);
@@ -473,62 +494,25 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
         // Process DUEL token
         const duelData = await duelResponse.json();
         if (duelData.tokens && duelData.tokens.length > 0) {
-          const duelTokenFormatted: Token = {
-            ...duelData.tokens[0],
-            address: duelData.tokens[0].address || 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX',
-            contractAddress: duelData.tokens[0].address || 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX',
-            market_cap: duelData.tokens[0].market_cap || 0,
-            volume_24h: duelData.tokens[0].volume_24h || 0,
-            change_24h: duelData.tokens[0].change_24h || 0,
-            price: Number(duelData.tokens[0].price) || 0,
-          };
-          setDuelToken(duelTokenFormatted);
+          // Token data fetched but not stored - using useBatchTokens instead
         }
 
         // Process SOL token
         const solData = await solResponse.json();
         if (solData.tokens && solData.tokens.length > 0) {
-          const solTokenFormatted: Token = {
-            ...solData.tokens[0],
-            address: solData.tokens[0].address || 'So11111111111111111111111111111111111111112',
-            contractAddress: solData.tokens[0].address || 'So11111111111111111111111111111111111111112',
-            market_cap: solData.tokens[0].market_cap || 0,
-            volume_24h: solData.tokens[0].volume_24h || 0,
-            change_24h: solData.tokens[0].change_24h || 0,
-            price: Number(solData.tokens[0].price) || 0,
-            header_image_url: '/assets/media/sol_banner.png', // Use local banner
-          };
-          setSolToken(solTokenFormatted);
+          // Token data fetched but not stored - using useBatchTokens instead
         }
 
         // Process USDC token
         const usdcData = await usdcResponse.json();
         if (usdcData.tokens && usdcData.tokens.length > 0) {
-          const usdcTokenFormatted: Token = {
-            ...usdcData.tokens[0],
-            address: usdcData.tokens[0].address || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-            contractAddress: usdcData.tokens[0].address || 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-            market_cap: usdcData.tokens[0].market_cap || 0,
-            volume_24h: usdcData.tokens[0].volume_24h || 0,
-            change_24h: usdcData.tokens[0].change_24h || 0,
-            price: Number(usdcData.tokens[0].price) || 0,
-          };
-          setUsdcToken(usdcTokenFormatted);
+          // Token data fetched but not stored - using useBatchTokens instead
         }
 
         // Process WBTC token
         const wbtcData = await wbtcResponse.json();
         if (wbtcData.tokens && wbtcData.tokens.length > 0) {
-          const wbtcTokenFormatted: Token = {
-            ...wbtcData.tokens[0],
-            address: wbtcData.tokens[0].address || '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh',
-            contractAddress: wbtcData.tokens[0].address || '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh',
-            market_cap: wbtcData.tokens[0].market_cap || 0,
-            volume_24h: wbtcData.tokens[0].volume_24h || 0,
-            change_24h: wbtcData.tokens[0].change_24h || 0,
-            price: Number(wbtcData.tokens[0].price) || 0,
-          };
-          setWbtcToken(wbtcTokenFormatted);
+          // Token data fetched but not stored - using useBatchTokens instead
         }
       } catch (error) {
         console.error('Failed to fetch priority tokens:', error);
@@ -627,7 +611,10 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                 
                 if (missingTokensData.length > 0) {
                   console.log("✅ Successfully fetched data for", missingTokensData.length, "missing tokens");
-                  setLocallyAddedTokens(prev => [...missingTokensData, ...prev]);
+                  // Add missing tokens to search-added tokens
+                  missingTokensData.forEach(token => {
+                    setSearchAddedTokens(prev => new Map(prev).set(TokenHelpers.getAddress(token), token));
+                  });
                 }
               } catch (error) {
                 console.error("Failed to fetch missing token data:", error);
@@ -663,20 +650,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     });
   }, [contestId, contest]);
 
-  // Handle locally added tokens from search
-  const allDisplayableTokens = useMemo(() => {
-    const combined = [...tokens, ...locallyAddedTokens];
-    const tokenMap = new Map<string, Token>();
-    
-    // Deduplicate tokens by address
-    for (const token of combined) {
-        const address = TokenHelpers.getAddress(token);
-        if (!tokenMap.has(address)) {
-            tokenMap.set(address, token);
-        }
-    }
-    return Array.from(tokenMap.values());
-  }, [tokens, locallyAddedTokens]);
 
   // Sort state for this page only - default to 'change24h' to show hot movers first
   const [sortBy, setSortBy] = useState<'default' | 'marketCap' | 'volume' | 'change24h' | 'price'>('change24h');
@@ -1520,7 +1493,8 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
         volume_24h: token.volume_24h || 0,
         change_24h: token.change_24h || 0,
       };
-      setLocallyAddedTokens(prev => [newTokenForGrid, ...prev]);
+      // Add the searched token to our map
+      setSearchAddedTokens(prev => new Map(prev).set(token.address, newTokenForGrid));
       
       // Add the token to selectedTokens (this part works correctly)
       const newSelectedTokens = new Map(selectedTokens);
