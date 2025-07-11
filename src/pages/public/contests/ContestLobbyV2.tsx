@@ -37,7 +37,22 @@ import { ContestViewData, SearchToken } from "../../../types";
 import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
 
 // Under Construction Overlay Component
-const UnderConstructionOverlay: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const UnderConstructionOverlay: React.FC<{ children: React.ReactNode; isAdmin?: boolean }> = ({ children, isAdmin = false }) => {
+  // If admin, show content normally with a small indicator
+  if (isAdmin) {
+    return (
+      <div className="relative">
+        {/* Admin indicator */}
+        <div className="absolute top-2 right-2 z-10 bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded border border-yellow-500/30">
+          🚧 Under Construction (Admin View)
+        </div>
+        {/* Show content normally for admins */}
+        {children}
+      </div>
+    );
+  }
+  
+  // Normal users see the construction overlay
   return (
     <div className="relative">
       {/* Content (dimmed) */}
@@ -341,7 +356,7 @@ const TradingPanel: React.FC<{
 // Main Contest Lobby V2 Component
 export const ContestLobbyV2: React.FC = () => {
   const { id: contestIdFromParams } = useParams<{ id: string }>();
-  const { user } = useMigratedAuth();
+  const { user, isAdministrator, isSuperAdmin } = useMigratedAuth();
   
   console.log('[ContestLobbyV2] Component mounted with contestId:', contestIdFromParams, 'user:', user);
 
@@ -914,7 +929,7 @@ export const ContestLobbyV2: React.FC = () => {
                       )}
                       
                       {/* 2. Under Construction Trading Panel */}
-                      <UnderConstructionOverlay>
+                      <UnderConstructionOverlay isAdmin={isAdministrator || isSuperAdmin}>
                         <div className="space-y-6">
                           <TradingPanel
                             contestId={contestIdFromParams!}
