@@ -817,31 +817,35 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                                   <div>
                                     <span className="text-gray-400">Initial:</span>
                                     <span className="ml-2 font-semibold text-gray-100">
-                                      {formatCurrency(portfolio.portfolio_summary.initial_value)}
+                                      {formatCurrency(participant.initial_portfolio_value || '100')}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="text-gray-400">Value:</span>
                                     <span className="ml-2 font-semibold text-gray-100">
-                                      {formatCurrency(portfolio.portfolio_summary.current_value)}
+                                      {formatCurrency(participant.portfolio_value || '0')}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="text-gray-400">P&L:</span>
                                     <span className={`ml-2 font-semibold ${
-                                      portfolio.portfolio_summary.total_pnl_amount >= 0 ? 'text-green-400' : 'text-red-400'
+                                      parseFloat(participant.performance_percentage || '0') >= 0 ? 'text-green-400' : 'text-red-400'
                                     }`}>
-                                      {portfolio.portfolio_summary.total_pnl_amount >= 0 ? '+' : ''}
-                                      {formatCurrency(portfolio.portfolio_summary.total_pnl_amount)}
+                                      {(() => {
+                                        const initial = parseFloat(participant.initial_portfolio_value || '100');
+                                        const current = parseFloat(participant.portfolio_value || '0');
+                                        const pnl = current - initial;
+                                        return (pnl >= 0 ? '+' : '') + formatCurrency(pnl.toString());
+                                      })()}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="text-gray-400">Return:</span>
                                     <span className={`ml-2 font-semibold ${
-                                      portfolio.portfolio_summary.total_pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'
+                                      parseFloat(participant.performance_percentage || '0') >= 0 ? 'text-green-400' : 'text-red-400'
                                     }`}>
-                                      {portfolio.portfolio_summary.total_pnl_percentage >= 0 ? '+' : ''}
-                                      {portfolio.portfolio_summary.total_pnl_percentage.toFixed(2)}%
+                                      {parseFloat(participant.performance_percentage || '0') >= 0 ? '+' : ''}
+                                      {parseFloat(participant.performance_percentage || '0').toFixed(2)}%
                                     </span>
                                   </div>
                                 </div>
@@ -881,11 +885,11 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                                             {priceData && (
                                               <>
                                                 <span className="text-gray-500">•</span>
-                                                <span>${parseFloat(priceData.price).toFixed(4)}</span>
+                                                <span>${parseFloat(priceData.price) < 0.01 ? parseFloat(priceData.price).toFixed(6) : parseFloat(priceData.price).toFixed(4)}</span>
                                                 {priceData.market_cap && parseFloat(priceData.market_cap) > 0 && (
                                                   <>
                                                     <span className="text-gray-500">•</span>
-                                                    <span>MCap: {formatCurrency(priceData.market_cap)}</span>
+                                                    <span>MCap: ${parseFloat(priceData.market_cap).toLocaleString()}</span>
                                                   </>
                                                 )}
                                               </>
@@ -896,7 +900,14 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                                       
                                       <div className="text-right ml-4">
                                         <div className="font-semibold text-gray-100">
-                                          {formatCurrency(holding.current_value)}
+                                          {(() => {
+                                            // Calculate the value based on participant's portfolio value and allocation
+                                            const participantData = sortedParticipants.find(p => p.wallet_address === expandedParticipant);
+                                            const portfolioValue = parseFloat(participantData?.portfolio_value || '0');
+                                            const allocation = holding.weight / 100; // Convert percentage to decimal
+                                            const calculatedValue = portfolioValue * allocation;
+                                            return formatCurrency(calculatedValue.toString());
+                                          })()}
                                         </div>
                                         <div className={`text-xs font-medium ${
                                           holding.pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'

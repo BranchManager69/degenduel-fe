@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import axiosInstance from '../../lib/axiosInstance';
 import { getFullImageUrl } from "../../utils/profileImageUtils";
 import { getUserNameColor, getRoleBadgeClasses, getUserRoleLabel } from "../../utils/roleColors";
+import { useWebSocket } from "../../contexts/UnifiedWebSocketContext";
 
 interface Participant {
   wallet_address: string;
@@ -57,6 +58,9 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
   const [expandedPortfolio, setExpandedPortfolio] = useState<boolean>(false);
   const [portfolioData, setPortfolioData] = useState<Record<string, any>>({});
   const [loadingPortfolio, setLoadingPortfolio] = useState<Record<string, boolean>>({});
+  const [tokenPrices, setTokenPrices] = useState<Map<string, any>>(new Map());
+  const subscribedTokensRef = useRef<Set<string>>(new Set());
+  const ws = useWebSocket();
   
   // Detect mobile viewport
   const [isMobile, setIsMobile] = useState(false);
@@ -394,6 +398,8 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
     try {
       const response = await axiosInstance.get(`/contests/${contestId}/portfolio/${walletAddress}`);
       setPortfolioData(prev => ({ ...prev, [walletAddress]: response.data }));
+      // Subscribe to token prices after portfolio data is loaded
+      subscribeToTokenPrices(response.data);
     } catch (error) {
       console.error('Failed to fetch portfolio data:', error);
       setPortfolioData(prev => ({ ...prev, [walletAddress]: null }));
@@ -411,8 +417,12 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
         // Trigger hover state when opening drawer
         onParticipantHover?.(focusedParticipant.wallet_address);
       } else {
-        // Clear hover state when closing drawer
+        // Clear hover state when closing drawer and unsubscribe from token prices
         onParticipantHover?.(null);
+        const portfolio = portfolioData[focusedParticipant.wallet_address];
+        if (portfolio) {
+          unsubscribeFromTokenPrices(portfolio);
+        }
       }
       setExpandedPortfolio(!expandedPortfolio);
     }
@@ -443,6 +453,90 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
     
     touchStartX.current = null;
   };
+
+  // Handle WebSocket token price updates
+  const handleTokenPriceUpdate = useCallback((data: any) => {
+    if (data.address && data.price !== undefined) {
+      setTokenPrices(prev => {
+        const newMap = new Map(prev);
+        newMap.set(data.address, {
+          address: data.address,
+          price: String(data.price),
+          market_cap: String(data.market_cap || 0),
+          change_24h: String(data.change_24h || 0),
+          volume_24h: String(data.volume_24h || 0),
+          last_updated: Date.now()
+        });
+        return newMap;
+      });
+    }
+  }, []);
+
+  // Subscribe to token prices when portfolio is expanded
+  const subscribeToTokenPrices = useCallback((portfolio: any) => {
+    if (!portfolio?.portfolio || !ws) return;
+
+    const tokenAddresses = portfolio.portfolio
+      .map((holding: any) => holding.token?.address || holding.token_address)
+      .filter(Boolean);
+
+    const newSubscriptions = tokenAddresses.filter((addr: string) => !subscribedTokensRef.current.has(addr));
+    
+    if (newSubscriptions.length > 0) {
+      const topics = newSubscriptions.map((addr: string) => `token:price:${addr}`);
+      console.log('[FocusedParticipantsList] Subscribing to token prices:', topics);
+      ws.subscribe(topics);
+      newSubscriptions.forEach((addr: string) => subscribedTokensRef.current.add(addr));
+    }
+  }, [ws]);
+
+  // Unsubscribe from token prices when portfolio is collapsed
+  const unsubscribeFromTokenPrices = useCallback((portfolio: any) => {
+    if (!portfolio?.portfolio || !ws) return;
+
+    const tokenAddresses = portfolio.portfolio
+      .map((holding: any) => holding.token?.address || holding.token_address)
+      .filter(Boolean);
+
+    const topicsToUnsubscribe = tokenAddresses
+      .filter((addr: string) => subscribedTokensRef.current.has(addr))
+      .map((addr: string) => `token:price:${addr}`);
+
+    if (topicsToUnsubscribe.length > 0) {
+      console.log('[FocusedParticipantsList] Unsubscribing from token prices:', topicsToUnsubscribe);
+      ws.unsubscribe(topicsToUnsubscribe);
+      tokenAddresses.forEach((addr: string) => subscribedTokensRef.current.delete(addr));
+    }
+  }, [ws]);
+
+  // Listen for WebSocket token price updates
+  useEffect(() => {
+    if (!ws) return;
+
+    const cleanup = ws.registerListener(
+      'focused-participant-token-prices',
+      ['DATA'] as any[],
+      (message: any) => {
+        if (message.topic && message.topic.startsWith('token:price:')) {
+          handleTokenPriceUpdate(message.data);
+        }
+      }
+    );
+
+    return cleanup;
+  }, [ws, handleTokenPriceUpdate]);
+
+  // Cleanup subscriptions on unmount
+  useEffect(() => {
+    return () => {
+      if (subscribedTokensRef.current.size > 0 && ws) {
+        const topics = Array.from(subscribedTokensRef.current).map(addr => `token:price:${addr}`);
+        console.log('[FocusedParticipantsList] Cleanup: Unsubscribing from all token prices');
+        ws.unsubscribe(topics);
+        subscribedTokensRef.current.clear();
+      }
+    };
+  }, [ws]);
 
   // Reset portfolio when focus changes
   useEffect(() => {
@@ -999,17 +1093,13 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                     <div className="bg-dark-400/30 rounded-lg p-3">
                       <div className="text-xs text-gray-400 mb-1">Portfolio Value</div>
                       <div className="text-xl font-bold text-gray-100">
-                        {parseFloat(portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.current_value).toFixed(2)} SOL
+                        {parseFloat(sortedParticipants[focusedIndex].portfolio_value || '0').toFixed(2)} SOL
                       </div>
                       <div className={`text-sm mt-1 ${
-                        portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'
+                        parseFloat(sortedParticipants[focusedIndex].performance_percentage || '0') >= 0 ? 'text-green-400' : 'text-red-400'
                       }`}>
-                        {portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_percentage >= 0 ? '+' : ''}
-                        {portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_percentage.toFixed(2)}%
-                        <span className="text-gray-400 ml-1">
-                          ({portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_amount >= 0 ? '+' : ''}
-                          {parseFloat(portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio_summary.total_pnl_amount).toFixed(2)})
-                        </span>
+                        {parseFloat(sortedParticipants[focusedIndex].performance_percentage || '0') >= 0 ? '+' : ''}
+                        {parseFloat(sortedParticipants[focusedIndex].performance_percentage || '0').toFixed(2)}%
                       </div>
                     </div>
                     
@@ -1040,34 +1130,63 @@ export const FocusedParticipantsList: React.FC<FocusedParticipantsListProps> = (
                     <div className="space-y-2 max-h-[400px] overflow-y-auto">
                       {portfolioData[sortedParticipants[focusedIndex].wallet_address].portfolio
                         .sort((a: any, b: any) => b.current_value - a.current_value)
-                        .map((holding: any) => (
-                        <div key={holding.token_id} className="flex items-center justify-between p-2 bg-dark-400/20 rounded-lg hover:bg-dark-400/30 transition-colors">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <img 
-                              src={holding.token.image_url} 
-                              alt={holding.token.symbol}
-                              className="w-8 h-8 rounded-full flex-shrink-0"
-                            />
-                            <div className="min-w-0">
-                              <div className="font-medium text-gray-100 flex items-center gap-2">
-                                <span>{holding.token.symbol}</span>
-                                <span className="text-xs text-gray-500">{holding.weight.toFixed(1)}%</span>
+                        .map((holding: any) => {
+                          const tokenAddress = holding.token?.address || holding.token_address;
+                          const priceData = tokenPrices.get(tokenAddress);
+                          const change24h = priceData ? parseFloat(priceData.change_24h) : 0;
+                          
+                          // Calculate value based on participant's portfolio value and allocation
+                          const participantData = sortedParticipants[focusedIndex];
+                          const portfolioValue = parseFloat(participantData?.portfolio_value || '0');
+                          const allocation = holding.weight / 100;
+                          const calculatedValue = portfolioValue * allocation;
+                          
+                          return (
+                            <div key={holding.token_id} className="flex items-center justify-between p-2 bg-dark-400/20 rounded-lg hover:bg-dark-400/30 transition-colors">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <img 
+                                  src={holding.token.image_url} 
+                                  alt={holding.token.symbol}
+                                  className="w-8 h-8 rounded-full flex-shrink-0"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-medium text-gray-100 flex items-center gap-2">
+                                    <span>{holding.token.symbol}</span>
+                                    {priceData && (
+                                      <span className={`text-xs font-medium ${
+                                        change24h >= 0 ? 'text-green-400' : 'text-red-400'
+                                      }`}>
+                                        {change24h >= 0 ? '+' : ''}{change24h.toFixed(2)}%
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-400 flex items-center gap-2">
+                                    <span>{holding.weight.toFixed(1)}% • {calculatedValue.toFixed(2)} SOL</span>
+                                    {priceData && (
+                                      <span>• ${parseFloat(priceData.price) < 0.01 ? parseFloat(priceData.price).toFixed(6) : parseFloat(priceData.price).toFixed(4)}</span>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-400">
-                                {parseFloat(holding.current_value).toFixed(2)} SOL
+                              
+                              <div className={`text-sm font-medium ${
+                                holding.pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'
+                              }`}>
+                                {holding.pnl_percentage >= 0 ? '+' : ''}{holding.pnl_percentage.toFixed(1)}%
                               </div>
                             </div>
-                          </div>
-                          
-                          <div className={`text-sm font-medium ${
-                            holding.pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'
-                          }`}>
-                            {holding.pnl_percentage >= 0 ? '+' : ''}{holding.pnl_percentage.toFixed(1)}%
-                          </div>
-                        </div>
-                      ))}
+                          );
+                        })}
                     </div>
                   </div>
+                  
+                  {/* Real-time update indicator */}
+                  {subscribedTokensRef.current.size > 0 && (
+                    <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                      <span>Prices updating in real-time</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-400">
