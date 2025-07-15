@@ -11,7 +11,7 @@
  * @created 2025-01-11
  */
 
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import { useWebSocket } from '../../../contexts/UnifiedWebSocketContext';
 import { Token } from '../../../types';
 
@@ -28,25 +28,43 @@ export function useVisibleTokenSubscriptions({
 }: UseVisibleTokenSubscriptionsProps) {
   const ws = useWebSocket();
   const subscribedTokensRef = useRef<Set<string>>(new Set());
-
-  // Memoize token addresses to prevent unnecessary re-runs
-  const tokenAddresses = useMemo(() => {
-    return tokens
-      .map(t => t.address || t.contractAddress)
-      .filter(Boolean) as string[];
+  const tokensRef = useRef<Token[]>(tokens);
+  
+  // Keep tokensRef up to date
+  useEffect(() => {
+    tokensRef.current = tokens;
   }, [tokens]);
 
-  // Subscribe to visible tokens
+  // Track last subscription state to prevent unnecessary re-subscriptions
+  const lastSubscriptionStateRef = useRef<string>('');
+
+  // Subscribe to visible tokens only when the actual token set changes
   useEffect(() => {
-    if (!ws.isConnected || !enabled || tokenAddresses.length === 0) {
+    if (!ws.isConnected || !enabled) {
       return;
     }
+
+    // Get current token addresses
+    const currentAddresses = tokens
+      .map(t => t.address || t.contractAddress)
+      .filter(Boolean) as string[];
+    
+    // Create sorted string for comparison
+    const currentState = currentAddresses.sort().join(',');
+    
+    // Skip if subscription state hasn't actually changed
+    if (currentState === lastSubscriptionStateRef.current) {
+      return;
+    }
+    
+    console.log(`[useVisibleTokenSubscriptions] Token set changed, updating subscriptions`);
+    lastSubscriptionStateRef.current = currentState;
 
     const newSubscriptions: string[] = [];
     const toUnsubscribe: string[] = [];
 
     // Find new tokens to subscribe to
-    tokenAddresses.forEach(address => {
+    currentAddresses.forEach(address => {
       if (!subscribedTokensRef.current.has(address)) {
         newSubscriptions.push(`token:price:${address}`);
         subscribedTokensRef.current.add(address);
@@ -54,7 +72,7 @@ export function useVisibleTokenSubscriptions({
     });
 
     // Find tokens we no longer need
-    const currentAddressSet = new Set(tokenAddresses);
+    const currentAddressSet = new Set(currentAddresses);
     subscribedTokensRef.current.forEach(subscribedAddress => {
       if (!currentAddressSet.has(subscribedAddress)) {
         toUnsubscribe.push(`token:price:${subscribedAddress}`);
@@ -83,7 +101,7 @@ export function useVisibleTokenSubscriptions({
         subscribedTokensRef.current.clear();
       }
     };
-  }, [ws.isConnected, tokenAddresses, ws.subscribe, ws.unsubscribe, enabled]);
+  }, [ws.isConnected, tokens, ws.subscribe, ws.unsubscribe, enabled]);
 
   // Handle token updates
   useEffect(() => {
@@ -99,8 +117,8 @@ export function useVisibleTokenSubscriptions({
         if (message.topic && message.topic.startsWith('token:price:') && message.data?.type === 'price_update') {
           const tokenAddress = message.topic.split(':')[2];
           
-          // Find the token in our list
-          const existingToken = tokens.find(t => 
+          // Find the token in our list using ref to avoid dependency
+          const existingToken = tokensRef.current.find(t => 
             (t.address === tokenAddress) || (t.contractAddress === tokenAddress)
           );
           
@@ -124,5 +142,5 @@ export function useVisibleTokenSubscriptions({
     );
 
     return unregister;
-  }, [ws.isConnected, enabled, onTokenUpdate, tokens]);
+  }, [ws.isConnected, enabled, onTokenUpdate]);
 }

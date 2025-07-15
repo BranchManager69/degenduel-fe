@@ -109,11 +109,8 @@ export const formatPercentage = (change: string | number | undefined, includeSig
   
   const sign = num >= 0 && includeSign ? "+" : "";
   
-  // Use appropriate decimal places based on magnitude
+  // Always use 2 decimal places
   let decimals = 2;
-  if (Math.abs(num) >= 100) decimals = 0;
-  else if (Math.abs(num) >= 10) decimals = 1;
-  else if (Math.abs(num) < 0.01) decimals = 4;
   
   return `${sign}${num.toFixed(decimals)}%`;
 };
