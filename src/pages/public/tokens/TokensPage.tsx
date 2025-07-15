@@ -126,11 +126,21 @@ export const TokensPage: React.FC = () => {
     for (const address of SPECIAL_TOKEN_ADDRESSES) {
       const token = specialTokensMap.get(address);
       if (token) {
-        // Add special SOL banner
+        // Add special banners
         if (address === 'So11111111111111111111111111111111111111112') {
           tokens.push({
             ...token,
             header_image_url: '/assets/media/sol_banner.png'
+          });
+        } else if (address === '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh') {
+          tokens.push({
+            ...token,
+            header_image_url: '/assets/media/btc_banner.webp'
+          });
+        } else if (address === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v') {
+          tokens.push({
+            ...token,
+            header_image_url: '/assets/media/dollar.jpg'
           });
         } else {
           tokens.push(token);

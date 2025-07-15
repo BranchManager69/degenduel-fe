@@ -24,11 +24,23 @@ const TokenPriceDisplay = React.memo(({ token }: { token: Token }) => {
   return (
     <div className="flex items-center justify-between gap-2">
       {/* Market Cap or Price - left side */}
-      <div className="text-sm sm:text-base font-bold text-white whitespace-nowrap" style={{ 
-        textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
+      <div className={`font-bold text-white whitespace-nowrap ${
+        /* Make price/market cap MUCH bigger for all special tokens */
+        isSpecialToken ? 'text-2xl sm:text-3xl' : 'text-sm sm:text-base'
+      }`} style={{ 
+        textShadow: isSpecialToken 
+          ? '4px 4px 8px rgba(0,0,0,1), 2px 2px 4px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.8)' 
+          : '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)',
+        fontWeight: isSpecialToken ? 800 : 700
       }}>
-        {!token.price || token.price === 0 || !token.market_cap || token.market_cap === 0 ? (
-          <div className="w-20 h-4 bg-gray-600/30 rounded animate-pulse" />
+        {/* For special tokens (SOL, USDC, WBTC), only check price. For others, check both price and market_cap */
+          (isSpecialToken && token.symbol !== 'DUEL' 
+            ? (!token.price || token.price === 0)
+            : (!token.price || token.price === 0 || !token.market_cap || token.market_cap === 0)
+          ) ? (
+          <div className={`bg-gray-600/30 rounded animate-pulse ${
+            isSpecialToken ? 'w-32 h-8' : 'w-20 h-4'
+          }`} />
         ) : (
           /* Show market cap only for DUEL, price for other special tokens */
           token.symbol === 'DUEL' ? (
@@ -199,8 +211,8 @@ export const MemoizedTokenCard = React.memo(({
                     </span>
                   )}
                 </div>
-                {/* Only show name for DUEL and non-special tokens */}
-                {(token.symbol === 'DUEL' || !isSpecialToken) && (
+                {/* Only show name for non-special tokens */}
+                {!isSpecialToken && (
                   <p className="text-gray-300 text-xs sm:text-sm truncate mt-1" style={{
                     textShadow: '2px 2px 4px rgba(0,0,0,0.9)'
                   }}>
