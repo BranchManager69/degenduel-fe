@@ -30,10 +30,11 @@ export const PortfolioTokenCard: React.FC<PortfolioTokenCardProps> = ({
   const contractAddress = TokenHelpers.getAddress(token);
   
   const isDuel = token.symbol === 'DUEL' && index === 0;
-  const isTopThree = !isDuel && index < 4;
+  const isSpecialToken = index < 4; // First 4 are special tokens
+  const isTopThree = index >= 4 && index < 7; // Rankings start from position 5
   const changeNum = Number(token.change_24h || token.change24h) || 0;
   
-  const displayRank = isDuel ? 0 : index;
+  const displayRank = isSpecialToken ? 0 : (index >= 4 ? index - 3 : 0);
   
   const tokenKey = token.contractAddress || token.address || token.symbol;
   const isNewToken = tokenKey && !animatedTokens.has(tokenKey);
@@ -115,11 +116,16 @@ export const PortfolioTokenCard: React.FC<PortfolioTokenCardProps> = ({
             <div className="flex-1 flex flex-col justify-center">
               <div className="mb-1">
                 <div className="flex items-start justify-between">
-                  <h3 className={`${token.symbol.length >= 9 ? 'text-xl' : 'text-2xl'} font-bold text-white`} style={{ 
+                  <h3 className={`${
+                    // Special handling for SOL, USDC, WBTC (not DUEL)
+                    isSpecialToken && token.symbol !== 'DUEL' ? 'text-2xl' :
+                    token.symbol.length >= 9 ? 'text-lg' : 'text-xl'
+                  } font-bold text-white`} style={{ 
                     textShadow: '6px 6px 12px rgba(0,0,0,1), -4px -4px 8px rgba(0,0,0,1), 3px 3px 6px rgba(0,0,0,1), 0px 0px 10px rgba(0,0,0,0.9)', 
                     WebkitTextStroke: '1.5px rgba(0,0,0,0.7)' 
                   }}>
-                    {token.symbol}
+                    {/* Display BTC for WBTC */}
+                    {token.symbol === 'WBTC' ? 'BTC' : token.symbol}
                   </h3>
                   
                   {/* Rankings removed for portfolio selection */}
@@ -127,14 +133,17 @@ export const PortfolioTokenCard: React.FC<PortfolioTokenCardProps> = ({
                 {/* Removed token name to save space on smaller cards */}
               </div>
               
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-bold text-white" style={{ 
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm font-bold text-white whitespace-nowrap" style={{ 
                   textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
                 }}>
-                  {token.symbol === 'SOL' ? (
-                    <span className="text-lg text-yellow-400" style={{ 
-                      textShadow: '0 0 20px rgba(251, 191, 36, 0.6), 2px 2px 4px rgba(0,0,0,1)' 
-                    }}>
+                  {/* Show market cap only for DUEL, price for other special tokens */}
+                  {token.symbol === 'DUEL' ? (
+                    `${formatNumber(TokenHelpers.getMarketCap(token), 'short')} MC`
+                  ) : isSpecialToken ? (
+                    <span className={token.symbol === 'SOL' ? "text-lg text-yellow-400" : ""} style={
+                      token.symbol === 'SOL' ? { textShadow: '0 0 20px rgba(251, 191, 36, 0.6), 2px 2px 4px rgba(0,0,0,1)' } : {}
+                    }>
                       {formatTokenPrice(TokenHelpers.getPrice(token))}
                     </span>
                   ) : (
@@ -142,22 +151,12 @@ export const PortfolioTokenCard: React.FC<PortfolioTokenCardProps> = ({
                   )}
                 </div>
                 
-                <div className={`text-xs font-bold font-sans ${changeNum >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ 
+                <div className={`text-xs font-bold font-sans whitespace-nowrap ${changeNum >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ 
                   textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
                 }}>
                   {changeNum >= 0 ? '↗' : '↘'} {formatPercentage(TokenHelpers.getPriceChange(token), false)}
                 </div>
               </div>
-            </div>
-            
-            <div>
-              {token.symbol !== 'SOL' && (
-                <div className="text-[10px] text-gray-300 whitespace-nowrap" style={{ 
-                  textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
-                }}>
-                  {formatTokenPrice(TokenHelpers.getPrice(token))}
-                </div>
-              )}
             </div>
           </div>
           

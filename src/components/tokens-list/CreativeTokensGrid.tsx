@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Token, TokenHelpers } from "../../types";
 import { formatNumber, formatPercentage, formatTokenPrice } from "../../utils/format";
 import { OptimizedTokenCard } from "./OptimizedTokenCard";
 import { Info, ExternalLink, BarChart3, TrendingUp, Star } from "lucide-react";
+import "../portfolio-selection/portfolio-animations.css";
 
 interface CreativeTokensGridProps {
   tokens: Token[];
@@ -13,6 +14,38 @@ interface CreativeTokensGridProps {
   renderBackContent?: (token: Token) => React.ReactNode; // NEW: Custom back content renderer
   selectedTokens?: Map<string, number>; // NEW: For portfolio selection highlighting
 }
+
+/**
+ * Custom comparison function for React.memo to prevent unnecessary re-renders
+ * Optimized for stable array references from parent component
+ */
+const arePropsEqual = (prevProps: CreativeTokensGridProps, nextProps: CreativeTokensGridProps) => {
+  // Fast reference check - if arrays are same reference, props are equal
+  if (prevProps.tokens === nextProps.tokens &&
+      prevProps.featuredTokens === nextProps.featuredTokens &&
+      prevProps.selectedTokenSymbol === nextProps.selectedTokenSymbol &&
+      prevProps.backContent === nextProps.backContent &&
+      prevProps.renderBackContent === nextProps.renderBackContent &&
+      prevProps.selectedTokens === nextProps.selectedTokens) {
+    return true;
+  }
+  
+  // If tokens array changed reference, check if length is different (new/removed tokens)
+  if (prevProps.tokens.length !== nextProps.tokens.length) return false;
+  
+  // Check featuredTokens length
+  if (prevProps.featuredTokens?.length !== nextProps.featuredTokens?.length) return false;
+  
+  // Check other primitive props
+  if (prevProps.selectedTokenSymbol !== nextProps.selectedTokenSymbol ||
+      prevProps.backContent !== nextProps.backContent) return false;
+  
+  // Check function/object references
+  if (prevProps.renderBackContent !== nextProps.renderBackContent ||
+      prevProps.selectedTokens !== nextProps.selectedTokens) return false;
+  
+  return false; // Default to re-render if we can't prove equality
+};
 
 /**
  * CreativeTokensGrid - A redesigned grid with multi-tiered layout,
@@ -31,6 +64,10 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
   
   // Track which tokens have already been animated
   const [animatedTokens, setAnimatedTokens] = useState<Set<string>>(new Set());
+  
+  // Track price changes for flash effect
+  const [priceFlashTokens, setPriceFlashTokens] = useState<Map<string, 'green' | 'red'>>(new Map());
+  const previousPricesRef = useRef<Map<string, number>>(new Map());
 
   // Update animated tokens when new tokens arrive
   useEffect(() => {
@@ -48,6 +85,50 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
       setAnimatedTokens(newAnimatedTokens);
     }, 1000); // After animation duration
   }, [tokens]);
+  
+  // Memoize combined tokens to prevent array recreation
+  const allTokens = useMemo(() => [...featuredTokens, ...tokens], [featuredTokens, tokens]);
+  
+  // Track price changes and trigger flash effects (optimized)
+  useEffect(() => {
+    const newFlashTokens = new Map<string, 'green' | 'red'>();
+    
+    allTokens.forEach(token => {
+      const address = token.contractAddress || token.address;
+      if (!address) return;
+      
+      const currentPrice = token.price;
+      const previousPrice = previousPricesRef.current.get(address);
+      
+      if (previousPrice !== undefined && currentPrice !== undefined && currentPrice !== previousPrice) {
+        // Price changed!
+        if (currentPrice > previousPrice) {
+          newFlashTokens.set(address, 'green');
+        } else if (currentPrice < previousPrice) {
+          newFlashTokens.set(address, 'red');
+        }
+        
+        // Remove flash after animation
+        setTimeout(() => {
+          setPriceFlashTokens(prev => {
+            const updated = new Map(prev);
+            updated.delete(address);
+            return updated;
+          });
+        }, 600); // Match animation duration
+      }
+      
+      // Update previous price
+      if (currentPrice !== undefined) {
+        previousPricesRef.current.set(address, currentPrice);
+      }
+    });
+    
+    // Apply new flashes only if there are changes
+    if (newFlashTokens.size > 0) {
+      setPriceFlashTokens(prev => new Map([...prev, ...newFlashTokens]));
+    }
+  }, [allTokens]);
 
   // Scroll to selected token with a delay
   useEffect(() => {
@@ -77,6 +158,47 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
   //   return changeNum >= 0 ? 'bg-green-500' : 'bg-red-500';
   // };
 
+  // Memoized background component that doesn't re-render on price changes
+  const TokenCardBackground = React.memo(({ token }: { token: Token }) => {
+    const tokenColor = token.color || getTokenColor(token.symbol);
+    
+    return (
+      <div className="absolute inset-0 overflow-hidden">
+        {(token.header_image_url) ? (
+          <>
+            <img 
+              src={token.header_image_url || ''} 
+              alt={token.symbol}
+              className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 banner-image"
+            />
+            {/* Neutral gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/20 transition-all duration-500" />
+          </>
+        ) : (
+          <div 
+            className="absolute inset-0 transform group-hover:scale-110 transition-transform duration-700" 
+            style={{
+              background: `linear-gradient(135deg, ${tokenColor} 0%, rgba(18, 16, 25, 0.9) 100%)`,
+            }}
+          />
+        )}
+      </div>
+    );
+  }, (prev, next) => 
+    prev.token.header_image_url === next.token.header_image_url && 
+    prev.token.symbol === next.token.symbol
+  );
+
+  // Helper function to check if token data is loading/not available
+  const isTokenDataLoading = (token: Token) => {
+    return !token.price || token.price === 0 || !token.market_cap || token.market_cap === 0;
+  };
+
+  // Loading skeleton component for token data
+  const TokenDataSkeleton = ({ width = "w-16" }: { width?: string }) => (
+    <div className={`${width} h-4 bg-gray-600/30 rounded animate-pulse`} />
+  );
+
   // ENHANCED HOTTEST TOKEN CARD - Visually stunning design with flip functionality
   const HottestTokenCard = ({ token, index, backContent = 'details' }: { token: Token, index: number, backContent?: 'details' | 'portfolio' }) => {
     const navigate = useNavigate();
@@ -95,11 +217,12 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     const isDuel = token.symbol === 'DUEL' && index === 0;
     
     // Backend already calculated the hotness - use position in list as score
-    const isTopThree = !isDuel && index < 4; // Top 3 excluding DUEL
+    const isSpecialToken = index < 4; // First 4 are special tokens (DUEL, SOL, USDC, WBTC)
+    const isTopThree = index >= 4 && index < 7; // Rankings start from position 5
     const changeNum = Number(token.change_24h || token.change24h) || 0;
     
-    // Actual rank (0 for DUEL, then 1, 2, 3...)
-    const displayRank = isDuel ? 0 : index;
+    // Actual rank (no rank for special tokens, then 1, 2, 3 starting from position 5)
+    const displayRank = isSpecialToken ? 0 : (index >= 4 ? index - 3 : 0);
     
     // Check if this token has already been animated
     const tokenKey = token.contractAddress || token.address || token.symbol;
@@ -122,6 +245,9 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
     const isPortfolioSelected = selectedTokens?.has(TokenHelpers.getAddress(token)) || false;
     const portfolioWeight = selectedTokens?.get(TokenHelpers.getAddress(token)) || 0;
     
+    // Check for price flash
+    const flashType = priceFlashTokens.get(contractAddress);
+    
     return (
       <div className="aspect-[16/9] sm:aspect-[5/3] w-full perspective-1000">
         <div 
@@ -137,39 +263,18 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
             ${isDuel ? 'ring-2 ring-purple-500/60 shadow-[0_0_20px_rgba(147,51,234,0.4)]' : ''}
             ${isTopThree ? 'bg-gradient-to-br from-dark-100/90 via-dark-200/80 to-dark-300/90' : 'bg-dark-200/70'}
             ${isTopThree ? 'shadow-2xl ' + rankStyle.glow : 'shadow-xl shadow-black/20'}
+            ${flashType === 'green' ? 'price-flash-green' : flashType === 'red' ? 'price-flash-red' : ''}
           `}
-          style={{ animationDelay: isNewToken && index < 500 ? `${(index % 20) * 0.05}s` : undefined }}>
+          style={useMemo(() => ({ 
+            animationDelay: isNewToken && index < 500 ? `${(index % 20) * 0.05}s` : undefined 
+          }), [isNewToken, index])}>
         {/* DUEL SPECIAL EFFECT */}
         {isDuel && (
           <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-transparent to-purple-600/10 animate-pulse" />
         )}
         
-        {/* STUNNING BANNER BACKGROUND */}
-        <div className="absolute inset-0 overflow-hidden">
-          {(token.header_image_url) ? (
-            <>
-              <img 
-                src={token.header_image_url || ''} 
-                alt={token.symbol}
-                className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                style={{ 
-                  objectPosition: 'center center',
-                  animation: 'bannerScan 60s ease-in-out infinite'
-                }}
-              />
-              {/* Neutral gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/20 transition-all duration-500" />
-            </>
-          ) : (
-            <div 
-              className="absolute inset-0 transform group-hover:scale-110 transition-transform duration-700" 
-              style={{
-                background: `linear-gradient(135deg, ${token.color || getTokenColor(token.symbol)} 0%, rgba(18, 16, 25, 0.9) 100%)`,
-              }}
-            />
-          )}
-          
-        </div>
+        {/* STUNNING BANNER BACKGROUND - Memoized to prevent flicker */}
+        <TokenCardBackground token={token} />
 
         {/* MAIN CONTENT - Responsive padding */}
         <div className="relative z-10 p-2 sm:p-3 h-full flex flex-col justify-between">
@@ -177,15 +282,20 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
           <div className="flex-1 flex flex-col justify-center">
             <div className="mb-1">
               <div className="flex items-start justify-between">
-                <h3 className={`${token.symbol.length >= 9 ? 'text-xl sm:text-3xl' : 'text-2xl sm:text-4xl'} font-bold text-white`} style={{ 
+                <h3 className={`${
+                  // Special handling for SOL, USDC, WBTC (not DUEL)
+                  isSpecialToken && token.symbol !== 'DUEL' ? 'text-2xl sm:text-4xl' :
+                  token.symbol.length >= 9 ? 'text-lg sm:text-2xl' : 'text-xl sm:text-3xl'
+                } font-bold text-white`} style={{ 
                   textShadow: '6px 6px 12px rgba(0,0,0,1), -4px -4px 8px rgba(0,0,0,1), 3px 3px 6px rgba(0,0,0,1), 0px 0px 10px rgba(0,0,0,0.9)', 
                   WebkitTextStroke: '1.5px rgba(0,0,0,0.7)' 
                 }}>
-                  {token.symbol}
+                  {/* Display BTC for WBTC */}
+                  {token.symbol === 'WBTC' ? 'BTC' : token.symbol}
                 </h3>
                 
                 {/* RANK NUMBER - on same line as symbol */}
-                {!isDuel && displayRank && (
+                {!isSpecialToken && displayRank > 0 && displayRank <= 3 && (
                   <span className={`font-bold ml-2 ${
                     displayRank === 1 ? 'text-yellow-400' : 
                     displayRank === 2 ? 'text-gray-300' : 
@@ -204,37 +314,44 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
                   </span>
                 )}
               </div>
-              <p className="text-gray-300 text-xs sm:text-sm truncate mt-1" style={{
-                textShadow: '2px 2px 4px rgba(0,0,0,0.9)'
-              }}>
-                {token.name}
-              </p>
+              {/* Only show name for DUEL and non-special tokens */}
+              {(token.symbol === 'DUEL' || !isSpecialToken) && (
+                <p className="text-gray-300 text-xs sm:text-sm truncate mt-1" style={{
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.9)'
+                }}>
+                  {token.name}
+                </p>
+              )}
             </div>
             
-            {/* MARKET CAP AND CHANGE - side by side */}
-            <div className="flex items-center justify-between">
-              {/* Market Cap - left side */}
-              <div className="text-sm sm:text-base font-bold text-white" style={{ 
+            {/* MARKET CAP/PRICE AND CHANGE - side by side */}
+            <div className="flex items-center justify-between gap-2">
+              {/* Market Cap or Price - left side */}
+              <div className="text-sm sm:text-base font-bold text-white whitespace-nowrap" style={{ 
                 textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
               }}>
-                ${formatNumber(TokenHelpers.getMarketCap(token), 'short')} MC
+                {isTokenDataLoading(token) ? (
+                  <TokenDataSkeleton width="w-20" />
+                ) : (
+                  /* Show market cap only for DUEL, price for other special tokens */
+                  token.symbol === 'DUEL' ? (
+                    `$${formatNumber(TokenHelpers.getMarketCap(token), 'short')} MC`
+                  ) : isSpecialToken ? (
+                    formatTokenPrice(TokenHelpers.getPrice(token))
+                  ) : (
+                    `$${formatNumber(TokenHelpers.getMarketCap(token), 'short')} MC`
+                  )
+                )}
               </div>
               
               {/* Percentage change - right side */}
-              <div className={`text-xs sm:text-sm font-bold font-sans ${changeNum >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ 
-                textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
-              }}>
-                {changeNum >= 0 ? '↗' : '↘'} {formatPercentage(TokenHelpers.getPriceChange(token), false)}
-              </div>
-            </div>
-          </div>
-          
-          {/* BOTTOM - PRICE */}
-          <div>
-            <div className="text-xs text-gray-300 whitespace-nowrap" style={{ 
-              textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
-            }}>
-              {formatTokenPrice(TokenHelpers.getPrice(token))}
+              {changeNum !== 0 && (
+                <div className={`text-xs sm:text-sm font-bold font-sans whitespace-nowrap ${changeNum >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ 
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.9), 1px 1px 2px rgba(0,0,0,1)' 
+                }}>
+                  {changeNum >= 0 ? '↗' : '↘'} {formatPercentage(TokenHelpers.getPriceChange(token), false)}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -310,25 +427,43 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
                 <div className="bg-dark-300/60 rounded p-1">
                   <div className="text-[10px] text-gray-400" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>Market Cap</div>
                   <div className="text-xs font-bold text-white" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>
-                    ${formatNumber(TokenHelpers.getMarketCap(token), 'short')}
+                    {isTokenDataLoading(token) ? (
+                      <TokenDataSkeleton width="w-12" />
+                    ) : (
+                      `$${formatNumber(TokenHelpers.getMarketCap(token), 'short')}`
+                    )}
                   </div>
                 </div>
                 <div className="bg-dark-300/60 rounded p-1">
                   <div className="text-[10px] text-gray-400" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>24h Volume</div>
                   <div className="text-xs font-bold text-white" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>
-                    ${formatNumber(TokenHelpers.getVolume(token), 'short')}
+                    {isTokenDataLoading(token) ? (
+                      <TokenDataSkeleton width="w-12" />
+                    ) : (
+                      `$${formatNumber(TokenHelpers.getVolume(token), 'short')}`
+                    )}
                   </div>
                 </div>
                 <div className="bg-dark-300/60 rounded p-1">
                   <div className="text-[10px] text-gray-400" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>Price</div>
                   <div className="text-xs font-bold text-white" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>
-                    {formatTokenPrice(TokenHelpers.getPrice(token))}
+                    {isTokenDataLoading(token) ? (
+                      <TokenDataSkeleton width="w-12" />
+                    ) : (
+                      formatTokenPrice(TokenHelpers.getPrice(token))
+                    )}
                   </div>
                 </div>
                 <div className="bg-dark-300/60 rounded p-1">
                   <div className="text-[10px] text-gray-400" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>24h Change</div>
                   <div className={`text-xs font-bold ${changeNum >= 0 ? 'text-green-400' : 'text-red-400'}`} style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>
-                    {formatPercentage(TokenHelpers.getPriceChange(token))}
+                    {isTokenDataLoading(token) ? (
+                      <TokenDataSkeleton width="w-10" />
+                    ) : changeNum === 0 ? (
+                      <span className="text-gray-500">—</span>
+                    ) : (
+                      formatPercentage(TokenHelpers.getPriceChange(token))
+                    )}
                   </div>
                 </div>
               </div>
@@ -432,71 +567,6 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
 
   return (
     <div className="relative">
-      {/* CSS for animations */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @keyframes bannerScan {
-            0%, 100% {
-              object-position: center center;
-            }
-            25% {
-              object-position: left center;
-            }
-            50% {
-              object-position: center center;
-            }
-            75% {
-              object-position: right center;
-            }
-          }
-          
-          @keyframes fadeUpIn {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          
-          .token-card-animation {
-            animation: fadeUpIn 0.6s ease-out forwards;
-            opacity: 0;
-            will-change: transform, opacity;
-          }
-          
-          .perspective-1000 {
-            perspective: 1000px;
-          }
-          
-          .transform-style-3d {
-            transform-style: preserve-3d;
-          }
-          
-          .backface-hidden {
-            backface-visibility: hidden;
-          }
-          
-          .rotate-y-180 {
-            transform: rotateY(180deg);
-          }
-          
-          @keyframes shimmer {
-            0% {
-              transform: translateX(-100%);
-            }
-            100% {
-              transform: translateX(200%);
-            }
-          }
-          
-          .animate-shimmer {
-            animation: shimmer 3s ease-in-out infinite;
-          }
-        `
-      }} />
       
       {/* Background effects - Enhanced cyberpunk grid */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
@@ -620,7 +690,7 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
       </div>
     </div>
   );
-});
+}, arePropsEqual);
 
 // Helper function to get a color based on token symbol  
 const getTokenColor = (symbol: string): string => {

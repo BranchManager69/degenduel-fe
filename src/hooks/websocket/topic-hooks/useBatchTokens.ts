@@ -126,7 +126,14 @@ export function useBatchTokens(tokenAddresses: string[]): UseBatchTokensReturn {
 
       setTokens(newTokens);
       setLastUpdate(new Date());
-      console.log(`[useBatchTokens] Loaded ${newTokens.size} tokens from batch endpoint`);
+      console.log(`[useBatchTokens] 📊 Initial load: ${newTokens.size} tokens from batch endpoint`, {
+        tokens: Array.from(newTokens.entries()).map(([addr, token]) => ({
+          address: addr,
+          price: token.price,
+          symbol: token.symbol || 'UNKNOWN'
+        })),
+        timestamp: new Date().toISOString()
+      });
 
       // Now fetch full token data for each address to get symbols, names, etc.
       // This could be optimized with a batch endpoint that returns full data
@@ -185,16 +192,27 @@ export function useBatchTokens(tokenAddresses: string[]): UseBatchTokensReturn {
       const address = message.topic.split(':')[2];
       
       if (tokenAddresses.includes(address)) {
-        console.log(`[useBatchTokens] Received update for ${address}`);
-        
         setTokens(prev => {
           const updated = new Map(prev);
           const existingToken = updated.get(address);
           
           if (existingToken) {
+            const oldPrice = existingToken.price;
+            const newPrice = message.data.price || existingToken.price;
+            
+            // Only log if price actually changed
+            if (oldPrice !== newPrice) {
+              console.log(`[useBatchTokens] 💰 PRICE UPDATE for ${existingToken.symbol || address}:`, {
+                old: oldPrice,
+                new: newPrice,
+                change: oldPrice ? ((newPrice - oldPrice) / oldPrice * 100).toFixed(2) + '%' : '0%',
+                timestamp: new Date().toISOString()
+              });
+            }
+            
             updated.set(address, {
               ...existingToken,
-              price: message.data.price || existingToken.price,
+              price: newPrice,
               change_24h: message.data.change_24h || existingToken.change_24h,
               change24h: String(message.data.change_24h || existingToken.change_24h),
               market_cap: message.data.market_cap || existingToken.market_cap,
@@ -220,7 +238,8 @@ export function useBatchTokens(tokenAddresses: string[]): UseBatchTokensReturn {
 
   // WebSocket subscriptions
   useEffect(() => {
-    if (!ws.isConnected || tokens.size === 0) {
+    // Don't require tokens to be loaded - set up subscriptions immediately
+    if (!ws.isConnected || tokenAddresses.length === 0) {
       return;
     }
 
@@ -255,7 +274,7 @@ export function useBatchTokens(tokenAddresses: string[]): UseBatchTokensReturn {
         subscribedTopics.current.clear();
       }
     };
-  }, [ws, tokens.size, tokenAddresses, handleTokenUpdate]);
+  }, [ws, ws.isConnected, tokenAddresses, handleTokenUpdate]);
 
   return {
     tokens,

@@ -24,6 +24,7 @@ import { Skeleton } from "../../../components/ui/Skeleton";
 import { useBatchTokens } from "../../../hooks/websocket/topic-hooks/useBatchTokens";
 import { useVisibleTokenSubscriptions } from "../../../hooks/websocket/topic-hooks/useVisibleTokenSubscriptions";
 import { useScrollFooter } from "../../../hooks/ui/useScrollFooter";
+import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Contest, SearchToken, Token, TokenHelpers } from "../../../types/index";
@@ -130,6 +131,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   
   const { id: contestId } = useParams();
   const navigate = useNavigate();
+  const { isSuperAdmin } = useMigratedAuth();
   
   // Special tokens that should always be available
   const SPECIAL_TOKEN_ADDRESSES = [
@@ -151,11 +153,21 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     for (const address of SPECIAL_TOKEN_ADDRESSES) {
       const token = specialTokensMap.get(address);
       if (token) {
-        // Add special SOL banner
+        // Add special banners
         if (address === 'So11111111111111111111111111111111111111112') {
           tokens.push({
             ...token,
             header_image_url: '/assets/media/sol_banner.png'
+          });
+        } else if (address === '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh') {
+          tokens.push({
+            ...token,
+            header_image_url: '/assets/media/btc_banner.webp'
+          });
+        } else if (address === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v') {
+          tokens.push({
+            ...token,
+            header_image_url: '/assets/media/dollar.jpg'
           });
         } else {
           tokens.push(token);
@@ -247,25 +259,64 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     return allTokens.slice(0, displayCount);
   }, [allTokens, displayCount]);
   
+  // Debounced token updates to batch multiple changes
+  const pendingUpdatesRef = useRef<Map<string, Token>>(new Map());
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const applyPendingUpdates = useCallback(() => {
+    if (pendingUpdatesRef.current.size === 0) return;
+    
+    const updates = Array.from(pendingUpdatesRef.current.values());
+    console.log(`[PortfolioPage] 📦 Applying ${updates.length} batched token updates`);
+    
+    setMainTokens(prev => {
+      let changed = false;
+      const newArray = prev.map(token => {
+        const address = token.address || token.contractAddress;
+        if (!address) return token;
+        const update = pendingUpdatesRef.current.get(address);
+        if (update) {
+          // Check if meaningful fields actually changed
+          if (token.price !== update.price || 
+              token.market_cap !== update.market_cap ||
+              token.change_24h !== update.change_24h ||
+              token.volume_24h !== update.volume_24h) {
+            changed = true;
+            return update;
+          }
+        }
+        return token;
+      });
+      
+      pendingUpdatesRef.current.clear();
+      return changed ? newArray : prev;
+    });
+  }, []);
+
   // Handle token updates from WebSocket
   const handleTokenUpdate = useCallback((updatedToken: Token) => {
-    // Update main tokens
-    setMainTokens(prev => prev.map(token => 
-      (token.address === updatedToken.address || token.contractAddress === updatedToken.contractAddress) 
-        ? updatedToken 
-        : token
-    ));
-    
-    // Update search-added tokens
     const address = updatedToken.address || updatedToken.contractAddress;
-    if (address && searchAddedTokens.has(address)) {
-      setSearchAddedTokens(prev => {
-        const newMap = new Map(prev);
-        newMap.set(address, updatedToken);
-        return newMap;
-      });
+    if (!address) return;
+    
+    // Add to pending updates
+    pendingUpdatesRef.current.set(address, updatedToken);
+    
+    // Clear existing timeout and set new one
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
     }
-  }, [searchAddedTokens]);
+    
+    updateTimeoutRef.current = setTimeout(applyPendingUpdates, 50); // 50ms debounce
+  }, [applyPendingUpdates]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, []);
   
   // Subscribe to visible tokens for real-time price updates
   useVisibleTokenSubscriptions({
@@ -403,6 +454,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const [contestLoading, setContestLoading] = useState(true);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [hasExistingPortfolio, setHasExistingPortfolio] = useState(false);
+  const [debugPanelCollapsed, setDebugPanelCollapsed] = useState(true);
   const user = useStore((state) => state.user);
   
   // Get footer state for dynamic positioning
@@ -479,49 +531,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     fetchContest();
   }, [contestId]);
 
-  // Fetch DUEL, SOL, USDC, and WBTC tokens in parallel (non-blocking)
-  useEffect(() => {
-    const fetchPriorityTokens = async () => {
-      try {
-        // Fetch all special tokens in parallel
-        const [duelResponse, solResponse, usdcResponse, wbtcResponse] = await Promise.all([
-          fetch('/api/tokens/search?search=F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX&limit=1'),
-          fetch('/api/tokens/search?search=So11111111111111111111111111111111111111112&limit=1'),
-          fetch('/api/tokens/search?search=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&limit=1'),
-          fetch('/api/tokens/search?search=3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh&limit=1')
-        ]);
-
-        // Process DUEL token
-        const duelData = await duelResponse.json();
-        if (duelData.tokens && duelData.tokens.length > 0) {
-          // Token data fetched but not stored - using useBatchTokens instead
-        }
-
-        // Process SOL token
-        const solData = await solResponse.json();
-        if (solData.tokens && solData.tokens.length > 0) {
-          // Token data fetched but not stored - using useBatchTokens instead
-        }
-
-        // Process USDC token
-        const usdcData = await usdcResponse.json();
-        if (usdcData.tokens && usdcData.tokens.length > 0) {
-          // Token data fetched but not stored - using useBatchTokens instead
-        }
-
-        // Process WBTC token
-        const wbtcData = await wbtcResponse.json();
-        if (wbtcData.tokens && wbtcData.tokens.length > 0) {
-          // Token data fetched but not stored - using useBatchTokens instead
-        }
-      } catch (error) {
-        console.error('Failed to fetch priority tokens:', error);
-      }
-    };
-    
-    // Run async without blocking
-    fetchPriorityTokens();
-  }, []);
+  // Special tokens (DUEL, SOL, USDC, WBTC) are already being fetched by useBatchTokens hook above
 
   useEffect(() => {
     const checkParticipationAndPortfolio = async () => {
@@ -1524,6 +1534,49 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     showOfflineIndicator
   });
 
+  // Memoize portfolio calculations to prevent re-computation on every render
+  const portfolioMetrics = useMemo(() => {
+    const usedWeight = Array.from(selectedTokens.values()).reduce((sum, w) => sum + w, 0);
+    const remainingWeight = 100 - usedWeight;
+    return { usedWeight, remainingWeight };
+  }, [selectedTokens]);
+
+  // Memoized renderBackContent function to prevent re-renders
+  const renderBackContent = useCallback((token: Token) => {
+    const contractAddress = TokenHelpers.getAddress(token);
+    const isSelected = selectedTokens.has(contractAddress);
+    const currentWeight = selectedTokens.get(contractAddress) || 0;
+    
+    return (
+      <PortfolioTokenCardBack
+        token={token}
+        isSelected={isSelected}
+        currentWeight={currentWeight}
+        onToggleSelection={() => {
+          if (isSelected) {
+            handleTokenSelect(contractAddress);
+          } else {
+            // Add with default weight using pre-calculated values
+            const { usedWeight, remainingWeight } = portfolioMetrics;
+            const defaultWeight = remainingWeight >= 20 ? 20 : remainingWeight >= 10 ? 10 : remainingWeight;
+            
+            if (defaultWeight > 0) {
+              setSelectedTokens(prev => {
+                const newMap = new Map(prev);
+                newMap.set(contractAddress, defaultWeight);
+                return newMap;
+              });
+              toast.success(`${token.symbol} added with ${defaultWeight}% weight`, { duration: 2000 });
+            } else {
+              toast.error(`Portfolio is full (${usedWeight}%). Remove tokens first.`, { duration: 4000 });
+            }
+          }
+        }}
+        onWeightChange={(delta) => handleWeightChange(contractAddress, currentWeight + delta)}
+      />
+    );
+  }, [selectedTokens, handleTokenSelect, handleWeightChange, portfolioMetrics]);
+
   // Show loading skeleton when we have no tokens and are loading
   if (tokenListLoading && memoizedTokens.length === 0) {
     console.log("⏳ PortfolioTokenSelectionPage: Rendering skeleton loading state (no cached tokens)");
@@ -1867,47 +1920,76 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                       />
                     </div>
 
+                    {/* DEBUG PANEL - Contest Data (Super Admin Only) */}
+                    {contest && isSuperAdmin && (
+                      <div className="mb-4 p-4 bg-dark-300/50 border border-yellow-500/30 rounded-lg">
+                        <div 
+                          className="flex items-center justify-between cursor-pointer"
+                          onClick={() => setDebugPanelCollapsed(!debugPanelCollapsed)}
+                        >
+                          <h3 className="text-yellow-400 font-mono font-bold">
+                            {debugPanelCollapsed ? '▶' : '▼'} 🐛 DEBUG: Contest Data
+                          </h3>
+                          <span className="text-xs text-gray-400">Click to {debugPanelCollapsed ? 'expand' : 'collapse'}</span>
+                        </div>
+                        {!debugPanelCollapsed && (
+                          <div className="grid grid-cols-2 gap-2 text-xs font-mono mt-4">
+                          <div className="text-gray-400">ID:</div>
+                          <div className="text-white">{contest.id}</div>
+                          
+                          <div className="text-gray-400">Name:</div>
+                          <div className="text-white">{contest.name}</div>
+                          
+                          <div className="text-gray-400">Status:</div>
+                          <div className="text-white">{contest.status}</div>
+                          
+                          <div className="text-gray-400">Type:</div>
+                          <div className="text-white">{contest.status}</div>
+                          
+                          <div className="text-gray-400">Entry Fee:</div>
+                          <div className="text-white">{contest.entry_fee}</div>
+                          
+                          <div className="text-gray-400">Start Time:</div>
+                          <div className="text-white">{new Date(contest.start_time).toLocaleString()}</div>
+                          
+                          <div className="text-gray-400">End Time:</div>
+                          <div className="text-white">{new Date(contest.end_time).toLocaleString()}</div>
+                          
+                          <div className="text-gray-400">Prize Pool:</div>
+                          <div className="text-white">{contest.prize_pool}</div>
+                          
+                          <div className="text-gray-400">Max Tokens:</div>
+                          <div className="text-white">{contest.max_participants}</div>
+                          
+                          <div className="text-gray-400">Participants:</div>
+                          <div className="text-white">{contest.participant_count} / {contest.max_participants || '∞'}</div>
+                          
+                          <div className="text-gray-400">Is Participating:</div>
+                          <div className={contest.is_participating ? 'text-green-400' : 'text-red-400'}>
+                            {contest.is_participating ? 'YES' : 'NO'}
+                          </div>
+                          
+                          <div className="text-gray-400">Has Portfolio:</div>
+                          <div className={hasExistingPortfolio ? 'text-green-400' : 'text-red-400'}>
+                            {hasExistingPortfolio ? 'YES' : 'NO'}
+                          </div>
+                          
+                          <div className="text-gray-400">Raw Data:</div>
+                          <div className="col-span-2 text-white text-[10px] overflow-auto max-h-32 bg-dark-400/50 p-2 rounded mt-1">
+                            <pre>{JSON.stringify(contest, null, 2)}</pre>
+                          </div>
+                        </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Enhanced Token Grid - Visual rich cards with infinite scroll */}
                     <div className="relative">
                       <CreativeTokensGrid
                         tokens={visibleTokens}
                         backContent="portfolio"
                         selectedTokens={selectedTokens}
-                        renderBackContent={(token) => {
-                          const contractAddress = TokenHelpers.getAddress(token);
-                          const isSelected = selectedTokens.has(contractAddress);
-                          const currentWeight = selectedTokens.get(contractAddress) || 0;
-                          
-                          return (
-                            <PortfolioTokenCardBack
-                              token={token}
-                              isSelected={isSelected}
-                              currentWeight={currentWeight}
-                              onToggleSelection={() => {
-                                if (isSelected) {
-                                  handleTokenSelect(contractAddress);
-                                } else {
-                                  // Add with default weight
-                                  const usedWeight = Array.from(selectedTokens.values()).reduce((sum, w) => sum + w, 0);
-                                  const remainingWeight = 100 - usedWeight;
-                                  const defaultWeight = remainingWeight >= 20 ? 20 : remainingWeight >= 10 ? 10 : remainingWeight;
-                                  
-                                  if (defaultWeight > 0) {
-                                    setSelectedTokens(prev => {
-                                      const newMap = new Map(prev);
-                                      newMap.set(contractAddress, defaultWeight);
-                                      return newMap;
-                                    });
-                                    toast.success(`${token.symbol} added with ${defaultWeight}% weight`, { duration: 2000 });
-                                  } else {
-                                    toast.error(`Portfolio is full (${usedWeight}%). Remove tokens first.`, { duration: 4000 });
-                                  }
-                                }
-                              }}
-                              onWeightChange={(delta) => handleWeightChange(contractAddress, currentWeight + delta)}
-                            />
-                          );
-                        }}
+                        renderBackContent={renderBackContent}
                       />
                       
                       {/* Load More Trigger - Subtle infinite scroll indicator */}
