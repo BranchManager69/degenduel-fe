@@ -1552,6 +1552,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
         token={token}
         isSelected={isSelected}
         currentWeight={currentWeight}
+        remainingWeight={portfolioMetrics.remainingWeight}
         onToggleSelection={() => {
           if (isSelected) {
             handleTokenSelect(contractAddress);
