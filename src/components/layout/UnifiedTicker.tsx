@@ -12,7 +12,7 @@
  */
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Loader2, WifiOff } from "lucide-react";
+import { AlertTriangle, Loader2, WifiOff, DollarSign, TrendingUp } from "lucide-react";
 import React, { ReactElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTickerTokens } from "../../hooks/websocket/topic-hooks/useTickerTokens";
@@ -41,6 +41,9 @@ export const UnifiedTicker: React.FC<Props> = ({
 }) => {
   const { maintenanceMode } = useStore();
   const navigate = useNavigate();
+  
+  // State for cycling between volume and market cap
+  const [showVolume, setShowVolume] = useState(true);
   
   // Get launch event data for DUEL token state
   const { contractAddress: duelContractAddress, revealTime } = useLaunchEvent();
@@ -124,6 +127,19 @@ export const UnifiedTicker: React.FC<Props> = ({
   useEffect(() => {
     setCurrentContests(initialContests);
   }, [initialContests]);
+  
+  // Cycle between volume and market cap every 5 seconds when showing fallback data
+  useEffect(() => {
+    const allTokensHaveZeroChange = displayTokens.every(t => TokenHelpers.getPriceChange(t) === 0);
+    
+    if (allTokensHaveZeroChange && displayTokens.length > 0) {
+      const interval = setInterval(() => {
+        setShowVolume(prev => !prev);
+      }, 5000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [displayTokens]);
 
   // Simple DUEL announcement - FIXED STYLING (no double nesting)
   const duelAnnouncementItem = useMemo(() => {
@@ -397,29 +413,80 @@ export const UnifiedTicker: React.FC<Props> = ({
         const logoUrl = token.image_url || token.header_image_url || `https://via.placeholder.com/24?text=${token.symbol.substring(0,1)}`;
         const currentItemIndex = globalItemIndex++;
         
-        // Format percentage change with proper color coding using helper function
+        // Check if we have actual price change data
+        // Since the transform converts null to 0, check if ALL tokens have 0 change
+        // which likely means no price data is available
+        const allTokensHaveZeroChange = displayTokens.every(t => TokenHelpers.getPriceChange(t) === 0);
+        const hasChangeData = !allTokensHaveZeroChange || TokenHelpers.getPriceChange(token) !== 0;
         const change24h = TokenHelpers.getPriceChange(token);
-        const formatPercentageChange = (change: number): { text: string; colorClass: string } => {
-          let text: string;
-          
-          if (change === 0) {
-            text = '-'; // Show just a dash for zero change
-            return { text, colorClass: 'text-white' };
-          } else if (change > 0) {
-            text = `+${change.toFixed(0)}%`; // Positive with + sign
-          } else {
-            text = `${change.toFixed(0)}%`; // Negative already has - sign from the number
+        
+        // Format display value - show volume/market cap if no price change data
+        const formatDisplayValue = (): { text: string; colorClass: string; isVolume: boolean; isMarketCap: boolean } => {
+          if (!hasChangeData) {
+            // Cycle between volume and market cap when price data is unavailable
+            if (showVolume) {
+              // Show volume
+              const volume = parseFloat(token.volume24h || '0');
+              let volumeText: string;
+              let colorClass: string;
+              
+              if (volume >= 1000000) {
+                volumeText = `$${(volume / 1000000).toFixed(1)}M`;
+                colorClass = 'text-purple-400';
+              } else if (volume >= 1000) {
+                volumeText = `$${(volume / 1000).toFixed(0)}K`;
+                colorClass = 'text-blue-400';
+              } else {
+                volumeText = `$${volume.toFixed(0)}`;
+                colorClass = 'text-gray-400';
+              }
+              
+              return { text: volumeText, colorClass, isVolume: true, isMarketCap: false };
+            } else {
+              // Show market cap
+              const marketCap = parseFloat(token.marketCap || '0');
+              let marketCapText: string;
+              let colorClass: string;
+              
+              if (marketCap >= 1000000) {
+                marketCapText = `${(marketCap / 1000000).toFixed(1)}M`;
+                colorClass = 'text-cyan-400';
+              } else if (marketCap >= 1000) {
+                marketCapText = `${(marketCap / 1000).toFixed(0)}K`;
+                colorClass = 'text-teal-400';
+              } else {
+                marketCapText = `${marketCap.toFixed(0)}`;
+                colorClass = 'text-gray-400';
+              }
+              
+              return { text: marketCapText, colorClass, isVolume: false, isMarketCap: true };
+            }
           }
           
-          if (change > 10) return { text, colorClass: 'text-emerald-400 font-bold' };
-          if (change > 5) return { text, colorClass: 'text-emerald-300' };
-          if (change > 0) return { text, colorClass: 'text-green-400' };
-          if (change > -5) return { text, colorClass: 'text-red-400' };
-          if (change > -10) return { text, colorClass: 'text-red-300' };
-          return { text, colorClass: 'text-red-500 font-bold' };
+          // Original percentage change logic
+          let text: string;
+          
+          if (change24h === 0) {
+            text = '-'; // Show just a dash for zero change
+            return { text, colorClass: 'text-white', isVolume: false, isMarketCap: false };
+          } else if (change24h > 0) {
+            text = `+${change24h.toFixed(0)}%`; // Positive with + sign
+          } else {
+            text = `${change24h.toFixed(0)}%`; // Negative already has - sign from the number
+          }
+          
+          let colorClass: string;
+          if (change24h > 10) colorClass = 'text-emerald-400 font-bold';
+          else if (change24h > 5) colorClass = 'text-emerald-300';
+          else if (change24h > 0) colorClass = 'text-green-400';
+          else if (change24h > -5) colorClass = 'text-red-400';
+          else if (change24h > -10) colorClass = 'text-red-300';
+          else colorClass = 'text-red-500 font-bold';
+          
+          return { text, colorClass, isVolume: false, isMarketCap: false };
         };
         
-        const changeData = formatPercentageChange(change24h);
+        const displayData = formatDisplayValue();
 
         return (
           <div
@@ -524,20 +591,61 @@ export const UnifiedTicker: React.FC<Props> = ({
                 </span>
               </div>
               <div className="flex items-center flex-shrink-0 min-w-0">
+                {/* Small icon indicator with fade animation */}
+                <AnimatePresence mode="wait">
+                  {displayData.isVolume && (
+                    <motion.div
+                      key="volume-icon"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.7 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <DollarSign 
+                        className={`${displayData.colorClass} ${
+                          isCompact ? 'w-2.5 h-2.5 mr-0.5' : 'w-3 h-3 mr-1'
+                        }`}
+                        style={{
+                          filter: 'drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8))'
+                        }}
+                      />
+                    </motion.div>
+                  )}
+                  {displayData.isMarketCap && (
+                    <motion.div
+                      key="marketcap-icon"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.7 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <TrendingUp 
+                        className={`${displayData.colorClass} ${
+                          isCompact ? 'w-2.5 h-2.5 mr-0.5' : 'w-3 h-3 mr-1'
+                        }`}
+                        style={{
+                          filter: 'drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8))'
+                        }}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <span 
-                  className={`flex-shrink-0 font-medium ${changeData.colorClass} ${
-                    isCompact ? 'text-[10px] ml-1.5' : 'text-xs ml-2'
-                  }`}
+                  className={`flex-shrink-0 font-medium ${displayData.colorClass} ${
+                    isCompact ? 'text-[10px]' : 'text-xs'
+                  } ${!displayData.isVolume && !displayData.isMarketCap ? (isCompact ? 'ml-1.5' : 'ml-2') : ''}`}
                   style={{
                     textShadow: '4px 4px 8px rgba(0, 0, 0, 1), 2px 2px 16px rgba(0, 0, 0, 0.9), 0px 0px 20px rgba(0, 0, 0, 0.8), 0px 0px 32px rgba(0, 0, 0, 0.7)',
                     WebkitTextStroke: '1px rgba(0, 0, 0, 0.8)',
                     paintOrder: 'stroke fill',
-                    minWidth: 'fit-content'
+                    minWidth: 'fit-content',
+                    fontStyle: displayData.isVolume || displayData.isMarketCap ? 'italic' : 'normal' // Italicize alternative metrics
                   } as any}
+                  title={displayData.isVolume ? '24h Volume' : displayData.isMarketCap ? 'Market Cap' : '24h Change'} // Tooltip to explain the value
                 >
                   {isCompact ? 
-                    changeData.text.replace('.0', '') : // Remove .0 decimals in compact mode
-                    changeData.text
+                    displayData.text.replace('.0', '') : // Remove .0 decimals in compact mode
+                    displayData.text
                   }
                 </span>
               </div>
