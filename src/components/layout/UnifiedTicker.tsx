@@ -425,8 +425,9 @@ export const UnifiedTicker: React.FC<Props> = ({
     const tokenItems = (activeTab === "all" || activeTab === "tokens") ?
       displayTokens.map((token: Token, index: number) => {
         const tokenKey = TokenHelpers.getAddress(token) || `token-${index}`;
-        const logoUrl = token.image_url || token.header_image_url || `https://via.placeholder.com/24?text=${token.symbol.substring(0,1)}`;
+        const logoUrl = token.image_url || token.header_image_url;
         const currentItemIndex = globalItemIndex++;
+        const symbolLetter = token.symbol ? token.symbol.charAt(0).toUpperCase() : '?';
         
         // Check if we have actual price change data
         // Since the transform converts null to 0, check if ALL tokens have 0 change
@@ -548,7 +549,7 @@ export const UnifiedTicker: React.FC<Props> = ({
                 if (address) navigate(`/tokens/${address}`);
               }
             }}
-            className="relative inline-flex items-center rounded-lg cursor-pointer hover:bg-cyber-500/20 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden border border-black/20 bg-cyber-500/10"
+            className="relative inline-flex items-center rounded-lg cursor-pointer hover:bg-cyber-500/20 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden border border-black/20"
             style={{
               '--token-px': isCompact ? '6px' : '12px',
               '--token-py': isCompact ? '2px' : '4px', 
@@ -560,20 +561,19 @@ export const UnifiedTicker: React.FC<Props> = ({
               transitionDelay: `${currentItemIndex * 30}ms`, // Staggered animation
               willChange: "transform",
               transform: "translate3d(0, 0, 0)",
-              ...(token.header_image_url && {
-                backgroundImage: `url(${token.header_image_url})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat'
-              })
+              background: token.header_image_url 
+                ? `url(${token.header_image_url})` 
+                : `linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat'
             } as any}
           >
             {/* Dark overlay for better text readability with token icon */}
             <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px]">
-              <img 
-                src={logoUrl} 
-                alt={token.symbol} 
-                className="absolute rounded-full object-cover transition-all duration-300 ease-out"
+              {/* Token logo with fallback */}
+              <div 
+                className="absolute rounded-full overflow-hidden transition-all duration-300 ease-out flex items-center justify-center"
                 style={{
                   '--logo-size': isCompact ? '36px' : '48px',
                   width: 'var(--logo-size)',
@@ -584,9 +584,33 @@ export const UnifiedTicker: React.FC<Props> = ({
                   filter: 'blur(0.5px) contrast(1.1) saturate(0.9) brightness(1.0)',
                   maskImage: 'radial-gradient(circle, black 70%, transparent 100%)',
                   WebkitMaskImage: 'radial-gradient(circle, black 70%, transparent 100%)',
-                  boxShadow: '0 0 20px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.4)'
+                  boxShadow: '0 0 20px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.4)',
+                  background: logoUrl ? 'transparent' : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
                 } as any}
-              />
+              >
+                {logoUrl ? (
+                  <img 
+                    src={logoUrl} 
+                    alt={token.symbol}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Hide the broken image
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  // Letter fallback - ONLY shows when no image URL exists
+                  <span 
+                    className="flex items-center justify-center text-white font-bold w-full h-full"
+                    style={{
+                      fontSize: isCompact ? '14px' : '18px',
+                      textShadow: '1px 1px 2px rgba(0, 0, 0, 0.5)'
+                    }}
+                  >
+                    {symbolLetter}
+                  </span>
+                )}
+              </div>
             </div>
             
             {/* Content with higher z-index */}
