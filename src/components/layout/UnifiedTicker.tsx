@@ -49,11 +49,15 @@ export const UnifiedTicker: React.FC<Props> = ({
   const { contractAddress: duelContractAddress, revealTime } = useLaunchEvent();
   const isRevealed = Boolean(duelContractAddress && revealTime);
   
-  // We'll add the debug effect later after originalTickerItems is defined
+  // State to track if we should use volume sort
+  const [useVolumeSort, setUseVolumeSort] = useState(false);
   
-  // Use optimized ticker tokens - only top 50 by change
+  // Use optimized ticker tokens - dynamically switch sort based on data availability
   const { tokens: allTokens, isLoading: finalTokensLoading, isConnected: finalDataConnected } = 
-    useTickerTokens({ limit: 50, sort: 'change24h' });
+    useTickerTokens({ 
+      limit: 50, 
+      sort: useVolumeSort ? 'volume24h' : 'change24h' 
+    });
 
   // Helper functions
   const formatTimeUntilStart = (startTime: string): string => {
@@ -128,18 +132,29 @@ export const UnifiedTicker: React.FC<Props> = ({
     setCurrentContests(initialContests);
   }, [initialContests]);
   
-  // Cycle between volume and market cap every 5 seconds when showing fallback data
+  // Detect when all tokens have no price data and switch sort method
   useEffect(() => {
     const allTokensHaveZeroChange = displayTokens.every(t => TokenHelpers.getPriceChange(t) === 0);
     
     if (allTokensHaveZeroChange && displayTokens.length > 0) {
+      // Switch to volume sort when no price data is available
+      if (!useVolumeSort) {
+        console.log('[UnifiedTicker] No price data detected, switching to volume sort');
+        setUseVolumeSort(true);
+      }
+      
+      // Also cycle between showing volume and market cap
       const interval = setInterval(() => {
         setShowVolume(prev => !prev);
       }, 5000);
       
       return () => clearInterval(interval);
+    } else if (!allTokensHaveZeroChange && useVolumeSort) {
+      // Switch back to price change sort when data becomes available
+      console.log('[UnifiedTicker] Price data detected, switching back to change24h sort');
+      setUseVolumeSort(false);
     }
-  }, [displayTokens]);
+  }, [displayTokens, useVolumeSort]);
 
   // Simple DUEL announcement - FIXED STYLING (no double nesting)
   const duelAnnouncementItem = useMemo(() => {
