@@ -18,6 +18,7 @@ import { toast } from "react-hot-toast";
 //import { Link } from "react-router-dom";
 import { ddApi } from "../../services/dd-api";
 import { Contest, ContestSettings } from "../../types/index";
+import { API_URL } from "../../config/config";
 // import { Button } from "../ui/Button"; // Removed - using custom buttons now
 import { Input } from "../ui/Input";
 import { MultiSelect } from "../ui/MultiSelect";
@@ -25,6 +26,9 @@ import { Textarea } from "../ui/Textarea";
 import { useSolanaTokenData } from "../../hooks/data/useSolanaTokenData";
 import { config } from "../../config/config";
 import { useStore } from "../../store/useStore";
+import { useIndividualToken } from "../../hooks/websocket/topic-hooks/useIndividualToken";
+import { TokenSearch } from "../common/TokenSearch";
+import type { SearchToken } from "../../types";
 
 // TODO: move to types/index.ts
 // Removed: type ContestDifficulty =
@@ -57,6 +61,13 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   const [showAdvancedOptions, setShowAdvancedOptions] = React.useState(false);
   const [isSelecting, setIsSelecting] = React.useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
+  const [userDividendRank, setUserDividendRank] = React.useState<number | null>(null);
+  const [showTooltip, setShowTooltip] = React.useState(false);
+  const tooltipRef = React.useRef<HTMLDivElement>(null);
+  const dividendRef = React.useRef<HTMLDivElement>(null);
+  const [selectedToken, setSelectedToken] = React.useState<SearchToken | null>(null);
+  const [isTokenSearchOpen, setIsTokenSearchOpen] = React.useState(false);
+  const [showAIOptions, setShowAIOptions] = React.useState(false);
   
   // Get user data and DUEL token balance
   const user = useStore(state => state.user);
@@ -65,8 +76,14 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     user?.wallet_address
   );
   
-  // Total DUEL supply (1 billion for now, will be updated later)
-  const TOTAL_DUEL_SUPPLY = 1_000_000_000;
+  // Get SOL price for USD conversion
+  const SOL_ADDRESS = 'So11111111111111111111111111111111111111112';
+  const { token: solToken } = useIndividualToken(SOL_ADDRESS);
+  const solPrice = solToken?.price || 0;
+  
+  // Total DUEL supply registered to users (from API data)
+  // This is the actual circulating supply that receives dividends
+  const TOTAL_DUEL_SUPPLY = 153_700_935; // ~153.7M DUEL registered
 
   const getSmartStartTime = () => {
     const now = new Date();
@@ -106,7 +123,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     return `${initials}-${timestamp}${suffix}`;
   };
 
-  const [participantRange, setParticipantRange] = React.useState("3-20");
+  const [participantRange, setParticipantRange] = React.useState("3-10");
 
   const [duration, setDuration] = React.useState("1"); // Duration in hours
   const [formData, setFormData] = React.useState({
@@ -116,13 +133,15 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     prize_pool: "0", // Will be calculated based on entry fee × participants
     start_time: getSmartStartTime(),
     min_participants: 3,
-    max_participants: 20,
+    max_participants: 10,
     allowed_buckets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     settings: {
       difficulty: "guppy", // Hard-coded default
       tokenTypesAllowed: [],
       startingPortfolioValue: "100",
     } as Omit<ContestSettings, 'minParticipants' | 'maxParticipants'>,
+    ai_image_prompt: "", // New field for AI image generation
+    featured_token_address: "", // New field for featured token
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -433,10 +452,10 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       value = parts[0] + '.' + parts[1].slice(0, 3);
     }
     
-    // Enforce maximum entry fee of 1 SOL
+    // Enforce maximum entry fee of 10 SOL
     const numericValue = parseFloat(value);
-    if (!isNaN(numericValue) && numericValue > 1) {
-      return; // Don't update if over 1 SOL
+    if (!isNaN(numericValue) && numericValue > 10) {
+      return; // Don't update if over 10 SOL
     }
     
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -565,10 +584,45 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     return () => clearInterval(interval);
   }, [isOpen, isStartTimeTooSoon]);
 
+  // Fetch user's dividend rank when modal opens
+  React.useEffect(() => {
+    if (!isOpen || !user?.wallet_address) return;
+    
+    const fetchDividendRank = async () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const response = await fetch(`${API_URL}/user/public/dividend-percentages?date=${today}`);
+        if (response.ok) {
+          const data = await response.json();
+          const userIndex = data.holders.findIndex((h: any) => h.wallet_address === user.wallet_address);
+          if (userIndex !== -1) {
+            setUserDividendRank(userIndex + 1); // Rank is 1-based
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch dividend rank:', error);
+      }
+    };
+    
+    fetchDividendRank();
+  }, [isOpen, user?.wallet_address]);
+
+  // Position tooltip
+  React.useEffect(() => {
+    if (showTooltip && dividendRef.current && tooltipRef.current) {
+      const rect = dividendRef.current.getBoundingClientRect();
+      const tooltipRect = tooltipRef.current.getBoundingClientRect();
+      tooltipRef.current.style.position = 'fixed';
+      tooltipRef.current.style.top = `${rect.top - tooltipRect.height - 8}px`;
+      tooltipRef.current.style.left = `${rect.left + rect.width / 2 - tooltipRect.width / 2}px`;
+    }
+  }, [showTooltip]);
+
   if (!isOpen) return null;
 
   // Create the modal
-  return createPortal(
+  return (<>
+    {createPortal(
     <div className="fixed inset-0 z-50">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div 
@@ -593,7 +647,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       >
         <div 
           ref={modalRef}
-          className="bg-dark-200/80 backdrop-blur-lg rounded-t-2xl sm:rounded-lg w-full sm:max-w-lg lg:max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[90vh] border border-dark-100/20 relative group overflow-hidden" 
+          className={`bg-dark-200/80 backdrop-blur-lg rounded-t-2xl sm:rounded-lg w-full sm:max-w-lg lg:max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[90vh] border border-dark-100/20 relative group ${isTokenSearchOpen ? 'overflow-visible' : 'overflow-hidden'}`} 
           onClick={(e) => e.stopPropagation()}
           onMouseDown={() => {
             // Track if user starts selecting text inside modal
@@ -620,7 +674,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
             </button>
           </div>
 
-          <div className="overflow-y-auto p-4 sm:p-5 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300 relative z-10">
+          <div className={`${isTokenSearchOpen ? 'overflow-visible' : 'overflow-y-auto'} p-4 sm:p-5 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300 relative z-10`}>
             <form onSubmit={handleSubmit} className="space-y-4">
               {userRole === 'user' && (!availableCredits || availableCredits === 0) && (
                 <div className="p-3 rounded-lg border bg-red-900/20 border-red-600/30">
@@ -692,6 +746,90 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                       </div>
                     </div>
                   </div>
+                  
+                  {/* AI Options */}
+                  <div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAIOptions(!showAIOptions)}
+                        className="text-xs text-gray-500 hover:text-gray-400 transition-colors"
+                      >
+                        {showAIOptions ? '− Hide' : '+ Show'} AI options
+                      </button>
+                      
+                      {showAIOptions && (
+                        <div className="mt-2 p-3 bg-dark-300/30 rounded-lg space-y-4">
+                          {/* AI Image Prompt */}
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1.5">AI Image Prompt</label>
+                            <Textarea
+                              value={formData.ai_image_prompt}
+                              onChange={(e) => setFormData(prev => ({ ...prev, ai_image_prompt: e.target.value }))}
+                              className="w-full text-gray-100 bg-dark-300/70 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20 rounded-lg resize-none focus:bg-dark-300 transition-all duration-200"
+                              rows={1}
+                              placeholder="Describe the visual theme for this contest"
+                              maxLength={200}
+                            />
+                            <div className="flex justify-between items-center mt-1">
+                              <p className="text-xs text-gray-500">Guide the AI to generate a contest image</p>
+                              <span className={`text-xs ${formData.ai_image_prompt.length > 180 ? 'text-yellow-500' : formData.ai_image_prompt.length === 200 ? 'text-red-500' : 'text-gray-500'}`}>
+                                {formData.ai_image_prompt.length}/200
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Featured Token */}
+                          <div className="relative z-50">
+                            <label className="block text-xs text-gray-400 mb-1.5">Featured Token</label>
+                            <div className="relative">
+                              <TokenSearch
+                                onSelectToken={(token) => {
+                                  setSelectedToken(token);
+                                  setFormData(prev => ({ ...prev, featured_token_address: token.address }));
+                                }}
+                                placeholder="Search for a token to feature..."
+                                variant="modern"
+                                className="w-full"
+                                onDropdownOpen={() => setIsTokenSearchOpen(true)}
+                                onDropdownClose={() => setIsTokenSearchOpen(false)}
+                                clearOnSelect={true}
+                              />
+                            </div>
+                            {selectedToken && (
+                              <div className="mt-2 bg-dark-300/40 border border-dark-400/50 rounded-lg flex items-center justify-between overflow-hidden">
+                                <div className="flex items-center">
+                                  {selectedToken.image_url && (
+                                    <img 
+                                      src={selectedToken.image_url} 
+                                      alt={selectedToken.symbol} 
+                                      className="w-12 h-12 object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  )}
+                                  <div className="px-3">
+                                    <span className="font-medium text-gray-200">{selectedToken.symbol}</span>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedToken(null);
+                                    setFormData(prev => ({ ...prev, featured_token_address: "" }));
+                                  }}
+                                  className="text-red-400 hover:text-red-300 mr-2"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                   {/* Advanced Options */}
                   <div>
@@ -700,15 +838,15 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                       onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
                       className="text-xs text-gray-500 hover:text-gray-400 transition-colors"
                     >
-                      {showAdvancedOptions ? '− Hide' : '+ Show'} advanced options
+                      {showAdvancedOptions ? '− Hide' : '+ Show'} advanced options (admins only)
                     </button>
                     
                     {showAdvancedOptions && (
-                      <div className="mt-2 p-3 bg-dark-300/30 rounded-lg space-y-3">
+                      <div className="mt-2 p-3 bg-dark-300/30 rounded-lg space-y-6">
                         <div>
                           <label className="block text-sm font-medium text-gray-300 mb-1">Starting Portfolio Value</label>
                           <div className="relative">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">◎</div>
+                            <img src="/assets/media/logos/solana.svg" alt="SOL" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
                             <Input
                               type="text"
                               value={formData.settings.startingPortfolioValue}
@@ -755,10 +893,31 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-1">
-                            Token Buckets ({formData.allowed_buckets.length} Selected)
-                            {!isAdmin && <span className="ml-2 text-xs text-gray-500">(Admin Only)</span>}
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-sm font-medium text-gray-300">
+                              Token Buckets
+                              {!isAdmin && <span className="ml-2 text-xs text-gray-500">(Admin Only)</span>}
+                            </label>
+                            {isAdmin && (
+                              <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (formData.allowed_buckets.length === bucketOptions.length) {
+                                      setFormData(prev => ({ ...prev, allowed_buckets: [] }));
+                                    } else {
+                                      setFormData(prev => ({ ...prev, allowed_buckets: bucketOptions.map(opt => opt.value) }));
+                                    }
+                                  }}
+                                  className={`text-xs px-2 py-1 rounded border transition-colors ${
+                                    formData.allowed_buckets.length === bucketOptions.length
+                                      ? 'text-red-400 hover:text-red-300 border-red-400/30 hover:border-red-400/50'
+                                      : 'text-green-400 hover:text-green-300 border-green-400/30 hover:border-green-400/50'
+                                  }`}
+                                >
+                                  {formData.allowed_buckets.length === bucketOptions.length ? "Deselect All" : "Select All"}
+                                </button>
+                            )}
+                          </div>
                           <MultiSelect
                             value={formData.allowed_buckets}
                             onChange={isAdmin ? (buckets) =>
@@ -769,11 +928,13 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                             options={bucketOptions}
                             className={`w-full ${!isAdmin ? 'opacity-50 pointer-events-none' : ''}`}
                             disabled={!isAdmin}
+                            hideSelectAll={true}
                           />
                           {!isAdmin && (
                             <p className="mt-1 text-xs text-gray-500">Category selection coming soon</p>
                           )}
                         </div>
+                        
                       </div>
                     )}
                   </div>
@@ -807,7 +968,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                           name="start_time"
                           value={formData.start_time}
                           onChange={handleInputChange}
-                          className={`w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20 h-10 ${
+                          className={`w-full text-gray-100 bg-dark-300 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20 h-10 text-sm ${
                             isStartTimeTooSoon ? 'border-red-500' : ''
                           }`}
                           required
@@ -833,13 +994,27 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                           className="w-full text-gray-100 bg-dark-300 border border-dark-400 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent h-10 px-3"
                           required
                         >
-                          <option value="0.0833333333333333">5 minutes</option>
-                          <option value="0.25">15 minutes</option>
-                          <option value="0.5">30 minutes</option>
-                          <option value="0.75">45 minutes</option>
+                          {isAdmin && (
+                            <>
+                              <option value="0.0833333333333333">5 minutes</option>
+                              <option value="0.25">15 minutes</option>
+                              <option value="0.5">30 minutes</option>
+                              <option value="0.75">45 minutes</option>
+                            </>
+                          )}
                           <option value="1">1 hour</option>
                           <option value="2">2 hours</option>
                           <option value="3">3 hours</option>
+                          <option value="6">6 hours</option>
+                          <option value="12">12 hours</option>
+                          <option value="24">24 hours</option>
+                          {isAdmin && (
+                            <>
+                              <option value="48">48 hours</option>
+                              <option value="72">72 hours</option>
+                              <option value="168">1 week</option>
+                            </>
+                          )}
                         </select>
                         {calculatedEndTime && (() => {
                           const { dateStr, timeStr } = formatDatePreview(calculatedEndTime);
@@ -877,12 +1052,12 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                             participants
                           </div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Format: min-max (e.g., 3-20)</p>
+                        <p className="text-xs text-gray-500 mt-1">Format: min-max (e.g., 3-10)</p>
                       </div>
                       <div>
                         <label className="block text-xs text-gray-400 mb-1.5">Entry Fee</label>
                         <div className="relative">
-                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">◎</div>
+                          <img src="/assets/media/logos/solana.svg" alt="SOL" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
                           <Input
                             type="text"
                             name="entry_fee"
@@ -893,7 +1068,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                           />
                           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">SOL</div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Max: 1 SOL</p>
+                        <p className="text-xs text-gray-500 mt-1">Max: 10 SOL</p>
                       </div>
                     </div>
                   </div>
@@ -930,10 +1105,13 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                         <div>
                           <div className="text-xs text-gray-400">Prize Pool</div>
                           <div className="text-lg text-brand-400">
-                            ◎ {calculatedPrizePool.min === calculatedPrizePool.max 
+                            <span className="inline-flex items-center gap-1">
+                              <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                              {calculatedPrizePool.min === calculatedPrizePool.max 
                               ? (calculatedPrizePool.min * 0.9).toFixed(3).replace(/\.?0+$/, '')
                               : `${(calculatedPrizePool.min * 0.9).toFixed(3).replace(/\.?0+$/, '')}-${(calculatedPrizePool.max * 0.9).toFixed(3).replace(/\.?0+$/, '')}`
-                            } SOL
+                            }
+                            </span>
                           </div>
                           <div className="text-xs text-gray-500">
                             <div>{formData.min_participants === formData.max_participants 
@@ -945,10 +1123,13 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                         <div>
                           <div className="text-xs text-gray-400">Degen Dividends</div>
                           <div className="text-lg text-purple-400">
-                            ◎ {calculatedPrizePool.min === calculatedPrizePool.max 
+                            <span className="inline-flex items-center gap-1">
+                              <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                              {calculatedPrizePool.min === calculatedPrizePool.max 
                               ? (calculatedPrizePool.min * 0.1).toFixed(3).replace(/\.?0+$/, '')
                               : `${(calculatedPrizePool.min * 0.1).toFixed(3).replace(/\.?0+$/, '')}-${(calculatedPrizePool.max * 0.1).toFixed(3).replace(/\.?0+$/, '')}`
-                            } SOL
+                            }
+                            </span>
                           </div>
                           <div className="text-xs text-gray-500">
                             <div>Airdropped to DUEL</div>
@@ -963,7 +1144,12 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                     ) : (
                       <div>
                         <div className="text-xs text-gray-400">Prize Pool</div>
-                        <div className="text-lg text-brand-400">◎ 0 SOL</div>
+                        <div className="text-lg text-brand-400">
+                          <span className="inline-flex items-center gap-1">
+                            <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                            0
+                          </span>
+                        </div>
                         <div className="text-xs text-gray-500">
                           <div>{formData.min_participants === formData.max_participants 
                             ? formData.max_participants 
@@ -984,24 +1170,62 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                       <div className="mt-3 pt-3 border-t border-purple-500/20">
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-xs text-purple-300">Your Estimated Dividend</div>
+                            <div className="text-xs text-purple-300">Your Dividend from this Contest</div>
                             <div className="text-xs text-gray-500">
-                              Based on your {duelTokenData.userBalance.toLocaleString()} DUEL
+                              Based on your {Math.floor(duelTokenData.userBalance).toLocaleString()} DUEL
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm font-medium text-purple-300">
-                              ◎ {(() => {
-                                const ownershipPercentage = duelTokenData.userBalance / TOTAL_DUEL_SUPPLY;
-                                const totalDividends = calculatedPrizePool.max * 0.1;
-                                const personalDividend = totalDividends * ownershipPercentage;
-                                return personalDividend.toFixed(6).replace(/\.?0+$/, '');
-                              })()}
+                            <div 
+                              ref={dividendRef}
+                              className="text-sm font-medium text-purple-300 inline-block cursor-help"
+                              onMouseEnter={() => setShowTooltip(true)}
+                              onMouseLeave={() => setShowTooltip(false)}
+                            >
+                              <span className="inline-flex items-center gap-1">
+                              <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                              {(() => {
+                              const ownershipPercentage = duelTokenData.userBalance / TOTAL_DUEL_SUPPLY;
+                              const minDividends = calculatedPrizePool.min * 0.1;
+                              const maxDividends = calculatedPrizePool.max * 0.1;
+                              const minPersonalDividend = minDividends * ownershipPercentage;
+                              const maxPersonalDividend = maxDividends * ownershipPercentage;
+                              
+                              if (minPersonalDividend === maxPersonalDividend) {
+                                return minPersonalDividend.toFixed(3).replace(/\.?0+$/, '');
+                              } else {
+                                return `${minPersonalDividend.toFixed(3).replace(/\.?0+$/, '')}-${maxPersonalDividend.toFixed(3).replace(/\.?0+$/, '')}`;
+                              }
+                            })()}
+                              </span>
                             </div>
-                            <div className="text-xs text-gray-500">
-                              {((duelTokenData.userBalance / TOTAL_DUEL_SUPPLY) * 100).toFixed(4)}% of total
+                            <div className="text-xs text-green-400">
+                              {solPrice > 0 ? (
+                                <>
+                                  ${(() => {
+                                  const ownershipPercentage = duelTokenData.userBalance / TOTAL_DUEL_SUPPLY;
+                                  const minDividends = calculatedPrizePool.min * 0.1;
+                                  const maxDividends = calculatedPrizePool.max * 0.1;
+                                  const minPersonalDividend = minDividends * ownershipPercentage;
+                                  const maxPersonalDividend = maxDividends * ownershipPercentage;
+                                  const minUSD = minPersonalDividend * solPrice;
+                                  const maxUSD = maxPersonalDividend * solPrice;
+                                  
+                                  if (minUSD === maxUSD) {
+                                    return minUSD.toFixed(2);
+                                  } else {
+                                    return `${minUSD.toFixed(2)}-${maxUSD.toFixed(2)}`;
+                                  }
+                                })()}
+                              </>
+                              ) : (
+                                <span className="text-gray-400 italic animate-pulse">Loading...</span>
+                              )}
                             </div>
                           </div>
+                        </div>
+                        <div className="mt-2 p-2 bg-purple-900/20 rounded text-xs text-purple-200">
+                          <span className="text-purple-400">💡</span> Dividends are distributed based on DUEL held by members
                         </div>
                       </div>
                     )}
@@ -1040,5 +1264,31 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       </div>
     </div>,
     document.body,
-  );
+  )}
+  
+  {/* Tooltip Portal */}
+  {showTooltip && createPortal(
+    <div 
+      ref={tooltipRef}
+      className="fixed z-[100] pointer-events-none"
+    >
+      <div className="bg-dark-400 text-gray-200 text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg border border-dark-300">
+        <div className="font-medium mb-1">Dividend Range</div>
+        <div className="text-gray-400">
+          {formData.min_participants === formData.max_participants 
+            ? `Based on ${formData.min_participants} participants`
+            : `Min: ${formData.min_participants} participants → Low dividend`
+          }
+        </div>
+        {formData.min_participants !== formData.max_participants && (
+          <div className="text-gray-400">
+            Max: {formData.max_participants} participants → High dividend
+          </div>
+        )}
+        <div className="absolute bottom-[-4px] left-1/2 transform -translate-x-1/2 w-2 h-2 bg-dark-400 border-r border-b border-dark-300 transform rotate-45"></div>
+      </div>
+    </div>,
+    document.body
+  )}
+  </>);
 };

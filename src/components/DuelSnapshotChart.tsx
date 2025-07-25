@@ -70,6 +70,10 @@ interface ChartDataPoint {
   balance: number;
   formattedTime: string;
   formattedDate: string;
+  dividend_percentage?: number;
+  dividend_percentage_display?: number;
+  total_registered_supply?: number;
+  isExtrapolated?: boolean;
 }
 
 interface DuelSnapshotChartProps {
@@ -100,10 +104,11 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
   // Format data for chart
   const formatChartData = (balances: BalanceDataPoint[], range: TimeRange): ChartDataPoint[] => {
     // Reverse the array so oldest is on the left, newest on the right
-    return balances.reverse().map(point => ({
+    const sortedData = balances.reverse().map(point => ({
       timestamp: point.timestamp,
       balance: point.balance_duel,
       dividend_percentage: point.dividend_percentage,
+      dividend_percentage_display: point.dividend_percentage, // Add this for label positioning
       total_registered_supply: point.total_registered_supply,
       formattedTime: new Date(point.timestamp).toLocaleTimeString('en-US', {
         hour: 'numeric',
@@ -145,6 +150,45 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
         }
       })()
     }));
+
+    // If we have data and the last data point is not today, fill in missing days
+    if (sortedData.length > 0) {
+      const lastDataPoint = sortedData[sortedData.length - 1];
+      const lastDate = new Date(lastDataPoint.timestamp);
+      const today = new Date();
+      
+      // Set both dates to midnight for day comparison
+      lastDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      
+      // Calculate days between last data and today
+      const daysDiff = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Add a data point for each missing day
+      for (let i = 1; i <= daysDiff; i++) {
+        const missingDate = new Date(lastDate);
+        missingDate.setDate(lastDate.getDate() + i);
+        
+        sortedData.push({
+          ...lastDataPoint,
+          timestamp: missingDate.toISOString(),
+          formattedTime: missingDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          }),
+          formattedDate: missingDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+          }),
+          dividend_percentage_display: lastDataPoint.dividend_percentage, // Keep for display position
+          dividend_percentage: null, // Set to null to break the line
+          isExtrapolated: true
+        });
+      }
+    }
+
+    return sortedData;
   };
 
   // Fetch balance history data
@@ -372,20 +416,101 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
                 fill="#10B981"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={60}
+                shape={(props: any) => {
+                  const { fill, x, y, width, height, payload } = props;
+                  const isExtrapolated = payload.isExtrapolated;
+                  
+                  return (
+                    <g>
+                      <rect
+                        x={x}
+                        y={y}
+                        width={width}
+                        height={height}
+                        fill={fill}
+                        fillOpacity={isExtrapolated ? 0.05 : 0.8}
+                        stroke={fill}
+                        strokeWidth={2}
+                        strokeDasharray={isExtrapolated ? '5,5' : 'none'}
+                        rx={4}
+                        ry={4}
+                      />
+                    </g>
+                  );
+                }}
               />
               <Line
                 type="monotone"
                 dataKey="dividend_percentage"
                 stroke="#A855F7"
                 strokeWidth={2}
-                dot={{ fill: '#A855F7', stroke: '#A855F7', strokeWidth: 2, r: 4 }}
+                connectNulls={false}
+                dot={false}
                 yAxisId="right"
+              />
+              {/* Separate line for all labels */}
+              <Line
+                type="monotone"
+                dataKey="dividend_percentage_display"
+                stroke="none"
+                strokeWidth={0}
+                connectNulls={false}
+                dot={false}
+                yAxisId="right"
+                isAnimationActive={false}
               >
                 <LabelList 
-                  dataKey="dividend_percentage" 
+                  dataKey="dividend_percentage_display" 
                   position="top" 
-                  formatter={(value: number) => value ? `${value.toFixed(1)}%` : ''}
-                  style={{ fill: '#A855F7', fontSize: 16, fontWeight: 700 }}
+                  content={function(props: any) {
+                    const { x, y, value, index } = props;
+                    
+                    // Check if this data point is extrapolated by looking at the chart data
+                    const dataPoint = chartData[index];
+                    const isExtrapolated = dataPoint?.isExtrapolated || false;
+                    
+                    // For extrapolated data, show "Snapshot" and "N/A" stacked
+                    if (isExtrapolated) {
+                      return (
+                        <g>
+                          <text
+                            x={x}
+                            y={y - 10}
+                            textAnchor="middle"
+                            fill="#A855F7"
+                            fontSize="10"
+                            fontWeight="600"
+                          >
+                            Snapshot
+                          </text>
+                          <text
+                            x={x}
+                            y={y + 2}
+                            textAnchor="middle"
+                            fill="#A855F7"
+                            fontSize="10"
+                            fontWeight="600"
+                          >
+                            N/A
+                          </text>
+                        </g>
+                      );
+                    }
+                    
+                    if (!value) return null;
+                    return (
+                      <text
+                        x={x}
+                        y={y - 5}
+                        textAnchor="middle"
+                        fill="#000000"
+                        fontSize="16"
+                        fontWeight="700"
+                      >
+                        {`${value.toFixed(1)}%`}
+                      </text>
+                    );
+                  }}
                 />
               </Line>
             </ComposedChart>
