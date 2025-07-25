@@ -18,6 +18,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   onEnter,
   glitchActive = false,
   size = 'middle',
+  mode = 'ai',
 }) => {
   const inputRef = React.useRef<HTMLTextAreaElement>(null);
   const { user } = useAuth();
@@ -70,7 +71,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
               handleSendCommand();
             }
           }}
-          placeholder="Ask Didi anything..."
+          placeholder={mode === 'ai' ? "Ask Didi anything..." : "Type a message..."}
           className="w-full resize-none bg-transparent text-white/90 placeholder-mauve-dark/50 outline-none focus:ring-0"
           rows={1}
           style={{

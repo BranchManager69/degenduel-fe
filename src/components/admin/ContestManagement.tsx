@@ -15,6 +15,7 @@ import React from "react";
 import { formatCurrency } from "../../lib/utils";
 import { Contest } from "../../types/index";
 import { CreateContestButton } from "../contest-browser/CreateContestButton";
+import { ChallengeFriendButton } from "../contest-browser/ChallengeFriendButton";
 import { Button } from "../ui/Button";
 import { Card, CardContent, CardHeader } from "../ui/Card";
 
@@ -24,6 +25,8 @@ interface ContestManagementProps {
   onEditContest: (id: string) => void;
   onDeleteContest: (id: string) => void;
   onContestCreated: () => void;
+  onChallengeCreated?: () => void;
+  currentUserNickname?: string;
 }
 
 // Contest Management Component
@@ -32,6 +35,8 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
   onEditContest,
   onDeleteContest,
   onContestCreated,
+  onChallengeCreated,
+  currentUserNickname,
 }) => {
   return (
 
@@ -49,8 +54,16 @@ export const ContestManagement: React.FC<ContestManagementProps> = ({
             Contest Management
           </h3>
 
-          {/* Create Contest Button */}
-          <CreateContestButton onCreateClick={onContestCreated} />
+          {/* Contest Action Buttons */}
+          <div className="flex gap-2">
+            <CreateContestButton onCreateClick={onContestCreated} />
+            <ChallengeFriendButton 
+              onChallengeCreated={onChallengeCreated}
+              userRole="admin"
+              availableCredits={undefined}
+              currentUserNickname={currentUserNickname}
+            />
+          </div>
         
         </div>
 

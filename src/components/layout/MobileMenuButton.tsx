@@ -260,7 +260,11 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
         <div className="flex items-center space-x-1">
         {/* Token Balance Display (only for admin/superadmin users) */}
         {user && (isAdministrator || isSuperAdmin) && (
-          <div className="group relative mr-1">
+          <Link
+            to="/wallet"
+            className="group relative mr-1"
+            onClick={() => setIsOpen(false)}
+          >
             {/* Outer glow for mobile */}
             <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-60 blur-sm transition-all duration-300" />
             
@@ -284,14 +288,14 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
                 />
               </div>
               
-              {/* Token icon */}
-              <div className="relative flex items-center justify-center w-4 h-4">
+              {/* Token icon with more spacing */}
+              <div className="relative flex items-center justify-center w-4 h-4 ml-0.5">
                 <div className="w-4 h-4 flex items-center justify-center">
                   <NanoLogo />
                 </div>
               </div>
             </div>
-          </div>
+          </Link>
         )}
         
         {/* User Menu Button - Full pill style like desktop */}

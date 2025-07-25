@@ -24,6 +24,7 @@ import { TemplateSection, TemplateSection2, TemplateSection3 } from "../../../co
 // Import new MarketTickerGrid component (replacing the three token display components)
 // import IntroLogo from "../../../components/logo/IntroLogo"; // Original logo (no longer used)
 import EnhancedIntroLogo from "../../../components/logo/EnhancedIntroLogo"; // Enhanced, more dramatic logo
+import PlatformStats from "../../../components/platform/PlatformStats";
 import { FEATURE_FLAGS } from "../../../config/config";
 import { isContestCurrentlyUnderway, isContestJoinable } from "../../../lib/utils";
 import { Contest } from "../../../types";
@@ -717,66 +718,24 @@ export const LandingPage: React.FC = () => {
                     onCreateClick={() => setIsCreateModalOpen(true)}
                   />
                   <ChallengeFriendButton 
-                    userRole={user?.is_admin ? "admin" : "user"}
+                    userRole={isAdministrator ? "admin" : "user"}
                     availableCredits={undefined}
                     onChallengeCreated={() => {
                       // Refresh contests or navigate
                       console.log('Challenge created!');
                     }}
+                    currentUserNickname={user?.nickname}
                   />
                   <SpectateButton onSpectateClick={() => navigate("/contests")} />
                 </div>
 
-                {/* DUEL Token & CTA Section - Side by side layout */}
-                <div className="mt-24 md:mt-32 mb-8">
-                  {/* Show ServerCrashDisplay if tokens error (server down) - but NOT if we're already showing the contest error */}
-                  {tokensError && !error && !tokensLoading ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6 }}
-                    >
-                      <ServerCrashDisplay 
-                        error={tokensError}
-                        onRetry={() => window.location.reload()}
-                      />
-                    </motion.div>
-                  ) : !tokensError ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto items-center">
-                      {/* DUEL Token Card */}
-                      <motion.div 
-                        className="flex justify-center"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                      >
-                        {duelToken ? (
-                          <div className="w-full max-w-lg mx-auto">
-                            <StandaloneTokenCard token={duelToken} />
-                          </div>
-                        ) : (
-                          <div className="w-full max-w-lg mx-auto aspect-[7/3] bg-dark-200/50 rounded-2xl animate-pulse" />
-                        )}
-                      </motion.div>
-
-                      {/* SOL Token Card */}
-                      <motion.div 
-                        className="flex justify-center"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.4 }}
-                      >
-                        {solToken ? (
-                          <div className="w-full max-w-lg mx-auto">
-                            <StandaloneTokenCard token={solToken} />
-                          </div>
-                        ) : (
-                          <div className="w-full max-w-lg mx-auto aspect-[7/3] bg-dark-200/50 rounded-2xl animate-pulse" />
-                        )}
-                      </motion.div>
-                    </div>
-                  ) : null}
-                </div>
+                {/* Platform Statistics Section */}
+                <motion.div
+                  className="relative w-full mt-8 md:mt-12"
+                  variants={secondaryVariants}
+                >
+                  <PlatformStats />
+                </motion.div>
 
                 {/* Crown Contest Section - Extracted from contests */}
                 {showCrownContest && !isMaintenanceModeActive && !error && (
@@ -933,6 +892,57 @@ export const LandingPage: React.FC = () => {
                   )}
                 </motion.div>
 
+                {/* DUEL Token & CTA Section - Side by side layout */}
+                <div className="mt-24 md:mt-32 mb-8">
+                  {/* Show ServerCrashDisplay if tokens error (server down) - but NOT if we're already showing the contest error */}
+                  {tokensError && !error && !tokensLoading ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6 }}
+                    >
+                      <ServerCrashDisplay 
+                        error={tokensError}
+                        onRetry={() => window.location.reload()}
+                      />
+                    </motion.div>
+                  ) : !tokensError ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto items-center">
+                      {/* DUEL Token Card */}
+                      <motion.div 
+                        className="flex justify-center"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.6, delay: 0.3 }}
+                      >
+                        {duelToken ? (
+                          <div className="w-full max-w-lg mx-auto">
+                            <StandaloneTokenCard token={duelToken} />
+                          </div>
+                        ) : (
+                          <div className="w-full max-w-lg mx-auto aspect-[7/3] bg-dark-200/50 rounded-2xl animate-pulse" />
+                        )}
+                      </motion.div>
+
+                      {/* SOL Token Card */}
+                      <motion.div 
+                        className="flex justify-center"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.6, delay: 0.4 }}
+                      >
+                        {solToken ? (
+                          <div className="w-full max-w-lg mx-auto">
+                            <StandaloneTokenCard token={solToken} />
+                          </div>
+                        ) : (
+                          <div className="w-full max-w-lg mx-auto aspect-[7/3] bg-dark-200/50 rounded-2xl animate-pulse" />
+                        )}
+                      </motion.div>
+                    </div>
+                  ) : null}
+                </div>
+
                 {/* Enhanced Features section - shown to all users */}
                 {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (
                   <motion.div
@@ -1023,7 +1033,7 @@ export const LandingPage: React.FC = () => {
           setIsCreateModalOpen(false);
           // Could refresh contests or navigate
         }}
-        userRole={user?.is_admin ? "admin" : "user"}
+        userRole={isAdministrator ? "admin" : "user"}
         availableCredits={undefined}
       />
 

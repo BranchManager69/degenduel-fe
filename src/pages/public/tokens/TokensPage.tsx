@@ -6,10 +6,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { TokenSearch } from "../../../components/common/TokenSearch";
 import { ServerCrashDisplay } from "../../../components/common/ServerCrashDisplay";
 import { AuthDebugPanel } from "../../../components/debug";
+import MiniLogo from "../../../components/logo/MiniLogo";
 import { TokenErrorBoundary } from "../../../components/shared/TokenErrorBoundary";
 import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
 import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeTokensGrid";
-import { Button } from "../../../components/ui/Button";
 import { Card, CardContent } from "../../../components/ui/Card";
 import { useBatchTokens } from "../../../hooks/websocket/topic-hooks/useBatchTokens";
 import { useVisibleTokenSubscriptions } from "../../../hooks/websocket/topic-hooks/useVisibleTokenSubscriptions";
@@ -69,7 +69,7 @@ export const TokensPage: React.FC = () => {
       const offset = mainTokens.length;
       
       // Fetch next batch
-      const response = await fetch(`/api/tokens/trending?limit=${TOKENS_PER_PAGE}&offset=${offset}&format=paginated`);
+      const response = await fetch(`/api/tokens/all?limit=${TOKENS_PER_PAGE}&offset=${offset}&format=paginated`);
       if (!response.ok) {
         throw new Error(`Failed to fetch more tokens: ${response.statusText}`);
       }
@@ -166,7 +166,7 @@ export const TokensPage: React.FC = () => {
         console.log('[TokensPage] Loading initial tokens via trending API');
         
         // Fetch first batch with fixed initial limit
-        const response = await fetch(`/api/tokens/trending?limit=50&offset=0&format=paginated`);
+        const response = await fetch(`/api/tokens/all?limit=50&offset=0&format=paginated`);
         if (!response.ok) {
           throw new Error(`Failed to fetch tokens: ${response.statusText}`);
         }
@@ -212,6 +212,11 @@ export const TokensPage: React.FC = () => {
       return marketCap >= 100000;
     });
     
+    // When sortField is "change" (default), trust backend order - it's already sorted by 24h change
+    if (sortField === "change") {
+      return filtered;
+    }
+    
     // Sort filtered tokens by the selected field
     const sorted = [...filtered].sort((a, b) => {
       let compareValue = 0;
@@ -228,10 +233,6 @@ export const TokensPage: React.FC = () => {
           break;
         case "price":
           compareValue = (Number(b.price) || 0) - (Number(a.price) || 0);
-          break;
-        case "change":
-          // Sort by 24h change percentage (percent gain)
-          compareValue = (Number(b.change_24h) || 0) - (Number(a.change_24h) || 0);
           break;
         default:
           return 0;
@@ -374,7 +375,7 @@ export const TokensPage: React.FC = () => {
       setIsInitialLoading(true);
       setError(null);
       
-      const response = await fetch(`/api/tokens/trending?limit=50&offset=0&format=paginated`);
+      const response = await fetch(`/api/tokens/all?limit=50&offset=0&format=paginated`);
       if (!response.ok) {
         throw new Error(`Failed to fetch tokens: ${response.statusText}`);
       }
@@ -438,56 +439,66 @@ export const TokensPage: React.FC = () => {
         </>
       )}
 
-      {/* Header Section matching contests page */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb navigation */}
-        <div className="mb-4 flex items-center text-sm text-gray-400">
-          <Link to="/" className="hover:text-brand-400 transition-colors">
-            Home
-          </Link>
-          <span className="mx-2">›</span>
-          <span className="text-gray-300">Tokens</span>
-        </div>
-
-        {/* Enhanced Header Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group">
-            <span className="relative z-10 group-hover:animate-glitch">
-              Browse Tokens
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
-          </h1>
-          
-          {/* Controls moved to header - only show if not error state */}
-          {!error && (
-            <div className="flex items-center gap-3">
-              <TokenSearch
-                onSelectToken={handleTokenSearchSelect}
-                placeholder="Search tokens..."
-                variant="modern"
-                showPriceData={false}
-                className="w-64"
-              />
-              <select
-                value={sortField}
-                onChange={(e) => handleSortChange(e.target.value, sortDirection)}
-                className="px-3 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white text-sm focus:outline-none focus:border-brand-400"
-              >
-                <option value="degenduelScore">🔥 Trending</option>
-                <option value="marketCap">Market Cap</option>
-                <option value="volume">Volume</option>
-                <option value="change">24h Change</option>
-                <option value="price">Price</option>
-              </select>
-              <button
-                onClick={handleRefresh}
-                className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-dark-200/50 transition-colors"
-                title="Refresh"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
+      {/* Header Section - Match content width */}  
+      <div className="relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Breadcrumb navigation */}
+          <div className="mb-6">
+            <div className="mb-4 flex items-center text-sm text-gray-400">
+              <Link to="/" className="hover:text-brand-400 transition-colors">
+                Home
+              </Link>
+              <span className="mx-2">›</span>
+              <span className="text-gray-300">Tokens</span>
             </div>
-          )}
+
+            {/* Title and Controls on same line */}
+            <div className="flex items-center justify-between gap-4 mb-2">
+              {/* Left side - Title and Refresh */}
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group flex items-center gap-3">
+                  <div className="scale-150">
+                    <MiniLogo />
+                  </div>
+                  <span className="relative z-10 group-hover:animate-glitch">
+                    Trending Tokens
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
+                </h1>
+                <button
+                  onClick={handleRefresh}
+                  className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-dark-200/50 transition-colors"
+                  title="Refresh"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+              
+              {/* Right side - Search and Sort */}
+              {!error && (
+                <div className="flex items-center gap-3">
+                  <TokenSearch
+                    onSelectToken={handleTokenSearchSelect}
+                    placeholder="Search tokens..."
+                    variant="modern"
+                    showPriceData={false}
+                    className="w-80 [&_input]:border-dark-300 [&_input]:focus:border-brand-400 [&_input]:bg-dark-200/50"
+                  />
+                  <select
+                    value={sortField}
+                    onChange={(e) => handleSortChange(e.target.value, sortDirection)}
+                    className="px-3 py-2 bg-dark-200/50 border border-dark-300 rounded-lg text-white text-sm focus:outline-none focus:border-brand-400"
+                  >
+                    <option value="degenduelScore">🔥 Trending</option>
+                    <option value="marketCap">Market Cap</option>
+                    <option value="volume">Volume</option>
+                    <option value="change">24h Change</option>
+                    <option value="price">Price</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -507,26 +518,14 @@ export const TokensPage: React.FC = () => {
               </div>
             </div>
           ) : error ? (
-            // Error State - Show server crash animation for WebSocket errors
-            error.includes("WebSocket") || error.includes("1006") ? (
-              <div className="py-12">
-                <ServerCrashDisplay 
-                  error={error}
-                  onRetry={handleRefresh}
-                  isRetrying={isCombinedLoading}
-                />
-              </div>
-            ) : (
-              // Regular error display for other errors
-              <Card className="bg-dark-300/50 backdrop-blur-sm border-red-500/20">
-                <CardContent className="p-8 text-center">
-                  <p className="text-red-400 mb-4">{error}</p>
-                  <Button onClick={handleRefresh} variant="outline">
-                    Try Again
-                  </Button>
-                </CardContent>
-              </Card>
-            )
+            // Error State - Use ServerCrashDisplay for all errors
+            <div className="py-12">
+              <ServerCrashDisplay 
+                error={error}
+                onRetry={handleRefresh}
+                isRetrying={isCombinedLoading}
+              />
+            </div>
           ) : visibleTokens.length === 0 ? (
             // No Results State
             <Card className="bg-dark-300/50 backdrop-blur-sm border-dark-400">

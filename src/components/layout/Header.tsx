@@ -175,12 +175,15 @@ export const Header: React.FC = () => {
                   >
                     {/* Token Balance Display (desktop only - admin/superadmin only) */}
                     {(isAdministrator || user.role === 'superadmin') && (
-                      <div className="hidden md:block group relative">
+                      <Link
+                        to="/wallet"
+                        className="hidden md:block group relative cursor-pointer"
+                      >
                         {/* Outer glow that intensifies on hover */}
                         <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-75 blur transition-all duration-300 group-hover:duration-200" />
                         
                         {/* Main container with enhanced styling */}
-                        <div className="relative flex items-center gap-0.5 pl-2 pr-2.5 py-1 
+                        <div className="relative flex items-center gap-1 pl-2 pr-3 py-1 
                           bg-gradient-to-r from-purple-900/80 via-purple-800/80 to-purple-900/80 
                           backdrop-blur-sm rounded-full 
                           border border-purple-500/20 group-hover:border-purple-400/50 
@@ -204,8 +207,8 @@ export const Header: React.FC = () => {
                             />
                           </div>
                           
-                          {/* Token icon - slightly smaller */}
-                          <div className="relative flex items-center justify-center w-4 h-4">
+                          {/* Token icon - slightly smaller with more spacing */}
+                          <div className="relative flex items-center justify-center w-4 h-4 ml-1">
                             <div className="absolute inset-0 bg-purple-400 rounded-full animate-ping opacity-20" />
                             <div className="relative w-4 h-4 flex items-center justify-center">
                               <NanoLogo />
@@ -218,7 +221,7 @@ export const Header: React.FC = () => {
                               bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     )}
                     
                     <UserMenu 

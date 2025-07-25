@@ -96,6 +96,7 @@ export const MemoizedTokenCard = React.memo(({
 }: MemoizedTokenCardProps) => {
   const navigate = useNavigate();
   const contractAddress = TokenHelpers.getAddress(token);
+  const [imageError, setImageError] = React.useState(false);
   
   // Check if this is DUEL token (forced at position 0)
   const isDuel = token.symbol === 'DUEL' && index === 0;
@@ -153,12 +154,13 @@ export const MemoizedTokenCard = React.memo(({
           
           {/* STUNNING BANNER BACKGROUND */}
           <div className="absolute inset-0 overflow-hidden">
-            {(token.header_image_url) ? (
+            {(token.header_image_url && !imageError) ? (
               <>
                 <img 
                   src={token.header_image_url || ''} 
                   alt={token.symbol}
                   className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 banner-image"
+                  onError={() => setImageError(true)}
                 />
                 {/* Neutral gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/20 transition-all duration-500" />
@@ -243,7 +245,7 @@ export const MemoizedTokenCard = React.memo(({
         <div className="absolute w-full h-full backface-hidden rotate-y-180 rounded-2xl overflow-hidden shadow">
           {/* Mirrored background image */}
           <div className="absolute inset-0">
-            {(token.header_image_url) ? (
+            {(token.header_image_url && !imageError) ? (
               <>
                 <img 
                   src={token.header_image_url || ''} 
@@ -253,6 +255,7 @@ export const MemoizedTokenCard = React.memo(({
                     transform: 'scaleX(-1)',
                     filter: 'blur(0.5px) brightness(0.9)'
                   }}
+                  onError={() => setImageError(true)}
                 />
                 {/* Light gradient overlay for readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/30 to-transparent" />

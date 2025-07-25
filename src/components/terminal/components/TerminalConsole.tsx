@@ -653,6 +653,12 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                 prefix = '';
                 textClassName = 'text-mauve';
                 break;
+              case 'chat':
+                prefix = '';
+                textClassName = 'text-green-300';
+                // Chat messages never use typewriter effect
+                useTypingEffect = false;
+                break;
               case 'assistant':
                 prefix = '';
                 textClassName = 'text-cyan-300';
@@ -662,8 +668,8 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                     // Display tool call info instead of null content
                     content = `[Calling tool: ${toolCall.function.name}...]`;
                 } else if (message.content !== null) {
-                    // Only use typewriter for last assistant text message
-                    useTypingEffect = isLastMessage;
+                    // Only use typewriter for last assistant text message (not chat)
+                    useTypingEffect = isLastMessage && !message.metadata?.isChat;
                     content = message.content; // Use the actual content
                 } else {
                     content = ''; // Handle case where content is null and no tool call

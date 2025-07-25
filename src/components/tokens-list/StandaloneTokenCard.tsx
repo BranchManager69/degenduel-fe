@@ -177,46 +177,27 @@ export const StandaloneTokenCard: React.FC<StandaloneTokenCardProps> = ({ token 
 
           {/* Back of card - Different for SOL vs other tokens */}
           {token.symbol === 'SOL' ? (
-            // SOL CARD BACK - JUST A SMILEY
+            // SOL CARD BACK - CLEAN SOL DESIGN
             <div className="absolute w-full h-full backface-hidden rotate-y-180 rounded-2xl overflow-hidden shadow bg-dark-200/95">
-              <div className="absolute inset-0">
-                <img 
-                  src={token.header_image_url || ''} 
-                  alt={token.symbol}
-                  className="absolute inset-0 w-full h-full object-cover opacity-20"
-                  style={{ 
-                    filter: 'brightness(0.5)'
-                  }}
-                />
-              </div>
+              <div className="absolute inset-0 bg-gradient-to-br from-dark-300 via-dark-200 to-dark-300" />
               
-              <div className="relative z-10 h-full flex items-center justify-center">
-                <style dangerouslySetInnerHTML={{
-                  __html: `
-                    @import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap');
-                  `
-                }} />
+              <div className="absolute inset-0 flex items-center justify-center">
                 <div 
+                  className="text-center"
                   style={{
-                    transform: 'rotate(-18deg)',
-                    fontSize: '2.5rem',
-                    fontFamily: "'Permanent Marker', cursive",
-                    color: '#FF00FF',
+                    fontSize: '3.5rem',
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                    fontWeight: '700',
+                    color: '#14F195',
                     textShadow: `
-                      2px 2px 0px #000,
-                      -2px -2px 0px #000,
-                      2px -2px 0px #000,
-                      -2px 2px 0px #000,
-                      0 0 20px rgba(255,0,255,0.8),
-                      4px 4px 15px rgba(0,0,0,0.5)
+                      0 0 20px rgba(20, 241, 149, 0.3),
+                      2px 2px 4px rgba(0, 0, 0, 0.5)
                     `,
-                    letterSpacing: '-0.02em',
-                    textTransform: 'uppercase',
-                    lineHeight: '0.8'
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase'
                   }}
                 >
-                  <div>O'DUEL</div>
-                  <div>RULES!</div>
+                  SOL
                 </div>
               </div>
             </div>
@@ -277,7 +258,7 @@ export const StandaloneTokenCard: React.FC<StandaloneTokenCardProps> = ({ token 
                         <img 
                           src="/assets/media/logos/jup.png" 
                           alt="Jupiter" 
-                          className="w-12 h-12 group-hover:rotate-12 transition-transform duration-300"
+                          className="w-8 h-8 group-hover:rotate-12 transition-transform duration-300"
                         />
                         <div className="text-center">
                           <div className="text-2xl font-black text-white tracking-tight">

@@ -32,6 +32,16 @@ export type {
   TimeFrame
 } from "./leaderboard";
 
+// Re-export wallet analysis types
+export type {
+  WalletAnalysisToken,
+  WalletPortfolio,
+  WalletSummary,
+  WalletMetadata,
+  WalletAnalysisResponse,
+  WalletAnalysisError
+} from "./wallet-analysis";
+
 // ------------------------------------------------------------------------------------------------
 
 /* Types */

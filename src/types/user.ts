@@ -79,6 +79,13 @@ export interface User {
     degen_points?: number;
   };
   
+  // Experience and level fields
+  experience_points?: number;
+  user_level?: {
+    level_number: number;
+    title: string;
+  };
+  
   // Settings
   settings?: {
     email_notifications?: boolean;

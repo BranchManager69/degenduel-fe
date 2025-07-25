@@ -48,11 +48,6 @@ export const SpectateButton: React.FC<SpectateButtonProps> = ({
             SPECTATE
           </span>
         </div>
-        
-        {/* Live indicator */}
-        <div className="ml-auto flex items-center">
-          <span className="text-xs text-purple-300 font-mono tracking-wider">LIVE</span>
-        </div>
       </div>
       
       {/* Subtle border glow */}

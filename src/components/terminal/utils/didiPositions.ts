@@ -29,6 +29,15 @@ export const DEFAULT_POSITION: DidiPosition = {
 // Page-specific positions
 export const POSITION_CONFIGS: PositionConfig[] = [
   {
+    pattern: /^\/contests$/,
+    position: {
+      right: '5px',
+      bottom: '5px',
+      transform: 'scale(0.665)',
+    },
+    description: 'Contests browser page - bottom right corner',
+  },
+  {
     pattern: /\/contests\/\d+\/submit-portfolio/,
     position: {
       right: '20px',
@@ -40,20 +49,29 @@ export const POSITION_CONFIGS: PositionConfig[] = [
   {
     pattern: /\/contests\/\d+\/live/,
     position: {
-      right: '20px',
-      bottom: '20px',
+      right: '5px',
+      bottom: '5px',
       transform: 'scale(0.665)',
     },
     description: 'Contest live page - bottom right corner',
   },
   {
-    pattern: /\/tokens/,
+    pattern: /\/tokens\/[^\/]+$/,
     position: {
-      right: '20px',
-      bottom: '20px',
-      transform: 'scale(0.665)',
+      right: '5px',
+      top: '75%',
+      transform: 'translateY(-50%) scale(0.665)',
     },
-    description: 'Tokens page - bottom right corner',
+    description: 'Token detail page - lower right (75% down)',
+  },
+  {
+    pattern: /\/tokens$/,
+    position: {
+      right: '5px',
+      top: '50%',
+      transform: 'translateY(-50%) scale(0.665)',
+    },
+    description: 'Tokens page - middle right',
   },
   {
     pattern: /\/profile/,
@@ -67,11 +85,11 @@ export const POSITION_CONFIGS: PositionConfig[] = [
   {
     pattern: /^\/$/,
     position: {
-      left: '50%',
-      bottom: '20px',
-      transform: 'translateX(-50%) scale(0.665)',
+      left: '5px',
+      bottom: '5px',
+      transform: 'scale(0.665)',
     },
-    description: 'Landing page - centered bottom',
+    description: 'Landing page - bottom left corner',
   },
   {
     pattern: /\/admin/,
@@ -83,13 +101,13 @@ export const POSITION_CONFIGS: PositionConfig[] = [
     description: 'Admin pages - bottom right, higher up',
   },
   {
-    pattern: /\/contests\/\d+\/detail/,
+    pattern: /\/contests\/\d+$/,
     position: {
-      right: '20px',
-      top: '200px',
+      right: '5px',
+      bottom: '25%',
       transform: 'scale(0.665)',
     },
-    description: 'Contest detail page - right side middle',
+    description: 'Contest detail page - bottom right, 25% up',
   },
   {
     pattern: /\/my-portfolios/,
@@ -103,11 +121,11 @@ export const POSITION_CONFIGS: PositionConfig[] = [
   {
     pattern: /\/wallet/,
     position: {
-      right: '20px',
-      top: '120px',
+      right: '5px',
+      bottom: '5px',
       transform: 'scale(0.665)',
     },
-    description: 'Wallet page - top right',
+    description: 'Wallet page - bottom right corner',
   },
   {
     pattern: /\/contest-credits/,
@@ -130,11 +148,11 @@ export const POSITION_CONFIGS: PositionConfig[] = [
   {
     pattern: /\/contests\/\d+\/select-tokens/,
     position: {
-      right: '20px',
-      bottom: '20px',
+      right: '5px',
+      bottom: '50%',
       transform: 'scale(0.665)',
     },
-    description: 'Token selection page - bottom right corner',
+    description: 'Token selection page - middle right (50% up)',
   },
 ];
 

@@ -75,6 +75,7 @@ export const TopicType = {
   // Contest topics
   CONTEST: SOCKET_TYPES.CONTEST,
   CONTEST_CHAT: SOCKET_TYPES.CONTEST_CHAT,
+  GENERAL_CHAT: 'general-chat',
 
   // Admin topics
   ADMIN: 'admin',
