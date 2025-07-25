@@ -79,7 +79,7 @@ import { DidiAvatar } from './DidiAvatar';
 import { TerminalMode, TerminalProps, TerminalSize } from './types';
 
 // NEW: Import chat room functionality for alter ego mode
-import { ChatMessage, useContestChat } from '../../hooks/websocket/topic-hooks/useContestChat';
+import { GeneralChatMessage, useGeneralChat } from '../../hooks/websocket/topic-hooks/useGeneralChat';
 
 /**
  * Terminal component
@@ -100,8 +100,7 @@ export const Terminal = ({
   onCommandExecuted,
   size = 'middle',
   isInitiallyMinimized = true,
-  mode = 'ai',
-  chatConfig,
+  mode = 'chat-room',
   onModeChange,
 }: TerminalProps) => {
   
@@ -111,21 +110,12 @@ export const Terminal = ({
   // NEW: Terminal mode state management
   const [currentMode, setCurrentMode] = useState<TerminalMode>(mode);
   
-  // NEW: Chat room functionality for alter ego mode  
-  const defaultChatConfig = { 
-    roomId: '768', 
-    roomName: 'Contest #768 Chat',
-    roomType: 'contest' 
-  };
-  
-  const activeChatConfig = chatConfig || defaultChatConfig;
-  
-  // NEW: Use existing contest chat for chat room mode
+  // NEW: Use general chat for chat room mode
   const {
     messages: chatMessages,
     sendMessage: sendChatMessage,
-    participants: chatParticipants
-  } = useContestChat(activeChatConfig.roomId);
+    isConnected: chatConnected
+  } = useGeneralChat();
   
   // We no longer need to set window.contractAddress as it's now fetched from the API
   //   This is kept for backward compatibility (WHICH WE DONT EVEN FUCKING WANT) but will be phased out
@@ -526,8 +516,8 @@ export const Terminal = ({
     console.log(`[Terminal] Switched to ${newMode} mode`);
   };
   
-  // NEW: Calculate participant count
-  const participantCount = chatParticipants ? chatParticipants.length : 0;
+  // NEW: For now, we don't have participant count in general chat
+  const participantCount = 0;
   
   // NEW: Convert chat messages to AI message format for display
   const getDisplayMessages = (): AIMessage[] => {
@@ -535,12 +525,14 @@ export const Terminal = ({
       return conversationHistory;
     } else {
       // Convert chat messages to AI message format
-      return chatMessages.map((msg: ChatMessage): AIMessage => ({
+      return chatMessages.map((msg: GeneralChatMessage): AIMessage => ({
         role: msg.is_system ? 'system' : 
-              msg.user_id === user?.wallet_address ? 'user' : 'assistant',
+              msg.user_id === user?.wallet_address ? 'user' : 'chat',
         content: msg.is_system ? msg.message : 
                  `[${msg.username}]: ${msg.message}`,
-        tool_calls: undefined
+        tool_calls: undefined,
+        // Add metadata to prevent typewriter effect
+        metadata: { isChat: true }
       }));
     }
   };
@@ -1088,7 +1080,7 @@ export const Terminal = ({
               {/* Chat room info */}
               {currentMode === 'chat-room' && (
                 <span className="text-gray-400 ml-2 text-xs">
-                  {activeChatConfig.roomName} ({participantCount} online)
+                  General Chat {chatConnected ? '(Connected)' : '(Connecting...)'}
                 </span>
               )}
               
@@ -1209,6 +1201,7 @@ export const Terminal = ({
               onEnter={handleEnterCommand}
               glitchActive={glitchActive}
               size={sizeState}
+              mode={currentMode}
             />
             
           </div>

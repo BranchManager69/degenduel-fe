@@ -38,7 +38,7 @@ import { Contest } from "../../../types/index";
 // Contest browser page
 export const ContestBrowser: React.FC = () => {
   const navigate = useNavigate();
-  const { isAdministrator, isAuthenticated, getToken } = useMigratedAuth();
+  const { isAdministrator, isAuthenticated, getToken, user } = useMigratedAuth();
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [availableCredits, setAvailableCredits] = useState<number | undefined>(undefined);
@@ -53,7 +53,7 @@ export const ContestBrowser: React.FC = () => {
     isLoading: wsLoading,
     isConnected: wsConnected,
     error: wsError,
-    lastUpdate: wsLastUpdate,
+    lastUpdate: _wsLastUpdate,
     refreshContests: wsRefreshContests
   } = useContests();
 
@@ -290,14 +290,6 @@ export const ContestBrowser: React.FC = () => {
             </div>
           ))}
         </div>
-        
-        {/* WebSocket Connection Status */}
-        <div className="mt-4 flex justify-center items-center gap-2 text-xs">
-          <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-yellow-400'}`} />
-          <span className={`font-mono ${wsConnected ? 'text-emerald-400' : 'text-yellow-400'}`}>
-            {isRestLoading ? 'LOADING.VIA.API' : wsConnected ? 'CONNECTING.TO.LIVE.DATA' : 'LOADING.CONTESTS'}
-          </span>
-        </div>
       </div>
     );
   }
@@ -373,7 +365,7 @@ export const ContestBrowser: React.FC = () => {
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
             </h1>
-            <div className="flex gap-3">
+            <div className="flex gap-1 sm:gap-3 w-full sm:w-auto">
               <CreateContestButton
                 onCreateClick={() => setIsCreateModalOpen(true)}
               />
@@ -384,6 +376,7 @@ export const ContestBrowser: React.FC = () => {
                 }}
                 userRole={isAdministrator ? "admin" : "user"}
                 availableCredits={availableCredits}
+                currentUserNickname={user?.nickname}
               />
             </div>
             
@@ -445,31 +438,6 @@ export const ContestBrowser: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/10 to-red-500/0 rounded-lg pointer-events-none" />
               )}
             </button>
-            </div>
-            
-            {/* Enhanced WebSocket Connection Status */}
-            <div className="flex items-center gap-3 text-xs">
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-                <span className={`font-mono ${wsConnected ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {wsConnected ? 'WebSocket' : 'REST API'}
-                </span>
-              </div>
-              
-              {wsLastUpdate && (
-                <div className="text-gray-500">
-                  <span className="hidden sm:inline">Updated: </span>
-                  <span className="font-mono">{wsLastUpdate.toLocaleTimeString()}</span>
-                </div>
-              )}
-              
-              <div className={`px-2 py-1 rounded-md text-xs font-mono ${
-                wsConnected 
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
-                  : 'bg-red-500/20 text-red-300 border border-red-500/30'
-              }`}>
-                {wsConnected ? 'LIVE' : 'OFFLINE'}
-              </div>
             </div>
           </div>
 

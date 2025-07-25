@@ -25,6 +25,7 @@ import { useBatchTokens } from "../../../hooks/websocket/topic-hooks/useBatchTok
 import { useVisibleTokenSubscriptions } from "../../../hooks/websocket/topic-hooks/useVisibleTokenSubscriptions";
 import { useScrollFooter } from "../../../hooks/ui/useScrollFooter";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
+import { useWalletAnalysis } from "../../../hooks/data/useWalletAnalysis";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Contest, SearchToken, Token, TokenHelpers } from "../../../types/index";
@@ -198,7 +199,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
         console.log('[PortfolioTokenSelectionPage] Loading initial tokens via trending API');
         
         // Fetch first batch with fixed initial limit
-        const response = await fetch(`/api/tokens/trending?limit=50&offset=0&format=paginated`);
+        const response = await fetch(`/api/tokens/all?limit=50&offset=0&format=paginated`);
         if (!response.ok) {
           throw new Error(`Failed to fetch tokens: ${response.statusText}`);
         }
@@ -318,13 +319,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     };
   }, []);
   
-  // Subscribe to visible tokens for real-time price updates
-  useVisibleTokenSubscriptions({
-    tokens,
-    onTokenUpdate: handleTokenUpdate,
-    enabled: true
-  });
-  
   // Combined loading state
   const tokenListLoading = isInitialLoading || specialTokensLoading;
   const isTokenDataConnected = true; // Always true with new approach
@@ -344,7 +338,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     try {
       setIsInitialLoading(true);
       
-      const response = await fetch(`/api/tokens/trending?limit=50&offset=0&format=paginated`);
+      const response = await fetch(`/api/tokens/all?limit=50&offset=0&format=paginated`);
       if (!response.ok) {
         throw new Error(`Failed to fetch tokens: ${response.statusText}`);
       }
@@ -386,7 +380,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
       const offset = mainTokens.length;
       
       // Fetch next batch
-      const response = await fetch(`/api/tokens/trending?limit=${TOKENS_PER_PAGE}&offset=${offset}&format=paginated`);
+      const response = await fetch(`/api/tokens/all?limit=${TOKENS_PER_PAGE}&offset=${offset}&format=paginated`);
       if (!response.ok) {
         throw new Error(`Failed to fetch more tokens: ${response.statusText}`);
       }
@@ -455,7 +449,20 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [hasExistingPortfolio, setHasExistingPortfolio] = useState(false);
   const [debugPanelCollapsed, setDebugPanelCollapsed] = useState(true);
+  const [walletDebugCollapsed, setWalletDebugCollapsed] = useState(true);
+  const [tokenDebugCollapsed, setTokenDebugCollapsed] = useState(true);
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const [showWalletInput, setShowWalletInput] = useState(false);
+  const [inputWalletAddress, setInputWalletAddress] = useState("");
+  const [isAnalyzingWallet, setIsAnalyzingWallet] = useState(false);
   const user = useStore((state) => state.user);
+  
+  // Wallet analysis hook - only runs if user is logged in
+  const { 
+    data: walletAnalysis, 
+    isLoading: walletAnalysisLoading,
+    error: walletAnalysisError 
+  } = useWalletAnalysis(user?.wallet_address);
   
   // Get footer state for dynamic positioning
   const { isCompact } = useScrollFooter(50);
@@ -621,10 +628,37 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                 
                 if (missingTokensData.length > 0) {
                   console.log("✅ Successfully fetched data for", missingTokensData.length, "missing tokens");
-                  // Add missing tokens to search-added tokens
-                  missingTokensData.forEach(token => {
+                  // Filter out tokens with no valid data before adding
+                  const validTokens = missingTokensData.filter(token => {
+                    // Only include tokens that have essential data
+                    return token.symbol && 
+                           token.symbol !== 'UNKNOWN' && 
+                           token.price !== undefined && token.price > 0 && 
+                           token.market_cap !== null && token.market_cap !== undefined && token.market_cap > 0;
+                  });
+                  
+                  console.log(`Filtered to ${validTokens.length} valid tokens from ${missingTokensData.length} fetched`);
+                  
+                  // Add only valid tokens to search-added tokens
+                  validTokens.forEach(token => {
                     setSearchAddedTokens(prev => new Map(prev).set(TokenHelpers.getAddress(token), token));
                   });
+                  
+                  // Clean up selectedTokens to remove tokens that couldn't be fetched or have invalid data
+                  const invalidTokenAddresses = missingTokenAddresses.filter(address => 
+                    !validTokens.some(token => TokenHelpers.getAddress(token) === address)
+                  );
+                  
+                  if (invalidTokenAddresses.length > 0) {
+                    console.log(`Removing ${invalidTokenAddresses.length} invalid tokens from portfolio`);
+                    setSelectedTokens(prev => {
+                      const newMap = new Map(prev);
+                      invalidTokenAddresses.forEach(address => {
+                        newMap.delete(address);
+                      });
+                      return newMap;
+                    });
+                  }
                 }
               } catch (error) {
                 console.error("Failed to fetch missing token data:", error);
@@ -652,6 +686,20 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     checkParticipationAndPortfolio();
   }, [contestId, user?.wallet_address]);
 
+
+  // Auto-connect on mount if wallets match
+  useEffect(() => {
+    if (!connected && user?.wallet_address && typeof window !== 'undefined' && (window as any).solana?.isPhantom) {
+      const phantomProvider = (window as any).solana;
+      
+      if (phantomProvider.isConnected && phantomProvider.publicKey?.toBase58() === user.wallet_address) {
+        console.log("[WALLET DEBUG] Auto-connecting wallet adapter - Phantom matches user");
+        connect();
+      }
+    }
+  }, [connected, user?.wallet_address, connect]);
+
+
   useEffect(() => {
     console.log("Current contest state:", {
       contestId,
@@ -672,6 +720,12 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   // visibleTokens are just tokens (already paginated and includes special tokens)
   const visibleTokens = tokens;
 
+  // Subscribe to visible tokens for real-time price updates
+  useVisibleTokenSubscriptions({
+    tokens: memoizedTokens,
+    onTokenUpdate: handleTokenUpdate,
+    enabled: true
+  });
 
   // Token selection handler - will be defined after offline mode variables
 
@@ -1290,6 +1344,236 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const isOfflineMode = !isTokenDataConnected && !isInWsGracePeriod;
   const showOfflineIndicator = isOfflineMode && memoizedTokens.length > 0;
 
+  // Apply wallet analysis suggestions to portfolio
+  const applyWalletSuggestions = useCallback(() => {
+    if (!walletAnalysis || !walletAnalysis.tokens.length) {
+      toast.error("No wallet data available");
+      return;
+    }
+
+    // Clear current selections
+    setSelectedTokens(new Map());
+    
+    // Calculate total value of tokens we can match
+    let matchedValue = 0;
+    let totalWalletValue = walletAnalysis.portfolio.deployedValue; // Excluding SOL
+    const matchedTokens: Array<{ contractAddress: string; value: number; symbol: string }> = [];
+    
+    // Find matching tokens
+    walletAnalysis.tokens.forEach((walletToken) => {
+      if (walletToken.isSOL) return; // Skip SOL for now
+      
+      // Find matching token in our available list
+      const matchingToken = memoizedTokens.find(
+        (t) => t.contractAddress === walletToken.mint || t.address === walletToken.mint
+      );
+      
+      if (matchingToken) {
+        matchedValue += walletToken.value;
+        matchedTokens.push({
+          contractAddress: matchingToken.contractAddress || matchingToken.address,
+          value: walletToken.value,
+          symbol: walletToken.symbol
+        });
+      }
+    });
+    
+    // Find SOL token in our list by its native mint address
+    const SOL_MINT = "So11111111111111111111111111111111111111112";
+    const solToken = memoizedTokens.find(
+      (t) => (t.contractAddress === SOL_MINT || t.address === SOL_MINT)
+    );
+    
+    // Calculate weights
+    const newSelectedTokens = new Map<string, number>();
+    let allocatedWeight = 0;
+    
+    // Allocate weights proportionally to matched tokens
+    matchedTokens.forEach((token) => {
+      const weight = Math.round((token.value / totalWalletValue) * 100);
+      if (weight > 0) {
+        newSelectedTokens.set(token.contractAddress, weight);
+        allocatedWeight += weight;
+      }
+    });
+    
+    // Allocate remaining weight to SOL
+    const remainingWeight = 100 - allocatedWeight;
+    if (remainingWeight > 0 && solToken) {
+      const solAddress = solToken.contractAddress || solToken.address;
+      newSelectedTokens.set(solAddress, remainingWeight);
+    }
+    
+    // Apply selections
+    setSelectedTokens(newSelectedTokens);
+    
+    // Show summary toast
+    toast.success("Portfolio suggestions applied", { duration: 3000 });
+  }, [walletAnalysis, memoizedTokens]);
+
+  // AI-powered token selection with smart allocation
+  const applyAISuggestions = useCallback(async () => {
+    setIsAIProcessing(true);
+    
+    try {
+      // Filter tokens that have both logo and header images
+      const eligibleTokens = memoizedTokens.filter(token => {
+        const hasLogo = token.image_url || token.images?.imageUrl;
+        const hasHeaderImage = token.header_image_url || token.images?.headerImage;
+        return hasLogo && hasHeaderImage;
+      });
+
+      if (eligibleTokens.length === 0) {
+        toast.error("No eligible tokens found for AI selection");
+        return;
+      }
+
+      // Calculate remaining portfolio space
+      const currentWeight = Array.from(selectedTokens.values()).reduce((sum, w) => sum + w, 0);
+      const remainingWeight = 100 - currentWeight;
+
+      if (remainingWeight < 1) {
+        toast.error("Portfolio is already fully allocated");
+        return;
+      }
+
+      // Simulate AI processing delay (3 seconds)
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Determine number of tokens to select (2-4, but respect remaining weight limits)
+      const minTokens = Math.min(2, Math.floor(remainingWeight / 1)); // At least 1% each
+      const maxTokens = Math.min(4, Math.floor(remainingWeight / 1)); // At least 1% each
+      
+      if (minTokens < 1) {
+        toast.error("Not enough remaining allocation for AI suggestions");
+        return;
+      }
+
+      const numTokensToSelect = Math.floor(Math.random() * (maxTokens - minTokens + 1)) + minTokens;
+
+      // Randomly select tokens
+      const shuffled = [...eligibleTokens].sort(() => 0.5 - Math.random());
+      const selectedAITokens = shuffled.slice(0, numTokensToSelect);
+
+      // Allocate weights - distribute remaining weight among selected tokens
+      const baseWeight = Math.floor(remainingWeight / numTokensToSelect);
+      const extraWeight = remainingWeight % numTokensToSelect;
+
+      // Create new selections map with existing selections
+      const newSelectedTokens = new Map(selectedTokens);
+
+      selectedAITokens.forEach((token, index) => {
+        const tokenAddress = token.contractAddress || token.address;
+        const weight = baseWeight + (index < extraWeight ? 1 : 0);
+        newSelectedTokens.set(tokenAddress, weight);
+      });
+
+      // Apply the new selections
+      setSelectedTokens(newSelectedTokens);
+
+      toast.success("AI portfolio suggestions applied", { duration: 3000 });
+
+    } catch (error) {
+      console.error("AI suggestion error:", error);
+      toast.error("Failed to generate AI suggestions");
+    } finally {
+      setIsAIProcessing(false);
+    }
+  }, [memoizedTokens, selectedTokens]);
+
+  // Clone any wallet functionality
+  const handleCloneWallet = useCallback(async () => {
+    if (!inputWalletAddress.trim()) {
+      toast.error("Please enter a wallet address");
+      return;
+    }
+
+    // Basic Solana address validation
+    if (inputWalletAddress.length < 32 || inputWalletAddress.length > 44) {
+      toast.error("Invalid wallet address format");
+      return;
+    }
+
+    setIsAnalyzingWallet(true);
+    
+    try {
+      // TODO: Replace with public endpoint when available
+      const response = await fetch(`https://degenduel.me/api/wallet-analysis/${inputWalletAddress}`);
+      
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error("Rate limit exceeded. Please wait a moment before trying again.");
+        }
+        throw new Error("Failed to analyze wallet");
+      }
+
+      const walletData = await response.json();
+      
+      if (!walletData.tokens || walletData.tokens.length === 0) {
+        toast.error("No tradeable tokens found in this wallet");
+        return;
+      }
+
+      // Apply the same logic as wallet suggestions but for the input wallet
+      setSelectedTokens(new Map());
+      
+      let matchedValue = 0;
+      let totalWalletValue = walletData.portfolio.deployedValue;
+      const matchedTokens: Array<{ contractAddress: string; value: number; symbol: string }> = [];
+      
+      walletData.tokens.forEach((walletToken: any) => {
+        if (walletToken.isSOL) return;
+        
+        const matchingToken = memoizedTokens.find(
+          (t) => t.contractAddress === walletToken.mint || t.address === walletToken.mint
+        );
+        
+        if (matchingToken) {
+          matchedValue += walletToken.value;
+          matchedTokens.push({
+            contractAddress: matchingToken.contractAddress || matchingToken.address,
+            value: walletToken.value,
+            symbol: walletToken.symbol
+          });
+        }
+      });
+      
+      const SOL_MINT = "So11111111111111111111111111111111111111112";
+      const solToken = memoizedTokens.find(
+        (t) => (t.contractAddress === SOL_MINT || t.address === SOL_MINT)
+      );
+      
+      const newSelectedTokens = new Map<string, number>();
+      let allocatedWeight = 0;
+      
+      matchedTokens.forEach((token) => {
+        const weight = Math.round((token.value / totalWalletValue) * 100);
+        if (weight > 0) {
+          newSelectedTokens.set(token.contractAddress, weight);
+          allocatedWeight += weight;
+        }
+      });
+      
+      const remainingWeight = 100 - allocatedWeight;
+      if (remainingWeight > 0 && solToken) {
+        const solAddress = solToken.contractAddress || solToken.address;
+        newSelectedTokens.set(solAddress, remainingWeight);
+      }
+      
+      setSelectedTokens(newSelectedTokens);
+      setShowWalletInput(false);
+      setInputWalletAddress("");
+      
+      toast.success(`Cloned portfolio from ${inputWalletAddress.slice(0,6)}...${inputWalletAddress.slice(-4)}`, { duration: 3000 });
+
+    } catch (error: any) {
+      console.error("Clone wallet error:", error);
+      toast.error(error.message || "Failed to analyze wallet");
+    } finally {
+      setIsAnalyzingWallet(false);
+    }
+  }, [inputWalletAddress, memoizedTokens]);
+
 
   // Enhanced token selection handler with offline support
   const handleTokenSelect = useCallback(
@@ -1601,9 +1885,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
             {/* Header */}
             <div className="mb-4 sm:mb-8 text-center">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-100 mb-2 font-mono">
-                <span className="text-emerald-400">[</span>
                 BUILD PORTFOLIO
-                <span className="text-emerald-400">]</span>
               </h1>
               <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto font-mono">
                 LOADING.TOKENS → PREPARING.SELECTION
@@ -1729,7 +2011,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                     }}
                     className="px-4 py-2 bg-red-600/20 border border-red-500/30 rounded text-red-400 text-sm font-mono hover:bg-red-600/30 transition-colors"
                   >
-                    [RETRY.CONNECTION]
+                    RETRY CONNECTION
                   </button>
                   
                   <button
@@ -1739,7 +2021,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                     }}
                     className="px-4 py-2 bg-gray-600/20 border border-gray-500/30 rounded text-gray-400 text-sm font-mono hover:bg-gray-600/30 transition-colors"
                   >
-                    [HARD.REFRESH]
+                    HARD REFRESH
                   </button>
                   
                   <button
@@ -1749,7 +2031,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                     }}
                     className="px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded text-blue-400 text-sm font-mono hover:bg-blue-600/30 transition-colors"
                   >
-                    [BACK.TO.CONTESTS]
+                    BACK TO CONTESTS
                   </button>
                 </div>
               </div>
@@ -1764,14 +2046,50 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="flex flex-col min-h-screen">
-        {/* Browsing Users Info Banner */}
-        {!user?.wallet_address && (
-          <div className="bg-brand-500/10 border-b border-brand-500/30 px-4 py-3">
-            <div className="flex items-center justify-between">
+        {/* User Info Banner */}
+        <div className="bg-brand-500/10 border-b border-brand-500/30 px-4 py-3">
+          <div className="flex items-center justify-between">
+            {user?.wallet_address ? (
+              <div className="flex items-center gap-3 text-sm">
+                <div className="flex items-center gap-3">
+                  <span className="w-2 h-2 bg-emerald-400 rounded-full"></span>
+                  <span className="text-brand-400">Logged in:</span>
+                  <code className="bg-dark-600/50 px-2 py-1 rounded text-emerald-300 font-mono text-xs">
+                    {user.wallet_address.slice(0, 6)}...{user.wallet_address.slice(-4)}
+                  </code>
+                </div>
+                
+                {/* Connected Wallet Indicator */}
+                {publicKey && (
+                  <>
+                    <span className="text-dark-300">|</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-brand-400">Connected:</span>
+                      <code className={`px-2 py-1 rounded font-mono text-xs ${
+                        publicKey.toBase58() === user.wallet_address 
+                          ? "bg-dark-600/50 text-emerald-300" 
+                          : "bg-red-600/20 text-red-300"
+                      }`}>
+                        {publicKey.toBase58().slice(0, 6)}...{publicKey.toBase58().slice(-4)}
+                      </code>
+                    </div>
+                  </>
+                )}
+                
+                {/* Mismatch Warning */}
+                {publicKey && publicKey.toBase58() !== user.wallet_address && (
+                  <div className="flex items-center gap-2 ml-2">
+                    <span className="text-red-400 text-xs font-medium">⚠️ Wallet mismatch!</span>
+                  </div>
+                )}
+              </div>
+            ) : (
               <div className="flex items-center gap-2 text-brand-400 text-sm">
                 <span className="w-2 h-2 bg-brand-400 rounded-full"></span>
                 <span>You can build portfolios without logging in! Enter the contest when you're ready.</span>
               </div>
+            )}
+            {!user?.wallet_address && (
               <button
                 onClick={() => {
                   const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
@@ -1779,11 +2097,11 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                 }}
                 className="px-3 py-1 bg-brand-500/20 rounded text-xs hover:bg-brand-500/30 transition-colors font-mono"
               >
-                [LOGIN]
+                LOGIN
               </button>
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Enhanced Offline/Connection Status Banner */}
         {showOfflineIndicator && (
@@ -1811,7 +2129,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                   }}
                   className="px-3 py-1 bg-blue-500/20 rounded text-xs hover:bg-blue-500/30 transition-colors font-mono"
                 >
-                  [RECONNECT]
+                  RECONNECT
                 </button>
               </div>
             </div>
@@ -1872,12 +2190,10 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
             <div className="mb-4 sm:mb-8 text-center relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/0 via-emerald-400/5 to-emerald-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-100 mb-2 font-mono">
-                <span className="text-emerald-400">[</span>
                 BUILD PORTFOLIO
-                <span className="text-emerald-400">]</span>
               </h1>
               <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto font-mono">
-                SELECT.TOKENS → ALLOCATE.WEIGHTS → DEPLOY.STRATEGY
+                SELECT TOKENS → ALLOCATE WEIGHTS → DEPLOY STRATEGY
               </p>
               
               {/* Connection status indicator */}
@@ -1885,12 +2201,56 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${isTokenDataConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
                   <span className={`font-mono ${isTokenDataConnected ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {isTokenDataConnected ? 'LIVE.DATA.STREAM' : 'CONNECTION.LOST'}
+                    {isTokenDataConnected ? 'LIVE DATA STREAM' : 'CONNECTION LOST'}
                   </span>
                 </div>
                 
               </div>
             </div>
+
+            {/* Wallet Status Indicator */}
+            {user?.wallet_address && (
+              <div className="mb-4 p-3 bg-dark-600/50 border border-brand-500/20 rounded-lg max-w-2xl mx-auto">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-center gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-400">Account:</span>
+                      <code className="bg-dark-700/50 px-2 py-1 rounded text-emerald-300 font-mono text-xs">
+                        {user.wallet_address.slice(0, 6)}...{user.wallet_address.slice(-4)}
+                      </code>
+                    </div>
+                    
+                    {publicKey && (
+                      <>
+                        <span className="text-dark-400">•</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400">Wallet:</span>
+                          <code className={`px-2 py-1 rounded font-mono text-xs ${
+                            publicKey.toBase58() === user.wallet_address 
+                              ? "bg-dark-700/50 text-emerald-300" 
+                              : "bg-red-600/20 text-red-300 animate-pulse"
+                          }`}>
+                            {publicKey.toBase58().slice(0, 6)}...{publicKey.toBase58().slice(-4)}
+                          </code>
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Enhanced wallet mismatch warning */}
+                    {(publicKey && publicKey.toBase58() !== user.wallet_address) || 
+                     (!publicKey && typeof window !== 'undefined' && (window as any).solana?.isPhantom && 
+                      (window as any).solana.publicKey?.toBase58() !== user.wallet_address) ? (
+                      <div className="flex items-center gap-2 ml-2 px-2 py-1 bg-red-600/20 rounded animate-pulse">
+                        <span className="text-red-400 text-xs font-medium">
+                          ⚠️ Wrong wallet! Switch Phantom to: {user.wallet_address.slice(0, 6)}...{user.wallet_address.slice(-4)}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                  
+                </div>
+              </div>
+            )}
 
             {/* Main Content */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-8 pb-24 lg:pb-0">
@@ -1905,12 +2265,104 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                     {/* Header with token count */}
                     <div className="mb-4 flex justify-between items-center">
                       <h2 className="text-lg font-bold text-emerald-400 font-mono">
-                        TOKEN.SELECTION
+                        TOKEN SELECTION
                       </h2>
-                      <div className="text-xs font-mono text-gray-400">
-                        AVAILABLE: <span className="text-emerald-400">{sortedTokens.length}</span>
+                      {/* Smart Portfolio Buttons - Prominent placement */}
+                      <div className="flex gap-2">
+                        {/* Wallet Analysis Button - Always shows if user is logged in */}
+                        {user?.wallet_address ? (
+                          <Button
+                            onClick={walletAnalysisLoading || !walletAnalysis ? undefined : applyWalletSuggestions}
+                            disabled={walletAnalysisLoading || !walletAnalysis?.tokens?.length}
+                            className={`px-3 py-2 text-sm font-bold transition-all duration-200 shadow-lg ${
+                              walletAnalysisLoading
+                                ? 'bg-gradient-to-r from-gray-600 to-gray-700 border-gray-600 text-gray-300'
+                                : walletAnalysis?.tokens?.length
+                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 border-purple-500 text-white hover:shadow-purple-500/25'
+                                : 'bg-gradient-to-r from-gray-600 to-gray-700 border-gray-600 text-gray-400 cursor-not-allowed'
+                            }`}
+                          >
+                            <span className="font-mono text-xs">
+                              {walletAnalysisLoading 
+                                ? "ANALYZING..." 
+                                : walletAnalysis?.tokens?.length 
+                                ? "MATCH MY BAGS"
+                                : "NO WALLET DATA"
+                              }
+                            </span>
+                          </Button>
+                        ) : null}
+                        
+                        {/* AI Selection Button - Always available */}
+                        <Button
+                          onClick={applyAISuggestions}
+                          disabled={isAIProcessing}
+                          className="px-3 py-2 text-sm font-bold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 border-blue-500 text-white shadow-lg hover:shadow-blue-500/25 transition-all duration-200"
+                        >
+                          <span className="font-mono text-xs">
+                            {isAIProcessing ? "THINKING..." : "LET DIDI PICK"}
+                          </span>
+                        </Button>
+
+                        {/* Clone Wallet Button - Always available */}
+                        <Button
+                          onClick={() => setShowWalletInput(!showWalletInput)}
+                          disabled={isAnalyzingWallet}
+                          className="px-3 py-2 text-sm font-bold bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 border-orange-500 text-white shadow-lg hover:shadow-orange-500/25 transition-all duration-200"
+                        >
+                          <span className="font-mono text-xs">
+                            {isAnalyzingWallet ? "ANALYZING..." : "CLONE WALLET"}
+                          </span>
+                        </Button>
+                        
+                        {/* Token count - only show when no user is logged in */}
+                        {!user?.wallet_address && (
+                          <div className="text-xs font-mono text-gray-400 flex items-center ml-2">
+                            AVAILABLE: <span className="text-emerald-400">{sortedTokens.length}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
+
+                    {/* Wallet Address Input - Inline Expansion */}
+                    {showWalletInput && (
+                      <div className="mb-4 p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                        <div className="flex flex-col gap-3">
+                          <div className="text-sm font-mono text-orange-400">
+                            Enter any Solana wallet address to clone their portfolio:
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={inputWalletAddress}
+                              onChange={(e) => setInputWalletAddress(e.target.value)}
+                              placeholder="Enter wallet address (e.g., BRANCHVDL53igBiYuvrEfZazXJm24qKQJhyXBUm7z7V)"
+                              className="flex-1 px-3 py-2 bg-dark-300/70 border border-orange-500/30 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:border-orange-400"
+                              disabled={isAnalyzingWallet}
+                            />
+                            <Button
+                              onClick={handleCloneWallet}
+                              disabled={isAnalyzingWallet || !inputWalletAddress.trim()}
+                              className="px-4 py-2 text-sm font-bold bg-orange-600 hover:bg-orange-500 border-orange-500 text-white"
+                            >
+                              <span className="font-mono">
+                                {isAnalyzingWallet ? "CLONING..." : "CLONE"}
+                              </span>
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setShowWalletInput(false);
+                                setInputWalletAddress("");
+                              }}
+                              className="px-3 py-2 text-sm bg-gray-600 hover:bg-gray-500 border-gray-500 text-white"
+                              disabled={isAnalyzingWallet}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Simplified Filters - Only search and view mode */}
                     <div className="mb-4 sm:mb-6 space-y-4">
@@ -1984,6 +2436,126 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                       </div>
                     )}
 
+                    {/* Wallet Analysis Debug Panel - Development Only */}
+                    {process.env.NODE_ENV === 'development' && user?.wallet_address && (
+                      <div className="mb-4 p-4 bg-dark-300/50 border border-blue-500/30 rounded-lg">
+                        <div 
+                          className="flex items-center justify-between cursor-pointer"
+                          onClick={() => setWalletDebugCollapsed(!walletDebugCollapsed)}
+                        >
+                          <h3 className="text-blue-400 font-mono font-bold">
+                            {walletDebugCollapsed ? '▶' : '▼'} 💰 DEBUG: Wallet Analysis
+                          </h3>
+                          <span className="text-xs text-gray-400">Click to {walletDebugCollapsed ? 'expand' : 'collapse'}</span>
+                        </div>
+                        {!walletDebugCollapsed && (
+                          <div className="mt-4 space-y-4">
+                            {/* Connection Status */}
+                            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                              <div className="text-gray-400">Loading:</div>
+                              <div className={walletAnalysisLoading ? 'text-yellow-400' : 'text-gray-300'}>
+                                {walletAnalysisLoading ? 'YES' : 'NO'}
+                              </div>
+                              
+                              <div className="text-gray-400">Error:</div>
+                              <div className={walletAnalysisError ? 'text-red-400' : 'text-green-400'}>
+                                {walletAnalysisError ? 'YES' : 'NO'}
+                              </div>
+                              
+                              <div className="text-gray-400">Data Loaded:</div>
+                              <div className={walletAnalysis ? 'text-green-400' : 'text-red-400'}>
+                                {walletAnalysis ? 'YES' : 'NO'}
+                              </div>
+                              
+                              {walletAnalysis && (
+                                <>
+                                  <div className="text-gray-400">Total Value:</div>
+                                  <div className="text-emerald-400">
+                                    ${walletAnalysis.portfolio.totalValue.toFixed(2)}
+                                  </div>
+                                  
+                                  <div className="text-gray-400">Tokens Found:</div>
+                                  <div className="text-blue-400">
+                                    {walletAnalysis.tokens.length}
+                                  </div>
+                                  
+                                  <div className="text-gray-400">Processing Time:</div>
+                                  <div className="text-gray-300">
+                                    {walletAnalysis.metadata.processing_time_ms}ms
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                            
+                            {/* Error Details */}
+                            {walletAnalysisError && (
+                              <div className="text-red-400 text-xs font-mono bg-red-500/10 p-2 rounded">
+                                {walletAnalysisError.message}
+                              </div>
+                            )}
+                            
+                            {/* Raw Data */}
+                            {walletAnalysis && (
+                              <div>
+                                <div className="text-gray-400 text-xs font-mono mb-2">Raw Data:</div>
+                                <div className="text-white text-[10px] overflow-auto max-h-32 bg-dark-400/50 p-2 rounded">
+                                  <pre>{JSON.stringify(walletAnalysis, null, 2)}</pre>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* DEBUG PANEL - Token Data (Super Admin Only) */}
+                    {isSuperAdmin && (
+                      <div className="mb-4 p-4 bg-dark-300/50 border border-purple-500/30 rounded-lg">
+                        <div 
+                          className="flex items-center justify-between cursor-pointer"
+                          onClick={() => setTokenDebugCollapsed(!tokenDebugCollapsed)}
+                        >
+                          <h3 className="text-purple-400 font-mono font-bold">
+                            {tokenDebugCollapsed ? '▶' : '▼'} 🪙 DEBUG: Token Data
+                          </h3>
+                          <span className="text-xs text-gray-400">Click to {tokenDebugCollapsed ? 'expand' : 'collapse'}</span>
+                        </div>
+                        {!tokenDebugCollapsed && (
+                          <div className="grid grid-cols-2 gap-2 text-xs font-mono mt-4">
+                            <div className="text-gray-400">Main Tokens:</div>
+                            <div className="text-white">{mainTokens.length}</div>
+                            
+                            <div className="text-gray-400">Special Tokens:</div>
+                            <div className="text-white">{specialTokens.length}</div>
+                            
+                            <div className="text-gray-400">Search Added Tokens:</div>
+                            <div className="text-white">{searchAddedTokens.size}</div>
+                            
+                            <div className="text-gray-400">All Tokens (merged):</div>
+                            <div className="text-white">{allTokens.length}</div>
+                            
+                            <div className="text-gray-400">Visible Tokens:</div>
+                            <div className="text-white">{visibleTokens.length}</div>
+                            
+                            <div className="text-gray-400">Display Count:</div>
+                            <div className="text-white">{displayCount}</div>
+                            
+                            <div className="text-gray-400">Total Token Count:</div>
+                            <div className="text-white">{totalTokenCount}</div>
+                            
+                            <div className="text-gray-400 col-span-2 mt-2">Token Positions:</div>
+                            <div className="col-span-2 text-white text-[10px] overflow-auto max-h-32 bg-dark-400/50 p-2 rounded">
+                              {visibleTokens.slice(0, 40).map((token, idx) => (
+                                <div key={idx}>
+                                  {idx + 1}: {token.symbol} ({token.contractAddress?.slice(0, 8)}...)
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Enhanced Token Grid - Visual rich cards with infinite scroll */}
                     <div className="relative">
                       <CreativeTokensGrid
@@ -2030,7 +2602,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                     
                     <div className="p-4 sm:p-6 relative">
                       <h2 className="text-lg sm:text-xl font-bold text-emerald-400 mb-4 font-mono">
-                        PORTFOLIO.DEPLOY
+                        PORTFOLIO DEPLOY
                       </h2>
                       
                       {/* Contest Type Indicator - Moved here */}
@@ -2081,34 +2653,34 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                             <div className="flex items-center gap-3">
                               {transactionState.status === "preparing" && (
                                 <div className="animate-pulse text-emerald-400">
-                                  [PREP]
+                                  PREP
                                 </div>
                               )}
                               {transactionState.status === "signing" && (
                                 <div className="animate-bounce text-emerald-400">
-                                  [SIGN]
+                                  SIGN
                                 </div>
                               )}
                               {transactionState.status === "sending" && (
                                 <div className="animate-spin text-emerald-400">
-                                  [SEND]
+                                  SEND
                                 </div>
                               )}
                               {transactionState.status === "confirming" && (
                                 <div className="animate-pulse text-emerald-400">
-                                  [WAIT]
+                                  WAIT
                                 </div>
                               )}
                               {transactionState.status === "submitting" && (
                                 <div className="animate-pulse text-emerald-400">
-                                  [SUBMIT]
+                                  SUBMIT
                                 </div>
                               )}
                               {transactionState.status === "success" && (
-                                <div className="text-emerald-400">[SUCCESS]</div>
+                                <div className="text-emerald-400">SUCCESS</div>
                               )}
                               {transactionState.status === "error" && (
-                                <div className="text-red-400">[ERROR]</div>
+                                <div className="text-red-400">ERROR</div>
                               )}
                               <div>
                                 <p
@@ -2189,13 +2761,13 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                                   onClick={() => navigate(`/contests/${contestId}`)}
                                   className="bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-sm"
                                 >
-                                  [VIEW.CONTEST]
+                                  VIEW CONTEST
                                 </Button>
                                 <Button
                                   onClick={() => navigate('/contests')}
                                   className="bg-dark-400 hover:bg-dark-300 text-white font-mono text-sm"
                                 >
-                                  [BROWSE.MORE]
+                                  BROWSE MORE
                                 </Button>
                               </div>
                             </div>
@@ -2210,6 +2782,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                                 </div>
                               </div>
                             )}
+                            
                             
                             <Button
                               onClick={handlePreviewPortfolio}
@@ -2226,13 +2799,13 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                               <span className="relative flex items-center justify-center font-medium font-mono">
                                 {isLoading ? (
                                   <div>
-                                    [DEPLOYING...]
+                                    DEPLOYING...
                                   </div>
                                 ) : user?.wallet_address ? (
                                   (console.log("Button render state:", { hasExistingPortfolio, user: user?.wallet_address }), 
-                                  hasExistingPortfolio ? "[UPDATE.PORTFOLIO]" : "[PREVIEW.PORTFOLIO]")
+                                  hasExistingPortfolio ? "UPDATE PORTFOLIO" : "PREVIEW PORTFOLIO")
                                 ) : (
-                                  "[BUILD.PORTFOLIO]"
+                                  "BUILD PORTFOLIO"
                                 )}
                               </span>
                             </Button>
@@ -2263,13 +2836,13 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                         onClick={() => navigate(`/contests/${contestId}`)}
                         className="bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2"
                       >
-                        [VIEW]
+                        VIEW
                       </Button>
                       <Button
                         onClick={() => navigate('/contests')}
                         className="bg-dark-400 hover:bg-dark-300 text-white font-mono text-xs py-2"
                       >
-                        [MORE]
+                        MORE
                       </Button>
                     </div>
                   </div>
@@ -2297,15 +2870,15 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                       }`} />
                       <span className="relative flex items-center justify-center gap-2 font-mono">
                         {isLoading ? (
-                          <div>[DEPLOYING...]</div>
+                          <div>DEPLOYING...</div>
                         ) : user?.wallet_address ? (
                           <>
-                            <span className="font-medium">[PREVIEW]</span>
+                            <span className="font-medium">PREVIEW</span>
                             <span className={totalWeight > 100 ? "text-red-200 font-bold" : "text-emerald-400"}>{totalWeight}%</span>
                           </>
                         ) : (
                           <>
-                            <span className="font-medium">[BUILD]</span>
+                            <span className="font-medium">BUILD</span>
                             <span className={totalWeight > 100 ? "text-red-200 font-bold" : "text-emerald-400"}>{totalWeight}%</span>
                           </>
                         )}

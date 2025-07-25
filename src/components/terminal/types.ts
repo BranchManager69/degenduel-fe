@@ -54,7 +54,6 @@ export interface TerminalProps {
   onCommand?: (command: string) => void;
   // NEW: Alter ego props
   mode?: TerminalMode;
-  chatConfig?: ChatRoomConfig;
   onModeChange?: (mode: TerminalMode) => void;
 }
 
@@ -93,6 +92,7 @@ export interface TerminalInputProps {
   onEnter: (command: string) => void;
   glitchActive?: boolean;
   size?: TerminalSize;
+  mode?: TerminalMode;
 }
 
 // Props for the CommandTray component

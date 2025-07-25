@@ -191,7 +191,6 @@ const TerminalAlterEgoExample: React.FC = () => {
       <Terminal
         config={terminalConfig}
         mode={terminalMode}
-        chatConfig={currentChatRoom}
         onModeChange={handleModeChange}
         onCommandExecuted={(command, response) => {
           console.log(`[TerminalAlterEgo] Command executed: ${command} -> ${response}`);

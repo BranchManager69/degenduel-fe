@@ -274,7 +274,7 @@ export function useBatchTokens(tokenAddresses: string[]): UseBatchTokensReturn {
         subscribedTopics.current.clear();
       }
     };
-  }, [ws, ws.isConnected, tokenAddresses, handleTokenUpdate]);
+  }, [ws, ws.isConnected, tokenAddresses]);
 
   return {
     tokens,

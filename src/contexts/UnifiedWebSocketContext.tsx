@@ -233,7 +233,7 @@ export const UnifiedWebSocketProvider: React.FC<{
   }, [connectionUrl]);
   
   // Handle WebSocket open
-  const handleOpen = () => {
+  const handleOpen = async () => {
     setConnectionState(ConnectionState.CONNECTED);
     setConnectionError(null);
     setIsServerDown(false);
@@ -245,18 +245,23 @@ export const UnifiedWebSocketProvider: React.FC<{
     // Start heartbeat
     startHeartbeat();
     
-    // Process any pending subscriptions
+    // Authenticate first if user is logged in, and WAIT for it to complete
+    if (authService.isAuthenticated()) {
+      try {
+        await authenticate();
+        console.log('[WebSocket] Authentication completed before processing subscriptions');
+      } catch (error) {
+        console.warn('[WebSocket] Authentication failed, continuing with subscriptions:', error);
+      }
+    }
+    
+    // Process any pending subscriptions after authentication completes
     if (pendingSubscriptionsRef.current.size > 0) {
       const pendingTopics = [...pendingSubscriptionsRef.current];
       pendingSubscriptionsRef.current.clear(); // Clear the queue
       
       // Subscribe to pending topics
       subscribe(pendingTopics);
-    }
-    
-    // Authenticate if user is logged in
-    if (authService.isAuthenticated()) {
-      authenticate();
     }
   };
   

@@ -5,13 +5,18 @@ interface PublicUser {
   nickname: string;
   twitter_handle: string | null;
   role: string;
-  is_banned: boolean;
+  is_banned?: boolean;
   total_contests: number;
   experience_points: number;
   profile_image_url?: string;
-  _count: {
+  _count?: {
     contest_participants: number;
     created_contests: number;
+  };
+  activity_metrics?: {
+    contests_participated: number;
+    contests_created: number;
+    last_contest_date: string;
   };
 }
 
@@ -21,6 +26,7 @@ interface PublicUserSearchProps {
   className?: string;
   variant?: "default" | "minimal" | "modern";
   autoFocus?: boolean;
+  currentUserNickname?: string;
 }
 
 export const PublicUserSearch: React.FC<PublicUserSearchProps> = ({
@@ -29,12 +35,15 @@ export const PublicUserSearch: React.FC<PublicUserSearchProps> = ({
   className = "",
   variant = "default",
   autoFocus = false,
+  currentUserNickname,
 }) => {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<PublicUser[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [popularUsers, setPopularUsers] = useState<PublicUser[]>([]);
+  const [hasLoadedPopular, setHasLoadedPopular] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +53,60 @@ export const PublicUserSearch: React.FC<PublicUserSearchProps> = ({
       inputRef.current.focus();
     }
   }, [autoFocus]);
+
+  // Fetch popular users for initial suggestions
+  const fetchPopularUsers = async () => {
+    if (hasLoadedPopular) return;
+    
+    try {
+      console.log('[PublicUserSearch] Starting to fetch suggested opponents...');
+      setLoading(true);
+      
+      // Use the dedicated suggested opponents endpoint
+      const response = await fetch(
+        `/api/users/suggested-opponents?limit=5`,
+        {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      
+      console.log('[PublicUserSearch] Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch suggested opponents: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('[PublicUserSearch] Suggested opponents data:', data);
+      
+      if (data.users && Array.isArray(data.users)) {
+        // Users are already sorted by the backend (contest participation + recent activity)
+        // Filter out duplicates and current user
+        const filteredUsers = data.users.filter((user: PublicUser, index: number, arr: PublicUser[]) => 
+          // Remove duplicates by nickname
+          arr.findIndex((u: PublicUser) => u.nickname === user.nickname) === index &&
+          // Remove current user
+          (!currentUserNickname || user.nickname !== currentUserNickname)
+        );
+        console.log('[PublicUserSearch] Setting', filteredUsers.length, 'popular users (after deduplication)');
+        setPopularUsers(filteredUsers);
+        setHasLoadedPopular(true);
+      } else {
+        console.warn('[PublicUserSearch] No users in response');
+        setPopularUsers([]);
+      }
+    } catch (error) {
+      console.error("[PublicUserSearch] Failed to fetch suggested opponents:", error);
+      setPopularUsers([]);
+      setHasLoadedPopular(true); // Mark as loaded even on error to prevent retries
+    } finally {
+      setLoading(false);
+      console.log('[PublicUserSearch] Finished loading suggested opponents');
+    }
+  };
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -72,7 +135,11 @@ export const PublicUserSearch: React.FC<PublicUserSearchProps> = ({
         }
         
         const data = await response.json();
-        setSuggestions(data.users || []);
+        // Filter out current user from search results
+        const filteredUsers = (data.users || []).filter((user: PublicUser) => 
+          !currentUserNickname || user.nickname !== currentUserNickname
+        );
+        setSuggestions(filteredUsers);
       } catch (error) {
         console.error("Failed to fetch suggestions:", error);
         setError("Failed to search users. Please try again.");
@@ -119,26 +186,31 @@ export const PublicUserSearch: React.FC<PublicUserSearchProps> = ({
   const getSuggestionsContainerClass = () => {
     switch (variant) {
       case "minimal":
-        return "absolute z-50 w-full mt-1 bg-dark-200/90 backdrop-blur-md border border-dark-300/70 rounded-md shadow-lg";
+        return "absolute z-50 w-full mt-1 bg-dark-200/90 backdrop-blur-md border border-dark-300/70 rounded-md shadow-lg max-h-64 overflow-hidden";
       case "modern":
-        return "absolute z-50 w-full mt-0 bg-dark-200/80 backdrop-blur-md border-x-2 border-b-2 border-brand-400/30 rounded-b-md shadow-xl";
+        return "absolute z-50 w-full mt-0 bg-dark-200/80 backdrop-blur-md border-x-2 border-b-2 border-dark-300 rounded-b-md shadow-xl";
       default:
-        return "absolute z-50 w-full mt-1 bg-dark-200 border border-dark-300 rounded-lg shadow-xl";
+        return "absolute z-50 w-full mt-1 bg-dark-200 border border-dark-300/50 rounded-lg shadow-xl max-h-64 overflow-hidden";
     }
   };
 
   const renderSuggestions = () => {
-    if (loading) {
+    if (loading && query.length >= 2) {
       return <div className="p-3 text-gray-400 text-sm">Searching...</div>;
+    }
+    
+    if (loading && query.length === 0 && !hasLoadedPopular) {
+      return <div className="p-3 text-gray-400 text-sm">Loading suggestions...</div>;
     }
 
     if (error) {
       return <div className="p-3 text-red-400 text-sm">{error}</div>;
     }
 
-    if (suggestions.length > 0) {
+    // Show search results if we have a query
+    if (query.length >= 2 && suggestions.length > 0) {
       return (
-        <ul className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-dark-300 scrollbar-track-dark-200">
+        <ul className="max-h-60 overflow-y-auto">
           {suggestions.map((user, index) => (
             <li
               key={`${user.nickname}-${index}`}
@@ -151,16 +223,14 @@ export const PublicUserSearch: React.FC<PublicUserSearchProps> = ({
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {user.profile_image_url && (
-                    <img
-                      src={user.profile_image_url}
-                      alt={user.nickname}
-                      className="w-8 h-8 rounded-full"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  )}
+                  <img
+                    src={user.profile_image_url || "/images/profiles/default_pic_green.png"}
+                    alt={user.nickname}
+                    className="w-8 h-8 rounded-full"
+                    onError={(e) => {
+                      e.currentTarget.src = "/images/profiles/default_pic_green.png";
+                    }}
+                  />
                   <div>
                     <div className="text-gray-100 font-medium flex items-center gap-2">
                       {user.nickname}
@@ -180,10 +250,10 @@ export const PublicUserSearch: React.FC<PublicUserSearchProps> = ({
                 {variant !== "minimal" && (
                   <div className="text-right text-xs">
                     <div className="text-gray-400">
-                      Joined: <span className="text-gray-100">{user._count.contest_participants}</span>
+                      Joined: <span className="text-gray-100">{user._count?.contest_participants || 0}</span>
                     </div>
                     <div className="text-gray-400">
-                      Created: <span className="text-gray-100">{user._count.created_contests}</span>
+                      Created: <span className="text-gray-100">{user._count?.created_contests || 0}</span>
                     </div>
                   </div>
                 )}
@@ -198,9 +268,70 @@ export const PublicUserSearch: React.FC<PublicUserSearchProps> = ({
       return <div className="p-3 text-gray-400 text-sm">No users found</div>;
     }
 
+    // Show popular users when no query (or query is too short)
+    if (query.length < 2 && popularUsers.length > 0) {
+      return (
+        <>
+          <div className="px-4 py-2 text-xs text-gray-500 border-b border-dark-300/50">
+            Suggested Opponents
+          </div>
+          <ul className="max-h-60 overflow-y-auto">
+            {popularUsers.map((user, index) => (
+              <li
+                key={`popular-${user.nickname}-${index}`}
+                onClick={() => handleSuggestionClick(user)}
+                className={`px-4 py-2 hover:bg-dark-300/50 cursor-pointer transition-colors border-b border-dark-300/50 last:border-0 ${
+                  variant === "modern"
+                    ? "hover:border-l-2 hover:border-l-brand-400"
+                    : ""
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={user.profile_image_url || "/images/profiles/default_pic_green.png"}
+                      alt={user.nickname}
+                      className="w-8 h-8 rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/profiles/default_pic_green.png";
+                      }}
+                    />
+                    <div>
+                      <div className="text-gray-100 font-medium flex items-center gap-2">
+                        {user.nickname}
+                        {user.is_banned && (
+                          <span className="px-1.5 py-0.5 bg-red-500/10 text-red-400 rounded text-xs">
+                            BANNED
+                          </span>
+                        )}
+                      </div>
+                      {user.twitter_handle && (
+                        <div className="text-sm text-brand-400">
+                          {user.twitter_handle}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {variant !== "minimal" && (
+                    <div className="text-right text-xs">
+                      <div className="text-gray-400">
+                        <span className="text-gray-100 font-medium">
+                          {user.activity_metrics?.contests_participated || user._count?.contest_participants || 0}
+                        </span> contests
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      );
+    }
+
     return (
-      <div className="p-3 text-gray-400 text-sm">
-        Type at least 2 characters to search
+      <div className="p-3 text-red-400 text-sm font-bold">
+        DEBUG: query={query.length}, popular={popularUsers.length}, loaded={hasLoadedPopular}, loading={loading}
       </div>
     );
   };
@@ -227,16 +358,30 @@ export const PublicUserSearch: React.FC<PublicUserSearchProps> = ({
         )}
         <input
           ref={inputRef}
-          type="text"
+          type="search"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
             setShowSuggestions(true);
             setError(null);
           }}
-          onFocus={() => setShowSuggestions(true)}
+          onFocus={() => {
+            setShowSuggestions(true);
+            if (!hasLoadedPopular) {
+              fetchPopularUsers();
+            }
+          }}
+          onBlur={() => {
+            // TEMPORARILY DISABLED for debugging
+            // setTimeout(() => {
+            //   if (!wrapperRef.current?.contains(document.activeElement)) {
+            //     setShowSuggestions(false);
+            //   }
+            // }, 150);
+          }}
           placeholder={placeholder}
           className={`${getInputClass()} ${variant === "modern" ? "pl-10" : ""}`}
+          autoComplete="off"
         />
         {query && (
           <button
@@ -266,7 +411,7 @@ export const PublicUserSearch: React.FC<PublicUserSearchProps> = ({
         )}
       </div>
 
-      {showSuggestions && (query || loading) && (
+      {showSuggestions && (
         <div className={getSuggestionsContainerClass()}>
           {renderSuggestions()}
         </div>

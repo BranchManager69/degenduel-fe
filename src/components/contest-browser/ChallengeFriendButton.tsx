@@ -6,6 +6,7 @@ interface ChallengeFriendButtonProps {
   className?: string;
   userRole: 'admin' | 'user';
   availableCredits?: number;
+  currentUserNickname?: string;
 }
 
 export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
@@ -13,6 +14,7 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
   className = "",
   userRole,
   availableCredits,
+  currentUserNickname,
 }) => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
@@ -33,7 +35,7 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
     <>
       <button
         onClick={handleOpenModal}
-        className={`group relative px-4 py-2 bg-gradient-to-br from-amber-950/90 via-orange-950/80 to-yellow-950/90 border-2 border-amber-700/40 rounded-xl hover:border-amber-500/80 hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300 overflow-hidden backdrop-blur-sm sm:scale-100 scale-75 ${className}`}
+        className={`group relative px-4 py-2 bg-gradient-to-br from-amber-950/90 via-orange-950/80 to-yellow-950/90 border-2 border-amber-700/40 rounded-xl hover:border-amber-500/80 hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300 overflow-hidden backdrop-blur-sm ${className}`}
       >
         {/* Dynamic battle arena background */}
         <div className="absolute inset-0">
@@ -66,7 +68,26 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
           {/* Combat swords with arena glow */}
           <div className="relative w-8 h-8">
             <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-orange-500 to-yellow-600 rounded-full blur-lg opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-300" />
-            <span className="relative text-2xl filter group-hover:drop-shadow-[0_0_8px_rgba(217,119,6,0.8)] group-hover:animate-pulse">⚔️</span>
+            <svg className="relative w-6 h-6 filter group-hover:drop-shadow-[0_0_8px_rgba(217,119,6,0.8)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {/* Two stick figures facing each other - bigger */}
+              <g className="text-amber-300">
+                {/* Left figure */}
+                <circle cx="7" cy="4" r="2.5" fill="currentColor"/>
+                <line x1="7" y1="6.5" x2="7" y2="14"/>
+                <line x1="7" y1="9" x2="3" y2="11"/>
+                <line x1="7" y1="9" x2="11" y2="11"/>
+                <line x1="7" y1="14" x2="4" y2="20"/>
+                <line x1="7" y1="14" x2="10" y2="20"/>
+                
+                {/* Right figure */}
+                <circle cx="17" cy="4" r="2.5" fill="currentColor"/>
+                <line x1="17" y1="6.5" x2="17" y2="14"/>
+                <line x1="17" y1="9" x2="13" y2="11"/>
+                <line x1="17" y1="9" x2="21" y2="11"/>
+                <line x1="17" y1="14" x2="14" y2="20"/>
+                <line x1="17" y1="14" x2="20" y2="20"/>
+              </g>
+            </svg>
           </div>
           
           <div className="flex flex-col items-start">
@@ -76,11 +97,6 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
             <span className="font-black text-gray-100 text-lg -mt-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-amber-300 group-hover:via-orange-300 group-hover:to-yellow-300 transition-all duration-300 whitespace-nowrap">
               CHALLENGE DUEL
             </span>
-          </div>
-          
-          {/* Combat indicator */}
-          <div className="ml-auto flex items-center">
-            <span className="text-xs text-amber-300 font-mono tracking-wider">1v1</span>
           </div>
         </div>
         
@@ -96,6 +112,7 @@ export const ChallengeFriendButton: React.FC<ChallengeFriendButtonProps> = ({
         onSuccess={handleChallengeSuccess}
         userRole={userRole}
         availableCredits={availableCredits}
+        currentUserNickname={currentUserNickname}
       />
     </>
   );

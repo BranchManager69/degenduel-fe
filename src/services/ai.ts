@@ -29,7 +29,7 @@ import { authService } from './index';
 // --- Core Interfaces ---
 
 export interface AIMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool'; // Added 'tool' role
+  role: 'system' | 'user' | 'assistant' | 'tool' | 'chat'; // Added 'tool' and 'chat' roles
   content: string | null; // Allow content to be null for tool calls
   tool_calls?: {
     id: string;
@@ -38,6 +38,7 @@ export interface AIMessage {
   }[]; // Add tool_calls directly to the message for assistant tool requests
   tool_call_id?: string; // For tool responses
   name?: string; // For tool function name
+  metadata?: { isChat?: boolean }; // For additional message metadata
 }
 
 export interface AIBaseOptions {

@@ -22,6 +22,7 @@ interface ChallengeCreationModalProps {
   onSuccess?: () => void;
   userRole: 'admin' | 'user';
   availableCredits?: number;
+  currentUserNickname?: string;
 }
 
 interface ChallengeFormData {
@@ -43,6 +44,7 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
   onSuccess,
   userRole,
   availableCredits,
+  currentUserNickname,
 }) => {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -464,6 +466,7 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
                 onSelectUser={handleOpponentSelect}
                 placeholder="Search by username or @twitter..."
                 variant="modern"
+                currentUserNickname={currentUserNickname}
               />
               
               {selectedOpponent && (

@@ -40,6 +40,7 @@ export enum DDExtendedMessageType {
   ACKNOWLEDGMENT = DDWebSocketMessageType.ACKNOWLEDGMENT,
   
   // Add additional types used in the frontend
+  MESSAGE = 'MESSAGE',
   LOGS = 'LOGS',
   PING = 'PING',
   PONG = 'PONG',
