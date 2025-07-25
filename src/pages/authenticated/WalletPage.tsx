@@ -32,6 +32,9 @@ const WalletPage: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-white mb-4">Degen Dividends</h1>
       
+      {/* Revenue Share Diagram */}
+      <RevenueShareDiagram />
+      
       {/* Profile Header */}
       <div className="flex items-center gap-3 mb-8">
         {user?.profile_image_url && (
@@ -42,12 +45,32 @@ const WalletPage: React.FC = () => {
           />
         )}
         <div>
-          <p className="text-xl font-medium text-white">
-            {user?.nickname || 'Unknown'} <span className="font-mono text-brand-400 ml-2 text-base">LVL {user?.user_level?.level_number || 0}</span> <span className="text-gray-400 text-sm ml-3">{(user?.experience_points || 0).toLocaleString()} XP</span>
-          </p>
-          <p className="text-amber-400 font-medium text-base -mt-1">
-            {user?.user_level?.title || 'Unranked'}
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-xl font-medium text-white">
+              {user?.nickname || 'Unknown'}
+            </p>
+            {walletAddress && (
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(walletAddress);
+                  // You might want to add a toast notification here
+                }}
+                className="text-gray-400 hover:text-gray-300 transition-colors flex items-center gap-1 text-sm font-mono bg-dark-300/50 px-2 py-1 rounded"
+              >
+                {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="font-mono text-brand-400">LVL {user?.user_level?.level_number || 0}</span>
+            <span className="text-gray-400">{(user?.experience_points || 0).toLocaleString()} XP</span>
+            <span className="text-amber-400 font-medium">
+              {user?.user_level?.title || 'Unranked'}
+            </span>
+          </div>
         </div>
       </div>
       
@@ -63,9 +86,6 @@ const WalletPage: React.FC = () => {
           <DuelSnapshotChart height={400} />
         </div>
       </div>
-      
-      {/* Revenue Share Diagram */}
-      <RevenueShareDiagram />
       
       {/* Snapshot Data Table */}
       <div className="mt-8">
