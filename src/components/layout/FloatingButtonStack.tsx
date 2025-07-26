@@ -103,7 +103,7 @@ const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({
       x: 0,
       y: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 300,
         damping: 25,
         mass: 0.8
@@ -113,7 +113,7 @@ const FloatingButtonStack: React.FC<FloatingButtonStackProps> = ({
       x: [-10, 10, -8, 8, -6, 6, -4, 4, 0],
       transition: {
         duration: 0.6,
-        ease: "easeInOut"
+        ease: "easeInOut" as const
       }
     }
   };

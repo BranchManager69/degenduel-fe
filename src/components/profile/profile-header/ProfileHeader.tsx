@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
 
 import { useStore } from "../../../store/useStore";
@@ -103,6 +104,43 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   let timeoutId: ReturnType<typeof setTimeout>;
+
+  // Direct image upload handling
+  const onImageDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    // Basic validation
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    
+    if (file.size > maxSize) {
+      toast.error("Image must be less than 10MB");
+      return;
+    }
+    
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please use JPEG, PNG, GIF, or WebP format");
+      return;
+    }
+
+    // Open the modal with this file
+    setIsEditingImage(true);
+    console.log("File ready for upload:", file.name);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: onImageDrop,
+    accept: {
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+      'image/gif': ['.gif'],
+      'image/webp': ['.webp'],
+    },
+    maxFiles: 1,
+    maxSize: 10 * 1024 * 1024,
+    // noClick removed so clicking opens file browser
+  });
 
   const isWalletAddress = username === address;
   const displayName = isWalletAddress ? truncateAddress(address) : username;
@@ -274,10 +312,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
             {/* Profile Picture Section */}
             <div
-              className="relative group/avatar"
+              {...(!isPublicView && onUpdateProfileImage ? getRootProps() : {})}
+              className={`relative group/avatar ${!isPublicView && onUpdateProfileImage ? 'cursor-pointer' : ''} ${isDragActive ? 'ring-2 ring-brand-400 ring-offset-2' : ''}`}
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
             >
+              {!isPublicView && onUpdateProfileImage && <input {...getInputProps()} />}
               {/* Main Profile Picture */}
               <motion.div
                 initial={{ scale: 1 }}
@@ -302,24 +342,38 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-brand-600/10 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(127,0,255,0.1),transparent)] opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300" />
                 
-                {/* Edit Profile Image Button (only for non-public view) */}
+                {/* Direct Upload Overlay (only for non-public view) */}
                 {!isPublicView && onUpdateProfileImage && (
-                  <button
-                    onClick={() => setIsEditingImage(true)}
-                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300"
-                    aria-label="Edit profile image"
+                  <div
+                    className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 z-50 rounded-full ${
+                      isDragActive 
+                        ? 'opacity-100 bg-brand-500/80' 
+                        : 'opacity-0 group-hover/avatar:opacity-100 bg-black/60'
+                    }`}
                   >
-                    <div className="relative w-10 h-10 rounded-full flex items-center justify-center bg-dark-600/50 border border-brand-400/50 backdrop-blur-sm hover:bg-dark-500/70 transition-all duration-200 hover:scale-110">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                      </svg>
+                    <div className="text-center text-white pointer-events-none">
+                      {isDragActive ? (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto mb-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                          <div className="text-xs font-medium">Drop Image Here</div>
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto mb-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                          </svg>
+                          <div className="text-xs font-medium">Click or Drag to Upload</div>
+                        </>
+                      )}
                     </div>
-                  </button>
+                  </div>
                 )}
               </motion.div>
 
               {/* Rank Badge */}
-              <div className="absolute -bottom-2 -right-2 bg-brand-500 rounded-full px-3 py-1 text-sm font-bold text-white shadow-lg border border-brand-400 transform group-hover/avatar:scale-110 transition-transform duration-300 flex items-center gap-1.5">
+              <div className="absolute -bottom-2 -right-2 bg-brand-500 rounded-full px-3 py-1 text-sm font-bold text-white shadow-lg border border-brand-400 transform group-hover/avatar:scale-110 transition-transform duration-300 flex items-center gap-1.5 z-40 pointer-events-none">
                 <span className="text-xs text-brand-200">Rank</span>
                 <span className="text-white font-cyber">#{rankScore}</span>
               </div>

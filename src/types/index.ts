@@ -105,6 +105,8 @@ export interface Contest {
   min_participants: number;
   max_participants: number;
   is_participating?: boolean;
+  image_prompt?: string;
+  image_headliner_token_ca?: string;
   participants?: Array<{
     address: string;
     username?: string;

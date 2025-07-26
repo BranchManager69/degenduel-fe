@@ -222,3 +222,21 @@ body {
 .animate-slow-scan {
   animation: slowScan 12s ease-in-out infinite alternate;
 }
+
+/* Revenue Share Diagram Component Classes */
+@layer components {
+  .step-label {
+    @apply text-gray-300 text-sm uppercase tracking-wider font-medium;
+  }
+  .stick::before {
+    content: '';
+    @apply block w-3 h-3 rounded-full bg-gray-500;
+  }
+  .stick {
+    @apply w-px h-6 bg-gray-500 relative;
+  }
+  .stick::after {
+    content: '';
+    @apply absolute left-[-6px] top-6 w-[13px] h-px bg-gray-500;
+  }
+}

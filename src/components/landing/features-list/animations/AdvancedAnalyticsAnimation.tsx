@@ -61,7 +61,7 @@ export const AdvancedAnalyticsAnimation: React.FC = () => {
       transition: {
         duration: 1.5,
         delay: i * 0.2,
-        ease: "easeOut"
+        ease: "easeOut" as const
       }
     })
   };
@@ -73,7 +73,7 @@ export const AdvancedAnalyticsAnimation: React.FC = () => {
       opacity: 1,
       transition: {
         duration: 2,
-        ease: "easeInOut"
+        ease: "easeInOut" as const
       }
     }
   };

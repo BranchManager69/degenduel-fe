@@ -26,6 +26,7 @@ export interface GeneralChatMessage {
   is_admin?: boolean;
   user_role?: 'user' | 'admin' | 'moderator' | 'system' | 'superadmin';
   profile_picture?: string;
+  walletAddress?: string; // Backend sends wallet address in this field
 }
 
 // Default state - start with isLoading false since we'll get history on subscription
@@ -62,8 +63,10 @@ export function useGeneralChat() {
     }));
   }, []); // Empty dependency array = runs once on mount
 
-  // Message handler for WebSocket messages
-  const handleMessage = useCallback((message: WebSocketMessage) => {
+  // Message handler for WebSocket messages - use ref to prevent re-subscription on re-renders
+  const handleMessageRef = useRef<(message: WebSocketMessage) => void>(() => {});
+  
+  handleMessageRef.current = (message: WebSocketMessage) => {
     try {
       // Debug message when we receive anything
       setState(prev => ({
@@ -115,7 +118,8 @@ export function useGeneralChat() {
         else if (message.type === DDExtendedMessageType.MESSAGE && message.data) {
           const newMessage = message.data as GeneralChatMessage;
           
-          // Add debug message to see what we're receiving
+          // Debug message to see what we're receiving - shows in DEBUG tab
+          
           setState(prev => ({
             ...prev,
             messages: [
@@ -124,7 +128,7 @@ export function useGeneralChat() {
                 id: `debug-msg-${Date.now()}`,
                 user_id: 'system',
                 username: 'DEBUG',
-                message: `[Received] New message from ${newMessage.username}: "${newMessage.message}"`,
+                message: `[Received] user_id="${newMessage.user_id}" username="${newMessage.username}" role="${newMessage.user_role}" walletAddress="${(newMessage as any).walletAddress || 'MISSING'}"`,
                 timestamp: new Date().toISOString(),
                 is_system: true
               },
@@ -182,6 +186,11 @@ export function useGeneralChat() {
         error: err instanceof Error ? err.message : String(err)
       });
     }
+  };
+  
+  // Stable callback that doesn't change on re-renders
+  const handleMessage = useCallback((message: WebSocketMessage) => {
+    handleMessageRef.current?.(message);
   }, []);
 
   // Note: ws is initialized above with useWebSocket()

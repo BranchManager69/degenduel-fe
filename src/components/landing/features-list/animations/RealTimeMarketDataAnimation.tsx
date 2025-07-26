@@ -87,7 +87,7 @@ export const RealTimeMarketDataAnimation: React.FC = () => {
         x: {
           repeat: Infinity,
           duration: 20,
-          ease: "linear"
+          ease: "linear" as const
         }
       }
     }

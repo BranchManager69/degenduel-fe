@@ -126,6 +126,56 @@ const ComponentWrapper: React.FC<ComponentWrapperProps> = ({
   const responsiveConfig = componentState.config.responsive?.[breakpoint] || {};
   const effectiveConfig = { ...componentState.config, ...responsiveConfig };
 
+  // Floating components get special treatment - draggable and better positioned
+  if (componentState.placement === 'floating') {
+    return (
+      <motion.div
+        key={componentState.id}
+        drag
+        dragMomentum={false}
+        dragElastic={0.1}
+        initial={{ 
+          opacity: 0, 
+          scale: 0.8
+        }}
+        animate={{
+          opacity: 1,
+          scale: 1
+        }}
+        exit={{
+          opacity: 0,
+          scale: 0.8,
+          transition: { duration: 0.2 }
+        }}
+        className="fixed pointer-events-auto"
+        style={{
+          zIndex: 99997, // Just below terminal
+          left: '30%', // Start more to the left using CSS instead of JS calc
+          top: '120px', // Below unified ticker
+          width: 'auto',
+          minWidth: '400px',
+          maxWidth: '600px',
+          maxHeight: 'calc(100vh - 180px)' // Account for ticker and margins
+        }}
+      >
+        <DynamicComponentRenderer
+          type={componentState.type as any}
+          id={componentState.id}
+          data={componentState.data}
+          title={effectiveConfig.title}
+          closeable={effectiveConfig.interactions?.closeable ?? effectiveConfig.closeable}
+          onClose={() => onClose(componentState.id)}
+          onUpdate={(newData) => onUpdate(componentState.id, newData)}
+          onInteraction={(type, payload) => onInteraction(componentState.id, type, payload)}
+          onError={(error) => onError(componentState.id, error)}
+          state={componentState.lifecycle}
+          className="w-full h-full"
+        />
+      </motion.div>
+    );
+  }
+
+  // Regular components use existing logic
   return (
     <motion.div
       key={componentState.id}
@@ -612,7 +662,7 @@ const DynamicUIManagerCore = React.forwardRef<DynamicUIManagerHandle, DynamicUIM
       )}
 
       {/* Floating Components */}
-      <div className="fixed top-4 right-4 z-40 space-y-4 max-w-sm">
+      <div className="floating-components">
         {renderComponentsForPlacement('floating')}
       </div>
 

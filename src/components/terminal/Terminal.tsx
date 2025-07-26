@@ -100,22 +100,89 @@ export const Terminal = ({
   onCommandExecuted,
   size = 'middle',
   isInitiallyMinimized = true,
-  mode = 'chat-room',
+  mode = 'ai',
   onModeChange,
 }: TerminalProps) => {
   
   // Get user authentication state
   const { user } = useStore();
   
+  // Debug: Send user info to debug tab when it changes
+  useEffect(() => {
+    if (user) {
+      setDebugMessages([{
+        role: 'system',
+        content: `[USER INFO] id: "${user.id}" | wallet: "${user.wallet_address}" | username: "${user.username}" | role: "${user.role}" | admin: ${user.is_admin} | superadmin: ${user.is_superadmin}`,
+        tool_calls: undefined
+      }]);
+    }
+  }, [user]);
+  
+  
   // NEW: Terminal mode state management
   const [currentMode, setCurrentMode] = useState<TerminalMode>(mode);
   
-  // NEW: Use general chat for chat room mode
+  // Debug messages for debug tab
+  const [debugMessages, setDebugMessages] = useState<AIMessage[]>([]);
+  
+  // NEW: Use general chat for chat room mode with debug message handler
   const {
     messages: chatMessages,
     sendMessage: sendChatMessage,
     isConnected: chatConnected
   } = useGeneralChat();
+  
+  // Filter debug messages from chat and add to debug tab
+  const actualChatMessages = chatMessages.filter(msg => !msg.username?.includes('DEBUG'));
+  const newDebugMessages = chatMessages.filter(msg => msg.username?.includes('DEBUG'));
+  
+  // Debug: Track message comparisons
+  useEffect(() => {
+    if (actualChatMessages.length > 0 && user) {
+      const latestMsg = actualChatMessages[actualChatMessages.length - 1];
+      
+      // Log EVERYTHING from the message object
+      const msgFields = Object.entries(latestMsg).map(([key, value]) => 
+        `${key}: "${value}"`
+      ).join(' | ');
+      
+      // Also log all user fields for comparison
+      const userFields = `user.id: "${user.id}" | user.username: "${user.username}" | user.wallet_address: "${user.wallet_address}"`;
+      
+      setDebugMessages(prev => [...prev, {
+        role: 'system',
+        content: `[FULL MSG] ${msgFields}`,
+        tool_calls: undefined
+      }, {
+        role: 'system', 
+        content: `[USER DATA] ${userFields}`,
+        tool_calls: undefined
+      }]);
+    }
+  }, [actualChatMessages.length, user]);
+  
+  // Update debug messages when new debug messages arrive
+  useEffect(() => {
+    if (newDebugMessages.length > 0) {
+      const latestDebugMessage = newDebugMessages[newDebugMessages.length - 1];
+      setDebugMessages(prev => {
+        // Check if this message is already in debug messages
+        const exists = prev.some(msg => 
+          msg.content === latestDebugMessage.message && 
+          msg.role === 'system'
+        );
+        if (!exists) {
+          return [...prev, {
+            role: 'system',
+            content: latestDebugMessage.message,
+            tool_calls: undefined,
+            metadata: { isDebug: true }
+          }];
+        }
+        return prev;
+      });
+    }
+  }, [newDebugMessages]);
   
   // We no longer need to set window.contractAddress as it's now fetched from the API
   //   This is kept for backward compatibility (WHICH WE DONT EVEN FUCKING WANT) but will be phased out
@@ -153,6 +220,25 @@ export const Terminal = ({
   // State for drag handling
   const [isDragging, setIsDragging] = useState(false);
   
+  // State for terminal resizing - initialize based on size prop
+  const getInitialDimensions = (size: TerminalSize) => {
+    switch (size) {
+      case 'contracted':
+        return { width: 896, height: 300 };
+      case 'middle':
+        return { width: 896, height: 400 };
+      case 'large':
+        return { width: 1152, height: 500 };
+      default:
+        return { width: 896, height: 400 };
+    }
+  };
+  
+  const initialDimensions = getInitialDimensions(size);
+  const [terminalWidth, setTerminalWidth] = useState<number>(initialDimensions.width);
+  const [terminalHeight, setTerminalHeight] = useState<number>(initialDimensions.height);
+  const [isResizing, setIsResizing] = useState(false);
+  
   // Mobile keyboard visibility state
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
@@ -172,6 +258,44 @@ export const Terminal = ({
   
   // Get current location for page context
   const location = useLocation();
+  
+  // Helper functions for tab visibility
+  const isAdministrator = user?.role === 'admin' || user?.role === 'superadmin';
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  // Define available tabs based on user role and environment
+  const getAvailableTabs = () => {
+    const tabs = [
+      { id: 'ai' as TerminalMode, label: 'AI', icon: '🤖' },
+      { id: 'chat-room' as TerminalMode, label: 'CHAT', icon: '💬' }
+    ];
+    
+    if (isAdministrator) {
+      tabs.push({ id: 'admin-chat' as TerminalMode, label: 'ADMIN', icon: '👑' });
+    }
+    
+    if (isDevelopment) {
+      tabs.push({ id: 'debug' as TerminalMode, label: 'DEBUG', icon: '🔧' });
+    }
+    
+    return tabs;
+  };
+
+  // Get tab-specific muted colors when not selected
+  const getTabColors = (tabId: TerminalMode) => {
+    switch (tabId) {
+      case 'ai':
+        return 'bg-purple-800/50 text-purple-200 hover:text-purple-100 border-purple-600/40 hover:bg-purple-700/60';
+      case 'chat-room':
+        return 'bg-teal-800/50 text-teal-200 hover:text-teal-100 border-teal-600/40 hover:bg-teal-700/60';
+      case 'admin-chat':
+        return 'bg-red-800/50 text-red-200 hover:text-red-100 border-red-600/40 hover:bg-red-700/60';
+      case 'debug':
+        return 'bg-gray-700/50 text-gray-200 hover:text-gray-100 border-gray-600/40 hover:bg-gray-600/60';
+      default:
+        return 'bg-gray-800/50 text-gray-200 hover:text-gray-100 border-gray-600/40 hover:bg-gray-700/60';
+    }
+  };
   
   // State for Didi's position - initialized after location is available
   const [didiPosition, setDidiPosition] = useState<DidiPosition>(() => 
@@ -463,77 +587,111 @@ export const Terminal = ({
     }, 1000);
   };
 
-  // Get the appropriate container class based on the size prop
-  const getContainerClasses = () => {
-    // Size classes
-    let sizeClass = '';
-    switch(size) {
-      case 'contracted':
-        sizeClass = 'max-w-md'; // Keep mobile size: 448px
-        break;
-      case 'middle':
-        sizeClass = 'max-w-4xl'; // Keep mobile size: 896px
-        break;
-      case 'large':
-        sizeClass = isDesktopView ? 'max-w-6xl xl:max-w-7xl' : 'max-w-6xl'; // Desktop: wider (1280px), Mobile: 1152px
-        break;
-      default:
-        sizeClass = 'max-w-4xl';
-    }
+  // Handle resize drag with mouse events
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
     
-    return sizeClass;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = terminalWidth;
+    const startHeight = terminalHeight;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startX;
+      const deltaY = startY - e.clientY; // Invert Y so up = positive (taller)
+      
+      const newWidth = Math.max(320, Math.min(window.innerWidth - 32, startWidth + deltaX));
+      const newHeight = Math.max(200, Math.min(window.innerHeight - 100, startHeight + deltaY));
+      
+      setTerminalWidth(newWidth);
+      setTerminalHeight(newHeight);
+    };
+    
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
   };
   
-  // State to track if we're on desktop
-  const [isDesktopView, setIsDesktopView] = useState(() => window.innerWidth >= 1280);
-
   // Make sure sizeState updates when prop changes
   useEffect(() => {
     setSizeState(size);
   }, [size]);
-
-  // Add resize listener for responsive behavior
-  useEffect(() => {
-    const handleResize = () => {
-      setIsDesktopView(window.innerWidth >= 1280);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
   
-  // Toggle between large and small terminal sizes
-  const cycleSize = () => {
-    // Simple toggle between large and contracted (small)
-    setSizeState(sizeState === 'large' ? 'contracted' : 'large');
+  // Set terminal to predefined sizes (keeping for compatibility)
+  const setToPresetSize = (size: TerminalSize) => {
+    switch (size) {
+      case 'contracted':
+        setTerminalWidth(896);
+        setTerminalHeight(300);
+        break;
+      case 'middle':
+        setTerminalWidth(896);
+        setTerminalHeight(400);
+        break;
+      case 'large':
+        setTerminalWidth(1152);
+        setTerminalHeight(500);
+        break;
+    }
+    setSizeState(size);
   };
   
-  // NEW: Toggle between AI and Chat Room modes
-  const toggleMode = () => {
-    const newMode: TerminalMode = currentMode === 'ai' ? 'chat-room' : 'ai';
+  // NEW: Switch between terminal modes
+  const switchMode = (newMode: TerminalMode) => {
     setCurrentMode(newMode);
     onModeChange?.(newMode);
     console.log(`[Terminal] Switched to ${newMode} mode`);
   };
   
-  // NEW: For now, we don't have participant count in general chat
+  // NEW: Participant count - removed until proper backend implementation
   const participantCount = 0;
   
   // NEW: Convert chat messages to AI message format for display
   const getDisplayMessages = (): AIMessage[] => {
-    if (currentMode === 'ai') {
-      return conversationHistory;
-    } else {
-      // Convert chat messages to AI message format
-      return chatMessages.map((msg: GeneralChatMessage): AIMessage => ({
-        role: msg.is_system ? 'system' : 
-              msg.user_id === user?.wallet_address ? 'user' : 'chat',
-        content: msg.is_system ? msg.message : 
-                 `[${msg.username}]: ${msg.message}`,
-        tool_calls: undefined,
-        // Add metadata to prevent typewriter effect
-        metadata: { isChat: true }
-      }));
+    switch (currentMode) {
+      case 'ai':
+        return conversationHistory;
+      case 'chat-room':
+        // Convert filtered chat messages (no debug) to AI message format with enhanced metadata
+        return actualChatMessages.map((msg: GeneralChatMessage): AIMessage => {
+          // Check if this is the user's own message - backend uses walletAddress field!
+          const msgWallet = (msg as any).walletAddress; // Backend sends walletAddress, not user_id
+          const isOwnMessage = msgWallet === user?.wallet_address;
+          
+          return {
+            role: msg.is_system ? 'system' : 'chat', // Always use 'chat' role for chat messages
+            content: msg.is_system ? msg.message : msg.message,
+            tool_calls: undefined,
+            // Pass all metadata for enhanced display
+            metadata: { 
+              isChat: true,
+              username: msg.username,
+              userId: msg.user_id,
+              timestamp: msg.timestamp,
+              userRole: msg.user_role || 'user',
+              isAdmin: msg.is_admin,
+              profilePicture: msg.profile_picture,
+              isOwnMessage
+            }
+          };
+        });
+      case 'admin-chat':
+        // For now, return empty array until admin chat is implemented
+        return [{
+          role: 'system',
+          content: 'Admin chat coming soon...',
+          tool_calls: undefined
+        }];
+      case 'debug':
+        return debugMessages;
+      default:
+        return conversationHistory;
     }
   };
 
@@ -542,7 +700,7 @@ export const Terminal = ({
     // Update interaction time when user sends a message
     setLastInteractionTime(new Date());
     
-    // NEW: Handle chat room mode
+    // Handle different modes
     if (currentMode === 'chat-room') {
       // In chat mode, send message directly to chat room
       const success = sendChatMessage(command);
@@ -550,6 +708,22 @@ export const Terminal = ({
         console.warn('[Terminal] Failed to send chat message');
       }
       return; // Exit early for chat mode
+    } else if (currentMode === 'admin-chat') {
+      // Admin chat not implemented yet
+      console.warn('[Terminal] Admin chat not implemented yet');
+      return;
+    } else if (currentMode === 'debug') {
+      // Debug mode - add command as debug message
+      setDebugMessages(prev => [...prev, {
+        role: 'user',
+        content: command,
+        tool_calls: undefined
+      }, {
+        role: 'system',
+        content: `[DEBUG] Command "${command}" received`,
+        tool_calls: undefined
+      }]);
+      return;
     }
     
     // AI mode handling (existing logic)
@@ -575,8 +749,10 @@ export const Terminal = ({
         title: 'Test Token Watchlist',
         data: {
           tokens: [
+            { symbol: 'DUEL', address: 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', price: 0.0025, change_24h: 12.5, volume_24h: 89123456 },
             { symbol: 'SOL', address: 'So11111111111111111111111111111111111111112', price: 23.45, change_24h: 5.2, volume_24h: 1234567890 },
-            { symbol: 'ETH', address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', price: 1650.30, change_24h: -2.1, volume_24h: 987654321 }
+            { symbol: 'ETH', address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', price: 1650.30, change_24h: -2.1, volume_24h: 987654321 },
+            { symbol: 'BTC', address: '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh', price: 43250.0, change_24h: 3.8, volume_24h: 567890123 }
           ]
         },
         duration: 30
@@ -936,34 +1112,31 @@ export const Terminal = ({
     }
 
     const viewport = window.visualViewport;
-    const terminalElement = terminalRef.current;
 
     const handleResize = () => {
-      if (!terminalElement) return;
-
       const viewportHeight = viewport.height;
-      const terminalHeight = terminalElement.offsetHeight;
-      // A significant difference between window and viewport height indicates the keyboard is up
-      const keyboardIsUp = window.innerHeight > viewportHeight + 50; 
+      const keyboardIsUp = window.innerHeight > viewportHeight + 50;
 
       if (keyboardIsUp) {
-        // Position the terminal so its bottom is just above the keyboard
-        const newTop = viewport.offsetTop + viewportHeight - terminalHeight - 4; // 4px margin
+        // Keep terminal anchored to bottom of visible viewport with fixed 16px margin
         setDynamicStyle({
-          top: `${newTop}px`,
-          bottom: 'auto', // Override the default CSS
+          bottom: '16px',
+          top: 'auto',
+          maxHeight: `${viewportHeight - 32}px`, // Ensure it fits in viewport with margins
         });
       } else {
-        // Keyboard is closed, revert to default CSS positioning
+        // Keyboard is closed, revert to default positioning
         setDynamicStyle({});
       }
     };
 
+    // Initial call to set correct position
+    handleResize();
     viewport.addEventListener('resize', handleResize);
 
     return () => {
       viewport.removeEventListener('resize', handleResize);
-      setDynamicStyle({}); // Cleanup on unmount or when terminal is minimized
+      setDynamicStyle({});
     };
   }, [terminalMinimized]);
 
@@ -972,21 +1145,23 @@ export const Terminal = ({
       {/* Dynamic UI Manager - Rendered outside terminal container */}
       <DynamicUIManager ref={dynamicUIRef} className="mb-4" />
       
-      <div className={`terminal-container ${getContainerClasses()} ${isKeyboardVisible ? 'keyboard-visible' : ''} w-full mx-auto transition-all duration-300 ease-in-out fixed top-0 left-0 z-[99999] pointer-events-none`}>
+      <div className={`terminal-container ${isKeyboardVisible ? 'keyboard-visible' : ''} w-full mx-auto transition-all duration-300 ease-in-out fixed top-0 left-0 z-[99999] pointer-events-none`}>
       
       {/* Terminal Container */}
       {!terminalMinimized && (
         <motion.div
           ref={terminalRef}
           key="terminal"
-          className={`bg-black/95 border border-purple-500/60 text-sm ${sizeState === 'large' ? 'xl:text-base' : ''} fixed bottom-4 left-4 right-4 p-4 ${sizeState === 'large' ? 'xl:p-5' : ''} rounded-md max-w-full z-[99998] shadow-2xl pointer-events-auto`}
+          className={`bg-black/95 border border-purple-500/60 text-sm ${terminalHeight > 450 ? 'xl:text-base' : ''} fixed bottom-4 left-4 p-4 ${terminalHeight > 450 ? 'xl:p-5' : ''} rounded-md z-[99998] shadow-2xl pointer-events-auto flex flex-col`}
           style={{ 
             perspective: "1000px",
             transformStyle: "preserve-3d",
             transformOrigin: "center center",
             overflow: "hidden",
-            maxWidth: "100%",
-            textAlign: "left", /* Ensure all text is left-aligned by default */
+            width: `${terminalWidth}px`,
+            height: `${terminalHeight}px`,
+            maxWidth: `calc(100vw - 32px)`, // Ensure it doesn't exceed viewport
+            textAlign: "left",
             ...dynamicStyle
           }}
           onWheel={(e) => {
@@ -1062,31 +1237,47 @@ export const Terminal = ({
           }}
         >
           {/* Terminal Header - Browser style window controls */}
-          <div className="flex justify-between items-center mb-2 border-b border-mauve/30 pb-2">
+          <div className="flex justify-between items-center mb-2 border-b border-mauve/30 pb-2 flex-shrink-0">
             <div className="text-xs font-bold flex items-center">
               <span className="text-mauve">DEGEN</span>
               <span className="text-white">TERMINAL</span>
               <span className="text-mauve-light mx-2">v6.9</span>
               
-              {/* NEW: Mode indicator */}
-              <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                currentMode === 'ai' 
-                  ? 'bg-blue-500/20 border-blue-500/50 text-blue-300' 
-                  : 'bg-green-500/20 border-green-500/50 text-green-300'
-              }`}>
-                {currentMode === 'ai' ? 'AI' : 'CHAT'}
-              </span>
-              
-              {/* Chat room info */}
-              {currentMode === 'chat-room' && (
-                <span className="text-gray-400 ml-2 text-xs">
-                  General Chat {chatConnected ? '(Connected)' : '(Connecting...)'}
-                </span>
-              )}
-              
               {easterEggActivated && (
                 <span className="text-green-400 ml-1">UNLOCKED</span>
               )}
+            </div>
+            
+            {/* NEW: Tab System - Proper tabs */}
+            <div className="flex items-end flex-1 mx-4">
+              <div className="flex -mb-[1px]">
+                {getAvailableTabs().map((tab, index) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => switchMode(tab.id)}
+                    className={`relative px-3 py-1 text-xs transition-all flex items-center gap-1 rounded-t-md border-t border-l border-r ${
+                      currentMode === tab.id
+                        ? 'bg-black/95 text-white border-purple-500/60'
+                        : getTabColors(tab.id)
+                    }`}
+                    style={{
+                      marginLeft: index > 0 ? '-1px' : '0',
+                      zIndex: currentMode === tab.id ? 10 : 1,
+                      borderBottom: currentMode === tab.id ? '1px solid rgb(0 0 0 / 0.95)' : '1px solid rgb(168 85 247 / 0.6)'
+                    }}
+                    title={`Switch to ${tab.label} mode`}
+                  >
+                    <span className="text-[10px]">{tab.icon}</span>
+                    <span>{tab.label}</span>
+                    {/* Connection indicator for chat */}
+                    {tab.id === 'chat-room' && (
+                      <span className={`ml-1 text-[8px] ${chatConnected ? 'text-green-400' : 'text-red-400'}`}>
+                        {chatConnected ? '●' : '○'}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
             
             {/* Browser-style window controls */}
@@ -1097,17 +1288,34 @@ export const Terminal = ({
                   onChange={(e) => {
                     if (!e.target.value) return;
                     
+                    const componentType = e.target.value;
+                    
+                    // Check for existing components of the same type and remove them
+                    if (dynamicUIRef.current) {
+                      const activeComponents = dynamicUIRef.current.getActiveComponents();
+                      const existingComponent = activeComponents.find(comp => 
+                        comp.type === componentType || comp.component === componentType
+                      );
+                      
+                      if (existingComponent) {
+                        // Remove existing component before creating new one
+                        dynamicUIRef.current.removeComponent(existingComponent.id);
+                      }
+                    }
+                    
                     const testAction = {
                       type: 'create_component' as const,
-                      component: e.target.value as any,
-                      id: `test-${e.target.value}-${Date.now()}`,
+                      component: componentType as any,
+                      id: `test-${componentType}-${Date.now()}`,
                       placement: 'floating' as const,
                       title: `Test ${e.target.options[e.target.selectedIndex].text}`,
                       data: {
                         // Generic test data that works for most components
                         tokens: [
+                          { symbol: 'DUEL', address: 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', price: 0.0025, change_24h: 12.5, volume_24h: 89123456 },
                           { symbol: 'SOL', address: 'So11111111111111111111111111111111111111112', price: 23.45, change_24h: 5.2, volume_24h: 1234567890 },
-                          { symbol: 'ETH', address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', price: 1650.30, change_24h: -2.1, volume_24h: 987654321 }
+                          { symbol: 'ETH', address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', price: 1650.30, change_24h: -2.1, volume_24h: 987654321 },
+                          { symbol: 'BTC', address: '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh', price: 43250.0, change_24h: 3.8, volume_24h: 567890123 }
                         ],
                         contestId: '768',
                         participants: [
@@ -1124,77 +1332,63 @@ export const Terminal = ({
                     // Reset dropdown
                     e.target.value = '';
                   }}
-                  className="h-4 text-[10px] bg-purple-500 text-white border-none rounded cursor-pointer hover:bg-purple-400 transition-colors"
+                  className="h-4 text-[10px] bg-gray-900 text-gray-300 border border-gray-700 rounded cursor-pointer hover:bg-gray-800 transition-colors"
+                  style={{
+                    backgroundColor: '#111827',
+                    borderColor: '#374151',
+                    color: '#d1d5db'
+                  }}
                   title="Test Dynamic Components"
                   defaultValue=""
                 >
-                  <option value="" disabled>Test</option>
-                  <option value="token_watchlist">Watchlist</option>
-                  <option value="portfolio_chart">Portfolio</option>
-                  <option value="market_heatmap">Heatmap</option>
-                  <option value="trading_signals">Signals</option>
-                  <option value="contest_leaderboard">Leaderboard</option>
-                  <option value="token_analysis">Analysis</option>
-                  <option value="performance_metrics">Performance</option>
-                  <option value="liquidity_pools">Liquidity</option>
-                  <option value="live_activity_feed">Activity</option>
-                  <option value="user_comparison">Comparison</option>
-                  <option value="alert_panel">Alerts</option>
-                  <option value="token_tracking_monitor">DADDIOS</option>
+                  <option value="" disabled style={{backgroundColor: '#111827', color: '#6b7280'}}>Test Component</option>
+                  {/* Token/Market Analysis */}
+                  <option value="token_watchlist" style={{backgroundColor: '#111827', color: '#22c55e', fontWeight: 'bold'}}>📊 Watchlist ✓</option>
+                  <option value="token_analysis" style={{backgroundColor: '#111827', color: '#d1d5db'}}>🔍 Token Analysis</option>
+                  <option value="token_details" style={{backgroundColor: '#111827', color: '#22c55e', fontWeight: 'bold'}}>📋 Token Details ✓</option>
+                  <option value="price_comparison" style={{backgroundColor: '#111827', color: '#d1d5db'}}>📈 Price Compare</option>
+                  <option value="market_heatmap" style={{backgroundColor: '#111827', color: '#d1d5db'}}>🗺️ Market Heatmap</option>
+                  {/* Portfolio Management */}
+                  <option value="portfolio_chart" style={{backgroundColor: '#111827', color: '#d1d5db'}}>💼 Portfolio Chart</option>
+                  <option value="portfolio_summary" style={{backgroundColor: '#111827', color: '#d1d5db'}}>📊 Portfolio Summary</option>
+                  <option value="performance_metrics" style={{backgroundColor: '#111827', color: '#d1d5db'}}>📉 Performance Metrics</option>
+                  <option value="transaction_history" style={{backgroundColor: '#111827', color: '#d1d5db'}}>📜 Transaction History</option>
+                  {/* Trading & Signals */}
+                  <option value="trading_signals" style={{backgroundColor: '#111827', color: '#d1d5db'}}>🚦 Trading Signals</option>
+                  <option value="alert_panel" style={{backgroundColor: '#111827', color: '#d1d5db'}}>🔔 Alert Panel</option>
+                  <option value="liquidity_pools" style={{backgroundColor: '#111827', color: '#d1d5db'}}>💧 Liquidity Pools</option>
+                  {/* Social & Competition */}
+                  <option value="contest_leaderboard" style={{backgroundColor: '#111827', color: '#d1d5db'}}>🏆 Contest Leaderboard</option>
+                  <option value="user_comparison" style={{backgroundColor: '#111827', color: '#d1d5db'}}>👥 User Comparison</option>
+                  <option value="live_activity_feed" style={{backgroundColor: '#111827', color: '#d1d5db'}}>⚡ Live Activity</option>
+                  {/* Advanced */}
+                  <option value="token_tracking_monitor" style={{backgroundColor: '#111827', color: '#d1d5db'}}>🖥️ DADDIOS Monitor</option>
                 </select>
               )}
               
-              {/* NEW: Mode toggle button (blue/green) */}
-              <button
-                type="button" 
-                onClick={toggleMode}
-                className={`h-4 w-4 rounded-full flex items-center justify-center transition-colors ${
-                  currentMode === 'ai' 
-                    ? 'bg-blue-500 hover:bg-blue-400' 
-                    : 'bg-green-500 hover:bg-green-400'
-                }`}
-                title={currentMode === 'ai' ? 'Switch to Chat Room' : 'Switch to AI Mode'}
-              >
-                <span className="text-white text-[10px] font-bold">
-                  {currentMode === 'ai' ? '💬' : '🤖'}
-                </span>
-              </button>
-              
-              {/* Size toggle button (yellow) */}
-              <button
-                type="button" 
-                onClick={cycleSize}
-                className={`h-4 w-4 rounded-full flex items-center justify-center transition-colors ${sizeState === 'contracted' ? 'bg-green-500 hover:bg-green-400' : 'bg-amber-400 hover:bg-amber-300'}`}
-                title={sizeState === 'large' ? 'Make smaller' : 'Make larger'}
-              >
-                <span className="text-black text-[10px] font-bold">
-                  {sizeState === 'large' ? '◦' : '•'}
-                </span>
-              </button>
-              
-              {/* Close/minimize button (red) */}
+              {/* Close/minimize button (red) - moved to rightmost position */}
               <button
                 type="button" 
                 onClick={() => setTerminalMinimized(true)}
-                className="h-4 w-4 rounded-full bg-red-500 hover:bg-red-400 flex items-center justify-center transition-colors"
+                className="h-4 w-4 rounded-full bg-red-500 hover:bg-red-400 flex items-center justify-center transition-all hover:scale-110 shadow-sm hover:shadow-md"
                 title="Minimize"
               >
-                <span className="text-black text-[10px] font-bold transform">×</span>
+                <span className="text-black/80 text-[11px] font-semibold">×</span>
               </button>
             </div>
 
           </div>
 
           {/* Terminal Content */}
-          <div ref={terminalContentRef} className="relative">
+          <div ref={terminalContentRef} className="flex flex-col flex-1 min-h-0">
             
-            {/* Pass display messages to TerminalConsole (AI or Chat) */}
+            {/* Pass display messages to TerminalConsole (AI or Chat) - takes remaining space */}
             <TerminalConsole 
               messages={getDisplayMessages()} // Pass the appropriate message array based on mode
-              size={sizeState}
+              size="flexible" // Override fixed heights
             />
             
-            {/* Use extracted TerminalInput component */}
+            {/* Use extracted TerminalInput component - fixed height */}
             <TerminalInput
               userInput={userInput}
               setUserInput={setUserInput}
@@ -1204,6 +1398,32 @@ export const Terminal = ({
               mode={currentMode}
             />
             
+          </div>
+          
+          {/* Corner resize handle - positioned at top-right corner */}
+          <div
+            className={`absolute top-0 right-0 w-6 h-6 cursor-ne-resize ${
+              isResizing ? 'opacity-100' : 'opacity-70 hover:opacity-100'
+            } transition-all z-50 hover:drop-shadow-[0_0_4px_rgba(168,85,247,0.5)]`}
+            title="Drag to resize"
+            onMouseDown={startResize}
+          >
+            {/* Triangle corner indicator */}
+            <svg 
+              className="w-6 h-6 text-purple-500" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                d="M 24 0 L 24 14 L 10 0 Z" 
+                fill="currentColor" 
+                fillOpacity="0.4"
+              />
+              <path 
+                d="M 24 0 L 24 10 L 14 0 Z" 
+                fill="currentColor" 
+                fillOpacity="0.7"
+              />
+            </svg>
           </div>
         </motion.div>
       )}
@@ -1232,7 +1452,7 @@ export const Terminal = ({
                 if (!isDragging) {
                   setTerminalMinimized(false);
                   setHasUnreadMessages(false);
-                  setSizeState('large');
+                  setToPresetSize('contracted');
                 }
               }}
               onDragStart={() => {
@@ -1246,15 +1466,6 @@ export const Terminal = ({
                 }, 50);
               }}
             />
-            
-            {/* NEW: Mode indicator badge */}
-            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] border-2 border-black ${
-              currentMode === 'ai' 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-green-500 text-white'
-            }`}>
-              {currentMode === 'ai' ? '🤖' : '💬'}
-            </div>
             
             {/* NEW: Chat participant count for chat mode */}
             {currentMode === 'chat-room' && participantCount > 1 && (

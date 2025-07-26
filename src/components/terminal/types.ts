@@ -13,13 +13,13 @@
 import { AIMessage } from "../../services/ai"; // Import AIMessage
 
 // Size option for the Terminal component
-export type TerminalSize = 'contracted' | 'middle' | 'large';
+export type TerminalSize = 'contracted' | 'middle' | 'large' | 'flexible';
 
 // Layout mode options for the Terminal component
 export type TerminalLayoutMode = 'bottom-fixed' | 'sidebar' | 'floating' | 'inline' | 'modal';
 
 // NEW: Terminal operation modes
-export type TerminalMode = 'ai' | 'chat-room';
+export type TerminalMode = 'ai' | 'chat-room' | 'admin-chat' | 'debug';
 
 // NEW: Chat room configuration
 export interface ChatRoomConfig {
