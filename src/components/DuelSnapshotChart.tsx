@@ -110,6 +110,7 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
       dividend_percentage: point.dividend_percentage,
       dividend_percentage_display: point.dividend_percentage, // Add this for label positioning
       total_registered_supply: point.total_registered_supply,
+      isExtrapolated: false, // Default to false for real data points
       formattedTime: new Date(point.timestamp).toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
@@ -182,7 +183,7 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
             day: 'numeric'
           }),
           dividend_percentage_display: lastDataPoint.dividend_percentage, // Keep for display position
-          dividend_percentage: null, // Set to null to break the line
+          dividend_percentage: undefined, // Set to undefined to break the line
           isExtrapolated: true
         });
       }

@@ -38,7 +38,17 @@ export interface AIMessage {
   }[]; // Add tool_calls directly to the message for assistant tool requests
   tool_call_id?: string; // For tool responses
   name?: string; // For tool function name
-  metadata?: { isChat?: boolean }; // For additional message metadata
+  metadata?: { 
+    isChat?: boolean;
+    isDebug?: boolean;
+    username?: string;
+    userId?: string;
+    timestamp?: string;
+    userRole?: string;
+    isAdmin?: boolean;
+    profilePicture?: string;
+    isOwnMessage?: boolean;
+  }; // For additional message metadata
 }
 
 export interface AIBaseOptions {

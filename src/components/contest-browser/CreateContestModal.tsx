@@ -61,13 +61,30 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   const [showAdvancedOptions, setShowAdvancedOptions] = React.useState(false);
   const [isSelecting, setIsSelecting] = React.useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
-  const [userDividendRank, setUserDividendRank] = React.useState<number | null>(null);
+  // const [userDividendRank, setUserDividendRank] = React.useState<number | null>(null);
   const [showTooltip, setShowTooltip] = React.useState(false);
   const tooltipRef = React.useRef<HTMLDivElement>(null);
   const dividendRef = React.useRef<HTMLDivElement>(null);
-  const [selectedToken, setSelectedToken] = React.useState<SearchToken | null>(null);
-  const [isTokenSearchOpen, setIsTokenSearchOpen] = React.useState(false);
-  const [showAIOptions, setShowAIOptions] = React.useState(false);
+  const [selectedTokens, setSelectedTokens] = React.useState<SearchToken[]>([]);
+  
+  // Pre-populate DUEL token on component mount
+  React.useEffect(() => {
+    const loadDuelToken = async () => {
+      try {
+        const response = await fetch(`/api/tokens/search?search=DUEL&limit=1`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.tokens && data.tokens.length > 0) {
+            setSelectedTokens([data.tokens[0]]);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to pre-populate DUEL token:', error);
+      }
+    };
+    
+    loadDuelToken();
+  }, []);
   
   // Get user data and DUEL token balance
   const user = useStore(state => state.user);
@@ -140,9 +157,67 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       tokenTypesAllowed: [],
       startingPortfolioValue: "100",
     } as Omit<ContestSettings, 'minParticipants' | 'maxParticipants'>,
-    ai_image_prompt: "", // New field for AI image generation
-    featured_token_address: "", // New field for featured token
+    ai_image_prompt: "Incorporate Jewish and gay and lesbian themes throughout the token imagery", // New field for AI image generation
+    featured_token_addresses: [] as string[], // Array for multiple featured tokens (max 5)
+    payout_mode: "double_up" as "double_up" | "top_heavy",
+    payout_percentage: 30, // % of players who win (for top heavy)
+    payout_steepness: 4, // Curve steepness (1-5 scale) - Steep default
   });
+
+  // Payout structure calculation
+  const payoutStructure = React.useMemo(() => {
+    if (formData.payout_mode === "double_up") {
+      // Double up: top 50% get ~1.9x entry fee (accounting for platform fee)
+      const payingPositions = Math.floor(formData.max_participants * 0.5);
+      const payout: Record<string, number> = {};
+      for (let i = 1; i <= payingPositions; i++) {
+        payout[`place_${i}`] = Math.round(100 / payingPositions) / 100;
+      }
+      return payout;
+    } else {
+      // Top heavy: exponential decay curve
+      const totalParticipants = formData.max_participants;
+      const payingPositions = Math.max(1, Math.floor(totalParticipants * formData.payout_percentage / 100));
+      
+      if (payingPositions === 1) {
+        return { place_1: 1.0 };
+      }
+      
+      // Exponential decay curve with steepness control
+      const steepness = formData.payout_steepness * 0.3; // Scale to reasonable range
+      const positions: number[] = [];
+      let total = 0;
+      
+      // Calculate raw exponential values
+      for (let i = 0; i < payingPositions; i++) {
+        const value = Math.exp(-steepness * i);
+        positions.push(value);
+        total += value;
+      }
+      
+      // Convert to percentages and round
+      const payouts = positions.map(value => Math.round((value / total) * 100));
+      
+      // Adjust to ensure total equals 100
+      const currentTotal = payouts.reduce((sum, val) => sum + val, 0);
+      const difference = 100 - currentTotal;
+      
+      if (difference !== 0) {
+        // Distribute difference among top positions
+        for (let i = 0; i < Math.abs(difference) && i < payouts.length; i++) {
+          payouts[i] += difference > 0 ? 1 : -1;
+        }
+      }
+      
+      // Convert to backend format
+      const payout: Record<string, number> = {};
+      payouts.forEach((percentage, index) => {
+        payout[`place_${index + 1}`] = percentage / 100;
+      });
+      
+      return payout;
+    }
+  }, [formData.payout_mode, formData.max_participants, formData.payout_percentage, formData.payout_steepness]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,8 +299,12 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           settings: {
             difficulty: "guppy", // Hard-coded value
             tokenTypesAllowed: formData.settings.tokenTypesAllowed || [],
-            startingPortfolioValue: formData.settings.startingPortfolioValue || "1000",
+            startingPortfolioValue: formData.settings.startingPortfolioValue || "100",
           } as ContestSettings,
+          image_prompt: formData.ai_image_prompt || "",
+          image_headliner_token_ca: formData.featured_token_addresses.length === 1 
+            ? formData.featured_token_addresses[0] 
+            : "",
         };
 
         // Validate required fields before sending
@@ -593,11 +672,11 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
         const today = new Date().toISOString().split('T')[0];
         const response = await fetch(`${API_URL}/user/public/dividend-percentages?date=${today}`);
         if (response.ok) {
-          const data = await response.json();
-          const userIndex = data.holders.findIndex((h: any) => h.wallet_address === user.wallet_address);
-          if (userIndex !== -1) {
-            setUserDividendRank(userIndex + 1); // Rank is 1-based
-          }
+          await response.json();
+          // const userIndex = data.holders.findIndex((h: any) => h.wallet_address === user.wallet_address);
+          // if (userIndex !== -1) {
+          //   setUserDividendRank(userIndex + 1); // Rank is 1-based
+          // }
         }
       } catch (error) {
         console.error('Failed to fetch dividend rank:', error);
@@ -647,7 +726,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       >
         <div 
           ref={modalRef}
-          className={`bg-dark-200/80 backdrop-blur-lg rounded-t-2xl sm:rounded-lg w-full sm:max-w-lg lg:max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[90vh] border border-dark-100/20 relative group ${isTokenSearchOpen ? 'overflow-visible' : 'overflow-hidden'}`} 
+          className="bg-dark-200/80 backdrop-blur-lg rounded-t-2xl sm:rounded-lg w-full sm:max-w-lg lg:max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[90vh] border border-dark-100/20 relative overflow-visible" 
           onClick={(e) => e.stopPropagation()}
           onMouseDown={() => {
             // Track if user starts selecting text inside modal
@@ -657,9 +736,30 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
               setIsSelecting(true);
             }
           }}
+          onWheel={(e) => {
+            // Prevent scroll chaining - stop scroll events from reaching the page behind
+            const target = e.currentTarget.querySelector('.overflow-y-auto') as HTMLElement;
+            if (target) {
+              const { scrollTop, scrollHeight, clientHeight } = target;
+              const deltaY = e.deltaY;
+              
+              // Check if we're at scroll boundaries
+              const isAtTop = scrollTop === 0 && deltaY < 0;
+              const isAtBottom = scrollTop + clientHeight >= scrollHeight && deltaY > 0;
+              const isNotScrollable = scrollHeight <= clientHeight;
+              
+              // Always prevent propagation to stop scroll chaining
+              if (isAtTop || isAtBottom || isNotScrollable) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            } else {
+              // If no scrollable content found, always prevent
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
         >
-          {/* Shimmer effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 pointer-events-none" />
           
           <div className="flex justify-between items-center p-4 sm:p-5 border-b border-dark-300/50 relative z-10 bg-dark-200/40 backdrop-blur-sm">
             <h2 className="text-lg sm:text-xl font-bold text-gray-100">Create a Contest</h2>
@@ -674,7 +774,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
             </button>
           </div>
 
-          <div className={`${isTokenSearchOpen ? 'overflow-visible' : 'overflow-y-auto'} p-4 sm:p-5 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300 relative z-10`}>
+          <div className="overflow-y-auto p-4 sm:p-5 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300 relative z-10" style={{overflow: 'visible'}}>
             <form onSubmit={handleSubmit} className="space-y-4">
               {userRole === 'user' && (!availableCredits || availableCredits === 0) && (
                 <div className="p-3 rounded-lg border bg-red-900/20 border-red-600/30">
@@ -699,15 +799,15 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                 {/* Left Column - Contest Details */}
                 <div className="space-y-4">
 
-                  {/* Contest Details */}
+                  {/* Contest Information */}
                   <div>
                     <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center">
                       <span className="w-1 h-4 bg-brand-500 rounded-full mr-2"></span>
-                      Contest Details
+                      Contest Information
                     </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div>
-                        <label className="block text-xs text-gray-400 mb-1.5">Contest Name</label>
+                        <label className="block text-xs text-gray-400 mb-1.5">Contest Title</label>
                         <Input
                           name="name"
                           value={formData.name}
@@ -717,14 +817,19 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-400 mb-1.5">Description</label>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <label className="text-xs text-gray-400">Description</label>
+                          <span className={`text-xs ${formData.description.length > 250 ? 'text-yellow-500' : formData.description.length === 280 ? 'text-red-500' : 'text-gray-500'}`}>
+                            {formData.description.length}/280
+                          </span>
+                        </div>
                         <Textarea
                           name="description"
                           value={formData.description}
                           onChange={handleInputChange}
                           className="w-full text-gray-100 bg-dark-300/70 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20 rounded-lg resize-none focus:bg-dark-300 transition-all duration-200 min-h-[2.5rem]"
                           rows={1}
-                          placeholder="Describe your contest..."
+                          placeholder="Brief description of your contest..."
                           maxLength={280}
                           style={{
                             height: 'auto',
@@ -737,112 +842,126 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                           }}
                           required
                         />
-                        <div className="flex justify-between items-center mt-1">
-                          <p className="text-xs text-gray-500">Brief description of your contest</p>
-                          <span className={`text-xs ${formData.description.length > 250 ? 'text-yellow-500' : formData.description.length === 280 ? 'text-red-500' : 'text-gray-500'}`}>
-                            {formData.description.length}/280
-                          </span>
-                        </div>
                       </div>
-                    </div>
-                  </div>
-                  
-                  {/* AI Options */}
-                  <div>
-                      <button
-                        type="button"
-                        onClick={() => setShowAIOptions(!showAIOptions)}
-                        className="text-xs text-gray-500 hover:text-gray-400 transition-colors"
-                      >
-                        {showAIOptions ? '− Hide' : '+ Show'} AI options
-                      </button>
                       
-                      {showAIOptions && (
-                        <div className="mt-2 p-3 bg-dark-300/30 rounded-lg space-y-4">
-                          {/* AI Image Prompt */}
-                          <div>
-                            <label className="block text-xs text-gray-400 mb-1.5">AI Image Prompt</label>
-                            <Textarea
-                              value={formData.ai_image_prompt}
-                              onChange={(e) => setFormData(prev => ({ ...prev, ai_image_prompt: e.target.value }))}
-                              className="w-full text-gray-100 bg-dark-300/70 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20 rounded-lg resize-none focus:bg-dark-300 transition-all duration-200"
-                              rows={1}
-                              placeholder="Describe the visual theme for this contest"
-                              maxLength={200}
+                      {/* Featured Tokens */}
+                      <div className="relative">
+                        <label className="block text-xs text-gray-400 mb-1.5">Featured Tokens</label>
+                        
+                        {/* Token Search - only show if less than 5 tokens selected */}
+                        {selectedTokens.length < 5 && (
+                          <div className="relative mb-3">
+                            <TokenSearch
+                              onSelectToken={(token) => {
+                                // Check if token already selected
+                                if (selectedTokens.some(t => t.address === token.address)) {
+                                  return;
+                                }
+                                const newTokens = [...selectedTokens, token];
+                                setSelectedTokens(newTokens);
+                                setFormData(prev => ({ 
+                                  ...prev, 
+                                  featured_token_addresses: newTokens.map(t => t.address) 
+                                }));
+                              }}
+                              placeholder={selectedTokens.length > 0 
+                                ? `Add another token (${5 - selectedTokens.length} remaining)...` 
+                                : "Search for tokens to feature..."
+                              }
+                              variant="modern"
+                              className="w-full"
+                              onDropdownOpen={() => {}}
+                              onDropdownClose={() => {}}
+                              clearOnSelect={true}
+                              useAbsolutePositioning={true}
                             />
-                            <div className="flex justify-between items-center mt-1">
-                              <p className="text-xs text-gray-500">Guide the AI to generate a contest image</p>
-                              <span className={`text-xs ${formData.ai_image_prompt.length > 180 ? 'text-yellow-500' : formData.ai_image_prompt.length === 200 ? 'text-red-500' : 'text-gray-500'}`}>
-                                {formData.ai_image_prompt.length}/200
-                              </span>
-                            </div>
                           </div>
-                          
-                          {/* Featured Token */}
-                          <div className="relative z-50">
-                            <label className="block text-xs text-gray-400 mb-1.5">Featured Token</label>
-                            <div className="relative">
-                              <TokenSearch
-                                onSelectToken={(token) => {
-                                  setSelectedToken(token);
-                                  setFormData(prev => ({ ...prev, featured_token_address: token.address }));
-                                }}
-                                placeholder="Search for a token to feature..."
-                                variant="modern"
-                                className="w-full"
-                                onDropdownOpen={() => setIsTokenSearchOpen(true)}
-                                onDropdownClose={() => setIsTokenSearchOpen(false)}
-                                clearOnSelect={true}
-                              />
-                            </div>
-                            {selectedToken && (
-                              <div className="mt-2 bg-dark-300/40 border border-dark-400/50 rounded-lg flex items-center justify-between overflow-hidden">
-                                <div className="flex items-center">
-                                  {selectedToken.image_url && (
-                                    <img 
-                                      src={selectedToken.image_url} 
-                                      alt={selectedToken.symbol} 
-                                      className="w-12 h-12 object-cover"
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none';
-                                      }}
-                                    />
-                                  )}
-                                  <div className="px-3">
-                                    <span className="font-medium text-gray-200">{selectedToken.symbol}</span>
-                                  </div>
-                                </div>
+                        )}
+                        
+                        {/* Selected Tokens Display */}
+                        {selectedTokens.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {selectedTokens.map((token, index) => (
+                              <div 
+                                key={token.address}
+                                className="flex items-center gap-1.5 bg-dark-300/50 border border-dark-400/50 rounded-full px-2 py-1 group hover:border-red-400/50 transition-colors"
+                              >
+                                {token.image_url && (
+                                  <img 
+                                    src={token.image_url} 
+                                    alt={token.symbol || 'Token'} 
+                                    className="w-5 h-5 rounded-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                )}
+                                <span className="text-sm font-medium text-gray-200">{token.symbol}</span>
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    setSelectedToken(null);
-                                    setFormData(prev => ({ ...prev, featured_token_address: "" }));
+                                    const newTokens = selectedTokens.filter((_, i) => i !== index);
+                                    setSelectedTokens(newTokens);
+                                    setFormData(prev => ({ 
+                                      ...prev, 
+                                      featured_token_addresses: newTokens.map(t => t.address) 
+                                    }));
                                   }}
-                                  className="text-red-400 hover:text-red-300 mr-2"
+                                  className="text-gray-400 hover:text-red-400 transition-colors ml-0.5"
                                 >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                   </svg>
                                 </button>
                               </div>
-                            )}
+                            ))}
                           </div>
+                        )}
+                        
+                        {selectedTokens.length === 5 && (
+                          <div className="text-xs text-yellow-500 mt-2">
+                            Maximum of 5 featured tokens reached
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Narrative */}
+                      <div>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <label className="text-xs text-gray-400">Narrative</label>
+                          <span className={`text-xs ${formData.ai_image_prompt.length > 180 ? 'text-yellow-500' : formData.ai_image_prompt.length === 200 ? 'text-red-500' : 'text-gray-500'}`}>
+                            {formData.ai_image_prompt.length}/200
+                          </span>
                         </div>
-                      )}
+                        <Textarea
+                          value={formData.ai_image_prompt}
+                          onChange={(e) => setFormData(prev => ({ ...prev, ai_image_prompt: e.target.value }))}
+                          className="w-full text-gray-100 bg-dark-300/70 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20 rounded-lg resize-none focus:bg-dark-300 transition-all duration-200"
+                          rows={1}
+                          placeholder="Incorporate Jewish and gay and lesbian themes throughout the token imagery"
+                          maxLength={200}
+                        />
+                        <p className="text-[9px] text-gray-500 leading-tight pl-2 mt-1">DegenDuel uses the most advanced AI model for meme image generation in the world to breathe personality into each contest with a gorgeous and meta-aware contest banner.</p>
+                      </div>
                     </div>
+                  </div>
 
                   {/* Advanced Options */}
                   <div>
-                    <button
-                      type="button"
-                      onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                      className="text-xs text-gray-500 hover:text-gray-400 transition-colors"
-                    >
-                      {showAdvancedOptions ? '− Hide' : '+ Show'} advanced options (admins only)
-                    </button>
+                    <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center">
+                      <span className="w-1 h-4 bg-orange-500 rounded-full mr-2"></span>
+                      Advanced Options
+                      <button
+                        type="button"
+                        onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                        className="ml-auto text-xs text-gray-500 hover:text-gray-400 transition-colors"
+                      >
+                        {showAdvancedOptions ? '− Hide' : '+ Show'}
+                      </button>
+                    </h3>
                     
                     {showAdvancedOptions && (
-                      <div className="mt-2 p-3 bg-dark-300/30 rounded-lg space-y-6">
+                      <div className="space-y-6">
                         <div>
                           <label className="block text-sm font-medium text-gray-300 mb-1">Starting Portfolio Value</label>
                           <div className="relative">
@@ -1073,6 +1192,238 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                     </div>
                   </div>
 
+                  {/* Payout Structure - Only show for paid contests */}
+                  {(parseFloat(formData.entry_fee) || 0) > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center">
+                        <span className="w-1 h-4 bg-yellow-500 rounded-full mr-2"></span>
+                        Payout Structure
+                      </h3>
+                      
+                      {/* Mode Selection - Tab Style */}
+                      <div className="space-y-4">
+                        <div className="flex p-1 bg-dark-400/50 rounded-lg">
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, payout_mode: "double_up" }))}
+                            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                              formData.payout_mode === "double_up"
+                                ? "bg-brand-500 text-white shadow-lg"
+                                : "text-gray-400 hover:text-gray-200"
+                            }`}
+                          >
+                            Double Up
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, payout_mode: "top_heavy" }))}
+                            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                              formData.payout_mode === "top_heavy"
+                                ? "bg-brand-500 text-white shadow-lg"
+                                : "text-gray-400 hover:text-gray-200"
+                            }`}
+                          >
+                            Top Heavy
+                          </button>
+                        </div>
+                        
+                        {/* Double Up Description */}
+                        {formData.payout_mode === "double_up" && (
+                          <div className="p-3 bg-dark-300/30 rounded-lg">
+                            <p className="text-xs text-gray-400">
+                              Top 50% of participants win approximately double their entry fee
+                            </p>
+                          </div>
+                        )}
+                        
+                        {/* Top Heavy Controls */}
+                        {formData.payout_mode === "top_heavy" && (
+                          <div className="space-y-4">
+                            <div className="space-y-4">
+                              <div className="p-3 bg-dark-300/30 rounded-lg">
+                                <label className="block text-xs text-gray-400 mb-3">Players Who Win</label>
+                                <div className="flex items-center gap-4">
+                                  <div className="flex-1">
+                                    <input
+                                      type="range"
+                                      min="5"
+                                      max="50"
+                                      step="5"
+                                      value={formData.payout_percentage}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, payout_percentage: parseInt(e.target.value) }))}
+                                      className="w-full h-2 bg-dark-400 rounded-lg appearance-none cursor-pointer slider accent-brand-400"
+                                      style={{
+                                        background: `linear-gradient(to right, #00d4ff 0%, #00d4ff ${(formData.payout_percentage - 5) / 45 * 100}%, #374151 ${(formData.payout_percentage - 5) / 45 * 100}%, #374151 100%)`
+                                      }}
+                                    />
+                                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                      <span>5%</span>
+                                      <span>50%</span>
+                                    </div>
+                                  </div>
+                                  <div className="text-2xl font-bold text-brand-400 min-w-[4rem] text-center">
+                                    {formData.payout_percentage}%
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="p-3 bg-dark-300/30 rounded-lg">
+                                <label className="block text-xs text-gray-400 mb-3">Distribution Curve</label>
+                                <div className="flex items-center gap-4">
+                                  <div className="flex-1">
+                                    <input
+                                      type="range"
+                                      min="1"
+                                      max="5"
+                                      step="1"
+                                      value={formData.payout_steepness}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, payout_steepness: parseInt(e.target.value) }))}
+                                      className="w-full h-2 bg-dark-400 rounded-lg appearance-none cursor-pointer slider accent-purple-400"
+                                      style={{
+                                        background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${(formData.payout_steepness - 1) / 4 * 100}%, #374151 ${(formData.payout_steepness - 1) / 4 * 100}%, #374151 100%)`
+                                      }}
+                                    />
+                                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                      <span>Gentle</span>
+                                      <span>Extreme</span>
+                                    </div>
+                                  </div>
+                                  <div className="text-sm font-medium text-purple-400 min-w-[5rem] text-center">
+                                    {formData.payout_steepness === 1 ? 'Gentle' : 
+                                     formData.payout_steepness === 2 ? 'Mild' :
+                                     formData.payout_steepness === 3 ? 'Medium' :
+                                     formData.payout_steepness === 4 ? 'Steep' : 'Extreme'}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Payout Preview - Visual Chart */}
+                        <div className="p-3 bg-dark-300/30 rounded-lg">
+                          <h4 className="text-xs text-gray-400 mb-3">Payout Distribution ({formData.max_participants} participants)</h4>
+                          <div className="h-32 flex items-end gap-1">
+                            {(() => {
+                              const totalPositions = formData.max_participants;
+                              const maxPercent = Math.round((Object.values(payoutStructure)[0] as number) * 100);
+                              
+                              // Create array for all positions
+                              const positions = [];
+                              for (let i = 1; i <= Math.min(totalPositions, 20); i++) {
+                                const payout = payoutStructure[`place_${i}`];
+                                positions.push({
+                                  place: i,
+                                  percentage: payout ? Math.round(payout * 100) : 0,
+                                  isPaying: !!payout
+                                });
+                              }
+                              
+                              return positions.map((pos) => {
+                                const entryFee = parseFloat(formData.entry_fee) || 0;
+                                const minPrize = pos.percentage > 0 ? (pos.percentage / 100) * entryFee * formData.min_participants * 0.9 : 0;
+                                const maxPrize = pos.percentage > 0 ? (pos.percentage / 100) * entryFee * formData.max_participants * 0.9 : 0;
+                                
+                                return (
+                                  <div key={pos.place} className="flex-1 flex flex-col items-center">
+                                    <div className="w-full relative group">
+                                      <div 
+                                        className={`w-full rounded-t transition-all relative cursor-pointer ${
+                                          pos.isPaying 
+                                            ? 'bg-gradient-to-t from-brand-400 to-brand-500 hover:from-brand-300 hover:to-brand-400' 
+                                            : 'bg-gray-600/30'
+                                        }`}
+                                        style={{ 
+                                          height: pos.percentage > 0 
+                                            ? `${(pos.percentage / maxPercent) * 104}px` 
+                                            : '2px',
+                                          minHeight: pos.isPaying ? '20px' : '2px'
+                                        }}
+                                      >
+                                        {pos.percentage > 0 && (
+                                          <div className="absolute left-1/2 -top-4 text-[10px] text-white font-medium whitespace-nowrap flex items-center gap-0.5" style={{ transform: 'translateX(-75%)' }}>
+                                            <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-2.5 h-2.5" />
+                                            {maxPrize.toFixed(2)}
+                                          </div>
+                                        )}
+                                        
+                                        {/* USD equivalent inside bar */}
+                                        {pos.percentage > 0 && solPrice > 0 && (
+                                          <div className="absolute left-1/2 -translate-x-1/2 top-0.5 text-[11px] text-gray-900 font-bold whitespace-nowrap">
+                                            ${Math.round(maxPrize * solPrice)}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Hover Tooltip */}
+                                        {pos.isPaying && (
+                                          <div className="absolute -top-16 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                            <div className="bg-dark-400 text-gray-200 text-xs rounded px-2 py-1 whitespace-nowrap border border-dark-300">
+                                              <div className="font-medium">Place #{pos.place}</div>
+                                              <div className="text-brand-400 flex items-center gap-1">
+                                                {minPrize === maxPrize 
+                                                  ? `${minPrize.toFixed(2)}`
+                                                  : `${minPrize.toFixed(2)}-${maxPrize.toFixed(2)}`
+                                                }
+                                                <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                                              </div>
+                                              {solPrice > 0 && (
+                                                <div className="text-gray-400 text-xs">
+                                                  ${(() => {
+                                                    const minUSD = minPrize * solPrice;
+                                                    const maxUSD = maxPrize * solPrice;
+                                                    return minUSD === maxUSD 
+                                                      ? minUSD.toFixed(2)
+                                                      : `${minUSD.toFixed(2)}-${maxUSD.toFixed(2)}`;
+                                                  })()}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-dark-400 border-r border-b border-dark-300 transform rotate-45"></div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      {pos.place}
+                                    </div>
+                                  </div>
+                                );
+                              });
+                            })()}
+                            {formData.max_participants > 20 && (
+                              <div className="flex-1 flex flex-col items-center justify-end">
+                                <div className="text-xs text-gray-500">...</div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-dark-400/50">
+                            <div className="flex justify-between text-xs mb-2">
+                              <span className="text-gray-400">Total Prize Pool:</span>
+                              <span className="text-brand-400 font-medium">
+                                {(() => {
+                                  const entryFee = parseFloat(formData.entry_fee) || 0;
+                                  const minPool = entryFee * formData.min_participants * 0.9;
+                                  const maxPool = entryFee * formData.max_participants * 0.9;
+                                  return minPool === maxPool 
+                                    ? `${minPool.toFixed(3)} SOL`
+                                    : `${minPool.toFixed(3)}-${maxPool.toFixed(3)} SOL`;
+                                })()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-400">Winners/Losers:</span>
+                              <span>
+                                <span className="text-green-400">{Object.keys(payoutStructure).length}</span>
+                                <span className="text-gray-400"> / </span>
+                                <span className="text-red-400">{formData.max_participants - Object.keys(payoutStructure).length}</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Prize Pool Calculation */}
                   <div className={`${(parseFloat(formData.entry_fee) || 0) === 0 
                     ? 'bg-gradient-to-br from-green-900/30 to-emerald-900/20 border border-green-500/40' 
@@ -1241,24 +1592,35 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                 </div>
               )}
 
-              {/* Actions - Compact */}
-              <div className="flex gap-3 pt-2 border-t border-dark-400">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 text-sm text-gray-300 border border-gray-600 rounded-lg hover:bg-dark-300 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 px-4 py-2 text-sm bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white rounded-lg transition-all disabled:opacity-50"
-                >
-                  {loading ? "Creating..." : "Create Contest"}
-                </button>
-              </div>
             </form>
+          </div>
+          
+          {/* Fixed Footer - Action Buttons */}
+          <div className="flex-shrink-0 p-4 sm:p-5 border-t border-dark-400 bg-dark-200/90 backdrop-blur-sm">
+            <div className="flex gap-4 items-center">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm text-red-400 bg-red-900/10 border border-red-600/50 rounded-lg hover:bg-red-900/20 hover:border-red-500 transition-all duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="flex-1 px-6 py-3 text-base font-semibold text-green-300 bg-green-900/15 border border-green-500/60 rounded-lg hover:bg-green-900/25 hover:border-green-400 transition-all disabled:opacity-50"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Creating Contest...
+                  </span>
+                ) : (
+                  "Create Contest"
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

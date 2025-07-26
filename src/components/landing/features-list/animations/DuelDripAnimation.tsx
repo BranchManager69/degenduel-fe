@@ -68,7 +68,7 @@ export const DuelDripAnimation: React.FC = () => {
       duration: 20,
       repeat: Infinity,
       repeatType: 'reverse' as const,
-      ease: 'linear'
+      ease: 'linear' as const
     }
   };
   

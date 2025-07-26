@@ -41,6 +41,18 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
   });
   const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
 
+  // Cleanup blob URLs on unmount or when images change
+  React.useEffect(() => {
+    return () => {
+      if (previewImage && previewImage.startsWith('blob:')) {
+        URL.revokeObjectURL(previewImage);
+      }
+      if (croppedImageUrl && croppedImageUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(croppedImageUrl);
+      }
+    };
+  }, [previewImage, croppedImageUrl]);
+
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     console.log("Files dropped:", { acceptedFiles, rejectedFiles });
     
@@ -105,29 +117,36 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
     const image = new Image();
     image.src = previewImage;
 
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    // Set canvas size to match crop dimensions
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
+      // Set canvas size to match crop dimensions
+      canvas.width = pixelCrop.width;
+      canvas.height = pixelCrop.height;
 
-    // Draw the cropped image
-    ctx.drawImage(
-      image,
-      pixelCrop.x,
-      pixelCrop.y,
-      pixelCrop.width,
-      pixelCrop.height,
-      0,
-      0,
-      pixelCrop.width,
-      pixelCrop.height,
-    );
+      // Draw the cropped image
+      ctx.drawImage(
+        image,
+        pixelCrop.x,
+        pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
+        pixelCrop.width,
+        pixelCrop.height,
+      );
 
-    // Convert to WebP format for better compression
-    setCroppedImageUrl(canvas.toDataURL("image/webp", 0.9));
+      // Convert to WebP format for better compression
+      setCroppedImageUrl(canvas.toDataURL("image/webp", 0.9));
+    };
+
+    image.onerror = () => {
+      console.error("Failed to load image for cropping");
+      toast.error("Failed to process image");
+    };
   };
 
   const handleUpload = async () => {
@@ -176,24 +195,40 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
       });
 
       if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
+        let errorText = "";
+        let errorData: any = null;
+        
+        try {
+          errorText = await uploadResponse.text();
+          errorData = JSON.parse(errorText);
+        } catch {
+          // If not JSON, use raw text
+        }
+        
         console.error("Upload failed:", {
           status: uploadResponse.status,
           statusText: uploadResponse.statusText,
-          body: errorText
+          body: errorText,
+          data: errorData
         });
         
         switch (uploadResponse.status) {
           case 400:
-            throw new Error("Invalid image format or size");
+            throw new Error(errorData?.message || "Invalid image format or size");
           case 401:
             throw new Error("Unauthorized. Please reconnect your wallet");
           case 413:
             throw new Error("Image size too large. Maximum size is 10MB");
           case 415:
-            throw new Error("Unsupported image format");
+            throw new Error("Unsupported image format. Use JPEG, PNG, GIF or WebP");
+          case 429:
+            throw new Error("Too many requests. Please try again later");
+          case 500:
+            throw new Error("Server error. Please try again later");
+          case 503:
+            throw new Error("Service unavailable. Please try again later");
           default:
-            throw new Error(`Failed to upload image (${uploadResponse.status}): ${errorText}`);
+            throw new Error(errorData?.message || `Failed to upload image (${uploadResponse.status})`);
         }
       }
 

@@ -350,44 +350,20 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
     }
   };
   
-  // When a new message appears, scroll to bottom
+  // When a new message appears, scroll to bottom ONLY if user is near bottom
   useEffect(() => {
-    if (messages.length > 0) {
-      // Immediately scroll to bottom when new message appears
-      if (consoleOutputRef.current) {
-        consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
+    if (messages.length > 0 && consoleOutputRef.current) {
+      const element = consoleOutputRef.current;
+      const isNearBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 100;
+      
+      // Only auto-scroll if user is already near the bottom
+      if (isNearBottom) {
+        element.scrollTop = element.scrollHeight;
       }
     }
   }, [messages.length]);
 
-  // Auto-scroll during streaming when content changes
-  useEffect(() => {
-    if (messages.length > 0 && consoleOutputRef.current) {
-      const lastMessage = messages[messages.length - 1];
-      
-      // Check if we should auto-scroll during streaming
-      const shouldAutoScroll = () => {
-        const element = consoleOutputRef.current;
-        if (!element) return false;
-        
-        // Only auto-scroll if user is already near the bottom (within 100px)
-        const isNearBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 100;
-        
-        // Always auto-scroll for the last assistant message (streaming)
-        const isLastAssistantMessage = lastMessage?.role === 'assistant';
-        
-        return isNearBottom || isLastAssistantMessage;
-      };
-      
-      if (shouldAutoScroll()) {
-        // Smooth scroll to bottom
-        consoleOutputRef.current.scrollTo({
-          top: consoleOutputRef.current.scrollHeight,
-          behavior: 'smooth'
-        });
-      }
-    }
-  }, [messages]); // Triggers on any message content change
+  // REMOVED: This was causing constant auto-scrolling
 
   // Enhanced auto-scroll for streaming with MutationObserver
   useEffect(() => {
@@ -511,26 +487,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
     };
   }, []);
 
-  // Always auto-scroll to the bottom when console output changes
-  useEffect(() => {
-    if (consoleOutputRef.current) {
-      const scrollTo = () => {
-        const element = consoleOutputRef.current;
-        if (element) {
-          // Always scroll to bottom - don't check position
-          element.scrollTop = element.scrollHeight;
-        }
-      };
-      
-      // Multiple scroll attempts with increasing delays to ensure it happens
-      // even after content is fully rendered
-      scrollTo();
-      setTimeout(scrollTo, 50);
-      setTimeout(scrollTo, 100);
-      setTimeout(scrollTo, 200);
-      setTimeout(scrollTo, 500); // Extra long timeout for slow devices
-    }
-  }, [messages]);
+  // REMOVED: This was the main culprit - it was force-scrolling every few seconds
 
   return (
     <motion.div
@@ -552,16 +509,19 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
           ease: "easeInOut"
         }
       }}
-      className="relative rounded-t-md"
+      className={`relative rounded-t-md ${size === 'flexible' ? 'flex-1 min-h-0 flex flex-col' : ''}`}
     >
       <div
         ref={consoleOutputRef}
-        className={`text-gray-300 overflow-y-auto overflow-x-hidden py-2 px-3 text-left custom-scrollbar console-output relative z-10 w-full
-                   ${size === 'contracted'
-                     ? 'h-24'
-                     : size === 'middle'
-                     ? 'h-60'
-                     : 'h-80 xl:h-96'}` }
+        className={`text-gray-300 overflow-y-auto overflow-x-hidden py-2 px-3 text-left custom-scrollbar console-output relative z-10 w-full ${
+          size === 'flexible' 
+            ? 'flex-1 min-h-0' 
+            : size === 'contracted'
+              ? 'h-24'
+              : size === 'middle'
+                ? 'h-60'
+                : 'h-80 xl:h-96'
+        }`}
         onWheel={(e) => {
           // Enhanced scroll handling for the conversation area
           const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -642,6 +602,28 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
         ) : (
           // Map console output when we have entries - only show last 10 lines max
           messages.map((message: AIMessage, i: number) => {
+            const prevMessage = i > 0 ? messages[i - 1] : null;
+            
+            // Check if we need to show a timestamp separator
+            const currentTime = message.metadata?.timestamp 
+              ? new Date(message.metadata.timestamp) 
+              : null;
+            const prevTime = prevMessage?.metadata?.timestamp 
+              ? new Date(prevMessage.metadata.timestamp) 
+              : null;
+            const showTimestamp = message.role === 'chat' && 
+                                 currentTime && 
+                                 (i === 0 || !prevTime || 
+                                  currentTime.getHours() !== prevTime.getHours() ||
+                                  currentTime.getMinutes() !== prevTime.getMinutes());
+            
+            // Check if this is a consecutive message from the same user
+            // Force showing username after timestamp
+            const isConsecutive = prevMessage && 
+                                 message.role === 'chat' && 
+                                 prevMessage.role === 'chat' &&
+                                 message.metadata?.username === prevMessage.metadata?.username &&
+                                 !showTimestamp;
             let prefix = '';
             let content = message.content ?? '';
             let textClassName = 'text-gray-300'; // Default
@@ -655,7 +637,16 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                 break;
               case 'chat':
                 prefix = '';
-                textClassName = 'text-green-300';
+                // Set color based on user role and ownership
+                if (message.metadata?.isOwnMessage) {
+                  textClassName = 'text-green-200'; // Own messages are lighter green (since we have bg now)
+                } else if (message.metadata?.userRole === 'superadmin') {
+                  textClassName = 'text-yellow-400'; // Superadmin = goldenrod
+                } else if (message.metadata?.userRole === 'admin') {
+                  textClassName = 'text-red-400'; // Admin = red
+                } else {
+                  textClassName = 'text-purple-300'; // Regular users = purple
+                }
                 // Chat messages never use typewriter effect
                 useTypingEffect = false;
                 break;
@@ -689,15 +680,97 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
             const key = `msg-${i}-${message.role}-${message.content?.substring(0, 5)}`; // Create a reasonably stable key
 
             return (
-              <motion.div 
-                key={key}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className={message.role === 'system' ? "whitespace-pre-wrap text-center" : "pl-1 whitespace-pre-wrap"}
-              >
-                {/* Render user profile picture or robot emoji for Didi */}
-                {message.role === 'user' ? (
+              <React.Fragment key={key}>
+                {/* Timestamp separator when minute changes */}
+                {showTimestamp && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-center my-2"
+                  >
+                    <span className="text-[10px] text-gray-500 bg-black/30 px-2 py-0.5 rounded">
+                      {new Date(message.metadata?.timestamp || '').toLocaleTimeString([], { 
+                        hour: 'numeric',
+                        minute: '2-digit' 
+                      })}
+                    </span>
+                  </motion.div>
+                )}
+                
+                <motion.div 
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className={`${message.role === 'system' ? "whitespace-pre-wrap text-center" : "whitespace-pre-wrap"} ${
+                    message.role === 'chat' && message.metadata?.isOwnMessage 
+                      ? `bg-gray-800/40 border-l-2 border-green-400 pl-2 pr-2 py-0.5 -mx-3 px-3 ${
+                          // Check if next message is also own message to remove gap
+                          messages[i + 1]?.metadata?.isOwnMessage ? '' : 'mb-0.5'
+                        }` 
+                      : message.role === 'chat' ? "pl-1 mb-0.5" : ""
+                  }`}
+                >
+                {/* Enhanced chat message display */}
+                {message.role === 'chat' ? (
+                  <div className="flex items-start gap-2">
+                    {/* Profile picture or spacer for consecutive messages */}
+                    {!isConsecutive ? (
+                      <div className="relative w-9 h-9 mt-0.5">
+                        <img
+                          src={message.metadata?.profilePicture || "/assets/media/default/profile_pic.png"}
+                          alt={message.metadata?.username || 'User'}
+                          className="absolute inset-0 w-full h-full rounded-lg object-cover ring-1 ring-gray-700/50 shadow-md"
+                          style={{
+                            maskImage: 'radial-gradient(circle at center, black 80%, transparent 100%)',
+                            WebkitMaskImage: 'radial-gradient(circle at center, black 80%, transparent 100%)'
+                          }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/assets/media/default/profile_pic.png';
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-9" /> // Spacer for alignment
+                    )}
+                    
+                    <div className="flex-1 min-w-0">
+                      {/* Username inline for non-consecutive messages with message content */}
+                      {!isConsecutive ? (
+                        <>
+                          <span className={`font-bold text-sm ${textClassName} mr-2`}>
+                            {message.metadata?.username || 'Unknown'}
+                          </span>
+                          {/* Message content inline for first messages */}
+                          {message.role === 'chat' && (
+                            <span className="inline">
+                              {/* Content will be rendered here */}
+                              {useTypingEffect ? (
+                                <TypeWriterMarkdown 
+                                  text={content.startsWith('ERROR:') ? content.substring(6) : content}
+                                  speed={15}
+                                  className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}
+                                  onComplete={handleTypingComplete}
+                                />
+                              ) : (
+                                <span className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}>
+                                  {content.startsWith('ERROR:') ? content.substring(6) : content}
+                                </span>
+                              )}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        /* For consecutive messages, no indentation */
+                        message.role === 'chat' && (
+                          <span className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}>
+                            {content.startsWith('ERROR:') ? content.substring(6) : content}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  </div>
+                ) : message.role === 'user' ? (
                   user ? (
                     <div className="inline-block mr-2 align-top mt-0.5">
                       <img
@@ -738,30 +811,34 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                       />
                     </motion.span>
                   </span>
-                ) : (
-                  /* Use TypeWriter only for the last assistant message, otherwise render content directly */
-                  useTypingEffect ? (
-                    <TypeWriterMarkdown 
-                      text={content.startsWith('ERROR:') ? content.substring(6) : content}
-                      speed={15}
-                      className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}
-                      onComplete={handleTypingComplete}
-                    />
-                  ) : (
-                    // Render markdown for AI responses, plain text for others
-                    message.role === 'assistant' ? (
-                      <MarkdownRenderer 
-                        content={content.startsWith('ERROR:') ? content.substring(6) : content}
+                ) : message.role !== 'chat' ? (
+                  /* For non-chat messages (AI, user, system), render normally */
+                  <span>
+                    {useTypingEffect ? (
+                      <TypeWriterMarkdown 
+                        text={content.startsWith('ERROR:') ? content.substring(6) : content}
+                        speed={15}
                         className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}
+                        onComplete={handleTypingComplete}
                       />
                     ) : (
-                      <span className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}>
-                        {content.startsWith('ERROR:') ? content.substring(6) : content}
-                      </span>
-                    )
-                  )
-                )}
-              </motion.div>
+                      // Render markdown for AI responses, plain text for others
+                      message.role === 'assistant' ? (
+                        <MarkdownRenderer 
+                          content={content.startsWith('ERROR:') ? content.substring(6) : content}
+                          className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}
+                        />
+                      ) : (
+                        <span className={content.startsWith('ERROR:') ? 'text-red-300' : textClassName}>
+                          {content.startsWith('ERROR:') ? content.substring(6) : content}
+                        </span>
+                      )
+                    )}
+                  </span>
+                ) : null
+                }
+                </motion.div>
+              </React.Fragment>
             );
           })
         )}

@@ -321,7 +321,7 @@ const MetricOrb: React.FC<{
     initial: { scale: 0 },
     animate: {
       scale: 1,
-      transition: { type: "spring", bounce: 0.5 },
+      transition: { type: "spring" as const, bounce: 0.5 },
     },
   };
 
@@ -362,17 +362,17 @@ const EnergyWave: React.FC<{
     success: {
       scale: [0, 1.5],
       opacity: [0.8, 0],
-      transition: { duration: 1.5, ease: "easeOut" },
+      transition: { duration: 1.5, ease: "easeOut" as const },
     },
     error: {
       scale: [0, 1.2, 1.5],
       opacity: [0.8, 0.4, 0],
-      transition: { duration: 1, ease: "easeInOut" },
+      transition: { duration: 1, ease: "easeInOut" as const },
     },
     warning: {
       scale: [1, 1.3, 1],
       opacity: [0.5, 0.2, 0],
-      transition: { duration: 2, ease: "easeInOut", repeat: 2 },
+      transition: { duration: 2, ease: "easeInOut" as const, repeat: 2 },
     },
   };
 
@@ -792,14 +792,15 @@ export const WebSocketCard: React.FC<WebSocketCardProps> = ({
 
   const cardVariants = {
     initial: { scale: 0.95, opacity: 0 },
-    normal: { scale: 1, opacity: 1 },
-    transition: {
-      scale: [1, 1.05, 0.95, 1],
-      rotate: [0, 2, -2, 0],
+    normal: { 
+      scale: 1, 
+      opacity: 1,
       transition: {
+        scale: [1, 1.05, 0.95, 1],
+        rotate: [0, 2, -2, 0],
         duration: 1.5,
-        ease: "easeInOut",
-      },
+        ease: "easeInOut" as const,
+      }
     },
   };
 

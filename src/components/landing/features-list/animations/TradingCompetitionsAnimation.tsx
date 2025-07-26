@@ -59,7 +59,7 @@ export const TradingCompetitionsAnimation: React.FC = () => {
       transition: { 
         duration: 2, 
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: "easeInOut" as const
       }
     }
   };
@@ -71,7 +71,7 @@ export const TradingCompetitionsAnimation: React.FC = () => {
       transition: { 
         duration: 2,
         delay: custom * 0.2,
-        ease: "easeInOut"
+        ease: "easeInOut" as const
       }
     })
   };
@@ -191,7 +191,7 @@ export const TradingCompetitionsAnimation: React.FC = () => {
       <motion.div 
         className="px-2 py-1 bg-dark-800/70 border-t border-gray-800/50 overflow-hidden whitespace-nowrap"
         animate={{ x: [0, -500] }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 15, repeat: Infinity, ease: "linear" as const }}
       >
         <div className="text-[10px] font-mono flex space-x-4">
           <span className="text-green-400">SOL $198.45 +2.3%</span>

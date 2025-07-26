@@ -173,56 +173,66 @@ export const Header: React.FC = () => {
                     transition={{ duration: 0.2 }}
                     className="flex items-center gap-2"
                   >
-                    {/* Token Balance Display (desktop only - admin/superadmin only) */}
-                    {(isAdministrator || user.role === 'superadmin') && (
-                      <Link
-                        to="/wallet"
-                        className="hidden md:block group relative cursor-pointer"
-                      >
-                        {/* Outer glow that intensifies on hover */}
-                        <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-75 blur transition-all duration-300 group-hover:duration-200" />
+                    {/* Token Balance Display (desktop only - for all users) */}
+                    <Link
+                      to="/wallet"
+                      className="hidden md:block group relative cursor-pointer"
+                    >
+                      {/* Outer glow that intensifies on hover */}
+                      <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-75 blur transition-all duration-300 group-hover:duration-200" />
+                      
+                      {/* Main container with enhanced styling - matching UserMenu height */}
+                      <div className={`relative flex items-center gap-1 pl-2 pr-3 
+                        ${isCompact ? "h-7" : "h-8"}
+                        bg-gradient-to-r from-purple-900/40 via-purple-800/30 to-purple-900/40 
+                        backdrop-blur-sm rounded-full 
+                        border border-purple-500/15 group-hover:border-purple-400/30 
+                        transition-all duration-300 transform group-hover:scale-105
+                        shadow-lg shadow-purple-900/10 group-hover:shadow-purple-500/20`}>
                         
-                        {/* Main container with enhanced styling */}
-                        <div className="relative flex items-center gap-1 pl-2 pr-3 py-1 
-                          bg-gradient-to-r from-purple-900/80 via-purple-800/80 to-purple-900/80 
-                          backdrop-blur-sm rounded-full 
-                          border border-purple-500/20 group-hover:border-purple-400/50 
-                          transition-all duration-300 transform group-hover:scale-105
-                          shadow-lg shadow-purple-900/20 group-hover:shadow-purple-500/30">
-                          
-                          {/* Animated background gradient */}
-                          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600/0 via-purple-500/10 to-purple-600/0 
-                            opacity-0 group-hover:opacity-100 transition-opacity duration-500
-                            animate-pulse" />
-                          
-                          {/* Balance display - smaller and tighter */}
-                          <div className="relative text-purple-100 flex items-center">
+                        {/* Animated background gradient */}
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600/0 via-purple-500/10 to-purple-600/0 
+                          opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                          animate-pulse" />
+                        
+                        {/* Balance or Dividends display */}
+                        <div className="relative text-purple-100 flex items-center">
+                          {isAuthenticated && user ? (
                             <SolanaTokenDisplay 
                               mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS}
                               walletAddress={user.wallet_address} 
                               compact={true}
-                              className="text-[11px] font-medium leading-none"
+                              className={`font-medium leading-none ${isCompact ? "text-sm" : "text-base"}`}
                               showSupply={false}
                               showHolders={false}
                             />
-                          </div>
-                          
-                          {/* Token icon - slightly smaller with more spacing */}
-                          <div className="relative flex items-center justify-center w-4 h-4 ml-1">
-                            <div className="absolute inset-0 bg-purple-400 rounded-full animate-ping opacity-20" />
-                            <div className="relative w-4 h-4 flex items-center justify-center">
-                              <NanoLogo />
-                            </div>
-                          </div>
-                          
-                          {/* Shimmer effect overlay */}
-                          <div className="absolute inset-0 rounded-full overflow-hidden">
-                            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 
-                              bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                          ) : (
+                            <span className={`font-medium leading-none ${isCompact ? "text-sm" : "text-base"}`}>
+                              Dividends
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Token icon - slightly smaller with more spacing */}
+                        <div className="relative flex items-center justify-center w-4 h-4 ml-1">
+                          <div className="absolute inset-0 bg-purple-400 rounded-full animate-ping opacity-20" />
+                          <div className="relative w-4 h-4 flex items-center justify-center">
+                            <NanoLogo />
                           </div>
                         </div>
-                      </Link>
-                    )}
+                        
+                        {/* Chevron indicator */}
+                        <svg className="w-3 h-3 ml-1 text-purple-300 group-hover:text-purple-200 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        
+                        {/* Shimmer effect overlay */}
+                        <div className="absolute inset-0 rounded-full overflow-hidden">
+                          <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 
+                            bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                        </div>
+                      </div>
+                    </Link>
                     
                     <UserMenu 
                       user={user} 

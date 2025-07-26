@@ -105,7 +105,7 @@
     "date-fns": "^2.30.0",
     "engine.io-client": "^6.6.3",
     "eth-rpc-errors": "^4.0.3",
-    "framer-motion": "^12.9.4",
+    "framer-motion": "^12.23.9",
     "graphql": "^16.10.0",
     "graphql-request": "^7.1.2",
     "gsap": "^3.12.5",

@@ -258,45 +258,55 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
     <div className={`relative ${className}`}>
         {/* Header Menu Controls - Row Layout for Token Balance, Profile and Notifications */}
         <div className="flex items-center space-x-1">
-        {/* Token Balance Display (only for admin/superadmin users) */}
-        {user && (isAdministrator || isSuperAdmin) && (
-          <Link
-            to="/wallet"
-            className="group relative mr-1"
-            onClick={() => setIsOpen(false)}
-          >
-            {/* Outer glow for mobile */}
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-60 blur-sm transition-all duration-300" />
+        {/* Token Balance Display (for all users) */}
+        <Link
+          to="/wallet"
+          className="group relative mr-1"
+          onClick={() => setIsOpen(false)}
+        >
+          {/* Outer glow for mobile */}
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-60 blur-sm transition-all duration-300" />
+          
+          {/* Main container - compact for mobile, matching UserMenu height */}
+          <div className={`relative flex items-center gap-1 pl-2.5 pr-3
+            ${isCompact ? "h-7" : "h-8"}
+            bg-gradient-to-r from-purple-900/40 via-purple-800/30 to-purple-900/40 
+            backdrop-blur-sm rounded-full 
+            border border-purple-500/15 
+            transition-all duration-300
+            shadow-md shadow-purple-900/10`}>
             
-            {/* Main container - compact for mobile */}
-            <div className="relative flex items-center gap-1 pl-2.5 pr-3 py-0.5 
-              bg-gradient-to-r from-purple-900/80 via-purple-800/80 to-purple-900/80 
-              backdrop-blur-sm rounded-full 
-              border border-purple-500/20 
-              transition-all duration-300
-              shadow-md shadow-purple-900/20">
-              
-              {/* Balance display */}
-              <div className="text-purple-100 flex items-center">
+            {/* Balance or Dividends display */}
+            <div className="text-purple-100 flex items-center">
+              {user ? (
                 <SolanaTokenDisplay 
                   mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS}
                   walletAddress={user.wallet_address} 
                   compact={true}
-                  className="text-xs font-semibold leading-none"
+                  className={`font-medium leading-none ${isCompact ? "text-sm" : "text-base"}`}
                   showSupply={false}
                   showHolders={false}
                 />
-              </div>
-              
-              {/* Token icon with more spacing */}
-              <div className="relative flex items-center justify-center w-4 h-4 ml-0.5">
-                <div className="w-4 h-4 flex items-center justify-center">
-                  <NanoLogo />
-                </div>
+              ) : (
+                <span className={`font-medium leading-none ${isCompact ? "text-sm" : "text-base"}`}>
+                  Dividends
+                </span>
+              )}
+            </div>
+            
+            {/* Token icon with more spacing */}
+            <div className="relative flex items-center justify-center w-4 h-4 ml-0.5">
+              <div className="w-4 h-4 flex items-center justify-center">
+                <NanoLogo />
               </div>
             </div>
-          </Link>
-        )}
+            
+            {/* Chevron indicator */}
+            <svg className="w-3 h-3 ml-0.5 text-purple-300 group-hover:text-purple-200 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </Link>
         
         {/* User Menu Button - Full pill style like desktop */}
         <button

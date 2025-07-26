@@ -64,7 +64,7 @@ export const DegenReputationAnimation: React.FC = () => {
       width: `${progressPercent}%`,
       transition: {
         duration: 1,
-        ease: "easeOut",
+        ease: "easeOut" as const,
         delay: 0.5
       }
     }
@@ -76,7 +76,7 @@ export const DegenReputationAnimation: React.FC = () => {
       scale: 1,
       rotate: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 300,
         damping: 15,
         delay: 0.7 + (i * 0.1)
