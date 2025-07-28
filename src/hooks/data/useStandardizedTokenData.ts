@@ -227,7 +227,7 @@ export function useStandardizedTokenData(
   const hotTokens = useMemo(() => {
     if (!tokens || !Array.isArray(tokens) || tokens.length === 0) return [];
     
-    // Hot tokens = first tokens from backend (already sorted by degenduel_score)
+    // Hot tokens = first tokens from backend (already sorted by 24h price change)
     return tokens.slice(0, maxHotTokens);
   }, [tokens, maxHotTokens]);
 
@@ -236,7 +236,7 @@ export function useStandardizedTokenData(
     return Array.isArray(tokens) ? tokens : [];
   }, [tokens]);
 
-  // NO CLIENT-SIDE SORTING - Backend already sorted by degenduel_score
+  // NO CLIENT-SIDE SORTING - Backend already sorted by 24h price change
   const sortedTokens = useMemo(() => {
     return filteredTokens || [];
   }, [filteredTokens]);
