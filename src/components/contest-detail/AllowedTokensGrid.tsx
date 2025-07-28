@@ -55,17 +55,56 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
     const fetchSampleTokens = async () => {
       try {
         setIsLoading(true);
-        // Fetch just 50 trending tokens for the example grid
-        const response = await fetch('/api/tokens/trending?limit=50&offset=0&format=paginated');
+        
+        // First, fetch the specific injected token
+        const injectedTokenAddress = 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX';
+        let injectedTokens: any[] = [];
+        
+        try {
+          const searchResponse = await fetch(`/api/tokens/search?search=${injectedTokenAddress}&limit=1&include_inactive=false`);
+          if (searchResponse.ok) {
+            const searchData = await searchResponse.json();
+            if (searchData.tokens && Array.isArray(searchData.tokens)) {
+              injectedTokens = searchData.tokens.filter((token: any) => token.image_url);
+            }
+          }
+        } catch (searchErr) {
+          console.log('Failed to fetch injected token, continuing with regular tokens');
+        }
+        
+        // Then fetch 200 tokens from the all endpoint
+        const response = await fetch('/api/tokens/all?limit=200&offset=0&format=paginated');
         if (!response.ok) {
           throw new Error('Failed to fetch tokens');
         }
         
         const data = await response.json();
-        if (data.tokens && Array.isArray(data.tokens)) {
-          // Filter tokens with images and randomize for variety
-          const tokensWithImages = data.tokens.filter((token: any) => token.image_url);
-          const shuffled = [...tokensWithImages].sort(() => Math.random() - 0.5);
+        console.log('All tokens response:', data);
+        
+        // Handle different response structures
+        const allTokens = data.data || data.tokens || [];
+        console.log('Extracted tokens array:', allTokens);
+        console.log('Number of tokens from all endpoint:', allTokens.length);
+        
+        if (Array.isArray(allTokens)) {
+          // Filter tokens with images
+          const tokensWithImages = allTokens.filter((token: any) => token.image_url);
+          console.log('Tokens with images:', tokensWithImages.length);
+          console.log('Injected tokens:', injectedTokens.length);
+          
+          // Combine injected tokens with regular tokens
+          const combinedTokens = [...injectedTokens, ...tokensWithImages];
+          console.log('Combined tokens:', combinedTokens.length);
+          
+          // Remove duplicates based on contract address or address field
+          const uniqueTokens = combinedTokens.filter((token, index, self) =>
+            index === self.findIndex((t) => (t.contract_address || t.address) === (token.contract_address || token.address))
+          );
+          console.log('Unique tokens after dedup:', uniqueTokens.length);
+          
+          // Randomize for variety
+          const shuffled = [...uniqueTokens].sort(() => Math.random() - 0.5);
+          console.log('Final tokens to display:', shuffled.length);
           setTokens(shuffled);
         }
       } catch (err: any) {
