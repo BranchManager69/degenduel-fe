@@ -119,6 +119,28 @@ export interface Contest {
   image_url?: string; // AI-generated contest image URL
 }
 
+// Contest Entry Transaction
+export interface ContestEntryTransaction {
+  signature: string;
+  solscan_url: string;
+}
+
+// Contest Participation Response
+export interface ContestParticipation {
+  id: number;
+  contest_id: number;
+  wallet_address: string;
+  entry_transaction_id?: number;
+  entry_transaction?: ContestEntryTransaction | null;
+  // Add other participation fields as needed
+}
+
+// Contest Entry Response
+export interface ContestEntryResponse {
+  participation: ContestParticipation;
+  message: string;
+}
+
 // Base Token
 export interface BaseToken {
   name: string;
@@ -714,6 +736,7 @@ export interface ContestSettings {
   minParticipants: number;
   tokenTypesAllowed: string[]; // e.g., ["SPL"]
   startingPortfolioValue: string; // e.g., "10000"
+  payout_structure?: Record<string, number>; // e.g., {"place_1": 0.5, "place_2": 0.3, "place_3": 0.2}
 }
 
 // This ContestDetails definition is the one aligned with the new API

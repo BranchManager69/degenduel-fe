@@ -79,11 +79,13 @@ interface ChartDataPoint {
 interface DuelSnapshotChartProps {
   height?: number;
   className?: string;
+  demoMode?: boolean;
 }
 
 export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
   height = 400,
   className = '',
+  demoMode = false,
 }) => {
   const [timeRange] = useState<TimeRange>('all');
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
@@ -102,7 +104,7 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
   };
 
   // Format data for chart
-  const formatChartData = (balances: BalanceDataPoint[], range: TimeRange): ChartDataPoint[] => {
+  const formatChartData = (balances: BalanceDataPoint[], range: TimeRange, currentBalance?: number): ChartDataPoint[] => {
     // Reverse the array so oldest is on the left, newest on the right
     const sortedData = balances.reverse().map(point => ({
       timestamp: point.timestamp,
@@ -172,6 +174,7 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
         
         sortedData.push({
           ...lastDataPoint,
+          balance: currentBalance !== undefined ? currentBalance : lastDataPoint.balance, // Use current balance if available
           timestamp: missingDate.toISOString(),
           formattedTime: missingDate.toLocaleTimeString('en-US', {
             hour: 'numeric',
@@ -183,7 +186,7 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
             day: 'numeric'
           }),
           dividend_percentage_display: lastDataPoint.dividend_percentage, // Keep for display position
-          dividend_percentage: undefined, // Set to undefined to break the line
+          dividend_percentage: demoMode ? lastDataPoint.dividend_percentage : undefined, // For demo mode, connect the line
           isExtrapolated: true
         });
       }
@@ -198,6 +201,42 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
       setIsLoading(true);
       setError(null);
       
+      // If in demo mode, use example snapshot data
+      if (demoMode) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Generate demo snapshot data (6 days of real data, today will be extrapolated)
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const demoBalances: BalanceDataPoint[] = [];
+        
+        // Generate 6 days of data ending YESTERDAY (newest first, oldest last)
+        for (let i = 1; i <= 6; i++) {
+          const date = new Date(now);
+          date.setDate(date.getDate() - i); // Days ago
+          date.setHours(0, 0, 0, 0);
+          
+          // Balance should decrease as we go back in time
+          const balance = 31800000 - ((i - 1) * 50000) + Math.random() * 30000;
+          const totalSupply = 150000000 + Math.random() * 5000000;
+          const percentage = (balance / totalSupply) * 100;
+          
+          demoBalances.push({
+            id: 1000 + i,
+            balance_lamports: (balance * 1000000).toString(),
+            balance_duel: balance,
+            timestamp: date.toISOString(),
+            total_registered_supply: totalSupply,
+            dividend_percentage: parseFloat(percentage.toFixed(2))
+          });
+        }
+        
+        const formattedData = formatChartData(demoBalances, timeRange);
+        setChartData(formattedData);
+        
+        return;
+      }
+      
       const params = getTimeRangeParams();
       const response = await axios.get('/api/user/duel-balance-history', { params });
       
@@ -205,7 +244,7 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
         const data: ApiResponse = response.data;
         
         // Format data for chart
-        const formattedData = formatChartData(data.balances, timeRange);
+        const formattedData = formatChartData(data.balances, timeRange, data.trends?.current);
         setChartData(formattedData);
         setUserData(data.wallet);
       } else {
@@ -272,8 +311,13 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
       
       return (
         <div className="bg-dark-300 rounded p-3">
+          {data.isExtrapolated && (
+            <p className="text-cyan-400 text-xs mb-1 italic">
+              Projected
+            </p>
+          )}
           <p className="text-gray-400 text-xs mb-1">
-            {data.formattedDate} • {data.formattedTime}
+            {data.formattedDate}
           </p>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -283,11 +327,25 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
               <div className="w-4 h-4">
                 <NanoLogo />
               </div>
+              <span className="text-gray-300 text-sm ml-1">held</span>
             </div>
             {data.dividend_percentage && (
-              <div className="text-amber-400 text-sm">
-                {data.dividend_percentage.toFixed(2)}% dividend share
-              </div>
+              <>
+                <div className="text-amber-400 text-sm">
+                  {data.dividend_percentage.toFixed(2)}% dividend share
+                </div>
+                <div className="flex items-center gap-1 text-sm">
+                  <span className="text-white font-medium">
+                    {demoMode ? "0" : "0"}
+                  </span>
+                  <img 
+                    src="/assets/media/logos/solana.svg" 
+                    alt="SOL" 
+                    className="w-4 h-4"
+                  />
+                  <span className="text-gray-300">earned</span>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -408,8 +466,41 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
               <YAxis 
                 yAxisId="right"
                 orientation="right"
-                domain={[0, 100]}
-                hide={true}
+                domain={[0, (() => {
+                  if (!chartData || chartData.length === 0) return 10;
+                  const percentageValues = chartData
+                    .map(d => d.dividend_percentage)
+                    .filter(val => val !== undefined && val !== null) as number[];
+                  
+                  if (percentageValues.length === 0) return 10;
+                  const maxValue = Math.max(...percentageValues);
+                  return maxValue > 10 ? 30 : 10;
+                })()]}
+                stroke="#6B7280"
+                fontSize={12}
+                tick={{ fill: '#9CA3AF' }}
+                tickFormatter={(value) => `${value}%`}
+                ticks={(() => {
+                  if (!chartData || chartData.length === 0) return [0, 2.5, 5, 7.5, 10];
+                  const percentageValues = chartData
+                    .map(d => d.dividend_percentage)
+                    .filter(val => val !== undefined && val !== null) as number[];
+                  
+                  if (percentageValues.length === 0) return [0, 2.5, 5, 7.5, 10];
+                  const maxValue = Math.max(...percentageValues);
+                  
+                  if (maxValue > 10) {
+                    return [0, 10, 20, 30];
+                  } else {
+                    return [0, 2.5, 5, 7.5, 10];
+                  }
+                })()}
+                label={{ 
+                  value: 'Your % of Total Rev Share', 
+                  angle: 90, 
+                  position: 'insideRight',
+                  style: { fill: '#9CA3AF', fontSize: 14, textAnchor: 'middle' }
+                }}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar
@@ -429,9 +520,9 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
                         width={width}
                         height={height}
                         fill={fill}
-                        fillOpacity={isExtrapolated ? 0.05 : 0.8}
+                        fillOpacity={isExtrapolated ? 0.25 : 0.8}
                         stroke={fill}
-                        strokeWidth={2}
+                        strokeWidth={isExtrapolated ? 1 : 2}
                         strokeDasharray={isExtrapolated ? '5,5' : 'none'}
                         rx={4}
                         ry={4}
@@ -439,15 +530,6 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
                     </g>
                   );
                 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="dividend_percentage"
-                stroke="#A855F7"
-                strokeWidth={2}
-                connectNulls={false}
-                dot={false}
-                yAxisId="right"
               />
               {/* Separate line for all labels */}
               <Line
@@ -470,30 +552,86 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
                     const dataPoint = chartData[index];
                     const isExtrapolated = dataPoint?.isExtrapolated || false;
                     
-                    // For extrapolated data, show "Snapshot" and "N/A" stacked
+                    // For extrapolated data in demo mode, show the percentage value
                     if (isExtrapolated) {
+                      // In demo mode, show the percentage value like other points
+                      if (demoMode && value) {
+                        return (
+                          <text
+                            x={x}
+                            y={y - 5}
+                            textAnchor="middle"
+                            fill="#000000"
+                            fontSize="14"
+                            fontWeight="700"
+                          >
+                            {`${value.toFixed(1)}%`}
+                          </text>
+                        );
+                      }
+                      
+                      // For non-demo mode, determine if this is the latest extrapolated bar
+                      const isLatestExtrapolated = (() => {
+                        // Find all extrapolated points
+                        const extrapolatedIndices = chartData
+                          .map((point, idx) => point.isExtrapolated ? idx : -1)
+                          .filter(idx => idx !== -1);
+                        
+                        // Check if this is the rightmost (latest) extrapolated point
+                        return extrapolatedIndices.length > 0 && index === Math.max(...extrapolatedIndices);
+                      })();
+                      
+                      const isToday = isLatestExtrapolated;
+                      const bgColor = isToday ? "#dcfce7" : "#fed7aa"; // Light green for today, light orange for pending
+                      
                       return (
                         <g>
-                          <text
-                            x={x}
-                            y={y - 10}
-                            textAnchor="middle"
-                            fill="#A855F7"
-                            fontSize="10"
-                            fontWeight="600"
-                          >
-                            Snapshot
-                          </text>
-                          <text
-                            x={x}
-                            y={y + 2}
-                            textAnchor="middle"
-                            fill="#A855F7"
-                            fontSize="10"
-                            fontWeight="600"
-                          >
-                            N/A
-                          </text>
+                          {/* Background rectangle */}
+                          <rect
+                            x={x - 25}
+                            y={y - 18}
+                            width={50}
+                            height={24}
+                            fill={bgColor}
+                            fillOpacity={0.9}
+                            rx={3}
+                            ry={3}
+                          />
+                          {isToday ? (
+                            <text
+                              x={x}
+                              y={y - 3}
+                              textAnchor="middle"
+                              fill="#000000"
+                              fontSize="11"
+                              fontWeight="600"
+                            >
+                              Today
+                            </text>
+                          ) : (
+                            <>
+                              <text
+                                x={x}
+                                y={y - 8}
+                                textAnchor="middle"
+                                fill="#000000"
+                                fontSize="10"
+                                fontWeight="600"
+                              >
+                                Snapshot
+                              </text>
+                              <text
+                                x={x}
+                                y={y + 1}
+                                textAnchor="middle"
+                                fill="#000000"
+                                fontSize="10"
+                                fontWeight="600"
+                              >
+                                Pending
+                              </text>
+                            </>
+                          )}
                         </g>
                       );
                     }
@@ -505,7 +643,7 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
                         y={y - 5}
                         textAnchor="middle"
                         fill="#000000"
-                        fontSize="16"
+                        fontSize="14"
                         fontWeight="700"
                       >
                         {`${value.toFixed(1)}%`}
@@ -520,9 +658,12 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
       </div>
       
       {/* Explanation text */}
-      <div className="mt-4 text-center">
+      <div className="mt-6 text-center space-y-1">
         <p className="text-gray-400 text-sm">
-          Daily snapshot taken once per day at midnight UTC. Your dividend percentage (purple) determines your share of the platform's revenue.
+          Each bar represents your average balance from 50 snapshots randomly taken during the day
+        </p>
+        <p className="text-gray-400 text-sm flex items-center justify-center gap-1">
+          Higher percentage = bigger <span className="text-brand-400 font-semibold">Degen Dividends</span> share, DegenDuel's revenue (<img src="/assets/media/logos/solana.svg" alt="SOL" className="w-4 h-4 inline" />) sharing program
         </p>
       </div>
     </div>

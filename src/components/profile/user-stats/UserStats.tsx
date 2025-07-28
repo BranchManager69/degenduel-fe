@@ -7,7 +7,7 @@ interface UserStatsProps {
   contestsPlayed: number;
   contestsWon: number;
   winRate: number;
-  averageReturn: number;
+  avgRank?: number;
 }
 
 export const UserStats: React.FC<UserStatsProps> = ({
@@ -15,7 +15,7 @@ export const UserStats: React.FC<UserStatsProps> = ({
   contestsPlayed = 0,
   contestsWon = 0,
   winRate = 0,
-  averageReturn = 0,
+  avgRank,
 }) => {
   return (
     <div className="rounded-lg border shadow-sm backdrop-blur-sm border-dark-300/20">
@@ -51,12 +51,14 @@ export const UserStats: React.FC<UserStatsProps> = ({
               {winRate ? `${winRate}%` : "N/A"}
             </div>
           </div>
-          <div className="p-4 backdrop-blur-sm border border-dark-300/20 rounded-lg">
-            <div className="text-sm text-brand-400">Average Return</div>
-            <div className="text-xl font-bold text-gray-400">
-              {averageReturn ? `${averageReturn}%` : "N/A"}
+          {avgRank !== undefined && (
+            <div className="p-4 backdrop-blur-sm border border-dark-300/20 rounded-lg">
+              <div className="text-sm text-brand-400">Avg. Placement</div>
+              <div className="text-xl font-bold text-gray-400">
+                {avgRank.toFixed(1)}%
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

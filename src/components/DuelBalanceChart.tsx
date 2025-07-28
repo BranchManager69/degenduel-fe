@@ -72,13 +72,15 @@ interface ChartDataPoint {
 interface DuelBalanceChartProps {
   height?: number;
   className?: string;
+  demoMode?: boolean;
 }
 
 export const DuelBalanceChart: React.FC<DuelBalanceChartProps> = ({
   height = 400,
   className = '',
+  demoMode = false,
 }) => {
-  const [timeRange, setTimeRange] = useState<TimeRange>('24h');
+  const [timeRange, setTimeRange] = useState<TimeRange>('all');
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [trends, setTrends] = useState<TrendsData | null>(null);
   const [, setUserData] = useState<UserData | null>(null);
@@ -96,8 +98,53 @@ export const DuelBalanceChart: React.FC<DuelBalanceChartProps> = ({
 
   // Format data for chart
   const formatChartData = (balances: BalanceDataPoint[], range: TimeRange): ChartDataPoint[] => {
+    // Filter out any data before July 23, 2025 8:30 PM ET (July 24, 2025 00:30 UTC)
+    const cutoffDate = new Date('2025-07-24T00:30:00.000Z');
+    const filteredBalances = balances.filter(point => new Date(point.timestamp) >= cutoffDate);
+    
     // Reverse the array so oldest is on the left, newest on the right
-    return balances.reverse().map(point => ({
+    const reversedBalances = [...filteredBalances].reverse();
+    
+    // For 'all' view with many data points, we might want to reduce data density
+    if (range === 'all' && reversedBalances.length > 50) {
+      // Group by 6-hour intervals to show ~4 points per day
+      const groupedData = new Map<string, BalanceDataPoint>();
+      
+      reversedBalances.forEach(point => {
+        const date = new Date(point.timestamp);
+        // Create a key for 6-hour intervals (0, 6, 12, 18)
+        const hour = Math.floor(date.getHours() / 6) * 6;
+        const dateKey = `${date.toISOString().split('T')[0]}-${hour}`; // YYYY-MM-DD-HH
+        
+        // Keep the last data point of each 6-hour interval
+        groupedData.set(dateKey, point);
+      });
+      
+      // Convert back to array and use those points
+      return Array.from(groupedData.values()).map(point => {
+        const date = new Date(point.timestamp);
+        const now = new Date();
+        const showYear = date.getFullYear() !== now.getFullYear();
+        
+        return {
+          timestamp: point.timestamp,
+          balance: point.balance_duel,
+          formattedTime: new Date(point.timestamp).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          }),
+          formattedDate: date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            ...(showYear && { year: '2-digit' })
+          })
+        };
+      });
+    }
+    
+    // For other views or when we have fewer data points, use all data
+    return reversedBalances.map(point => ({
       timestamp: point.timestamp,
       balance: point.balance_duel,
       formattedTime: new Date(point.timestamp).toLocaleTimeString('en-US', {
@@ -131,11 +178,20 @@ export const DuelBalanceChart: React.FC<DuelBalanceChartProps> = ({
           return date.toLocaleDateString('en-US', {
             weekday: 'short'
           });
-        } else {
-          // For 30d/all, show month and day
+        } else if (range === '30d') {
+          // For 30d, show month and day
           return date.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric'
+          });
+        } else {
+          // For 'all' view, add year if needed
+          const now = new Date();
+          const showYear = date.getFullYear() !== now.getFullYear();
+          return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            ...(showYear && { year: '2-digit' })
           });
         }
       })()
@@ -147,6 +203,50 @@ export const DuelBalanceChart: React.FC<DuelBalanceChartProps> = ({
     try {
       setIsLoading(true);
       setError(null);
+      
+      // If in demo mode, use example data
+      if (demoMode) {
+        // Simulate loading delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Generate demo data
+        const now = new Date();
+        const demoBalances: BalanceDataPoint[] = [];
+        const baseBalance = 28500000; // Starting at 28.5M
+        
+        // Generate 30 days of data with gradual increase to 31.8M
+        for (let i = 29; i >= 0; i--) {
+          const date = new Date(now);
+          date.setDate(date.getDate() - i);
+          const growth = (31814255 - baseBalance) / 29;
+          const balance = baseBalance + (growth * (29 - i));
+          
+          // Add some variance to make it more realistic
+          const variance = (Math.random() - 0.5) * 100000;
+          const finalBalance = Math.max(baseBalance, balance + variance);
+          
+          demoBalances.push({
+            id: 1000 + i,
+            balance_lamports: (finalBalance * 1000000).toString(),
+            balance_duel: finalBalance,
+            timestamp: date.toISOString()
+          });
+        }
+        
+        const formattedData = formatChartData(demoBalances, timeRange);
+        setChartData(formattedData);
+        setTrends({
+          current: 31814255,
+          change24h: 18968,
+          change7d: 3314255,
+          change30d: 3314255,
+          percentChange24h: 0.06,
+          percentChange7d: 11.6,
+          percentChange30d: 11.6
+        });
+        
+        return;
+      }
       
       const params = getTimeRangeParams();
       const response = await axios.get('/api/user/duel-balance-history', { params });
@@ -162,9 +262,21 @@ export const DuelBalanceChart: React.FC<DuelBalanceChartProps> = ({
       } else {
         throw new Error('Failed to fetch balance history');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching DUEL balance history:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load balance history');
+      
+      // Handle specific error cases
+      if (err.response?.status === 401) {
+        setError('Your session has expired.\nPlease <refresh> to log in again.');
+      } else if (err.response?.status === 403) {
+        setError('Access denied. Please check your permissions.');
+      } else if (err.response?.status === 500) {
+        setError('Server error. Please try again later.');
+      } else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('Request timed out. Please check your connection and try again.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to load balance history');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -175,42 +287,6 @@ export const DuelBalanceChart: React.FC<DuelBalanceChartProps> = ({
     fetchBalanceHistory();
   }, [timeRange]);
 
-  // Calculate nice round ticks for Y-axis
-  const calculateYAxisTicks = () => {
-    if (!chartData || chartData.length === 0) return [];
-    
-    const values = chartData.map(d => d.balance);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
-    
-    // Add 5% padding to max
-    const paddedMax = maxValue * 1.05;
-    
-    // Calculate a nice round interval
-    const range = paddedMax - minValue;
-    const targetTicks = 5; // Aim for about 5 ticks
-    const roughInterval = range / targetTicks;
-    
-    // Round to nice numbers
-    let niceInterval;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(roughInterval)));
-    const normalized = roughInterval / magnitude;
-    
-    if (normalized <= 1) niceInterval = magnitude;
-    else if (normalized <= 2) niceInterval = 2 * magnitude;
-    else if (normalized <= 5) niceInterval = 5 * magnitude;
-    else niceInterval = 10 * magnitude;
-    
-    // Generate ticks
-    const ticks = [];
-    const startTick = Math.floor(minValue / niceInterval) * niceInterval;
-    
-    for (let tick = startTick; tick <= paddedMax; tick += niceInterval) {
-      if (tick >= 0) ticks.push(tick);
-    }
-    
-    return ticks;
-  };
 
   // Custom tooltip for chart
   const CustomTooltip = ({ active, payload }: any) => {
@@ -282,16 +358,36 @@ export const DuelBalanceChart: React.FC<DuelBalanceChartProps> = ({
   if (error) {
     return (
       <div className={`${className}`}>
-        <div className="flex items-center justify-center h-64 text-red-400">
+        <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <p className="text-lg mb-2">Error loading balance history</p>
-            <p className="text-sm text-gray-500">{error}</p>
-            <button 
-              onClick={fetchBalanceHistory}
-              className="mt-4 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors"
-            >
-              Retry
-            </button>
+            <div className="text-base text-gray-400">
+              {error.split('\n').map((line, lineIndex) => (
+                <p key={lineIndex} className={lineIndex > 0 ? 'mt-2' : ''}>
+                  {line.split('<refresh>').map((part, index) => {
+                    if (index === 0) return part;
+                    return (
+                      <React.Fragment key={index}>
+                        <button 
+                          className="inline-block px-3 py-1 mx-1 bg-green-400/70 hover:bg-green-400/80 text-black font-bold rounded transition-colors" 
+                          onClick={() => window.location.reload()}
+                        >
+                          refresh the page
+                        </button>
+                        {part.split('</refresh>')[1] || part}
+                      </React.Fragment>
+                    );
+                  })}
+                </p>
+              ))}
+            </div>
+            {!error.includes('<refresh>') && (
+              <button 
+                onClick={fetchBalanceHistory}
+                className="mt-4 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors"
+              >
+                Retry
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -342,7 +438,10 @@ export const DuelBalanceChart: React.FC<DuelBalanceChartProps> = ({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={height}>
-            <AreaChart data={chartData}>
+            <AreaChart 
+              data={chartData} 
+              margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
+            >
               <defs>
                 <linearGradient id="colorDuel" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
@@ -366,15 +465,17 @@ export const DuelBalanceChart: React.FC<DuelBalanceChartProps> = ({
                 stroke="#6B7280"
                 fontSize={timeRange === '24h' ? 11 : 12}
                 tick={{ fill: '#9CA3AF' }}
-                interval={(() => {
-                  // Calculate interval to show unique days only
-                  if (timeRange === '7d') {
-                    // For 7d view, show one label per day max (48 snapshots per day / 7 days)
-                    return Math.max(1, Math.floor(chartData.length / 7));
-                  }
-                  if (timeRange === '30d') return Math.floor(chartData.length / 10);
-                  if (timeRange === '24h') return Math.floor(chartData.length / 8); // ~8 time labels
-                  return Math.floor(chartData.length / 10);
+                ticks={(() => {
+                  // Get unique dates only
+                  const uniqueDates = new Map<string, number>();
+                  chartData.forEach((point, index) => {
+                    if (!uniqueDates.has(point.formattedDate)) {
+                      uniqueDates.set(point.formattedDate, index);
+                    }
+                  });
+                  
+                  // Return the formattedDate values for unique dates
+                  return Array.from(uniqueDates.keys());
                 })()}
               />
               <YAxis 
@@ -383,14 +484,34 @@ export const DuelBalanceChart: React.FC<DuelBalanceChartProps> = ({
                 tick={{ fill: '#9CA3AF' }}
                 tickFormatter={(value) => {
                   // Format large numbers with K, M, B suffixes
-                  if (value >= 1000000000) return `${(value / 1000000000).toFixed(1)}B`;
+                  if (value >= 1000000000) return `${(value / 1000000000).toFixed(0)}B`;
                   if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
                   if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
                   return value.toLocaleString();
                 }}
-                domain={[0, 'dataMax * 1.05']}
-                allowDataOverflow={false}
-                ticks={calculateYAxisTicks()}
+                domain={[0, (dataMax: number) => dataMax * 1.05]}
+                ticks={(() => {
+                  if (!chartData || chartData.length === 0) return [];
+                  
+                  const values = chartData.map(d => d.balance);
+                  const maxValue = Math.max(...values);
+                  const paddedMax = maxValue * 1.05;
+                  
+                  // For ~32M max, we want ticks at 0, 10M, 20M, 30M, 35M
+                  // Calculate appropriate interval based on max value
+                  let interval;
+                  if (paddedMax <= 10000000) interval = 2000000; // 2M intervals
+                  else if (paddedMax <= 50000000) interval = 10000000; // 10M intervals
+                  else if (paddedMax <= 100000000) interval = 20000000; // 20M intervals
+                  else interval = 50000000; // 50M intervals
+                  
+                  const ticks = [];
+                  for (let i = 0; i <= paddedMax; i += interval) {
+                    ticks.push(i);
+                  }
+                  
+                  return ticks;
+                })()}
                 label={{ 
                   value: 'DUEL Held', 
                   angle: -90, 
@@ -413,9 +534,14 @@ export const DuelBalanceChart: React.FC<DuelBalanceChartProps> = ({
                 dataKey="balance" 
                 stroke="#10B981" 
                 strokeWidth={3}
-                dot={{ fill: '#064E3B', stroke: '#10B981', strokeWidth: 2, r: 3 }}
+                dot={{ 
+                  fill: '#10B981', 
+                  stroke: '#FFFFFF', 
+                  strokeWidth: 2, 
+                  r: 4 
+                }}
                 activeDot={{ 
-                  r: 6, 
+                  r: 7, 
                   stroke: '#10B981', 
                   strokeWidth: 3,
                   fill: '#10B981',

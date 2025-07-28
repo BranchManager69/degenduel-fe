@@ -5,7 +5,6 @@ import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { FaCopy, FaDiscord, FaTelegram, FaTwitter } from "react-icons/fa";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
-import { useInviteSystem } from "../../hooks/social/legacy/useInviteSystem";
 import { formatCurrency } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
 import { getContestOGImageUrl, OGImage } from "../../utils/ogImageUtils";
@@ -24,12 +23,11 @@ export const ShareContestButton: React.FC<ShareContestButtonProps> = ({
   className = ""
 }) => {
   const { isAuthenticated, user } = useMigratedAuth();
-  const { inviteCode } = useInviteSystem();
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Get the user's invite code (from auth or invite system) with safe fallbacks
-  const userInviteCode = (user as any)?.inviteCode || (user as any)?.invite_code || inviteCode || '';
+  // Get the user's referral code (now consistent across all auth endpoints)
+  const userInviteCode = user?.referral_code || '';
 
   // Get OG image URL for preview
   const ogImageUrl = getContestOGImageUrl(contestId);
@@ -39,8 +37,14 @@ export const ShareContestButton: React.FC<ShareContestButtonProps> = ({
   }
 
   const generateShareLink = (withContest: boolean = true) => {
-    const baseUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://degenduel.me'}/join?ref=${userInviteCode}`;
-    return withContest ? `${baseUrl}&contest=${contestId}` : baseUrl;
+    const baseUrl = window.location.origin || 'https://degenduel.me';
+    if (withContest) {
+      // Direct link to contest with referral code
+      return `${baseUrl}/contests/${contestId}?ref=${userInviteCode}`;
+    } else {
+      // General referral link
+      return `${baseUrl}?ref=${userInviteCode}`;
+    }
   };
 
   const generateShareText = () => {
@@ -105,46 +109,51 @@ export const ShareContestButton: React.FC<ShareContestButtonProps> = ({
 
   return (
     <div className={`relative ${className}`}>
-      {/* Share Button */}
+      {/* Share Button - Minimal Icon Only */}
       <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 shadow-lg"
+        className={`relative p-2 transition-all duration-300 group ${
+          isOpen ? 'text-white bg-brand-500/20 rounded-lg' : 'text-gray-400 hover:text-white'
+        }`}
+        title="Share Contest"
       >
+        {/* Subtle glow effect on hover */}
+        <div className="absolute inset-0 rounded-lg bg-brand-400/20 opacity-0 group-hover:opacity-100 blur-lg transition-opacity duration-300" />
+        
+        {/* Icon */}
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4"
+          className="h-5 w-5 relative z-10"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
+          strokeWidth={2}
         >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth={2}
             d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
           />
         </svg>
-        <span className="hidden sm:inline">Share Contest</span>
-        <span className="sm:hidden">Share</span>
       </motion.button>
 
       {/* Share Menu */}
       {isOpen && (
-        <>
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop - dark overlay for modal */}
           <div
-            className="fixed inset-0 z-40"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           />
           
           {/* Share Menu */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-            className="absolute top-full right-0 mt-2 w-64 bg-dark-200/95 backdrop-blur-sm border border-brand-400/20 rounded-lg shadow-xl z-50 p-4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative w-full max-w-lg bg-dark-300 rounded-lg shadow-2xl p-6 sm:p-8 max-h-[85vh] overflow-y-auto"
           >
             <div className="space-y-4">
               {/* Header */}
@@ -154,18 +163,18 @@ export const ShareContestButton: React.FC<ShareContestButtonProps> = ({
               </div>
 
               {/* OG Image Preview */}
-              <div className="bg-dark-300/50 rounded-lg p-3">
+              <div>
                 <p className="text-xs text-gray-400 mb-2">Preview:</p>
                 <OGImage
                   src={ogImageUrl}
                   alt={`${contestName} Preview`}
-                  className="w-full h-24"
+                  className="w-full h-auto rounded-md border-0 ring-0 outline-none"
                   fallbackText="Contest preview generating..."
                 />
               </div>
 
               {/* Preview Link */}
-              <div className="bg-dark-300/50 rounded-lg p-3">
+              <div className="bg-dark-400/30 rounded-lg p-3">
                 <p className="text-xs text-gray-400 mb-2">Contest Invite Link:</p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-xs text-brand-300 truncate font-mono">
@@ -193,48 +202,48 @@ export const ShareContestButton: React.FC<ShareContestButtonProps> = ({
               {/* Social Share Buttons */}
               <div className="space-y-2">
                 <p className="text-xs text-gray-400">Quick Share:</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     onClick={() => handleShare("twitter")}
-                    className="flex items-center gap-2 p-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
+                    className="flex items-center justify-center p-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
+                    title="Share on Twitter"
                   >
-                    <FaTwitter className="w-4 h-4" />
-                    <span className="text-sm">Twitter</span>
+                    <FaTwitter className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => handleShare("discord")}
-                    className="flex items-center gap-2 p-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors"
+                    className="flex items-center justify-center p-3 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors"
+                    title="Share on Discord"
                   >
-                    <FaDiscord className="w-4 h-4" />
-                    <span className="text-sm">Discord</span>
+                    <FaDiscord className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => handleShare("telegram")}
-                    className="flex items-center gap-2 p-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg transition-colors"
+                    className="flex items-center justify-center p-3 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg transition-colors"
+                    title="Share on Telegram"
                   >
-                    <FaTelegram className="w-4 h-4" />
-                    <span className="text-sm">Telegram</span>
+                    <FaTelegram className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => copyToClipboard(generateShareText())}
-                    className="flex items-center gap-2 p-2 bg-gray-500/20 hover:bg-gray-500/30 text-gray-400 rounded-lg transition-colors"
+                    className="flex items-center justify-center p-3 bg-gray-500/20 hover:bg-gray-500/30 text-gray-400 rounded-lg transition-colors"
+                    title="Copy share text"
                   >
-                    <FaCopy className="w-4 h-4" />
-                    <span className="text-sm">Copy All</span>
+                    <FaCopy className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
               {/* Rewards Info */}
-              <div className="bg-brand-500/10 border border-brand-400/30 rounded-lg p-3">
+              <div className="bg-dark-400/20 rounded-lg p-3">
                 <p className="text-xs text-brand-300 font-medium mb-1">💰 Earn Contest Credits</p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-500">
                   Get 1 contest credit for every 3 friends who join and play contests through your invite!
                 </p>
               </div>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
     </div>
   );

@@ -7,13 +7,6 @@ import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth"; // Use new h
 import { formatDate } from "../../lib/utils";
 import TwitterLoginButton from "../auth/TwitterLoginButton";
 import { Button } from "../ui/Button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../ui/Card";
 
 interface SocialAccount {
   platform: string;
@@ -31,6 +24,7 @@ const SocialAccountsPanel = () => {
   const { user } = useMigratedAuth(); // Changed to useMigratedAuth
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     async function fetchSocialAccounts() {
@@ -105,21 +99,7 @@ const SocialAccountsPanel = () => {
   );
 
   return (
-    <Card className="bg-dark-300/50 backdrop-blur-sm relative overflow-hidden">
-      {/* Gradient background effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 via-transparent to-brand-800/5" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(153,51,255,0.15),transparent_70%)]" />
-
-      <CardHeader className="relative">
-        <CardTitle className="text-xl font-cyber bg-gradient-to-r from-brand-200 to-brand-400 bg-clip-text text-transparent">
-          Linked Social Accounts
-        </CardTitle>
-        <CardDescription className="text-gray-400">
-          Connect your social media accounts for easier login and more features
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="space-y-4 relative">
+    <div className="space-y-4">
         {loading ? (
           <div className="text-center py-6">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-400"></div>
@@ -170,32 +150,46 @@ const SocialAccountsPanel = () => {
               </div>
             </div>
 
-            {/* Discord and Passkey Integration */}
-            <div className="rounded-lg p-4 bg-dark-400/10">
-              <h4 className="text-white font-medium mb-3">Additional Account Links</h4>
-              <p className="text-gray-400 text-sm mb-4">
-                Link Discord and Passkey for faster login options
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                {/* Discord - Coming Soon */}
-                <div className="p-3 rounded-lg text-center bg-gray-800/30">
-                  <div className="text-[#5865F2] mb-1">🎮</div>
-                  <div className="text-xs text-gray-400">Discord</div>
-                  <div className="text-xs text-gray-500">Coming Soon</div>
+            {/* Discord and Passkey Integration - Expandable */}
+            <div className="rounded-lg bg-dark-400/10 overflow-hidden">
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full px-4 py-3 text-left hover:bg-dark-400/20 transition-colors flex items-center justify-between"
+              >
+                <span className="text-gray-400 text-sm">More options</span>
+                <svg 
+                  className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {isExpanded && (
+                <div className="px-4 pb-4 border-t border-gray-700/30">
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    {/* Discord - Coming Soon */}
+                    <div className="p-3 rounded-lg text-center bg-gray-800/30">
+                      <div className="text-[#5865F2] mb-1">🎮</div>
+                      <div className="text-xs text-gray-400">Discord</div>
+                      <div className="text-xs text-gray-500">Coming Soon</div>
+                    </div>
+                    
+                    {/* Passkey - Coming Soon */}
+                    <div className="p-3 rounded-lg text-center bg-gray-800/30">
+                      <div className="text-blue-400 mb-1">🔐</div>
+                      <div className="text-xs text-gray-400">Passkey</div>
+                      <div className="text-xs text-gray-500">Coming Soon</div>
+                    </div>
+                  </div>
                 </div>
-                
-                {/* Passkey - Coming Soon */}
-                <div className="p-3 rounded-lg text-center bg-gray-800/30">
-                  <div className="text-blue-400 mb-1">🔐</div>
-                  <div className="text-xs text-gray-400">Passkey</div>
-                  <div className="text-xs text-gray-500">Coming Soon</div>
-                </div>
-              </div>
+              )}
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 };
 

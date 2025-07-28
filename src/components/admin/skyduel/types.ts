@@ -5,8 +5,6 @@
  * to properly type-check the existing implementation.
  */
 
-import { State } from "../../../store/useStore";
-
 /**
  * Severity levels for alerts
  */
@@ -122,9 +120,10 @@ export interface SkyDuelState {
 }
 
 /**
- * Enhanced store state with SkyDuel
+ * SkyDuel store slice interface
+ * Used for type assertions when accessing skyDuel-specific parts of the store
  */
-export interface SkyDuelStoreState extends State {
+export interface SkyDuelStoreState {
   skyDuel: SkyDuelState;
   setSkyDuelSelectedNode: (nodeId: string | undefined) => void;
 }

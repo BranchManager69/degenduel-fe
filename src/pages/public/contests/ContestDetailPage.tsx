@@ -13,7 +13,7 @@
  */
 
 import { motion } from "framer-motion";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
@@ -31,7 +31,6 @@ import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/use
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 import { getContestImageUrl } from "../../../lib/imageUtils";
 import {
-    formatCurrency,
     isContestCurrentlyUnderway,
     mapContestStatus,
 } from "../../../lib/utils";
@@ -124,6 +123,7 @@ export const ContestDetails: React.FC = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   
+  
   // Mouse position tracking for parallax effect
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
@@ -151,15 +151,6 @@ export const ContestDetails: React.FC = () => {
     return "pending";
   }, [contest]);
 
-  // Check if this is a Crown Contest (Numero Uno) - same logic as ContestBrowserPage
-  const isCrownContest = useMemo(() => {
-    if (!contest || !contest.name) return false;
-    const upperName = contest.name.toUpperCase();
-    return upperName.includes('NUMERO UNO') || 
-           upperName.includes('NUMERO  UNO') || // double space
-           upperName.includes('NUMERO\tUNO') || // tab
-           upperName.includes('NUMEROUNO'); // no space
-  }, [contest]);
 
   // WebSocket integration for real-time updates
   const { 
@@ -347,7 +338,11 @@ export const ContestDetails: React.FC = () => {
               profile_image_url: null,
               role: p.role || "user", // Add role field
               is_admin: p.is_admin || false,
-              is_superadmin: p.is_superadmin || false
+              is_superadmin: p.is_superadmin || false,
+              // Add price source metadata
+              sol_price_source: analyticsData.sol_price_source,
+              sol_price_timestamp: analyticsData.sol_price_timestamp,
+              contest_status: analyticsData.contest_status,
             }));
             
             setAnalyticsParticipants(transformedAnalyticsParticipants);
@@ -556,8 +551,9 @@ export const ContestDetails: React.FC = () => {
       navigate(`/contests/${contest.id}/live`);
       return;
     } else if (contestStatus === "live") {
-      // Contest is in progress, can't join
-      setError("This contest is already in progress and not accepting new entries.");
+      // Contest is in progress - both participants and non-participants can view
+      console.log("Navigating to contest live page");
+      navigate(`/contests/${contest.id}/live`);
       return;
     } else {
       // Contest is upcoming - DIRECT NAVIGATION to portfolio selection (no auth required!)
@@ -574,26 +570,15 @@ export const ContestDetails: React.FC = () => {
   const getButtonLabel = () => {
     const displayStatus = getDisplayStatus;
 
-    // User is participating
-    if (isParticipating) {
-      if (displayStatus === "completed") {
-        return "View Results";
-      } else if (displayStatus === "active") {
-        return "View Live Contest";
-      } else if (displayStatus === "cancelled") {
-        return "View Details";
-      } else {
-        return "Update Portfolio";
-      }
-    }
-
-    // User is not participating
-    if (displayStatus === "completed" || displayStatus === "active") {
-      return displayStatus === "completed" ? "Contest Ended" : "Contest in Progress";
+    if (displayStatus === "completed") {
+      return "View Results";
+    } else if (displayStatus === "active") {
+      return "View Live Contest";
     } else if (displayStatus === "cancelled") {
       return "View Details";
     } else {
-      return "Enter Contest";
+      // Pending contests - only differentiate based on participation
+      return isParticipating ? "Update Portfolio" : "Enter Contest";
     }
   };
 
@@ -604,7 +589,7 @@ export const ContestDetails: React.FC = () => {
       <div className="flex flex-col min-h-screen">
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Skeleton loading for header with image placeholder */}
-          <div className="relative h-64 sm:h-80 rounded-lg overflow-hidden bg-dark-300 animate-pulse mb-8">
+          <div className="relative h-80 w-full rounded-lg overflow-hidden bg-dark-300 animate-pulse mb-8">
             <div className="absolute inset-0 bg-gradient-to-br from-dark-300/80 to-dark-400/80" />
             <div className="absolute inset-0 flex flex-col justify-end p-6">
               <div className="h-4 bg-dark-200 rounded w-24 mb-3"></div>
@@ -699,8 +684,9 @@ export const ContestDetails: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Breadcrumb navigation */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-        <div className="flex items-center text-sm text-gray-400">
+      <div className="w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+          <div className="flex items-center text-sm text-gray-400">
           <Link to="/" className="hover:text-brand-400 transition-colors">
             Home
           </Link>
@@ -710,6 +696,7 @@ export const ContestDetails: React.FC = () => {
           </Link>
           <span className="mx-2">›</span>
           <span className="text-gray-300">{contest.name}</span>
+          </div>
         </div>
       </div>
 
@@ -772,7 +759,7 @@ export const ContestDetails: React.FC = () => {
             )}
             
             {/* Banner Content */}
-            <div className="relative z-20 p-4 sm:p-6 md:p-8 min-h-[280px] flex flex-col justify-end">
+            <div className="relative z-20 p-4 sm:p-6 md:p-8 min-h-[380px] flex flex-col justify-between">
               {/* Status Badge - Top Right */}
               <div className="absolute top-4 right-4">
                 {/* Different badge styles based on contest status */}
@@ -831,82 +818,268 @@ export const ContestDetails: React.FC = () => {
               </div>
               
               {/* Contest Header Content - Better Layout */}
-              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 max-w-full">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-12 max-w-full h-full">
                 {/* Left Section - Title, Description, Timer */}
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 flex flex-col justify-between h-full min-h-[300px]">
                   {/* Title and Description */}
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-100 mb-2">
+                    <h1 className="text-5xl font-bold text-white mb-3 uppercase" style={{
+                      textShadow: '2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000, 0px 2px 0px #000, 2px 0px 0px #000, 0px -2px 0px #000, -2px 0px 0px #000'
+                    }}>
                       {contest.name}
                     </h1>
-                    <p className="text-gray-400 max-w-2xl">
+                    <p className="text-gray-200 text-sm" style={{
+                      textShadow: '1px 1px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000'
+                    }}>
                       {contest.description}
                     </p>
                   </div>
                   
-                  {/* Timer Section - More prominent */}
-                  <div className="bg-dark-300/30 backdrop-blur-sm rounded-lg p-4 inline-block border border-dark-200">
-                    <div className="flex items-center gap-4">
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                          {displayStatus === "active" ? "Ends in" : 
-                          displayStatus === "pending" ? "Starts in" : 
-                          displayStatus === "cancelled" ? "Cancelled" : "Ended"}
+                  <>
+                  {/* Contest Economics - Unified Equation */}
+                  <div className="p-6 mb-3">
+                    {displayStatus !== "cancelled" && (
+                    <div className="flex items-center justify-center gap-4">
+                      {/* Entry Fee */}
+                      <div className="flex flex-col items-center">
+                        <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Entry Fee</div>
+                        {Number(contest.entry_fee) === 0 ? (
+                          <div className="text-2xl font-bold uppercase tracking-wide text-green-400">
+                            FREE
+                          </div>
+                        ) : (
+                          <div className="text-2xl font-bold flex items-center gap-2 text-white">
+                            <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-5 h-5" />
+                            <span>{Number(contest.entry_fee)}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Multiplication Symbol */}
+                      <div className="text-2xl font-bold text-gray-400/50">×</div>
+
+                      {/* Participants with Progress */}
+                      <div className="flex flex-col items-center">
+                        <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Players</div>
+                        <div className="text-2xl font-bold text-white">
+                          {displayStatus === "pending" && contest.participant_count < contest.max_participants ? (
+                            <span>{contest.participant_count}<span className="text-sm text-gray-500">/{contest.min_participants || 2}-{contest.max_participants}</span></span>
+                          ) : (
+                            <span>{contest.participant_count}<span className="text-sm text-gray-500">/{contest.max_participants}</span></span>
+                          )}
                         </div>
-                        {displayStatus === "cancelled" ? (
-                          <span className="line-through text-red-400 text-xl font-semibold">
-                            {new Date(contest.end_time).toLocaleDateString()}
-                          </span>
-                        ) : displayStatus !== "completed" ? (
-                          <div className="text-2xl font-bold text-gray-100">
+                        <div className="mt-1 w-20 h-1.5 bg-dark-400 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-purple-400 to-purple-600 transition-all duration-500"
+                            style={{
+                              width: `${Math.min((contest.participant_count / contest.max_participants) * 100, 100)}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Only show equals and pool if pool value > 0 */}
+                      {(() => {
+                        const poolValue = Number(contest.entry_fee) > 0
+                          ? Number(contest.entry_fee) * contest.participant_count
+                          : Number(contest.total_prize_pool || contest.prize_pool || "0");
+                        
+                        if (poolValue === 0) return null;
+                        
+                        return (
+                          <>
+                            {/* Equals Symbol */}
+                            <div className="text-2xl font-bold text-gray-400/50">=</div>
+
+                            {/* Total Pool */}
+                            <div className="flex flex-col items-center">
+                              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">
+                                {displayStatus === "pending" ? "Current Pool" : "Contest Pool"}
+                              </div>
+                              <div className="text-2xl font-bold flex items-center gap-2 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                                <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-5 h-5" />
+                                <span>{poolValue}</span>
+                              </div>
+                              {Number(contest.entry_fee) > 0 && contest.participant_count < contest.max_participants && displayStatus === "pending" && (
+                                <div className="text-xs text-gray-500">
+                                  Max: {Number(contest.entry_fee) * contest.max_participants} SOL if full
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
+
+                      {Number(contest.entry_fee) > 0 && (
+                        <div className="flex items-center gap-2">
+                          {/* Fork visualization */}
+                          <svg width="40" height="100" viewBox="0 0 40 100" className="fill-none">
+                            {/* Horizontal line from pool */}
+                            <line x1="0" y1="50" x2="12" y2="50" stroke="rgb(156 163 175 / 0.5)" strokeWidth="3"/>
+                            
+                            {/* Upper fork to winners - more horizontal */}
+                            <line x1="12" y1="50" x2="32" y2="35" stroke="rgb(156 163 175 / 0.5)" strokeWidth="3"/>
+                            <polygon points="32,30 32,40 40,35" fill="rgb(156 163 175 / 0.5)" transform="rotate(-35 32 35)"/>
+                            
+                            {/* Lower fork to holders - more horizontal */}
+                            <line x1="12" y1="50" x2="32" y2="65" stroke="rgb(156 163 175 / 0.5)" strokeWidth="3"/>
+                            <polygon points="32,60 32,70 40,65" fill="rgb(156 163 175 / 0.5)" transform="rotate(35 32 65)"/>
+                          </svg>
+
+                          {/* Winners and Holders stacked - properly centered */}
+                          <div className="flex flex-col gap-6">
+                            {/* Winners */}
+                            <div className="flex flex-col items-center">
+                              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Contest Payout</div>
+                              <div className="text-xl font-bold text-green-400 flex items-center gap-2">
+                                <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-4 h-4" />
+                                <span>{(() => {
+                                  const minAmount = Number(contest.entry_fee) * (contest.min_participants || 2) * 0.9;
+                                  const currentAmount = Number(contest.entry_fee) * contest.participant_count * 0.9;
+                                  const maxAmount = Number(contest.entry_fee) * contest.max_participants * 0.9;
+                                  const formatAmount = (amt: number) => {
+                                    if (amt >= 0.1) return amt.toFixed(2);
+                                    const threeDecimals = amt.toFixed(3);
+                                    return threeDecimals.endsWith('0') ? threeDecimals.slice(0, -1) : threeDecimals;
+                                  };
+                                  
+                                  if (contest.participant_count < contest.max_participants && displayStatus === "pending") {
+                                    return `${formatAmount(minAmount)}-${formatAmount(maxAmount)}`;
+                                  }
+                                  return formatAmount(currentAmount);
+                                })()}</span>
+                              </div>
+                              <div className="text-xs text-gray-500">90% to {(() => {
+                                const payoutStructure = contest?.settings?.payout_structure;
+                                const winnerCount = payoutStructure ? Object.keys(payoutStructure).length : 3;
+                                return winnerCount === 1 ? "winner" : "winners";
+                              })()}</div>
+                            </div>
+                            {/* Holders */}
+                            <div className="flex flex-col items-center">
+                              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Daily Airdrop</div>
+                              <div className="text-xl font-bold text-brand-400 flex items-center gap-2">
+                                <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-4 h-4" />
+                                <span>{(() => {
+                                  const minAmount = Number(contest.entry_fee) * (contest.min_participants || 2) * 0.1;
+                                  const currentAmount = Number(contest.entry_fee) * contest.participant_count * 0.1;
+                                  const maxAmount = Number(contest.entry_fee) * contest.max_participants * 0.1;
+                                  const formatAmount = (amt: number) => {
+                                    if (amt >= 0.1) return amt.toFixed(2);
+                                    const threeDecimals = amt.toFixed(3);
+                                    return threeDecimals.endsWith('0') ? threeDecimals.slice(0, -1) : threeDecimals;
+                                  };
+                                  
+                                  if (contest.participant_count < contest.max_participants && displayStatus === "pending") {
+                                    return `${formatAmount(minAmount)}-${formatAmount(maxAmount)}`;
+                                  }
+                                  return formatAmount(currentAmount);
+                                })()}</span>
+                              </div>
+                              <div className="text-xs text-gray-500">10% to DUEL holders</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    )}
+                  </div>
+                  
+                  {/* Timer Section with Share Button */}
+                  <div className="p-4 w-full">
+                    <div className="flex items-center justify-between">
+                      <div className="text-left">
+                      {displayStatus === "cancelled" ? (
+                        <div className="text-xl font-semibold text-red-400">
+                          Contest was cancelled before it started
+                        </div>
+                      ) : displayStatus === "completed" ? (
+                        <div>
+                          <div className="text-xl font-semibold text-gray-300 mb-1">
+                            {(() => {
+                              const now = new Date();
+                              const endTime = new Date(contest.end_time);
+                              const diffMs = now.getTime() - endTime.getTime();
+                              const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                              const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                              
+                              if (days > 0) return `Ended ${days} day${days > 1 ? 's' : ''} ago`;
+                              if (hours > 0) return `Ended ${hours} hour${hours > 1 ? 's' : ''} ago`;
+                              return 'Ended recently';
+                            })()}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {(() => {
+                              const startTime = new Date(contest.start_time);
+                              const endTime = new Date(contest.end_time);
+                              const startDate = startTime.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                              const endDate = endTime.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                              const startTimeStr = startTime.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
+                              const endTimeStr = endTime.toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
+                              
+                              const durationHours = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60));
+                              const durationText = `(${durationHours} hour${durationHours !== 1 ? 's' : ''})`;
+                              
+                              if (startDate === endDate) {
+                                return (
+                                  <>
+                                    {startDate}
+                                    <span style={{marginLeft: '16px'}}>{startTimeStr} - {endTimeStr}</span>
+                                    <span style={{marginLeft: '8px'}}>{durationText}</span>
+                                  </>
+                                );
+                              } else {
+                                return `${startDate} ${startTimeStr} - ${endDate} ${endTimeStr} ${durationText}`;
+                              }
+                            })()}
+                          </div>
+                        </div>
+                      ) : displayStatus === "pending" ? (
+                        <div>
+                          <div className="text-2xl font-bold text-gray-100 mb-1">
                             <CountdownTimer
-                              targetDate={displayStatus === "active" ? contest.end_time : contest.start_time}
+                              targetDate={contest.start_time}
                               onComplete={handleCountdownComplete}
                               showSeconds={false}
                             />
                           </div>
-                        ) : (
-                          <span className="text-xl font-semibold text-gray-400">
-                            {new Date(contest.end_time).toLocaleDateString()}
-                          </span>
-                        )}
+                          <div className="text-sm text-gray-500">
+                            Opens {new Date(contest.start_time).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at {new Date(contest.start_time).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'})}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="text-2xl font-bold text-gray-100 mb-1">
+                            <CountdownTimer
+                              targetDate={contest.end_time}
+                              onComplete={handleCountdownComplete}
+                              showSeconds={false}
+                            />
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            Started {new Date(contest.start_time).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at {new Date(contest.start_time).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'})}
+                          </div>
+                        </div>
+                      )}
                       </div>
+                      
+                      {/* Share Contest Button */}
+                      {contest && (
+                        <SilentErrorBoundary>
+                          <ShareContestButton
+                            contestId={contest.id.toString()}
+                            contestName={contest.name}
+                            prizePool={contest.total_prize_pool || contest.prize_pool || "0"}
+                          />
+                        </SilentErrorBoundary>
+                      )}
                     </div>
                   </div>
+                  </>
                 </div>
                 
-                {/* Right Section - Actions */}
+                {/* Right Section - Error message only */}
                 <div className="flex flex-col items-start lg:items-end gap-3">
-                  {/* Action buttons grouped together */}
-                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                    <button
-                      onClick={handleJoinContest}
-                      disabled={displayStatus === "cancelled"}
-                      className={`px-8 py-3 font-medium rounded-lg transition-all text-center ${
-                        displayStatus === "cancelled"
-                          ? "bg-dark-400 text-gray-500 cursor-not-allowed"
-                          : displayStatus === "completed"
-                          ? "bg-dark-300 hover:bg-dark-200 text-brand-400"
-                          : isParticipating
-                          ? "bg-dark-300 hover:bg-dark-200 text-brand-400"
-                          : "bg-brand-500 hover:bg-brand-600 text-white"
-                      }`}
-                    >
-                      {getButtonLabel()}
-                    </button>
-                    
-                    {/* Share Contest Button - Inline with Enter button */}
-                    {displayStatus !== "cancelled" && displayStatus !== "completed" && (contest as any)?.contest_type !== "CHALLENGE" && contest && (
-                      <SilentErrorBoundary>
-                        <ShareContestButton
-                          contestId={contest.id.toString()}
-                          contestName={contest.name}
-                          prizePool={contest.total_prize_pool || contest.prize_pool || "0"}
-                        />
-                      </SilentErrorBoundary>
-                    )}
-                  </div>
-                  
                   {/* Error message if any */}
                   {error && (
                     <div className="text-sm text-red-400 text-center animate-glitch bg-dark-100/90 rounded-lg py-2 px-3 border border-red-500/30 backdrop-blur-sm max-w-xs">
@@ -952,6 +1125,100 @@ export const ContestDetails: React.FC = () => {
                   </div>
                 </motion.div>
               )}
+              
+              {/* Edge-to-Edge Action Button */}
+              <button
+                onClick={handleJoinContest}
+                disabled={displayStatus === "cancelled"}
+                className={`absolute bottom-0 left-0 right-0 h-12 font-medium transition-all text-center relative overflow-hidden ${
+                  displayStatus === "cancelled"
+                    ? "bg-dark-400 text-gray-500 cursor-not-allowed"
+                    : displayStatus === "active"
+                    ? "bg-gradient-to-r from-green-600 via-green-500 to-emerald-500 hover:from-green-500 hover:via-green-400 hover:to-emerald-400 text-white font-bold shadow-lg shadow-green-500/25 border-t-2 border-green-400/50"
+                    : displayStatus === "completed"
+                    ? "bg-gradient-to-r from-blue-800 via-blue-600 to-indigo-600 hover:from-blue-700 hover:via-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border-t border-blue-400/30"
+                    : isParticipating
+                    ? "bg-gradient-to-r from-purple-800 via-purple-600 to-violet-600 hover:from-purple-700 hover:via-purple-500 hover:to-violet-500 text-white font-semibold shadow-lg shadow-purple-500/20"
+                    : "bg-gradient-to-r from-brand-800 via-brand-600 to-indigo-600 hover:from-brand-700 hover:via-brand-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-brand-500/20"
+                }`}
+                style={displayStatus === "active" ? {
+                  animation: "subtle-pulse 2s ease-in-out infinite alternate"
+                } : {}}
+              >
+                {displayStatus === "active" && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
+                    <div className="flex items-center justify-center gap-3 relative z-10">
+                      <div className="relative">
+                        <div className="w-3 h-3 bg-white rounded-full shadow-sm"></div>
+                        <div className="absolute inset-0 w-3 h-3 bg-green-300 rounded-full animate-ping"></div>
+                      </div>
+                      <span className="tracking-wide">LIVE CONTEST</span>
+                    </div>
+                  </>
+                )}
+                {displayStatus === "completed" && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-gentle-sweep"></div>
+                    <div className="flex items-center justify-center gap-3 relative z-10">
+                      <span className="tracking-wide">VIEW RESULTS</span>
+                      <div className="relative w-4 h-4">
+                        <svg className="w-4 h-4 text-green-400 animate-gentle-glow" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {displayStatus !== "active" && displayStatus !== "completed" && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-gentle-sweep"></div>
+                    <div className="flex items-center justify-center gap-3 relative z-10">
+                      <span className="tracking-wide uppercase">{getButtonLabel()}</span>
+                      {!isParticipating ? (
+                        <div className="relative w-4 h-4">
+                          <svg className="w-4 h-4 text-brand-300 animate-gentle-glow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </div>
+                      ) : (
+                        <div className="relative w-4 h-4">
+                          <svg className="w-4 h-4 text-purple-300 animate-gentle-glow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </button>
+              <style>{`
+                @keyframes subtle-pulse {
+                  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+                  100% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+                }
+                @keyframes shimmer {
+                  0% { transform: translateX(-100%); }
+                  100% { transform: translateX(100%); }
+                }
+                @keyframes gentle-sweep {
+                  0% { transform: translateX(-150%); }
+                  100% { transform: translateX(150%); }
+                }
+                @keyframes gentle-glow {
+                  0%, 100% { opacity: 0.6; transform: scale(1); }
+                  50% { opacity: 1; transform: scale(1.2); }
+                }
+                .animate-shimmer {
+                  animation: shimmer 2s infinite;
+                }
+                .animate-gentle-sweep {
+                  animation: gentle-sweep 3s infinite;
+                }
+                .animate-gentle-glow {
+                  animation: gentle-glow 2s ease-in-out infinite;
+                }
+              `}</style>
             </div>
           </div>
 
@@ -980,178 +1247,115 @@ export const ContestDetails: React.FC = () => {
             </div>
           )}
 
-          {/* Contest Stats - Enhanced Design */}
+          {/* Contest Stats - Info Bar Only */}
           <div className="mb-8">
-            {/* Main Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              {/* Entry Fee Card */}
-              <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-dark-200/90 to-dark-300/90 backdrop-blur-sm border border-dark-100/20">
-                <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="p-2 bg-green-500/20 rounded-lg">
-                      <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <span className="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">Entry</span>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-gray-400 uppercase tracking-wide">Entry Fee</p>
-                    {Number(contest.entry_fee) === 0 ? (
-                      <div className="space-y-1">
-                        <p className={`text-2xl font-bold uppercase tracking-wide ${displayStatus === "cancelled" ? "text-gray-500" : "text-green-400"}`}>
-                          FREE
-                        </p>
-                        <p className="text-xs text-green-300/60">No cost to enter</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-white"}`}>
-                          {formatCurrency(Number(contest.entry_fee))}
-                        </p>
-                        <p className="text-xs text-gray-500">Per participant</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Prize Pool Card */}
-              <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-dark-200/90 to-dark-300/90 backdrop-blur-sm border border-dark-100/20">
-                <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="p-2 bg-brand-500/20 rounded-lg">
-                      <svg className="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-                      </svg>
-                    </div>
-                    <span className="text-xs text-brand-400 bg-brand-400/10 px-2 py-1 rounded-full">Prize</span>
-                  </div>
-                  <div className="space-y-1">
-                    {isCrownContest ? (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-gray-400 uppercase tracking-wide">Total Prize Pool</p>
-                          {Number(contest.entry_fee) > 0 && (
-                            <div className="relative group/tooltip">
-                              <svg className="w-3 h-3 text-brand-400/60 hover:text-brand-300 transition-colors cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                              </svg>
-                              
-                              {/* Enhanced Tooltip */}
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
-                                <div className="bg-dark-200/95 backdrop-blur-md border border-brand-500/30 rounded-lg px-4 py-3 text-sm text-gray-200 whitespace-nowrap shadow-2xl">
-                                  <div className="relative">
-                                    <span className="block font-bold text-brand-300 mb-1">Maximum Prize Pool</span>
-                                    <span className="block text-gray-300">with a full roster of competitors.</span>
-                                    <span className="block text-brand-200">The more players, the bigger the rewards!</span>
-                                  </div>
-                                  {/* Enhanced Arrow */}
-                                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
-                                    <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-dark-200/95"></div>
-                                    <div className="absolute -top-[9px] -left-[8px] w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-brand-500/30"></div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                          <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent"}`}>
-                            {formatCurrency(
-                              Number(contest.entry_fee) > 0
-                                ? Number(contest.entry_fee) * contest.max_participants
-                                : Number(contest.prize_pool || "0")
-                            )}
-                          </p>
-                          {displayStatus !== "cancelled" && Number(contest.entry_fee) > 0 && (
-                            <span className="text-sm font-mono text-brand-400/80 bg-brand-500/10 px-2 py-1 rounded">
-                              {contest.max_participants}x
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          {Number(contest.entry_fee) > 0 ? "Maximum potential" : "Fixed prize pool"}
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-xs text-gray-400 uppercase tracking-wide">Total Prize Pool</p>
-                        <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent"}`}>
-                          {formatCurrency(
-                            Number(contest.entry_fee) > 0
-                              ? Number(contest.entry_fee) * contest.max_participants
-                              : Number(contest.total_prize_pool || contest.prize_pool || "0")
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-500">{Number(contest.entry_fee) > 0 ? "if contest is filled" : "fixed prize pool"}</p>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Participants Card */}
-              <div className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-dark-200/90 to-dark-300/90 backdrop-blur-sm border border-dark-100/20">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="p-2 bg-purple-500/20 rounded-lg">
-                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                    </div>
-                    <span className="text-xs text-purple-400 bg-purple-400/10 px-2 py-1 rounded-full">Live</span>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-gray-400 uppercase tracking-wide">Participants</p>
-                    <div className="flex items-baseline gap-2">
-                      <p className={`text-2xl font-bold ${displayStatus === "cancelled" ? "text-gray-500" : "text-white"}`}>
-                        {contest.participant_count}
-                      </p>
-                      <p className="text-sm text-gray-500">/ {contest.max_participants}</p>
-                    </div>
-                    {/* Progress Bar */}
-                    <div className="mt-2 w-full h-2 bg-dark-400 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${displayStatus === "cancelled" ? "bg-gray-500/50" : "bg-gradient-to-r from-purple-400 to-purple-600"} transition-all duration-500`}
-                        style={{
-                          width: `${Math.min((contest.participant_count / contest.max_participants) * 100, 100)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Additional Contest Info Bar */}
             <div className="bg-dark-300/30 backdrop-blur-sm rounded-lg border border-dark-200/50 p-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-6 text-sm">
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-500">Duration:</span>
-                    <span className="text-gray-300 font-medium">
-                      {Math.round((new Date(contest.end_time).getTime() - new Date(contest.start_time).getTime()) / (1000 * 60 * 60))} hours
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
                     <span className="text-gray-500">Format:</span>
                     <span className="text-gray-300 font-medium">
-                      {(contest as any)?.contest_type === "CHALLENGE" ? "1v1 Challenge" : "Public Contest"}
+                      {(contest as any)?.contest_type === "CHALLENGE" 
+                        ? (contest as any)?.visibility === "private" ? "Private Duel" : "Public Duel"
+                        : (contest as any)?.visibility === "private" ? "Private Contest" : "Public Contest"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">Winners:</span>
-                    <span className="text-gray-300 font-medium">Top 3 Players</span>
+                    <span className="text-gray-300 font-medium">
+                      {(() => {
+                        const payoutStructure = contest?.settings?.payout_structure;
+                        if (payoutStructure && Object.keys(payoutStructure).length > 0) {
+                          const maxWinners = Object.keys(payoutStructure).length;
+                          const actualParticipants = contest?.participant_count || 0;
+                          const effectiveWinners = Math.min(maxWinners, actualParticipants);
+                          
+                          // Show the smart/effective winners based on actual participants
+                          if (actualParticipants === 0) {
+                            return maxWinners === 1 ? "Winner Takes All" : `Top ${maxWinners} Players`;
+                          }
+                          return effectiveWinners === 1 ? "Winner Takes All" : `Top ${effectiveWinners} Players`;
+                        }
+                        return "TBD"; // More vague fallback when payout structure is unknown
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">Structure:</span>
+                    <span className="text-gray-300 font-medium">
+                      {(() => {
+                        const payoutStructure = contest?.settings?.payout_structure;
+                        if (!payoutStructure || Object.keys(payoutStructure).length === 0) {
+                          return "TBD";
+                        }
+                        
+                        const payouts = Object.values(payoutStructure).sort((a, b) => b - a);
+                        const maxParticipants = contest?.max_participants || 0;
+                        const winnerCount = payouts.length;
+                        const winnerPercentage = maxParticipants > 0 ? (winnerCount / maxParticipants) : 0;
+                        
+                        // Heuristic to determine structure type:
+                        // Double Up: ~50% of players win with relatively equal payouts
+                        // Top Heavy: Fewer winners with exponential decay (first place much larger)
+                        
+                        if (winnerPercentage >= 0.45 && winnerPercentage <= 0.55) {
+                          // Around 50% of players win - likely double up
+                          // Check if payouts are relatively equal (variance test)
+                          const avgPayout = payouts.reduce((sum, p) => sum + p, 0) / payouts.length;
+                          const variance = payouts.reduce((sum, p) => sum + Math.pow(p - avgPayout, 2), 0) / payouts.length;
+                          const standardDev = Math.sqrt(variance);
+                          const coefficientOfVariation = standardDev / avgPayout;
+                          
+                          if (coefficientOfVariation < 0.3) { // Low variance = equal payouts
+                            return "Double Up";
+                          }
+                        }
+                        
+                        // Check for top heavy characteristics
+                        if (payouts.length >= 2) {
+                          const firstPlace = payouts[0];
+                          const secondPlace = payouts[1];
+                          const ratio = firstPlace / secondPlace;
+                          
+                          // If first place is significantly larger than second (>1.5x), it's top heavy
+                          if (ratio > 1.5) {
+                            return "Top Heavy";
+                          }
+                        }
+                        
+                        // Default fallback based on winner percentage
+                        return winnerPercentage > 0.3 ? "Double Up" : "Top Heavy";
+                      })()}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
+
+          {/* Token Whitelist Section - Full Width */}
+          <div className="group relative mb-8">
+            <SilentErrorBoundary>
+              <div>
+                <span className="text-sm font-medium text-blue-400 block mb-3">Example Tokens:</span>
+                <AllowedTokensGrid
+                  className="mb-2"
+                />
+              </div>
+            </SilentErrorBoundary>
+          </div>
+
+          {/* Rules Section - Full Width */}
+          <div className="group relative mb-10">
+            <SilentErrorBoundary>
+              <div>
+                <span className="text-sm font-medium text-blue-400 block mb-2">Rules:</span>
+                <p className="text-gray-400">Standard DegenDuel trading rules apply</p>
+              </div>
+            </SilentErrorBoundary>
+          </div>
 
           {/* Content Grid - Better Balanced Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1174,6 +1378,11 @@ export const ContestDetails: React.FC = () => {
                       contestStatus={mapContestStatus(contest.status)}
                       contestId={id!}
                       prizePool={parseFloat(contest.prize_pool || '0')}  // Add missing prizePool prop
+                      payoutStructure={contest?.settings?.payout_structure}
+                      contestType={(contest as any)?.contest_type}
+                      minParticipants={Number(contest?.min_participants || 0)}
+                      maxParticipants={Number(contest?.max_participants || 0)}
+                      entryFee={Number(contest?.entry_fee || 0)}
                     />
                   </SilentErrorBoundary>
                 </div>
@@ -1207,46 +1416,34 @@ export const ContestDetails: React.FC = () => {
               )}
             </div>
 
-            {/* Right Column - Rules, Prize & Referral */}
+            {/* Right Column - Prize & Referral & Rules */}
             <div className="space-y-8">
-              {/* Rules Section - At Top */}
-              <div className="group relative">
-                <SilentErrorBoundary>
-                  <div className="relative">
-                    <h3 className="text-xl font-bold text-gray-100 mb-4">Rules & Token Whitelist</h3>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <span className="text-sm font-medium text-blue-400 block mb-2">Rules:</span>
-                        <p className="text-gray-400">Standard DegenDuel trading rules apply</p>
-                      </div>
-                      
-                      <div>
-                        <span className="text-sm font-medium text-blue-400 block mb-3">Example Tokens:</span>
-                        <AllowedTokensGrid
-                          maxInitialDisplay={8}
-                          className="mb-2"
+              {/* Prize Distribution - Only show if prize pool > 0 */}
+              {(() => {
+                const prizePool = Number(contest.entry_fee) > 0 
+                  ? Number(contest.entry_fee) * contest.max_participants
+                  : Number(contest.total_prize_pool || contest.prize_pool || "0");
+                
+                if (prizePool > 0) {
+                  return (
+                    <div className="group relative">
+                      <SilentErrorBoundary>
+                        <PrizeStructure
+                          prizePool={prizePool}
+                          entryFee={Number(contest?.entry_fee || 0)}
+                          maxParticipants={Number(contest?.max_participants || 0)}
+                          currentParticipants={Number(contest?.participant_count || 0)}
+                          contestType={(contest as any)?.contest_type}
+                          payoutStructure={contest?.settings?.payout_structure}
+                          contestStatus={displayStatus}
+                          minParticipants={Number(contest?.min_participants || 0)}
                         />
-                      </div>
+                      </SilentErrorBoundary>
                     </div>
-                  </div>
-                </SilentErrorBoundary>
-              </div>
-              
-              {/* Prize Distribution */}
-              <div className="group relative">
-                <SilentErrorBoundary>
-                  <PrizeStructure
-                    prizePool={Number(contest.entry_fee) > 0 
-                      ? Number(contest.entry_fee) * contest.max_participants
-                      : Number(contest.total_prize_pool || contest.prize_pool || "0")}
-                    entryFee={Number(contest?.entry_fee || 0)}
-                    maxParticipants={Number(contest?.max_participants || 0)}
-                    currentParticipants={Number(contest?.participant_count || 0)}
-                    contestType={(contest as any)?.contest_type}
-                  />
-                </SilentErrorBoundary>
-              </div>
+                  );
+                }
+                return null;
+              })()}
               
               {/* Referral Progress Card */}
               {displayStatus === "pending" && (contest as any)?.contest_type !== "CHALLENGE" && (
@@ -1258,6 +1455,7 @@ export const ContestDetails: React.FC = () => {
               )}
             </div>
           </div>
+
         </div>
 
       </div>

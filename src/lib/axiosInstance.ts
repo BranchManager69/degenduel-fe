@@ -90,6 +90,10 @@ axiosInstance.interceptors.response.use(
 
         if (refreshResponse.status === 200) {
           console.log('[axios] Token refresh successful, retrying original request');
+          
+          // Process all queued requests now that we have a fresh token
+          processQueue(null);
+          
           // Retry the original request
           return axiosInstance.request(originalRequest);
         } else {

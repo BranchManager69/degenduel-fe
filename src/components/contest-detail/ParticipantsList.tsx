@@ -7,6 +7,7 @@ import { getFullImageUrl } from "../../utils/profileImageUtils";
 import { getFlairLabel, getRoleBadgeClasses, getUserNameColorWithFlair, getUserRoleLabel } from "../../utils/roleColors";
 import { PublicUserSearch } from "../common/PublicUserSearch";
 import { useWebSocket } from "../../contexts/UnifiedWebSocketContext";
+import { useIndividualToken } from "../../hooks/websocket/topic-hooks/useIndividualToken";
 
 // Token price data from WebSocket
 interface TokenPriceData {
@@ -30,6 +31,7 @@ interface Participant {
   initial_portfolio_value?: string;
   performance_percentage?: string;
   prize_awarded?: string | null;
+  sol_price_source?: string; // Source of SOL price data (e.g., "historical", "current")
   
   // Enhanced user profile data
   user_level?: {
@@ -69,6 +71,11 @@ interface ParticipantsListProps {
   contestId?: string; // Add contest ID for portfolio fetching
   onParticipantHover?: (walletAddress: string | null) => void; // Chart hover coordination
   hoveredParticipant?: string | null; // Current hovered participant
+  payoutStructure?: Record<string, number>; // e.g., {"place_1": 0.5, "place_2": 0.3, "place_3": 0.2}
+  contestType?: string; // Add contest type to calculate platform fee correctly
+  minParticipants?: number; // Add min participants for range calculation
+  maxParticipants?: number; // Add max participants for range calculation
+  entryFee?: number; // Add entry fee for dynamic prize pool calculation
 }
 
 // No longer needed - all data comes from the API now
@@ -84,7 +91,27 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
   contestId,
   onParticipantHover,
   hoveredParticipant,
+  payoutStructure,
+  contestType,
+  minParticipants = 0,
+  maxParticipants = 0,
+  entryFee = 0,
 }) => {
+  // Get SOL price for USD conversion
+  const SOL_ADDRESS = 'So11111111111111111111111111111111111111112';
+  const { token: solToken } = useIndividualToken(SOL_ADDRESS);
+  const solPrice = solToken?.price || 0;
+  
+  // Helper function to check if SOL values are inaccurate (using current prices for completed contests)
+  const isInaccuratePrice = (participant: any) => {
+    const solPriceSource = participant.sol_price_source;
+    const contestStatusFromData = participant.contest_status;
+    
+    // For completed contests using current prices, values are inaccurate
+    return (contestStatusFromData === "completed" || contestStatus === "completed") && 
+           (solPriceSource === "current" || solPriceSource === "current_fallback");
+  };
+  
   // // Debug role data
   // useEffect(() => {
   //   console.log('[ParticipantsList] Participants with roles:', participants.map(p => ({
@@ -200,15 +227,51 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
     return participantsWithTiedRanks;
   }, [filteredParticipants, contestStatus]);
 
-  // Calculate prize distribution for live/completed contests
+  // Calculate prize distribution for all contest states
   const prizeMap = useMemo(() => {
-    if (contestStatus === "upcoming" || !prizePool || !sortedParticipants.length) {
+    if (!sortedParticipants.length) {
       return new Map();
     }
 
-    const prizePercentages = [0.69, 0.20, 0.11]; // 69%, 20%, 11% for 1st, 2nd, 3rd
-    const paidPositions = 3;
-    const prizes = new Map<string, number>();
+    const isPending = contestStatus === "upcoming";
+    const currentParticipantCount = participants.length;
+    
+    // Calculate min and max participant counts for pending contests
+    const minPoolParticipants = isPending ? Math.max(currentParticipantCount, minParticipants) : currentParticipantCount;
+    const maxPoolParticipants = isPending && maxParticipants > 0 ? maxParticipants : currentParticipantCount;
+    
+    // Calculate prize pools based on dynamic participant counts
+    const minPrizePool = entryFee > 0 ? entryFee * minPoolParticipants : prizePool;
+    const maxPrizePool = entryFee > 0 ? entryFee * maxPoolParticipants : prizePool;
+
+    // Apply platform fee (10% for all contests except CHALLENGE)
+    const PLATFORM_FEE = contestType === "CHALLENGE" ? 0 : 10;
+    const minPlatformFee = (minPrizePool * PLATFORM_FEE) / 100;
+    const maxPlatformFee = (maxPrizePool * PLATFORM_FEE) / 100;
+    const minWinnerPool = minPrizePool - minPlatformFee;
+    const maxWinnerPool = maxPrizePool - maxPlatformFee;
+
+    // Use real payout structure or fallback to hardcoded
+    let prizePercentages: number[];
+    let paidPositions: number;
+    
+    if (payoutStructure && Object.keys(payoutStructure).length > 0) {
+      // Convert payout structure to array format
+      const sorted = Object.entries(payoutStructure)
+        .sort(([a], [b]) => {
+          const aNum = parseInt(a.replace('place_', ''));
+          const bNum = parseInt(b.replace('place_', ''));
+          return aNum - bNum;
+        })
+        .map(([, percentage]) => percentage);
+      prizePercentages = sorted;
+      paidPositions = sorted.length;
+    } else {
+      // Fallback to hardcoded for older contests
+      prizePercentages = [0.69, 0.20, 0.11];
+      paidPositions = 3;
+    }
+    const prizes = new Map<string, { min: number; max: number }>();
     
     let currentPosition = 1;
     let i = 0;
@@ -248,22 +311,23 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
             }
           }
           
-          const prizePerParticipant = (prizePool * totalPrizePercentage) / tiedCount;
+          const minPrizePerParticipant = (minWinnerPool * totalPrizePercentage) / tiedCount;
+          const maxPrizePerParticipant = (maxWinnerPool * totalPrizePercentage) / tiedCount;
           
           // Assign prize to all tied participants
           tiedGroup.forEach(participant => {
-            prizes.set(participant.wallet_address, prizePerParticipant);
+            prizes.set(participant.wallet_address, { min: minPrizePerParticipant, max: maxPrizePerParticipant });
           });
         } else {
           // Beyond paid positions
           tiedGroup.forEach(participant => {
-            prizes.set(participant.wallet_address, 0);
+            prizes.set(participant.wallet_address, { min: 0, max: 0 });
           });
         }
       } else {
         // Beyond paid positions
         tiedGroup.forEach(participant => {
-          prizes.set(participant.wallet_address, 0);
+          prizes.set(participant.wallet_address, { min: 0, max: 0 });
         });
       }
       
@@ -272,7 +336,7 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
     }
     
     return prizes;
-  }, [sortedParticipants, contestStatus, prizePool]);
+  }, [sortedParticipants, contestStatus, prizePool, payoutStructure, contestType, participants.length, minParticipants, maxParticipants, entryFee]);
 
   // Track rank changes when participants update
   useEffect(() => {
@@ -539,8 +603,9 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
               const rankChange = rankChanges.get(participant.wallet_address) || 0;
               
               // Check if participant has a prize
-              const prize = prizeMap.get(participant.wallet_address) || 0;
-              const hasPrize = prize > 0;
+              const prizeData = prizeMap.get(participant.wallet_address) || { min: 0, max: 0 };
+              const hasPrize = prizeData.max > 0;
+              const isPending = contestStatus === "upcoming";
               const isExpanded = expandedParticipant === participant.wallet_address;
               const portfolio = portfolioData[participant.wallet_address];
               const isLoadingPortfolio = loadingPortfolio[participant.wallet_address];
@@ -709,7 +774,15 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                           </div>
                           {!showCompactView && participant.portfolio_value && (
                             <div className="text-xs text-gray-500">
-                              {formatCurrency(participant.portfolio_value)}
+                              <span 
+                                title={`SOL Price Source: ${participant.sol_price_source || 'unknown'}${isInaccuratePrice(participant) ? ' (inaccurate for completed contest)' : ''}`}
+                                className="cursor-help"
+                              >
+                                {formatCurrency(participant.portfolio_value)}
+                              </span>
+                              {isInaccuratePrice(participant) && (
+                                <span className="text-yellow-400 ml-1" title="Using current SOL price (inaccurate for completed contest)">*</span>
+                              )}
                             </div>
                           )}
                         </motion.div>
@@ -724,18 +797,37 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 }}
                     >
-                      <div className="bg-gradient-to-r from-yellow-500/20 via-yellow-400/30 to-yellow-500/20 px-4 border-t border-yellow-400/40">
-                        <div className="flex items-center justify-end gap-3">
-                          <span className="text-black font-bold text-sm uppercase tracking-wider">
-                            In The Money
+                      <div className="bg-gradient-to-r from-yellow-500/10 via-yellow-400/20 to-yellow-500/10 px-3 py-0.5 border-t border-yellow-400/30">
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-yellow-300 font-semibold text-xs uppercase tracking-wide">
+                            {contestStatus === "completed" ? "Won" : "In The Money"}
                           </span>
-                          <div className="flex items-center gap-2 text-yellow-300 font-bold text-lg">
-                            <span>{prize.toFixed(2)}</span>
+                          <div className="flex items-center gap-1.5 text-sm">
+                            <span className="text-yellow-300 font-semibold">
+                              {isPending && prizeData.min !== prizeData.max ? (
+                                <>
+                                  {(Math.floor(prizeData.min * 1000) / 1000).toFixed(3)}-{(Math.floor(prizeData.max * 1000) / 1000).toFixed(3)}
+                                </>
+                              ) : (
+                                (Math.floor(prizeData.max * 1000) / 1000).toFixed(3)
+                              )}
+                            </span>
                             <img 
                               src="/assets/media/logos/solana.svg" 
                               alt="SOL" 
-                              className="w-4 h-4"
+                              className="w-3 h-3"
                             />
+                            {solPrice > 0 && (
+                              <span className="text-green-400 text-xs">
+                                ${isPending && prizeData.min !== prizeData.max ? (
+                                  <>
+                                    {Math.round(prizeData.min * solPrice)}-{Math.round(prizeData.max * solPrice)}
+                                  </>
+                                ) : (
+                                  Math.round(prizeData.max * solPrice)
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
