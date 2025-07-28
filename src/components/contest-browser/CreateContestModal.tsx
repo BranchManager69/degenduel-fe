@@ -96,7 +96,23 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   // Get SOL price for USD conversion
   const SOL_ADDRESS = 'So11111111111111111111111111111111111111112';
   const { token: solToken } = useIndividualToken(SOL_ADDRESS);
-  const solPrice = solToken?.price || 0;
+  const [fallbackSolPrice, setFallbackSolPrice] = React.useState<number | null>(null);
+  
+  // Fetch fallback SOL price from API if websocket doesn't have it
+  React.useEffect(() => {
+    if (isOpen && (!solToken?.price || solToken.price === 0) && fallbackSolPrice === null) {
+      fetch(`/api/tokens/${SOL_ADDRESS}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.token_prices?.price) {
+            setFallbackSolPrice(parseFloat(data.token_prices.price));
+          }
+        })
+        .catch(err => console.warn('Failed to fetch fallback SOL price:', err));
+    }
+  }, [isOpen, solToken?.price, fallbackSolPrice]);
+  
+  const solPrice = solToken?.price || fallbackSolPrice || 0;
   
   // Total DUEL supply registered to users (from API data)
   // This is the actual circulating supply that receives dividends
@@ -146,7 +162,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   const [formData, setFormData] = React.useState({
     name: `Degen Dustup ${Math.floor(Math.random() * 100)}`,
     description: `May the best Degen win.`,
-    entry_fee: "0",
+    entry_fee: "0.1",
     prize_pool: "0", // Will be calculated based on entry fee × participants
     start_time: getSmartStartTime(),
     min_participants: 3,
@@ -157,7 +173,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       tokenTypesAllowed: [],
       startingPortfolioValue: "100",
     } as Omit<ContestSettings, 'minParticipants' | 'maxParticipants'>,
-    ai_image_prompt: "Incorporate Jewish and gay and lesbian themes throughout the token imagery", // New field for AI image generation
+    ai_image_prompt: "", // New field for AI image generation
     featured_token_addresses: [] as string[], // Array for multiple featured tokens (max 5)
     payout_mode: "double_up" as "double_up" | "top_heavy",
     payout_percentage: 30, // % of players who win (for top heavy)
@@ -935,25 +951,6 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                           </div>
                         )}
                       </div>
-                      
-                      {/* Narrative */}
-                      <div>
-                        <div className="flex justify-between items-center mb-1.5">
-                          <label className="text-xs text-gray-400">Narrative</label>
-                          <span className={`text-xs ${formData.ai_image_prompt.length > 180 ? 'text-yellow-500' : formData.ai_image_prompt.length === 200 ? 'text-red-500' : 'text-gray-500'}`}>
-                            {formData.ai_image_prompt.length}/200
-                          </span>
-                        </div>
-                        <Textarea
-                          value={formData.ai_image_prompt}
-                          onChange={(e) => setFormData(prev => ({ ...prev, ai_image_prompt: e.target.value }))}
-                          className="w-full text-gray-100 bg-dark-300/70 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20 rounded-lg resize-none focus:bg-dark-300 transition-all duration-200"
-                          rows={1}
-                          placeholder="Incorporate Jewish and gay and lesbian themes throughout the token imagery"
-                          maxLength={200}
-                        />
-                        <p className="text-[9px] text-gray-500 leading-tight pl-2 mt-1">DegenDuel uses the most advanced AI model for meme image generation in the world to breathe personality into each contest with a gorgeous and meta-aware contest banner.</p>
-                      </div>
                     </div>
                   </div>
 
@@ -973,6 +970,25 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                     
                     {showAdvancedOptions && (
                       <div className="space-y-6">
+                        {/* Narrative */}
+                        <div>
+                          <div className="flex justify-between items-center mb-1.5">
+                            <label className="text-sm font-medium text-gray-300">Narrative</label>
+                            <span className={`text-xs ${formData.ai_image_prompt.length > 180 ? 'text-yellow-500' : formData.ai_image_prompt.length === 200 ? 'text-red-500' : 'text-gray-500'}`}>
+                              {formData.ai_image_prompt.length}/200
+                            </span>
+                          </div>
+                          <Textarea
+                            value={formData.ai_image_prompt}
+                            onChange={(e) => setFormData(prev => ({ ...prev, ai_image_prompt: e.target.value }))}
+                            className="w-full text-gray-100 bg-dark-300/70 border-dark-400 focus:border-brand-500 focus:ring-brand-500/20 rounded-lg resize-none focus:bg-dark-300 transition-all duration-200"
+                            rows={2}
+                            placeholder="Optional"
+                            maxLength={200}
+                          />
+                          <p className="text-[9px] text-gray-500 leading-tight pl-2 mt-1">DegenDuel uses the most advanced AI model for meme image generation in the world to breathe personality into each contest with a gorgeous and meta-aware contest banner.</p>
+                        </div>
+                        
                         <div>
                           <label className="block text-sm font-medium text-gray-300 mb-1">Starting Portfolio Value</label>
                           <div className="relative">
@@ -1249,11 +1265,11 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                         
                         {/* Top Heavy Controls */}
                         {formData.payout_mode === "top_heavy" && (
-                          <div className="space-y-4">
-                            <div className="space-y-4">
-                              <div className="p-3 bg-dark-300/30 rounded-lg">
-                                <label className="block text-xs text-gray-400 mb-3">Players Who Win</label>
-                                <div className="flex items-center gap-4">
+                          <div className="p-3 bg-dark-300/30 rounded-lg space-y-4">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-2">Players Who Win</label>
+                                <div className="flex items-center gap-3">
                                   <div className="flex-1">
                                     <input
                                       type="range"
@@ -1262,9 +1278,9 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                                       step="5"
                                       value={formData.payout_percentage}
                                       onChange={(e) => setFormData(prev => ({ ...prev, payout_percentage: parseInt(e.target.value) }))}
-                                      className="w-full h-2 bg-dark-400 rounded-lg appearance-none cursor-pointer slider accent-brand-400"
+                                      className="w-full h-2 bg-dark-400 rounded-lg appearance-none cursor-pointer slider accent-green-400"
                                       style={{
-                                        background: `linear-gradient(to right, #00d4ff 0%, #00d4ff ${(formData.payout_percentage - 5) / 45 * 100}%, #374151 ${(formData.payout_percentage - 5) / 45 * 100}%, #374151 100%)`
+                                        background: `linear-gradient(to right, #22c55e 0%, #22c55e ${(formData.payout_percentage - 5) / 45 * 100}%, #374151 ${(formData.payout_percentage - 5) / 45 * 100}%, #374151 100%)`
                                       }}
                                     />
                                     <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -1272,15 +1288,15 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                                       <span>50%</span>
                                     </div>
                                   </div>
-                                  <div className="text-2xl font-bold text-brand-400 min-w-[4rem] text-center">
+                                  <div className="text-lg font-bold text-green-400 min-w-[3rem] text-center">
                                     {formData.payout_percentage}%
                                   </div>
                                 </div>
                               </div>
                               
-                              <div className="p-3 bg-dark-300/30 rounded-lg">
-                                <label className="block text-xs text-gray-400 mb-3">Distribution Curve</label>
-                                <div className="flex items-center gap-4">
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-2">Distribution Curve</label>
+                                <div className="flex items-center gap-3">
                                   <div className="flex-1">
                                     <input
                                       type="range"
@@ -1299,7 +1315,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                                       <span>Extreme</span>
                                     </div>
                                   </div>
-                                  <div className="text-sm font-medium text-purple-400 min-w-[5rem] text-center">
+                                  <div className="text-sm font-medium text-purple-400 min-w-[4rem] text-center">
                                     {formData.payout_steepness === 1 ? 'Gentle' : 
                                      formData.payout_steepness === 2 ? 'Mild' :
                                      formData.payout_steepness === 3 ? 'Medium' :
@@ -1360,7 +1376,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                                         
                                         {/* USD equivalent inside bar */}
                                         {pos.percentage > 0 && solPrice > 0 && (
-                                          <div className="absolute left-1/2 -translate-x-1/2 top-0.5 text-[11px] text-gray-900 font-bold whitespace-nowrap">
+                                          <div className="absolute left-1/2 -translate-x-1/2 top-0.5 text-[10px] text-green-400 font-medium whitespace-nowrap">
                                             ${Math.round(maxPrize * solPrice)}
                                           </div>
                                         )}

@@ -715,7 +715,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'default' | 'marketCap' | 'volume' | 'change24h' | 'price'>('change24h');
   
   // For backward compatibility, alias tokens as sortedTokens
-  // (backend already sorts by degenduel_score)
+  // (backend already sorts by 24h price change)
   const sortedTokens = tokens;
   const memoizedTokens = tokens; // Also alias for backward compatibility
 

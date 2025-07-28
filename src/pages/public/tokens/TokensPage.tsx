@@ -104,7 +104,7 @@ export const TokensPage: React.FC = () => {
   // Token selection logic removed - using dedicated pages now
 
   // NO CLIENT-SIDE SORTING - Trust backend order
-  // Backend already sorted by degenduel_score (best to worst)
+  // Backend already sorted by 24h price change (hot movers first)
 
   // Special tokens addresses
   const SPECIAL_TOKEN_ADDRESSES = [

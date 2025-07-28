@@ -79,32 +79,24 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
         }
         
         const data = await response.json();
-        console.log('All tokens response:', data);
         
         // Handle different response structures
         const allTokens = data.data || data.tokens || [];
-        console.log('Extracted tokens array:', allTokens);
-        console.log('Number of tokens from all endpoint:', allTokens.length);
         
         if (Array.isArray(allTokens)) {
           // Filter tokens with images
           const tokensWithImages = allTokens.filter((token: any) => token.image_url);
-          console.log('Tokens with images:', tokensWithImages.length);
-          console.log('Injected tokens:', injectedTokens.length);
           
           // Combine injected tokens with regular tokens
           const combinedTokens = [...injectedTokens, ...tokensWithImages];
-          console.log('Combined tokens:', combinedTokens.length);
           
           // Remove duplicates based on contract address or address field
           const uniqueTokens = combinedTokens.filter((token, index, self) =>
             index === self.findIndex((t) => (t.contract_address || t.address) === (token.contract_address || token.address))
           );
-          console.log('Unique tokens after dedup:', uniqueTokens.length);
           
           // Randomize for variety
           const shuffled = [...uniqueTokens].sort(() => Math.random() - 0.5);
-          console.log('Final tokens to display:', shuffled.length);
           setTokens(shuffled);
         }
       } catch (err: any) {
