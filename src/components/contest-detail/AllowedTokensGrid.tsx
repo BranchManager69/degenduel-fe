@@ -4,7 +4,6 @@ import { Token, TokenHelpers } from "../../types";
 import { MiniTokenCard } from "./MiniTokenCard";
 
 interface AllowedTokensGridProps {
-  maxInitialDisplay?: number;
   className?: string;
 }
 
@@ -17,14 +16,39 @@ interface AllowedTokensGridProps {
  * - Responsive grid sizing
  */
 export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
-  maxInitialDisplay = 10,
   className = ""
 }) => {
-  const [visibleCount, setVisibleCount] = useState(maxInitialDisplay);
+  const [currentSet, setCurrentSet] = useState(0);
   const [tokens, setTokens] = useState<Token[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
   const navigate = useNavigate();
+
+  // Dynamic token count based on screen width
+  useEffect(() => {
+    const updateVisibleCount = () => {
+      const width = window.innerWidth;
+      if (width >= 1400) {
+        setVisibleCount(20); // XL screens - full desktop
+      } else if (width >= 1200) {
+        setVisibleCount(15); // Large screens
+      } else if (width >= 1024) {
+        setVisibleCount(12); // Desktop
+      } else if (width >= 768) {
+        setVisibleCount(10); // Tablet
+      } else if (width >= 640) {
+        setVisibleCount(8);  // Large mobile
+      } else {
+        setVisibleCount(6);  // Small mobile
+      }
+    };
+
+    updateVisibleCount();
+    window.addEventListener('resize', updateVisibleCount);
+    return () => window.removeEventListener('resize', updateVisibleCount);
+  }, []);
   
   // Fetch a small sample of tokens efficiently
   useEffect(() => {
@@ -55,18 +79,31 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
     fetchSampleTokens();
   }, []);
 
-  // Get token symbols for display
-  const actualTokens = useMemo(() => {
-    return tokens.map(token => token.symbol);
-  }, [tokens]);
+  // Auto-rotate showcase logic
+  useEffect(() => {
+    if (tokens.length <= visibleCount) return; // No rotation needed if we have few tokens
+    
+    const interval = setInterval(() => {
+      setIsTransitioning(true);
+      
+      setTimeout(() => {
+        setCurrentSet(prev => {
+          const totalSets = Math.ceil(tokens.length / visibleCount);
+          return (prev + 1) % totalSets;
+        });
+        setIsTransitioning(false);
+      }, 300); // Half transition duration
+    }, 4000); // Rotate every 4 seconds
 
-  // Determine which tokens to show
+    return () => clearInterval(interval);
+  }, [tokens.length, visibleCount]);
+
+  // Get current set of tokens to display
   const tokensToShow = useMemo(() => {
-    return actualTokens.slice(0, visibleCount);
-  }, [actualTokens, visibleCount]);
-
-  const hasMoreTokens = visibleCount < actualTokens.length;
-  const canShowLess = visibleCount > maxInitialDisplay;
+    const startIndex = currentSet * visibleCount;
+    const endIndex = startIndex + visibleCount;
+    return tokens.slice(startIndex, endIndex);
+  }, [tokens, currentSet, visibleCount]);
 
   // Loading state
   if (isLoading) {
@@ -88,7 +125,7 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
   }
 
   // No tokens found
-  if (actualTokens.length === 0) {
+  if (tokens.length === 0) {
     return (
       <div className="text-gray-400 text-sm italic">
         All active tokens available for selection
@@ -98,21 +135,24 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
   
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Compact grid - TIGHTER spacing (2px gap) */}
-      <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-[2px]">
-        {tokensToShow.map((tokenSymbol, index) => {
-          const token = tokens.find((t: Token) => t.symbol === tokenSymbol);
+      {/* Rotating showcase - Single row with exact token count */}
+      <div 
+        className={`flex gap-1 transition-all duration-600 ${
+          isTransitioning ? 'opacity-40 scale-95' : 'opacity-100 scale-100'
+        }`}
+      >
+        {tokensToShow.map((token, index) => {
           return (
             <div 
-              key={tokenSymbol} 
-              className="w-12 h-12 sm:w-14 sm:h-14 animate-slide-in-up transition-all duration-300"
+              key={`${currentSet}-${token.symbol || token.id}-${index}`} 
+              className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 animate-slide-in-up transition-all duration-300"
               style={{
-                animationDelay: `${index * 30}ms`,
+                animationDelay: `${index * 40}ms`,
                 animationFillMode: 'both'
               }}
             >
               <MiniTokenCard
-                tokenSymbol={tokenSymbol}
+                tokenSymbol={token.symbol}
                 tokenImage={token?.image_url || undefined}
                 bannerImage={token?.header_image_url || undefined}
                 isPositive={(token?.change_24h ? Number(token.change_24h) : 0) >= 0}
@@ -126,27 +166,6 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
             </div>
           );
         })}
-      </div>
-      {/* Show More / Show Less controls below the grid */}
-      <div className="flex justify-end text-xs text-gray-500">
-        <div className="flex gap-2">
-          {hasMoreTokens && (
-            <button
-              onClick={() => setVisibleCount(v => Math.min(v + maxInitialDisplay, actualTokens.length))}
-              className="text-brand-400 hover:text-brand-300 transition-colors font-medium"
-            >
-              Show 10 More
-            </button>
-          )}
-          {canShowLess && (
-            <button
-              onClick={() => setVisibleCount(maxInitialDisplay)}
-              className="text-brand-400 hover:text-brand-300 transition-colors font-medium"
-            >
-              Show Less
-            </button>
-          )}
-        </div>
       </div>
       {/* Custom CSS for slide-in animation */}
       <style dangerouslySetInnerHTML={{

@@ -1,17 +1,14 @@
 import React, { useEffect, useState } from "react";
 
 import { ContestHistoryList } from "./ContestHistoryList";
-import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
-import { ContestHistoryEntry } from "../../../types/profile";
+import { UserPortfolio } from "../../../types/profile";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { LoadingSpinner } from "../../common/LoadingSpinner";
 
 export const ContestHistorySection: React.FC = () => {
   const { user, maintenanceMode } = useStore();
-  const [contestHistory, setContestHistory] = useState<ContestHistoryEntry[]>(
-    [],
-  );
+  const [portfolios, setPortfolios] = useState<UserPortfolio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,30 +21,22 @@ export const ContestHistorySection: React.FC = () => {
 
       try {
         setError(null);
-        const response = await ddApi.stats.getHistory(
-          user.wallet_address,
-          10,
-          0,
-        );
+        
+        // Use the comprehensive portfolios endpoint
+        const response = await fetch(`/api/portfolios/user/${user.wallet_address}`, {
+          credentials: "include",
+        });
 
-        // Handle the new response structure
-        if (response.success) {
-          // Map the API response data to match the ContestHistoryEntry type
-          // Filter out cancelled contests
-          const mappedHistory = response.data
-            .filter((entry: any) => entry.status !== "cancelled")
-            .map((entry: any) => ({
-              contest_id: entry.contest_id.toString(),
-              contest_name: entry.contest_name,
-              start_time: entry.start_time,
-              end_time: entry.end_time,
-              portfolio_return: Number(entry.portfolio_return),
-              rank: Number(entry.rank),
-              status: entry.status || "completed", // Default to completed if no status
-            }));
-          setContestHistory(mappedHistory);
+        if (response.ok) {
+          const data = await response.json();
+          // Sort by contest start time descending (most recent first)
+          const sortedPortfolios = data.portfolios.sort((a: UserPortfolio, b: UserPortfolio) => {
+            return new Date(b.contest.start_time).getTime() - new Date(a.contest.start_time).getTime();
+          });
+          setPortfolios(sortedPortfolios.slice(0, 10)); // Limit to 10 most recent
         } else {
-          setError(response.message || "Failed to load contest history");
+          const errorData = await response.json();
+          setError(errorData.message || "Failed to load contest history");
         }
       } catch (err) {
         if (err instanceof Response && err.status === 503) {
@@ -84,7 +73,7 @@ export const ContestHistorySection: React.FC = () => {
 
   return (
     <div className="rounded-lg border border-dark-300/20 bg-dark-200/30">
-      {contestHistory.length === 0 ? (
+      {portfolios.length === 0 ? (
         <div className="p-6">
           <div className="text-center space-y-3">
             <div className="text-3xl">⚔️</div>
@@ -99,7 +88,7 @@ export const ContestHistorySection: React.FC = () => {
           </div>
         </div>
       ) : (
-        <ContestHistoryList history={contestHistory} />
+        <ContestHistoryList portfolios={portfolios} />
       )}
     </div>
   );

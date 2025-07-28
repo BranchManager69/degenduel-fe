@@ -154,8 +154,7 @@ export const UserProgress: React.FC<UserProgressProps> = ({
         <div className="flex justify-between text-xs text-gray-400">
           <span>Current Level</span>
           <span>
-            Level {current_level.level_number + 1} (
-            {Math.floor(experience.percentage)}%)
+            {Math.floor(experience.percentage)}% progress to Level {current_level.level_number + 1}
           </span>
         </div>
       </div>

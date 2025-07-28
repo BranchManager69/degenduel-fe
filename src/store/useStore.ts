@@ -1004,6 +1004,8 @@ export const useStore = create<State>()(
               is_banned: authResponse.user.is_banned,
               ban_reason: authResponse.user.ban_reason,
               risk_level: authResponse.user.risk_level,
+              referral_code: authResponse.user.referral_code,
+              referred_by_code: authResponse.user.referred_by_code,
               jwt: authResponse.token,
             },
           });

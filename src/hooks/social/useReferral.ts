@@ -99,7 +99,7 @@ export const ReferralProvider = ({
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          inviteCode: referralCode,
+          referral_code: referralCode,
         }),
       });
     } catch (error) {

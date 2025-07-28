@@ -83,6 +83,8 @@ describe("AuthenticatedRoute component", () => {
       is_banned: false,
       ban_reason: undefined,
       risk_level: "low",
+      referral_code: "TEST123",
+      referred_by_code: null,
       jwt: "test-jwt",
     };
 

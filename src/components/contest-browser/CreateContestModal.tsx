@@ -300,6 +300,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
             difficulty: "guppy", // Hard-coded value
             tokenTypesAllowed: formData.settings.tokenTypesAllowed || [],
             startingPortfolioValue: formData.settings.startingPortfolioValue || "100",
+            payout_structure: payoutStructure, // Add calculated payout structure
           } as ContestSettings,
           image_prompt: formData.ai_image_prompt || "",
           image_headliner_token_ca: formData.featured_token_addresses.length === 1 
@@ -315,6 +316,14 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
           throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
         }
 
+        // Validate payout structure before sending (safety check)
+        if (contestDataPayload.settings?.payout_structure) {
+          const sum = Object.values(contestDataPayload.settings.payout_structure).reduce((a, b) => a + b, 0);
+          if (Math.abs(sum - 1.0) > 0.01) { // 1% tolerance for rounding
+            throw new Error(`Payout calculation error: percentages sum to ${sum.toFixed(3)} instead of 1.0`);
+          }
+        }
+
         // Create the contest
         console.log("Creating contest...", {
           contestData: contestDataPayload,
@@ -326,6 +335,8 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
             hasAllRequiredFields: missingFields.length === 0,
             entryFeeFormat: contestDataPayload.entry_fee,
             prizePoolFormat: contestDataPayload.prize_pool,
+            payoutSum: contestDataPayload.settings?.payout_structure ? 
+              Object.values(contestDataPayload.settings.payout_structure).reduce((a, b) => a + b, 0) : 'N/A',
             timeFormats: {
               start: contestDataPayload.start_time,
               end: contestDataPayload.end_time,
@@ -726,7 +737,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       >
         <div 
           ref={modalRef}
-          className="bg-dark-200/80 backdrop-blur-lg rounded-t-2xl sm:rounded-lg w-full sm:max-w-lg lg:max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[90vh] border border-dark-100/20 relative overflow-visible" 
+          className="bg-dark-200/80 backdrop-blur-lg rounded-t-2xl sm:rounded-lg w-full sm:max-w-lg lg:max-w-4xl flex flex-col max-h-[95vh] sm:max-h-[90vh] border border-dark-100/20 relative" 
           onClick={(e) => e.stopPropagation()}
           onMouseDown={() => {
             // Track if user starts selecting text inside modal
@@ -774,8 +785,8 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
             </button>
           </div>
 
-          <div className="overflow-y-auto p-4 sm:p-5 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300 relative z-10" style={{overflow: 'visible'}}>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="overflow-y-auto p-4 sm:p-5 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300 relative z-10" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 pb-4">
               {userRole === 'user' && (!availableCredits || availableCredits === 0) && (
                 <div className="p-3 rounded-lg border bg-red-900/20 border-red-600/30">
                   <div className="flex items-center justify-between">

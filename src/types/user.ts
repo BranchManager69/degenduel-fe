@@ -44,6 +44,10 @@ export interface User {
   banned?: boolean;
   banned_reason?: string;
   
+  // Referral fields (now consistent across all auth endpoints)
+  referral_code: string;           // User's own referral code (always present)
+  referred_by_code: string | null; // Code they used when signing up (null if not referred)
+  
   // Auth tokens (typically present in auth context, not stored but included for type safety)
   jwt?: string;             // JWT token for API authentication
   wsToken?: string;         // WebSocket token for WebSocket authentication

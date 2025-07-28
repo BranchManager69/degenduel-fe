@@ -1,9 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "react-hot-toast";
-import ReactCrop, { Crop, PixelCrop } from "react-image-crop";
-
-import "react-image-crop/dist/ReactCrop.css";
 
 interface ProfileImageManagerProps {
   userAddress: string;
@@ -30,28 +27,9 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
   onImageUpdate,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [crop, setCrop] = useState<Crop>({
-    unit: "%",
-    width: 100,
-    height: 100,
-    x: 0,
-    y: 0,
-  });
-  const [croppedImageUrl, setCroppedImageUrl] = useState<string | null>(null);
 
-  // Cleanup blob URLs on unmount or when images change
-  React.useEffect(() => {
-    return () => {
-      if (previewImage && previewImage.startsWith('blob:')) {
-        URL.revokeObjectURL(previewImage);
-      }
-      if (croppedImageUrl && croppedImageUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(croppedImageUrl);
-      }
-    };
-  }, [previewImage, croppedImageUrl]);
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     console.log("Files dropped:", { acceptedFiles, rejectedFiles });
@@ -86,18 +64,11 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
       return;
     }
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = () => {
-      console.log("File loaded, setting preview");
-      setPreviewImage(reader.result as string);
-    };
-    reader.onerror = (error) => {
-      console.error("Error reading file:", error);
-      toast.error("Error reading file");
-    };
-    reader.readAsDataURL(file);
-  }, []);
+    // Store the file for upload
+    setSelectedFile(file);
+    // Immediately upload
+    handleUpload(file);
+  }, [userAddress, onImageUpdate]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -111,47 +82,10 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
     maxSize: MAX_FILE_SIZE,
   });
 
-  const handleCropComplete = (pixelCrop: PixelCrop) => {
-    if (!previewImage) return;
-
-    const image = new Image();
-    image.src = previewImage;
-
-    image.onload = () => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      // Set canvas size to match crop dimensions
-      canvas.width = pixelCrop.width;
-      canvas.height = pixelCrop.height;
-
-      // Draw the cropped image
-      ctx.drawImage(
-        image,
-        pixelCrop.x,
-        pixelCrop.y,
-        pixelCrop.width,
-        pixelCrop.height,
-        0,
-        0,
-        pixelCrop.width,
-        pixelCrop.height,
-      );
-
-      // Convert to WebP format for better compression
-      setCroppedImageUrl(canvas.toDataURL("image/webp", 0.9));
-    };
-
-    image.onerror = () => {
-      console.error("Failed to load image for cropping");
-      toast.error("Failed to process image");
-    };
-  };
-
-  const handleUpload = async () => {
-    if (!croppedImageUrl) {
-      console.error("No cropped image URL available");
+  const handleUpload = async (file?: File) => {
+    const uploadFile = file || selectedFile;
+    if (!uploadFile) {
+      console.error("No file selected");
       return;
     }
 
@@ -160,17 +94,9 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
       setIsUploading(true);
       setUploadProgress(0);
 
-      // Convert base64 to blob
-      const response = await fetch(croppedImageUrl);
-      const blob = await response.blob();
-      console.log("Converted to blob:", {
-        size: blob.size,
-        type: blob.type
-      });
-      
       const formData = new FormData();
-      const filename = `${userAddress}_${Date.now()}.webp`;
-      formData.append("image", blob, filename);
+      const filename = `${userAddress}_${Date.now()}.${uploadFile.name.split('.').pop()}`;
+      formData.append("image", uploadFile, filename);
       console.log("Created FormData with filename:", filename);
 
       // Use native fetch for file uploads to avoid Content-Type header issues
@@ -243,8 +169,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
         responseData.message || "Profile image updated successfully",
       );
       onImageUpdate(responseData.data.profile_image_url);
-      setPreviewImage(null);
-      setCroppedImageUrl(null);
+      setSelectedFile(null);
       setUploadProgress(100);
     } catch (error) {
       console.error("Failed to upload profile image:", error);
@@ -305,7 +230,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
   return (
     <div className="space-y-4">
       {/* Current Image Display */}
-      {currentImageUrl && !previewImage && (
+      {currentImageUrl && !selectedFile && (
         <div className="relative group">
           <img
             src={`${currentImageUrl}?t=${Date.now()}`}
@@ -329,7 +254,7 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
       )}
 
       {/* Image Upload Area */}
-      {!previewImage && (
+      {!isUploading && (
         <div className="space-y-4">
           <div
             {...getRootProps()}
@@ -356,59 +281,19 @@ export const ProfileImageManager: React.FC<ProfileImageManagerProps> = ({
         </div>
       )}
 
-      {/* Image Preview & Crop */}
-      {previewImage && (
-        <div className="space-y-4">
-          <ReactCrop
-            crop={crop}
-            onChange={(c: Crop) => setCrop(c)}
-            onComplete={handleCropComplete}
-            aspect={1}
-            circularCrop
-          >
-            <img src={previewImage} alt="Preview" crossOrigin="anonymous" />
-          </ReactCrop>
-
-          <div className="flex justify-center gap-6 pt-4">
-            <button
-              onClick={() => {
-                setPreviewImage(null);
-                setCroppedImageUrl(null);
-                setUploadProgress(0);
-              }}
-              disabled={isUploading}
-              className="flex flex-col items-center justify-center opacity-80 hover:opacity-100 transition-opacity disabled:opacity-30"
-              aria-label="Cancel"
-            >
-              <div className="w-12 h-12 rounded-full bg-dark-300 flex items-center justify-center hover:bg-dark-400 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
+      {/* Upload Progress */}
+      {isUploading && (
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="w-16 h-16 relative">
+            <div className="w-full h-full border-4 border-brand-400/20 rounded-full" />
+            <div className="absolute inset-0 border-4 border-brand-400 rounded-full animate-spin border-t-transparent" />
+            {uploadProgress > 0 && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-sm font-bold text-brand-400">{uploadProgress}%</span>
               </div>
-            </button>
-            
-            <button
-              onClick={handleUpload}
-              disabled={!croppedImageUrl || isUploading}
-              className="flex flex-col items-center justify-center opacity-80 hover:opacity-100 transition-opacity disabled:opacity-30"
-              aria-label="Upload image"
-            >
-              <div className="w-12 h-12 rounded-full bg-brand-500 flex items-center justify-center hover:bg-brand-600 transition-colors relative">
-                {isUploading ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                    {uploadProgress > 0 && (
-                      <div className="absolute text-xs font-bold text-white">{uploadProgress}%</div>
-                    )}
-                  </div>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </div>
-            </button>
+            )}
           </div>
+          <p className="text-sm text-gray-400">Uploading your image...</p>
         </div>
       )}
     </div>

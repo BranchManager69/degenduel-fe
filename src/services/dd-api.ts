@@ -22,6 +22,7 @@ import {
   BaseActivity as Activity,
   Contest,
   ContestViewData,
+  ContestEntryResponse,
   PlatformStats,
   PortfolioResponse,
   Token,
@@ -1878,7 +1879,8 @@ export const ddApi = {
         }>;
       },
       transaction_signature?: string, // Optional for free contests
-    ) => {
+      referral_code?: string, // Optional referral code
+    ): Promise<ContestEntryResponse> => {
       const user = useStore.getState().user;
       if (!user?.wallet_address) {
         throw new Error("Please connect your wallet first");
@@ -1900,6 +1902,7 @@ export const ddApi = {
           wallet_address: user.wallet_address,
           portfolio,
           ...(transaction_signature && { transaction_signature }), // Only include if provided
+          ...(referral_code && { referral_code }), // Only include if provided
         };
 
         const response = await fetch(`${API_URL}/contests/${numericId}/enter`, {
@@ -1940,7 +1943,8 @@ export const ddApi = {
           weight: number;
         }>;
       },
-    ) => {
+      referral_code?: string, // Optional referral code
+    ): Promise<ContestEntryResponse> => {
       const user = useStore.getState().user;
       if (!user?.wallet_address) {
         throw new Error("Please connect your wallet first");
@@ -1961,6 +1965,7 @@ export const ddApi = {
         const payload = {
           wallet_address: user.wallet_address,
           portfolio,
+          ...(referral_code && { referral_code }), // Only include if provided
         };
 
         const response = await fetch(`${API_URL}/contests/${numericId}/enter`, {

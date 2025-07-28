@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
 import { getAuthStatus } from "../../../services/api/auth";
-import { ddApi, formatBonusPoints } from "../../../services/dd-api";
+import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { LoadingSpinner } from "../../common/LoadingSpinner";
@@ -15,16 +15,33 @@ interface UserData {
   bonusBalance: string;
   is_banned: boolean;
   ban_reason: string | null;
-  profile_image?: {
-    url: string;
-    thumbnail_url?: string;
-    updated_at?: string;
+}
+
+interface UserLevelData {
+  current_level: {
+    level_number: number;
+    title: string;
+    class_name: string;
+    icon_url: string | null;
+  };
+  experience: {
+    current: number;
+    next_level_at: number;
+    percentage: number;
+  };
+  achievements: {
+    [tier: string]: {
+      current: number;
+      required: number;
+    };
   };
 }
 
 export const ProfileHeaderSection: React.FC = () => {
   const { user, setUser, maintenanceMode } = useStore();
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [userStats, setUserStats] = useState<any>(null);
+  const [userLevelData, setUserLevelData] = useState<UserLevelData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingNickname, setIsUpdatingNickname] = useState(false);
@@ -41,11 +58,12 @@ export const ProfileHeaderSection: React.FC = () => {
       try {
         setError(null);
         
-        // Load user data, auth status (for Twitter profile image), and balance in parallel
-        const [userResponse, authStatusResponse, balanceResponse] = await Promise.all([
+        // Load user data, auth status, balance, stats, and level data in parallel
+        const [userResponse, authStatusResponse, statsResponse, levelResponse] = await Promise.all([
           ddApi.users.getOne(user.wallet_address),
           getAuthStatus(),
-          ddApi.balance.get(user.wallet_address),
+          ddApi.stats.getOverall(user.wallet_address),
+          ddApi.users.getUserLevel(user.wallet_address),
         ]);
 
         // Get Twitter profile image if available
@@ -55,20 +73,31 @@ export const ProfileHeaderSection: React.FC = () => {
         }
 
         // Set user's uploaded profile image if available
-        if (userResponse.profile_image?.url) {
-          setProfileImageUrl(userResponse.profile_image.url);
+        if (userResponse.profile_image_url) {
+          setProfileImageUrl(userResponse.profile_image_url);
         }
 
         setUserData({
           wallet_address: userResponse.wallet_address,
-          nickname: userResponse.nickname || null, // Ensure null instead of undefined
-          rank_score: userResponse.rank_score || 0, // Ensure number instead of undefined
-          created_at: userResponse.created_at || "", // Ensure string instead of undefined
-          bonusBalance: formatBonusPoints(balanceResponse.balance),
+          nickname: userResponse.nickname || null,
+          rank_score: userResponse.experience_points || 0, // Use experience_points as rank score
+          created_at: userResponse.created_at || "",
+          bonusBalance: `${userResponse.total_contests || 0}`, // Show total contests instead
           is_banned: userResponse.is_banned ?? false,
           ban_reason: userResponse.ban_reason ?? null,
-          profile_image: userResponse.profile_image,
         });
+        
+        // Transform stats data
+        setUserStats({
+          totalEarnings: statsResponse.contestStats?.totalEarnings || "0",
+          contestsPlayed: statsResponse.contestStats?.totalParticipated || 0,
+          contestsWon: Math.round((statsResponse.contestStats?.totalParticipated || 0) * (statsResponse.contestStats?.winRate || 0)),
+          winRate: Math.round((statsResponse.contestStats?.winRate || 0) * 100),
+          avgPlacement: statsResponse.contestStats?.avgRank || 0,
+        });
+        
+        // Set level data
+        setUserLevelData(levelResponse);
       } catch (err) {
         if (err instanceof Response && err.status === 503) {
           // Maintenance mode response, don't set error
@@ -112,24 +141,10 @@ export const ProfileHeaderSection: React.FC = () => {
     // Update local state
     setProfileImageUrl(newImageUrl || null);
     
-    // Update user data
-    setUserData((prev) => 
-      prev ? { 
-        ...prev, 
-        profile_image: {
-          ...(prev.profile_image || {}),
-          url: newImageUrl
-        }
-      } : null
-    );
-    
     // Update global user state
     setUser({
       ...user,
-      profile_image: {
-        ...(user.profile_image || {}),
-        url: newImageUrl
-      }
+      profile_image_url: newImageUrl
     });
   };
 
@@ -167,10 +182,12 @@ export const ProfileHeaderSection: React.FC = () => {
           bonusBalance={userData.bonusBalance}
           onUpdateNickname={handleUpdateNickname}
           onUpdateProfileImage={handleUpdateProfileImage}
-          profileImageUrl={profileImageUrl || userData.profile_image?.url || twitterProfileImage || undefined}
+          profileImageUrl={profileImageUrl || twitterProfileImage || undefined}
           isUpdating={isUpdatingNickname}
           isBanned={userData.is_banned}
           banReason={userData.ban_reason}
+          stats={userStats}
+          levelData={userLevelData}
         />
       </div>
     </div>

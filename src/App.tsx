@@ -476,7 +476,7 @@ const AppContent: React.FC = () => {
           />
           <Route
             path="/wallet"
-            element={<AuthenticatedRoute><MaintenanceGuard><Suspense fallback={<LoadingFallback />}><WalletPage /></Suspense></MaintenanceGuard></AuthenticatedRoute>}
+            element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><WalletPage /></Suspense></MaintenanceGuard>}
           />
           <Route
             path="/contest-credits"

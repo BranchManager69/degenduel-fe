@@ -26,6 +26,7 @@ import { useVisibleTokenSubscriptions } from "../../../hooks/websocket/topic-hoo
 import { useScrollFooter } from "../../../hooks/ui/useScrollFooter";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useWalletAnalysis } from "../../../hooks/data/useWalletAnalysis";
+import { useReferral } from "../../../hooks/social/useReferral";
 import { ddApi } from "../../../services/dd-api";
 import { useStore } from "../../../store/useStore";
 import { Contest, SearchToken, Token, TokenHelpers } from "../../../types/index";
@@ -133,6 +134,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const { id: contestId } = useParams();
   const navigate = useNavigate();
   const { isSuperAdmin } = useMigratedAuth();
+  const { referralCode } = useReferral();
   
   // Special tokens that should always be available
   const SPECIAL_TOKEN_ADDRESSES = [
@@ -868,6 +870,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
           await ddApi.contests.enterFreeContestWithPortfolio(
             contestId,
             portfolioData,
+            referralCode || undefined,
           );
         }
 
@@ -1134,6 +1137,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
             contestId,
             portfolioData,
             confirmedSignature, // Use local variable instead of potentially stale state
+            referralCode || undefined,
           );
         }
 

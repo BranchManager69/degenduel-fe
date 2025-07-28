@@ -91,25 +91,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       return "/assets/media/default/profile_pic.png";
     }
     
-    // Try multiple profile image sources in order of preference
-    let imageUrl = null;
-    
-    // 1. Try profile_image_url (string field)
+    // Use profile_image_url from the API response
     if (user.profile_image_url) {
-      imageUrl = getFullImageUrl(user.profile_image_url);
+      return getFullImageUrl(user.profile_image_url);
     }
     
-    // 2. Try profile_image.url (object field)
-    if (!imageUrl && user.profile_image?.url) {
-      imageUrl = getFullImageUrl(user.profile_image.url);
-    }
-    
-    // 3. Try avatar_url (alternative field)
-    if (!imageUrl && user.avatar_url) {
-      imageUrl = getFullImageUrl(user.avatar_url);
-    }
-    
-    return imageUrl || "/assets/media/default/profile_pic.png";
+    return "/assets/media/default/profile_pic.png";
   }, [user, imageError]);
 
   const handleImageError = () => {

@@ -163,21 +163,11 @@ export const Header: React.FC = () => {
 
             {/* Desktop Balances and User Menu */}
             <div className="hidden md:flex items-center gap-3">
-              <AnimatePresence mode="wait">
-                {isAuthenticated && user ? (
-                  <motion.div 
-                    key="user-menu" 
-                    initial={{ opacity: 0, x: 10 }} 
-                    animate={{ opacity: 1, x: 0 }} 
-                    exit={{ opacity: 0, x: 10 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center gap-2"
-                  >
-                    {/* Token Balance Display (desktop only - for all users) */}
-                    <Link
-                      to="/wallet"
-                      className="hidden md:block group relative cursor-pointer"
-                    >
+              {/* Token Balance Display (desktop only - for all users) */}
+              <Link
+                to="/wallet"
+                className="group relative cursor-pointer"
+              >
                       {/* Outer glow that intensifies on hover */}
                       <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-75 blur transition-all duration-300 group-hover:duration-200" />
                       
@@ -232,8 +222,17 @@ export const Header: React.FC = () => {
                             bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                         </div>
                       </div>
-                    </Link>
-                    
+              </Link>
+
+              <AnimatePresence mode="wait">
+                {isAuthenticated && user ? (
+                  <motion.div 
+                    key="user-menu" 
+                    initial={{ opacity: 0, x: 10 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    exit={{ opacity: 0, x: 10 }}
+                    transition={{ duration: 0.2 }}
+                  >
                     <UserMenu 
                       user={user} 
                       onDisconnect={() => logout && logout()} 

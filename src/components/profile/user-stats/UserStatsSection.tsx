@@ -23,7 +23,18 @@ export const UserStatsSection: React.FC = () => {
       try {
         setError(null);
         const statsResponse = await ddApi.stats.getOverall(user.wallet_address);
-        setUserStats(statsResponse);
+        
+        // Transform the API response to match the expected format
+        const transformedStats: UserStatsType = {
+          total_earnings: statsResponse.contestStats?.totalEarnings || "0",
+          total_contests: statsResponse.contestStats?.totalParticipated || 0,
+          total_wins: Math.round((statsResponse.contestStats?.totalParticipated || 0) * (statsResponse.contestStats?.winRate || 0)),
+          win_rate: Math.round((statsResponse.contestStats?.winRate || 0) * 100), // Convert to percentage
+          average_return: 0, // API doesn't provide this - will show as N/A
+          avg_rank: statsResponse.contestStats?.avgRank || undefined,
+        };
+        
+        setUserStats(transformedStats);
       } catch (err) {
         if (err instanceof Response && err.status === 503) {
           // Maintenance mode response, don't set error
@@ -65,7 +76,7 @@ export const UserStatsSection: React.FC = () => {
         contestsPlayed={userStats.total_contests}
         contestsWon={userStats.total_wins}
         winRate={userStats.win_rate}
-        averageReturn={userStats.average_return}
+        avgRank={userStats.avg_rank}
       />
     </div>
   );

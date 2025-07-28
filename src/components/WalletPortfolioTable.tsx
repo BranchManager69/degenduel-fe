@@ -40,10 +40,12 @@ interface WalletAnalysisResponse {
 
 interface WalletPortfolioTableProps {
   className?: string;
+  demoMode?: boolean;
 }
 
 export const WalletPortfolioTable: React.FC<WalletPortfolioTableProps> = ({
   className = '',
+  demoMode = false,
 }) => {
   const { user } = useStore();
   const [tokens, setTokens] = useState<TokenData[]>([]);
@@ -79,7 +81,7 @@ export const WalletPortfolioTable: React.FC<WalletPortfolioTableProps> = ({
 
   // Fetch wallet analysis data
   const fetchWalletData = async () => {
-    if (!user?.wallet_address) {
+    if (!demoMode && !user?.wallet_address) {
       setError('No wallet address found');
       setIsLoading(false);
       return;
@@ -88,6 +90,32 @@ export const WalletPortfolioTable: React.FC<WalletPortfolioTableProps> = ({
     try {
       setIsLoading(true);
       setError(null);
+      
+      // If in demo mode, use example data
+      if (demoMode) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const demoTokens: TokenData[] = [
+          { symbol: 'DUEL', name: 'DegenDuel', balance: 31814255, value: 158742, realizableValue: 155000, priceImpact: 2.3 },
+          { symbol: 'SOL', name: 'Solana', balance: 1250, value: 87500, realizableValue: 87400, priceImpact: 0.1, isSOL: true },
+          { symbol: 'BONK', name: 'Bonk', balance: 5420000000, value: 54200, realizableValue: 52800, priceImpact: 2.6 },
+          { symbol: 'WIF', name: 'dogwifhat', balance: 12500, value: 37500, realizableValue: 36200, priceImpact: 3.5 },
+          { symbol: 'JUP', name: 'Jupiter', balance: 8900, value: 14240, realizableValue: 14100, priceImpact: 1.0 }
+        ];
+        
+        setTokens(demoTokens);
+        setPortfolio({
+          totalValue: 352182,
+          totalRealizableValue: 345600,
+          deploymentRatio: 98.1
+        });
+        
+        return;
+      }
+      
+      if (!user) {
+        return;
+      }
       
       const response = await axios.get(`/api/wallet-analysis/${user.wallet_address}`);
       

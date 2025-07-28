@@ -11,15 +11,12 @@
 
 import { motion } from "framer-motion";
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 
 import { AchievementsSection } from "../../components/achievements/AchievementsSection";
-import { UserProgress } from "../../components/achievements/UserProgress";
 import { MCPTokenManagement } from "../../components/mcp/MCPTokenManagement";
 import { ContestHistorySection } from "../../components/profile/contest-history/ContestHistorySection";
 import { ProfileHeaderSection } from "../../components/profile/profile-header/ProfileHeaderSection";
 import SocialAccountsPanel from "../../components/profile/SocialAccountsPanel";
-import { UserStatsSection } from "../../components/profile/user-stats/UserStatsSection";
 import { useStore } from "../../store/useStore";
 
 // Container animations
@@ -163,69 +160,27 @@ export const PrivateProfilePage: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Stats Section - Premium treatment */}
+
+          {/* Social Accounts - Full width */}
           <motion.div variants={itemVariants}>
-            <div className="bg-gray-900/60 border border-gray-700/30 rounded-2xl overflow-hidden shadow-xl">
-              <UserStatsSection />
-            </div>
-          </motion.div>
-          
-          {/* Contest Credits - Refined emphasis */}
-          <motion.div variants={itemVariants} className="relative group">
-            <div className="bg-gray-900/70 border border-gray-700/40 rounded-2xl p-8 shadow-xl group-hover:shadow-2xl transition-shadow duration-500">
-              <div className="flex items-start gap-6">
-                <div className="flex-shrink-0">
-                  <div className="w-14 h-14 bg-emerald-600/10 rounded-xl flex items-center justify-center border border-emerald-600/20">
-                    <svg className="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                  </div>
+            <div className="bg-gray-900/60 border border-gray-700/30 rounded-2xl p-8 shadow-xl">
+              <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-600/10 rounded-xl flex items-center justify-center">
+                  <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-white mb-3">Contest Credits</h2>
-                  <p className="text-gray-400 mb-6 leading-relaxed">
-                    Purchase credits to create custom contests. Each contest creation requires one credit.
-                  </p>
-                  <Link 
-                    to="/contest-credits" 
-                    className="inline-flex items-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-emerald-500/25"
-                  >
-                    <span>Manage Credits</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-                </div>
-              </div>
+                Social Accounts
+              </h2>
+              <SocialAccountsPanel />
             </div>
           </motion.div>
 
-          {/* User Progress - Clean card */}
-          <motion.div variants={itemVariants}>
-            <div className="bg-gray-900/60 border border-gray-700/30 rounded-2xl p-8 shadow-xl">
-              <UserProgress />
-            </div>
-          </motion.div>
 
           {/* Two Column Layout - Professional spacing */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
             {/* Left Column */}
             <div className="space-y-8">
-              {/* Social Accounts */}
-              <motion.div variants={itemVariants}>
-                <div className="bg-gray-900/60 border border-gray-700/30 rounded-2xl p-6 shadow-xl">
-                  <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-                    <div className="w-7 h-7 bg-blue-600/10 rounded-lg flex items-center justify-center">
-                      <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                    </div>
-                    Social Accounts
-                  </h2>
-                  <SocialAccountsPanel />
-                </div>
-              </motion.div>
-
               {/* Achievements */}
               <motion.div variants={itemVariants}>
                 <div className="bg-gray-900/60 border border-gray-700/30 rounded-2xl p-6 shadow-xl h-full">

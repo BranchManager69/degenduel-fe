@@ -8,6 +8,8 @@ import {
   FaFilter,
   FaSortAmountDown,
   FaSortAmountUp,
+  FaThLarge,
+  FaList,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "../../components/ui/Badge";
@@ -26,6 +28,8 @@ import { useUserContests } from "../../hooks/data/legacy/useUserContests";
 import { formatPercentage, formatPortfolioValue, formatSOL, formatUSD } from "../../lib/utils";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
+import { ContestHistoryList } from "../../components/profile/contest-history/ContestHistoryList";
+import { UserPortfolio } from "../../types/profile";
 
 // Updated interfaces to match new API structure
 interface TokenHolding {
@@ -93,6 +97,8 @@ export const MyPortfoliosPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [preferSOL, setPreferSOL] = useState(true); // Currency display preference
   const [solPrice, setSolPrice] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list'); // Default to list view
+  const [apiPortfolios, setApiPortfolios] = useState<UserPortfolio[]>([]); // Store raw API response for list view
 
   // This check is redundant since we're already inside AuthenticatedRoute
   // But keep a simpler version just in case
@@ -174,7 +180,10 @@ export const MyPortfoliosPage: React.FC = () => {
         // Store SOL price for reference
         setSolPrice(response.sol_price_used);
 
-        // Transform the backend response to our Portfolio interface
+        // Store raw API response for list view
+        setApiPortfolios(response.portfolios);
+
+        // Transform the backend response to our Portfolio interface for card view
         const validPortfolios = transformAPIResponse(response);
 
         setPortfolios(validPortfolios);
@@ -291,34 +300,68 @@ export const MyPortfoliosPage: React.FC = () => {
               </p>
             </div>
             
-            {/* Currency Toggle */}
-            <div className="flex items-center gap-2 bg-dark-200/50 rounded-lg p-2">
-              <Button
-                variant={preferSOL ? "primary" : "ghost"}
-                size="sm"
-                onClick={() => setPreferSOL(true)}
-                className={`flex items-center gap-2 ${
-                  preferSOL 
-                    ? "bg-brand-500 text-white" 
-                    : "text-gray-400 hover:text-white"
-                }`}
-              >
-                <FaCoins className="h-4 w-4" />
-                SOL
-              </Button>
-              <Button
-                variant={!preferSOL ? "primary" : "ghost"}
-                size="sm"
-                onClick={() => setPreferSOL(false)}
-                className={`flex items-center gap-2 ${
-                  !preferSOL 
-                    ? "bg-brand-500 text-white" 
-                    : "text-gray-400 hover:text-white"
-                }`}
-              >
-                <FaDollarSign className="h-4 w-4" />
-                USD
-              </Button>
+            <div className="flex items-center gap-4">
+              {/* View Toggle */}
+              <div className="flex items-center gap-2 bg-dark-200/50 rounded-lg p-2">
+                <Button
+                  variant={viewMode === 'list' ? "primary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className={`flex items-center gap-2 ${
+                    viewMode === 'list' 
+                      ? "bg-brand-500 text-white" 
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  <FaList className="h-4 w-4" />
+                  List
+                </Button>
+                <Button
+                  variant={viewMode === 'cards' ? "primary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode('cards')}
+                  className={`flex items-center gap-2 ${
+                    viewMode === 'cards' 
+                      ? "bg-brand-500 text-white" 
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  <FaThLarge className="h-4 w-4" />
+                  Cards
+                </Button>
+              </div>
+
+              {/* Currency Toggle - Only show in card view */}
+              {viewMode === 'cards' && (
+                <div className="flex items-center gap-2 bg-dark-200/50 rounded-lg p-2">
+                  <Button
+                    variant={preferSOL ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setPreferSOL(true)}
+                    className={`flex items-center gap-2 ${
+                      preferSOL 
+                        ? "bg-brand-500 text-white" 
+                        : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    <FaCoins className="h-4 w-4" />
+                    SOL
+                  </Button>
+                  <Button
+                    variant={!preferSOL ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setPreferSOL(false)}
+                    className={`flex items-center gap-2 ${
+                      !preferSOL 
+                        ? "bg-brand-500 text-white" 
+                        : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    <FaDollarSign className="h-4 w-4" />
+                    USD
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
           
@@ -330,7 +373,7 @@ export const MyPortfoliosPage: React.FC = () => {
           )}
         </header>
 
-        {/* Enhanced Filters & Search */}
+        {/* Enhanced Filters & Search - Only show search in list view */}
         <div className="mb-8 flex flex-col md:flex-row gap-4">
           <div className="flex-grow">
             <SearchInput
@@ -341,7 +384,9 @@ export const MyPortfoliosPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
+          {/* Only show filters and sort in card view */}
+          {viewMode === 'cards' && (
+            <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex items-center gap-2">
               <FaFilter className="text-gray-400" />
               <Select
@@ -388,7 +433,8 @@ export const MyPortfoliosPage: React.FC = () => {
                 <FaSortAmountDown className="h-4 w-4" />
               )}
             </Button>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Loading state */}
@@ -480,8 +526,136 @@ export const MyPortfoliosPage: React.FC = () => {
             </Card>
           )}
 
+        {/* Portfolio Display - List or Card View */}
+        {!loading && viewMode === 'list' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Contest History List */}
+            <div className="lg:col-span-2">
+              {apiPortfolios.length > 0 ? (
+                <div className="bg-dark-200/80 backdrop-blur-sm border border-dark-300 rounded-lg">
+                  <ContestHistoryList 
+                    portfolios={apiPortfolios.filter(p => {
+                      // Apply the same filters as card view
+                      const matchesSearch = searchTerm === "" ||
+                        p.contest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        p.portfolio.some(t => 
+                          t.token?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          t.token?.symbol?.toLowerCase().includes(searchTerm.toLowerCase())
+                        );
+                      
+                      const matchesStatus = statusFilter === "all" || 
+                        (statusFilter === "upcoming" && p.contest.status === "pending") ||
+                        (statusFilter === "active" && p.contest.status === "active") ||
+                        (statusFilter === "completed" && p.contest.status === "completed") ||
+                        (statusFilter === "cancelled" && p.contest.status === "cancelled");
+                      
+                      return matchesSearch && matchesStatus;
+                    })} 
+                  />
+                </div>
+              ) : (
+                <Card className="bg-dark-200/80 backdrop-blur-sm border-dark-300">
+                  <CardContent className="p-6 text-center">
+                    <h3 className="text-lg font-medium text-gray-200 mb-2">
+                      No Matching Portfolios
+                    </h3>
+                    <p className="text-gray-400">
+                      Try adjusting your filters or search term.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Right Column - Portfolio Stats and Info */}
+            <div className="space-y-6">
+              {/* Portfolio Summary Stats */}
+              <Card className="bg-dark-200/80 backdrop-blur-sm border-dark-300">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold text-white">Portfolio Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-brand-400">{apiPortfolios.length}</div>
+                      <div className="text-xs text-gray-400">Total Contests</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-400">
+                        {apiPortfolios.filter(p => p.contest.status === 'completed' && p.final_rank && p.final_rank <= 3).length}
+                      </div>
+                      <div className="text-xs text-gray-400">Wins</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-400">
+                        {apiPortfolios.filter(p => p.contest.status === 'active').length}
+                      </div>
+                      <div className="text-xs text-gray-400">Active</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-400">
+                        {apiPortfolios.filter(p => p.contest.status === 'pending').length}
+                      </div>
+                      <div className="text-xs text-gray-400">Upcoming</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card className="bg-dark-200/80 backdrop-blur-sm border-dark-300">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold text-white">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button
+                    onClick={() => navigate("/contests")}
+                    className="w-full bg-brand-500 hover:bg-brand-600 text-white"
+                  >
+                    Browse New Contests
+                  </Button>
+                  <Button
+                    onClick={() => setViewMode('cards')}
+                    variant="outline"
+                    className="w-full bg-dark-300 border-dark-400 text-gray-300 hover:bg-dark-400"
+                  >
+                    Switch to Card View
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Contest Status Legend */}
+              <Card className="bg-dark-200/80 backdrop-blur-sm border-dark-300">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold text-white">Status Guide</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-gray-300">Pending - Contest hasn't started</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-gray-300">Active - Contest is live</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                    <span className="text-gray-300">Completed - Contest finished</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span className="text-gray-300">Cancelled - Contest cancelled</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
         {/* Enhanced Portfolio cards grid */}
-        {!loading && filteredAndSortedPortfolios.length > 0 && (
+        {!loading && filteredAndSortedPortfolios.length > 0 && viewMode === 'cards' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAndSortedPortfolios.map((portfolio) => (
               <Card
