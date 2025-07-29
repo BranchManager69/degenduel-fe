@@ -122,30 +122,48 @@ export const Header: React.FC = () => {
           className={`relative flex items-center justify-between transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${headerHeight}`}
         >
           {/* Logo (links to Home) */}
-          <Link to="/" className="flex items-center" aria-label="Home">
-            {/* Use NanoLogo when compact, MiniLogo otherwise */}
-            {isCompact 
-              ? <NanoLogo /> 
-              : <MiniLogo />
-            } 
-            {/* <IntroLogo /> */} {/* another option - full name */}
-            {/* <Logo /> */} {/* another option - old logo image */}
-          </Link>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
+            <Link to="/" className="flex items-center" aria-label="Home">
+              {/* Use NanoLogo when compact, MiniLogo otherwise */}
+              {isCompact 
+                ? <NanoLogo /> 
+                : <MiniLogo />
+              } 
+              {/* <IntroLogo /> */} {/* another option - full name */}
+              {/* <Logo /> */} {/* another option - old logo image */}
+            </Link>
+          </motion.div>
 
           {/* Navigation Menu */}
           <nav className="hidden sm:flex items-center gap-6 ml-8">
-            <Link 
-              to="/contests" 
-              className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
             >
-              Contests
-            </Link>
-            <Link 
-              to="/tokens" 
-              className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+              <Link 
+                to="/contests" 
+                className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+              >
+                Contests
+              </Link>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
             >
-              Tokens
-            </Link>
+              <Link 
+                to="/tokens" 
+                className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+              >
+                Tokens
+              </Link>
+            </motion.div>
           </nav>
 
           {/* Spacer */}
@@ -161,13 +179,18 @@ export const Header: React.FC = () => {
             }`}
           >
 
-            {/* Desktop Balances and User Menu */}
-            <div className="hidden md:flex items-center gap-3">
+            {/* Balances and User Menu */}
+            <div className="flex items-center gap-2 md:gap-3">
               {/* Token Balance Display (desktop only - for all users) */}
-              <Link
-                to="/wallet"
-                className="group relative cursor-pointer"
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
               >
+                <Link
+                  to="/wallet"
+                  className="group relative cursor-pointer"
+                >
                       {/* Outer glow that intensifies on hover */}
                       <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-75 blur transition-all duration-300 group-hover:duration-200" />
                       
@@ -192,29 +215,25 @@ export const Header: React.FC = () => {
                               mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS}
                               walletAddress={user.wallet_address} 
                               compact={true}
-                              className={`font-medium leading-none ${isCompact ? "text-sm" : "text-base"}`}
+                              className={`font-normal leading-none ${isCompact ? "text-sm" : "text-base"}`}
                               showSupply={false}
                               showHolders={false}
                             />
                           ) : (
-                            <span className={`font-medium leading-none ${isCompact ? "text-sm" : "text-base"}`}>
-                              Dividends
+                            <span className={`font-semibold tracking-wider uppercase leading-none ${isCompact ? "text-xs" : "text-sm"}`}>
+                              DIVIDENDS
                             </span>
                           )}
                         </div>
                         
                         {/* Token icon - slightly smaller with more spacing */}
-                        <div className="relative flex items-center justify-center w-4 h-4 ml-1">
+                        <div className="relative flex items-center justify-center w-4 h-4 ml-2">
                           <div className="absolute inset-0 bg-purple-400 rounded-full animate-ping opacity-20" />
                           <div className="relative w-4 h-4 flex items-center justify-center">
                             <NanoLogo />
                           </div>
                         </div>
                         
-                        {/* Chevron indicator */}
-                        <svg className="w-3 h-3 ml-1 text-purple-300 group-hover:text-purple-200 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
                         
                         {/* Shimmer effect overlay */}
                         <div className="absolute inset-0 rounded-full overflow-hidden">
@@ -222,16 +241,18 @@ export const Header: React.FC = () => {
                             bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                         </div>
                       </div>
-              </Link>
+                </Link>
+              </motion.div>
 
               <AnimatePresence mode="wait">
                 {isAuthenticated && user ? (
                   <motion.div 
                     key="user-menu" 
-                    initial={{ opacity: 0, x: 10 }} 
+                    initial={{ opacity: 0, x: 20 }} 
                     animate={{ opacity: 1, x: 0 }} 
                     exit={{ opacity: 0, x: 10 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.4, delay: 0.2 }}
+                    className="hidden md:block"
                   >
                     <UserMenu 
                       user={user} 
@@ -243,34 +264,132 @@ export const Header: React.FC = () => {
                 ) : (
                   <motion.div 
                     key="login-btn"
-                    initial={{ opacity: 0, x: 10 }} 
+                    initial={{ opacity: 0, x: 20 }} 
                     animate={{ opacity: 1, x: 0 }} 
                     exit={{ opacity: 0, x: 10 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.4, delay: 0.2 }}
+                    className="hidden md:block"
                   >
                     <Link
                       to="/login"
-                      className={`inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white 
-                        bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 
-                        rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-brand-500/25
-                        ${isCompact ? 'h-8 text-xs' : 'h-10'}`}
+                      className={`
+                        relative group overflow-hidden transition-all duration-300 ease-out
+                        ${isCompact ? "h-7" : "h-8"} flex items-center
+                        rounded-full border border-emerald-900/50 hover:border-emerald-800/70
+                        bg-gradient-to-r from-emerald-950/80 via-emerald-900/70 to-emerald-950/80
+                        hover:from-emerald-900/90 hover:via-emerald-800/80 hover:to-emerald-900/90
+                      `}
                     >
-                      Login
+                      {/* Background */}
+                      <div className="absolute inset-0 bg-gray-800/40 transition-all duration-300" />
+
+                      {/* Content */}
+                      <div className="relative flex items-center justify-between w-full pl-3 pr-0.5">
+                        <div className="flex items-center gap-2">
+                          {/* Login text */}
+                          <span
+                            className={`
+                              text-white
+                              font-semibold tracking-wider transition-all duration-300
+                              ${isCompact ? "text-xs" : "text-sm"} uppercase
+                            `}
+                          >
+                            LOGIN
+                          </span>
+                        </div>
+
+                        {/* Default avatar */}
+                        <div className="relative ml-3">
+                          <div
+                            className={`
+                              rounded-full overflow-hidden
+                              transition-all duration-300 shadow-lg
+                              ${isCompact ? "w-7 h-7" : "w-8 h-8"}
+                              bg-dark-300 ring-2 ring-emerald-800/50
+                              group-hover:scale-105
+                            `}
+                          >
+                            <img
+                              src="/assets/media/default/profile_pic.png"
+                              alt="Login"
+                              className="w-full h-full object-cover group-hover:brightness-110"
+                              loading="eager"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </Link>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button / Login */}
             <div className="md:hidden">
-              {/* <div className="w-8 h-8 bg-gray-500/30 rounded text-xs flex items-center justify-center text-gray-300">M</div> */} {/* REMOVE placeholder */}
-              <MobileMenuButton 
-                isCompact={isCompact}
-                onDisconnect={() => logout && logout()}
-                unreadNotifications={unreadCount}
-                onMenuToggle={setIsMobileMenuOpen}
-              />
+              {isAuthenticated && user ? (
+                <MobileMenuButton 
+                  isCompact={isCompact}
+                  onDisconnect={() => logout && logout()}
+                  unreadNotifications={unreadCount}
+                  onMenuToggle={setIsMobileMenuOpen}
+                />
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }} 
+                  animate={{ opacity: 1, x: 0 }} 
+                  transition={{ duration: 0.4, delay: 0.2 }}
+                >
+                  <Link
+                    to="/login"
+                    className={`
+                      relative group overflow-hidden transition-all duration-300 ease-out
+                      ${isCompact ? "h-7" : "h-8"} flex items-center
+                      rounded-full border border-emerald-900/50 hover:border-emerald-800/70
+                      bg-gradient-to-r from-emerald-950/80 via-emerald-900/70 to-emerald-950/80
+                      hover:from-emerald-900/90 hover:via-emerald-800/80 hover:to-emerald-900/90
+                    `}
+                  >
+                    {/* Background */}
+                    <div className="absolute inset-0 bg-gray-800/40 transition-all duration-300" />
+
+                    {/* Content */}
+                    <div className="relative flex items-center justify-between w-full pl-3 pr-0.5">
+                      <div className="flex items-center gap-2">
+                        {/* Login text */}
+                        <span
+                          className={`
+                            text-white
+                            font-semibold tracking-wider transition-all duration-300
+                            ${isCompact ? "text-xs" : "text-sm"} uppercase
+                          `}
+                        >
+                          LOGIN
+                        </span>
+                      </div>
+
+                      {/* Default avatar */}
+                      <div className="relative ml-3">
+                        <div
+                          className={`
+                            rounded-full overflow-hidden
+                            transition-all duration-300 shadow-lg
+                            ${isCompact ? "w-7 h-7" : "w-8 h-8"}
+                            bg-dark-300 ring-2 ring-emerald-800/50
+                            group-hover:scale-105
+                          `}
+                        >
+                          <img
+                            src="/assets/media/default/profile_pic.png"
+                            alt="Login"
+                            className="w-full h-full object-cover group-hover:brightness-110"
+                            loading="eager"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              )}
             </div>
 
           </div>

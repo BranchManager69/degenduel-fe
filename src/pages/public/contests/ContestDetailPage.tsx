@@ -837,38 +837,38 @@ export const ContestDetails: React.FC = () => {
                   
                   <>
                   {/* Contest Economics - Unified Equation */}
-                  <div className="p-6 mb-3">
+                  <div className="p-3 sm:p-6 mb-3">
                     {displayStatus !== "cancelled" && (
-                    <div className="flex items-center justify-center gap-4">
+                    <div className="flex items-center justify-center gap-2 sm:gap-4">
                       {/* Entry Fee */}
                       <div className="flex flex-col items-center">
-                        <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Entry Fee</div>
+                        <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide mb-1">Entry</div>
                         {Number(contest.entry_fee) === 0 ? (
-                          <div className="text-2xl font-bold uppercase tracking-wide text-green-400">
+                          <div className="text-lg sm:text-2xl font-bold uppercase tracking-wide text-green-400">
                             FREE
                           </div>
                         ) : (
-                          <div className="text-2xl font-bold flex items-center gap-2 text-white">
-                            <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-5 h-5" />
+                          <div className="text-lg sm:text-2xl font-bold flex items-center gap-1 sm:gap-2 text-white">
+                            <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3 sm:w-5 sm:h-5" />
                             <span>{Number(contest.entry_fee)}</span>
                           </div>
                         )}
                       </div>
 
                       {/* Multiplication Symbol */}
-                      <div className="text-2xl font-bold text-gray-400/50">×</div>
+                      <div className="text-lg sm:text-2xl font-bold text-gray-400/50">×</div>
 
                       {/* Participants with Progress */}
                       <div className="flex flex-col items-center">
-                        <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Players</div>
-                        <div className="text-2xl font-bold text-white">
+                        <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide mb-1">Players</div>
+                        <div className="text-lg sm:text-2xl font-bold text-white whitespace-nowrap">
                           {displayStatus === "pending" && contest.participant_count < contest.max_participants ? (
-                            <span>{contest.participant_count}<span className="text-sm text-gray-500">/{contest.min_participants || 2}-{contest.max_participants}</span></span>
+                            <span>{contest.participant_count}<span className="text-xs sm:text-sm text-gray-500">/{contest.min_participants || 2}-{contest.max_participants}</span></span>
                           ) : (
-                            <span>{contest.participant_count}<span className="text-sm text-gray-500">/{contest.max_participants}</span></span>
+                            <span>{contest.participant_count}<span className="text-xs sm:text-sm text-gray-500">/{contest.max_participants}</span></span>
                           )}
                         </div>
-                        <div className="mt-1 w-20 h-1.5 bg-dark-400 rounded-full overflow-hidden">
+                        <div className="mt-1 w-16 sm:w-20 h-1.5 bg-dark-400 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-purple-400 to-purple-600 transition-all duration-500"
                             style={{
@@ -889,20 +889,20 @@ export const ContestDetails: React.FC = () => {
                         return (
                           <>
                             {/* Equals Symbol */}
-                            <div className="text-2xl font-bold text-gray-400/50">=</div>
+                            <div className="text-lg sm:text-2xl font-bold text-gray-400/50">=</div>
 
                             {/* Total Pool */}
                             <div className="flex flex-col items-center">
-                              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">
-                                {displayStatus === "pending" ? "Current Pool" : "Contest Pool"}
+                              <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide mb-1">
+                                {displayStatus === "pending" ? "Pool" : "Pool"}
                               </div>
-                              <div className="text-2xl font-bold flex items-center gap-2 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                                <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-5 h-5" />
+                              <div className="text-lg sm:text-2xl font-bold flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                                <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3 sm:w-5 sm:h-5" />
                                 <span>{poolValue}</span>
                               </div>
                               {Number(contest.entry_fee) > 0 && contest.participant_count < contest.max_participants && displayStatus === "pending" && (
-                                <div className="text-xs text-gray-500">
-                                  Max: {Number(contest.entry_fee) * contest.max_participants} SOL if full
+                                <div className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
+                                  Max: {Number(contest.entry_fee) * contest.max_participants}
                                 </div>
                               )}
                             </div>
@@ -911,28 +911,28 @@ export const ContestDetails: React.FC = () => {
                       })()}
 
                       {Number(contest.entry_fee) > 0 && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
                           {/* Fork visualization */}
-                          <svg width="40" height="100" viewBox="0 0 40 100" className="fill-none">
+                          <svg width="30" height="80" viewBox="0 0 30 80" className="fill-none sm:w-10 sm:h-20">
                             {/* Horizontal line from pool */}
-                            <line x1="0" y1="50" x2="12" y2="50" stroke="rgb(156 163 175 / 0.5)" strokeWidth="3"/>
+                            <line x1="0" y1="40" x2="9" y2="40" stroke="rgb(156 163 175 / 0.5)" strokeWidth="2"/>
                             
                             {/* Upper fork to winners - more horizontal */}
-                            <line x1="12" y1="50" x2="32" y2="35" stroke="rgb(156 163 175 / 0.5)" strokeWidth="3"/>
-                            <polygon points="32,30 32,40 40,35" fill="rgb(156 163 175 / 0.5)" transform="rotate(-35 32 35)"/>
+                            <line x1="9" y1="40" x2="24" y2="28" stroke="rgb(156 163 175 / 0.5)" strokeWidth="2"/>
+                            <polygon points="24,24 24,32 30,28" fill="rgb(156 163 175 / 0.5)" transform="rotate(-35 24 28)"/>
                             
                             {/* Lower fork to holders - more horizontal */}
-                            <line x1="12" y1="50" x2="32" y2="65" stroke="rgb(156 163 175 / 0.5)" strokeWidth="3"/>
-                            <polygon points="32,60 32,70 40,65" fill="rgb(156 163 175 / 0.5)" transform="rotate(35 32 65)"/>
+                            <line x1="9" y1="40" x2="24" y2="52" stroke="rgb(156 163 175 / 0.5)" strokeWidth="2"/>
+                            <polygon points="24,48 24,56 30,52" fill="rgb(156 163 175 / 0.5)" transform="rotate(35 24 52)"/>
                           </svg>
 
                           {/* Winners and Holders stacked - properly centered */}
-                          <div className="flex flex-col gap-6">
+                          <div className="flex flex-col gap-3 sm:gap-6">
                             {/* Winners */}
                             <div className="flex flex-col items-center">
-                              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Contest Payout</div>
-                              <div className="text-xl font-bold text-green-400 flex items-center gap-2">
-                                <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-4 h-4" />
+                              <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide mb-1">Payout</div>
+                              <div className="text-sm sm:text-xl font-bold text-green-400 flex items-center gap-1 sm:gap-2 whitespace-nowrap">
+                                <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3 sm:w-4 sm:h-4" />
                                 <span>{(() => {
                                   const minAmount = Number(contest.entry_fee) * (contest.min_participants || 2) * 0.9;
                                   const currentAmount = Number(contest.entry_fee) * contest.participant_count * 0.9;
@@ -949,17 +949,13 @@ export const ContestDetails: React.FC = () => {
                                   return formatAmount(currentAmount);
                                 })()}</span>
                               </div>
-                              <div className="text-xs text-gray-500">90% to {(() => {
-                                const payoutStructure = contest?.settings?.payout_structure;
-                                const winnerCount = payoutStructure ? Object.keys(payoutStructure).length : 3;
-                                return winnerCount === 1 ? "winner" : "winners";
-                              })()}</div>
+                              <div className="text-[10px] sm:text-xs text-gray-500">90% winners</div>
                             </div>
                             {/* Holders */}
                             <div className="flex flex-col items-center">
-                              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Daily Airdrop</div>
-                              <div className="text-xl font-bold text-brand-400 flex items-center gap-2">
-                                <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-4 h-4" />
+                              <div className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide mb-1">Airdrop</div>
+                              <div className="text-sm sm:text-xl font-bold text-brand-400 flex items-center gap-1 sm:gap-2 whitespace-nowrap">
+                                <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3 sm:w-4 sm:h-4" />
                                 <span>{(() => {
                                   const minAmount = Number(contest.entry_fee) * (contest.min_participants || 2) * 0.1;
                                   const currentAmount = Number(contest.entry_fee) * contest.participant_count * 0.1;
@@ -976,7 +972,7 @@ export const ContestDetails: React.FC = () => {
                                   return formatAmount(currentAmount);
                                 })()}</span>
                               </div>
-                              <div className="text-xs text-gray-500">10% to DUEL holders</div>
+                              <div className="text-[10px] sm:text-xs text-gray-500">10% holders</div>
                             </div>
                           </div>
                         </div>

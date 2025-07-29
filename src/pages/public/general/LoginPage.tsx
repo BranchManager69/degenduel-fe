@@ -28,8 +28,8 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Get the path to redirect to after login (default to my-contests)
-  const from = location.state?.from?.pathname || "/my-contests";
+  // Get the path to redirect to after login (default to contests)
+  const from = location.state?.from?.pathname || "/contests";
   
   // Store intended destination in localStorage for social auth redirects
   React.useEffect(() => {
@@ -91,7 +91,7 @@ const LoginPage: React.FC = () => {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 w-full max-w-md"
+        className="relative z-10 w-full max-w-lg"
       >
 
         {/* Unified login panel */}
@@ -104,23 +104,24 @@ const LoginPage: React.FC = () => {
             ease: [0.22, 1, 0.36, 1]
           }}
         >
-          <div className="relative">
-            {/* Clean, subtle container */}
-            <div className="relative bg-gray-900/80 backdrop-blur-sm border border-gray-800 rounded-2xl p-8 shadow-xl">
-              {/* Logo integrated into header */}
-              <div className="text-center mb-8">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ 
-                    duration: 0.8, 
-                    ease: [0.22, 1, 0.36, 1]
-                  }}
-                  className="mb-6"
-                >
-                  <Logo size="lg" animated={true} />
-                </motion.div>
+          <div className="relative flex flex-col items-center">
+            {/* Logo positioned half on/off the container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ 
+                duration: 0.8, 
+                ease: [0.22, 1, 0.36, 1]
+              }}
+              className="mb-[-40px] z-20"
+            >
+              <div style={{ transform: 'scale(1.3)' }}>
+                <Logo size="xl" animated={true} />
               </div>
+            </motion.div>
+            
+            {/* Clean, subtle container */}
+            <div className="relative w-full bg-gray-900/80 backdrop-blur-sm border border-gray-800 rounded-2xl pt-16 pb-8 px-8 shadow-xl">
               
               {/* Primary wallet button - full width */}
               <div className="mb-2">
@@ -139,20 +140,20 @@ const LoginPage: React.FC = () => {
                   <div className="w-full border-t border-gray-700/50"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-gray-900/90 text-gray-400">Or continue with</span>
+                  <span className="px-4 bg-gray-900/90 text-gray-400">Sign in with linked social</span>
                 </div>
               </div>
               
               {/* Alternative login methods */}
               <div className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-4 gap-4 max-w-sm mx-auto">
                 {/* Twitter/X Login */}
                 <div className="relative group">
-                  <div className="w-full aspect-square rounded-lg bg-gray-800/60 border border-gray-600/40 hover:bg-gray-700/60 hover:border-gray-500/50 transition-all duration-200 overflow-hidden">
+                  <div className="w-16 h-16 rounded-lg bg-gray-800/60 border border-gray-600/40 hover:bg-gray-700/60 hover:border-gray-500/50 transition-all duration-200 overflow-hidden">
                     <TwitterLoginButton 
                       linkMode={false}
                       iconOnly={true}
-                      className="w-full h-full p-0 bg-transparent hover:bg-transparent border-transparent flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6"
+                      className="w-full h-full p-2 bg-transparent hover:bg-transparent border-transparent flex items-center justify-center [&>svg]:w-8 [&>svg]:h-8"
                     />
                   </div>
                   <div className="text-center mt-2">
@@ -162,11 +163,11 @@ const LoginPage: React.FC = () => {
 
                 {/* Discord Login */}
                 <div className="relative group">
-                  <div className="w-full aspect-square rounded-lg bg-[#5865F2]/10 border border-[#5865F2]/20 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/40 transition-all duration-200 overflow-hidden">
+                  <div className="w-16 h-16 rounded-lg bg-[#5865F2]/10 border border-[#5865F2]/20 hover:bg-[#5865F2]/20 hover:border-[#5865F2]/40 transition-all duration-200 overflow-hidden">
                     <DiscordLoginButton 
                       linkMode={false}
                       iconOnly={true}
-                      className="w-full h-full p-0 bg-transparent hover:bg-transparent border-transparent flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6"
+                      className="w-full h-full p-2 bg-transparent hover:bg-transparent border-transparent flex items-center justify-center [&>svg]:w-8 [&>svg]:h-8"
                     />
                   </div>
                   <div className="text-center mt-2">
@@ -176,14 +177,14 @@ const LoginPage: React.FC = () => {
 
                 {/* Telegram Login */}
                 <div className={`relative group ${!(isAdministrator || isSuperAdmin) ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  <div className={`w-full aspect-square rounded-lg bg-[#0088cc]/10 border border-[#0088cc]/20 
+                  <div className={`w-16 h-16 rounded-lg bg-[#0088cc]/10 border border-[#0088cc]/20 
                     ${(isAdministrator || isSuperAdmin) ? 'hover:bg-[#0088cc]/20 hover:border-[#0088cc]/40' : ''} 
                     transition-all duration-200 overflow-hidden`}>
                     {(isAdministrator || isSuperAdmin) ? (
                       <TelegramLoginButton 
                         linkMode={false}
                         iconOnly={true}
-                        className="w-full h-full p-0 bg-transparent hover:bg-transparent border-transparent flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6"
+                        className="w-full h-full p-2 bg-transparent hover:bg-transparent border-transparent flex items-center justify-center [&>svg]:w-8 [&>svg]:h-8"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center pointer-events-none">
@@ -203,14 +204,14 @@ const LoginPage: React.FC = () => {
 
                 {/* Passkey Login */}
                 <div className={`relative group ${!(isAdministrator || isSuperAdmin) ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  <div className={`w-full aspect-square rounded-lg bg-purple-500/10 border border-purple-500/20 
+                  <div className={`w-16 h-16 rounded-lg bg-purple-500/10 border border-purple-500/20 
                     ${(isAdministrator || isSuperAdmin) ? 'hover:bg-purple-500/20 hover:border-purple-500/40' : ''} 
                     transition-all duration-200 overflow-hidden`}>
                     {(isAdministrator || isSuperAdmin) ? (
                       <BiometricAuthButton 
                         mode="authenticate"
                         buttonStyle="icon-only"
-                        className="w-full h-full p-0 bg-transparent hover:bg-transparent border-transparent flex flex-col items-center justify-center gap-2 [&>svg]:w-6 [&>svg]:h-6"
+                        className="w-full h-full p-2 bg-transparent hover:bg-transparent border-transparent flex flex-col items-center justify-center gap-2 [&>svg]:w-8 [&>svg]:h-8"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center pointer-events-none">
@@ -238,10 +239,13 @@ const LoginPage: React.FC = () => {
               </div>
 
                 {/* Note about wallet linking */}
-                <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-xs text-blue-200 text-center">
-                    💡 After social login, you'll need to connect a wallet for full trading features
-                  </p>
+                <div className="mt-6 p-3 bg-gray-800/40 border border-gray-700/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400 text-sm">ℹ️</span>
+                    <p className="text-xs text-gray-300 whitespace-nowrap">
+                      <span className="font-medium">New users:</span> Connect wallet after social login
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

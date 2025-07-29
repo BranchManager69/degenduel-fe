@@ -174,7 +174,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                 />
 
                 {/* Content */}
-                <div className="relative flex items-center justify-between w-full px-3">
+                <div className="relative flex items-center justify-between w-full pl-3 pr-0.5">
                   <div className="flex items-center gap-2">
                     {/* Level Badge - Only show if level > 0 */}
                     {userLevel > 0 && (
@@ -205,13 +205,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                   </div>
 
                   {/* Avatar */}
-                  <div className="relative">
+                  <div className="relative ml-3">
                     <div
                       className={`
-                        ml-2 rounded-full overflow-hidden
+                        rounded-full overflow-hidden
                         transition-all duration-300 shadow-lg
                         ${isCompact ? "w-7 h-7" : "w-8 h-8"}
-                        bg-dark-300 
+                        bg-dark-300 ring-2 ${buttonStyles.ring}
                         group-hover:scale-105
                       `}
                     >
@@ -269,7 +269,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                             {userLevel > 99 ? "99+" : userLevel}
                           </div>
                         )}
-                        <div className={`w-9 h-9 rounded-full overflow-hidden ring-2 ${buttonStyles.ring} transition-all duration-300 shadow-lg bg-dark-300`}>
+                        <div className={`w-9 h-9 rounded-full overflow-hidden ring-4 ${buttonStyles.ring} transition-all duration-300 shadow-lg bg-dark-300`}>
                           <img
                             src={profileImageUrl}
                             alt={displayName}

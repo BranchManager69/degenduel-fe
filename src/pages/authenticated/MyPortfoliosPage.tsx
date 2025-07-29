@@ -1,6 +1,6 @@
 // src/pages/authenticated/MyPortfoliosPage.tsx
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   FaChartPie,
   FaCoins,
@@ -12,6 +12,7 @@ import {
   FaList,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import NanoLogo from "../../components/logo/NanoLogo";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import {
@@ -99,6 +100,8 @@ export const MyPortfoliosPage: React.FC = () => {
   const [solPrice, setSolPrice] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('list'); // Default to list view
   const [apiPortfolios, setApiPortfolios] = useState<UserPortfolio[]>([]); // Store raw API response for list view
+  const [retryCount, setRetryCount] = useState(0);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // This check is redundant since we're already inside AuthenticatedRoute
   // But keep a simpler version just in case
@@ -160,12 +163,17 @@ export const MyPortfoliosPage: React.FC = () => {
   };
 
   // Fetch all portfolios in a single efficient API call
-  useEffect(() => {
-    const fetchPortfolios = async () => {
+  const fetchPortfolios = useCallback(async () => {
       if (!user?.wallet_address || contestsLoading) return;
 
       try {
         setLoading(true);
+
+        // Clear any existing retry timeout to prevent race conditions
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+          retryTimeoutRef.current = null;
+        }
 
         // Use the enhanced batch API to get all portfolios in one request
         const response: APIResponse = await ddApi.portfolio.getAllUserPortfolios(
@@ -188,6 +196,7 @@ export const MyPortfoliosPage: React.FC = () => {
 
         setPortfolios(validPortfolios);
         setError(null);
+        setRetryCount(0); // Reset retry count on success
 
         // Handle pagination if needed
         if (response.pagination?.has_more) {
@@ -198,14 +207,47 @@ export const MyPortfoliosPage: React.FC = () => {
         }
       } catch (err) {
         console.error("Error fetching portfolios:", err);
-        setError("Failed to load your portfolios");
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        
+        // Check for 502 errors with better error structure handling
+        const is502Error = (
+          (err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'status' in err.response && err.response.status === 502) ||
+          (err && typeof err === 'object' && 'status' in err && err.status === 502) ||
+          errorMessage.includes('502') ||
+          errorMessage.toLowerCase().includes('bad gateway')
+        );
+        
+        // Auto-retry for 502 errors silently
+        if (is502Error) {
+          const currentRetryCount = retryCount;
+          setRetryCount(prev => prev + 1);
+          retryTimeoutRef.current = setTimeout(() => {
+            fetchPortfolios();
+          }, 5000);
+          // Don't set error for 502s - just keep loading
+          return;
+        } else {
+          setError("Failed to load your portfolios");
+        }
       } finally {
-        setLoading(false);
+        // Only set loading false if not retrying a 502
+        if (!is502Error) {
+          setLoading(false);
+        }
+      }
+    }, [contests, contestsLoading, user?.wallet_address]); // Removed retryCount from dependencies
+
+  useEffect(() => {
+    fetchPortfolios();
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
       }
     };
-
-    fetchPortfolios();
-  }, [contests, contestsLoading, user?.wallet_address]);
+  }, [fetchPortfolios]);
 
   // Enhanced filter and sort portfolios
   const filteredAndSortedPortfolios = React.useMemo(() => {
@@ -292,8 +334,13 @@ export const MyPortfoliosPage: React.FC = () => {
         <header className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-                <FaChartPie className="text-brand-400" /> My Portfolios
+              <h1 className="text-3xl font-bold text-white flex items-center gap-6">
+                <div className="scale-150">
+                  <NanoLogo />
+                </div>
+                <span className="flex items-center gap-2">
+                  <FaChartPie className="text-brand-400" /> My Portfolios
+                </span>
               </h1>
               <p className="text-gray-400 mt-2">
                 Manage and track all your contest portfolios
@@ -475,7 +522,11 @@ export const MyPortfoliosPage: React.FC = () => {
             <CardContent className="p-6">
               <p className="text-red-400">{error}</p>
               <Button
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  setError(null);
+                  setRetryCount(0);
+                  fetchPortfolios();
+                }}
                 variant="outline"
                 className="mt-4 bg-red-500/20 border-red-500/20 text-red-400 hover:bg-red-500/30"
               >

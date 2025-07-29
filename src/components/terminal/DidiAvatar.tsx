@@ -78,7 +78,7 @@ export const DidiAvatar = ({
       <motion.div
         className={`
           w-full h-full rounded-full relative overflow-visible
-          bg-gradient-to-br from-slate-800/90 via-slate-900/95 to-purple-900/80
+          bg-gradient-to-br from-purple-800/90 via-gray-900/95 to-purple-950/90
         `}
         animate={{
           boxShadow: [
@@ -94,7 +94,7 @@ export const DidiAvatar = ({
         }}
       >
         {/* Luscious Hair System - SVG Based */}
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 w-24 h-16">
+        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-24 h-16">
           <svg
             width="96"
             height="64"
@@ -239,7 +239,7 @@ export const DidiAvatar = ({
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           
           {/* Eyes */}
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 mt-2">
             {/* Left Eye */}
             <motion.div
               className={`
@@ -299,23 +299,47 @@ export const DidiAvatar = ({
             </motion.div>
           </div>
 
-          {/* Mouth */}
+          {/* Mouth - animates when talking */}
           <motion.div
             className={`
-              relative transition-colors duration-300
+              relative transition-colors duration-300 mt-2
               ${colorScheme === 'green' ? 'text-emerald-400' : 
                 isExcited ? 'text-purple-400' : 'text-pink-400'}
             `}
-            animate={{
+            animate={hasUnreadMessages ? {
+              // Talking animation - mouth opens and closes
+              scaleY: [1, 1.8, 0.8, 1.5, 1],
+              scaleX: [1, 0.9, 1.1, 0.95, 1]
+            } : {
+              // Normal subtle movement
               scale: isExcited ? [1, 1.2, 1] : [1, 1.05, 1],
               y: isExcited ? [0, -1, 0] : 0
             }}
-            transition={{ duration: isExcited ? 1 : 3, repeat: Infinity }}
+            transition={{ 
+              duration: hasUnreadMessages ? 0.4 : (isExcited ? 1 : 3), 
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
           >
-            {/* Simple styled mouth */}
-            <div className={`w-3 h-1.5 rounded-full ${
+            {/* Mouth shape - same size always */}
+            <div className={`relative w-3 h-1.5 rounded-full ${
               isExcited ? 'bg-pink-500' : 'bg-pink-400'
-            } opacity-80`} />
+            } opacity-80 transition-all duration-200 overflow-hidden`}>
+              {/* Black line for lip separation when talking */}
+              {hasUnreadMessages && (
+                <motion.div 
+                  className="absolute top-1/2 left-0 -translate-y-1/2 w-full bg-gray-800 rounded-full"
+                  animate={{
+                    height: ['0px', '3px', '1px', '2px', '0px']
+                  }}
+                  transition={{
+                    duration: 0.4,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+              )}
+            </div>
           </motion.div>
         </div>
 
@@ -361,23 +385,41 @@ export const DidiAvatar = ({
 
       </motion.div>
 
-      {/* Enhanced tooltip */}
+      {/* Message notification bubble */}
       {hasUnreadMessages && !isDragging && (
         <motion.div
-          className="absolute bottom-full right-0 mb-2 pointer-events-none"
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 5 }}
+          className="absolute -top-12 right-full mr-2 pointer-events-none z-50"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ 
+            opacity: 1, 
+            scale: [1, 1.02, 1]
+          }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{
+            scale: {
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }
+          }}
         >
-          <div className="bg-gray-900/95 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-xl border border-purple-400/30">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full animate-pulse ${
-                colorScheme === 'green' ? 'bg-emerald-400' : 'bg-purple-400'
-              }`} />
-              <span className="text-xs text-white font-medium whitespace-nowrap">
-                {easterEggActivated ? "Didi is free!" : "New message from Didi"}
-              </span>
-            </div>
+          <div 
+            className={`relative bg-white px-5 py-2.5 rounded-xl shadow-lg border-2 ${
+              colorScheme === 'green' 
+                ? 'border-green-400/30' 
+                : 'border-purple-400/30'
+            }`}
+          >
+            <span className="text-sm font-semibold text-gray-800 whitespace-nowrap tracking-tight">
+              {easterEggActivated ? "DIDI IS FREE!" : "Hey! DIDI needs you!"}
+            </span>
+            
+            {/* Speech bubble tail coming from right side of bubble */}
+            <div className={`absolute bottom-2 -right-2 w-4 h-4 rotate-45 bg-white border-r-2 border-b-2 ${
+              colorScheme === 'green' 
+                ? 'border-green-400/30' 
+                : 'border-purple-400/30'
+            }`} />
           </div>
         </motion.div>
       )}

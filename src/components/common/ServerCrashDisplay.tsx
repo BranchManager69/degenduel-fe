@@ -12,10 +12,11 @@ export const ServerCrashDisplay: React.FC<ServerCrashDisplayProps> = ({
   isRetrying = false
 }) => {
   const [serverCrashPercent, setServerCrashPercent] = useState<number | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
 
-  // Trigger server crash animation when error occurs
+  // Trigger server crash animation when error occurs or changes
   useEffect(() => {
-    if (error && serverCrashPercent === null) {
+    if (error && error !== lastError) {
       setServerCrashPercent(69);
       
       // Start the animation after showing 69% for a moment
@@ -52,7 +53,10 @@ export const ServerCrashDisplay: React.FC<ServerCrashDisplayProps> = ({
       
       return () => clearTimeout(timeout);
     }
-  }, [error]);
+    
+    // Update lastError to track error changes
+    setLastError(error);
+  }, [error, lastError]);
 
   if (!error) return null;
 
@@ -61,34 +65,8 @@ export const ServerCrashDisplay: React.FC<ServerCrashDisplayProps> = ({
 
   const handleRetry = () => {
     onRetry();
-    // Restart the animation
-    setServerCrashPercent(69);
-    setTimeout(() => {
-      let speed = 300;
-      let intervalId: NodeJS.Timeout;
-      
-      const animate = () => {
-        setServerCrashPercent(prev => {
-          if (prev === null || prev <= -100) {
-            clearInterval(intervalId);
-            return -100;
-          }
-          const baseDrop = prev > 50 ? 2 : prev > 20 ? 5 : prev > -50 ? 10 : 15;
-          const drop = baseDrop + Math.random() * 5;
-          
-          if (prev < 50 && speed > 100) speed = 100;
-          if (prev < 20 && speed > 50) speed = 50;
-          if (prev < -50 && speed > 30) speed = 30;
-          
-          clearInterval(intervalId);
-          intervalId = setInterval(animate, speed);
-          
-          return Math.max(-100, prev - drop);
-        });
-      };
-      
-      intervalId = setInterval(animate, speed);
-    }, 1000);
+    // Don't restart animation - let it stay at -100% during retry
+    // Animation will only restart if error prop changes (indicating retry failed)
   };
 
   return (

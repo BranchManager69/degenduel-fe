@@ -21,17 +21,22 @@ import {
   FaFire,
   FaHourglassHalf,
   FaRedo,
-  FaTrophy
+  FaTrophy,
+  FaList,
+  FaThLarge
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { ContestCard } from "../../components/contest-browser/ContestCard";
 import { Button } from "../../components/ui/Button";
-import { Card, CardContent } from "../../components/ui/Card";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { SearchInput } from "../../components/ui/SearchInput";
+import NanoLogo from "../../components/logo/NanoLogo";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { ddApi } from "../../services/dd-api";
 import { useStore } from "../../store/useStore";
 import { Contest } from "../../types";
+import { ContestHistoryList } from "../../components/profile/contest-history/ContestHistoryList";
+import { UserPortfolio } from "../../types/profile";
 
 // Proper TypeScript interface for user participation data
 interface UserParticipation {
@@ -55,6 +60,8 @@ export const MyContestsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("upcoming"); // Default to upcoming
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list'); // Default to list view
+  const [apiPortfolios, setApiPortfolios] = useState<UserPortfolio[]>([]); // Store raw API response for list view
 
   // Touch/swipe handling for mobile
   const touchStartX = useRef<number | null>(null);
@@ -149,9 +156,22 @@ export const MyContestsPage: React.FC = () => {
       // Also fetch full contest data to get complete information for ContestCard
       const allContests = await ddApi.contests.getAll();
       
+      // Fetch portfolios for list view
+      const portfolioResponse = await ddApi.portfolio.getAllUserPortfolios(
+        user.wallet_address,
+        {
+          limit: 100,
+          includeTokens: true,
+          includePerformance: true,
+        }
+      );
+      
       if (!Array.isArray(participations)) {
         throw new Error("Invalid response format");
       }
+
+      // Store raw API response for list view
+      setApiPortfolios(portfolioResponse.portfolios || []);
 
       // Extract contests from participations and merge with full contest data
       const userContests: Contest[] = participations
@@ -305,8 +325,13 @@ export const MyContestsPage: React.FC = () => {
         <div className="relative flex-1" style={{ zIndex: 10 }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <header className="mb-8">
-            <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-              <FaTrophy className="text-brand-400" /> My Contests
+            <h1 className="text-3xl font-bold text-white flex items-center gap-6">
+              <div className="scale-150">
+                <NanoLogo />
+              </div>
+              <span className="flex items-center gap-2">
+                <FaTrophy className="text-brand-400" /> My Contests
+              </span>
             </h1>
             <p className="text-gray-400 mt-2">Loading your contests...</p>
           </header>
@@ -343,35 +368,74 @@ export const MyContestsPage: React.FC = () => {
       {/* Content Section */}
       <div className="relative flex-1" style={{ zIndex: 10 }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <header className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-              <FaTrophy className="text-brand-400" /> My Contests
-            </h1>
-            <p className="text-gray-400 mt-2">
-              {totalContests > 0 
-                ? `You're participating in ${totalContests} contest${totalContests === 1 ? '' : 's'}`
-                : "You haven't joined any contests yet"
-              }
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {state.lastFetch && (
-              <span className="text-xs text-gray-500 font-mono">
-                Updated: {state.lastFetch.toLocaleTimeString()}
-              </span>
-            )}
-            <Button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <FaRedo className={isRefreshing ? "animate-spin" : ""} />
-              Refresh
-            </Button>
+        <header className="mb-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-white flex items-center gap-6">
+                <div className="scale-150">
+                  <NanoLogo />
+                </div>
+                <span className="flex items-center gap-2">
+                  <FaTrophy className="text-brand-400" /> My Contests
+                </span>
+              </h1>
+              <p className="text-gray-400 mt-2">
+                {totalContests > 0 
+                  ? `You're participating in ${totalContests} contest${totalContests === 1 ? '' : 's'}`
+                  : "You haven't joined any contests yet"
+                }
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              {/* View Toggle */}
+              <div className="flex items-center gap-2 bg-dark-200/50 rounded-lg p-2">
+                <Button
+                  variant={viewMode === 'list' ? "primary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className={`flex items-center gap-2 ${
+                    viewMode === 'list' 
+                      ? "bg-brand-500 text-white" 
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  <FaList className="h-4 w-4" />
+                  List
+                </Button>
+                <Button
+                  variant={viewMode === 'cards' ? "primary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode('cards')}
+                  className={`flex items-center gap-2 ${
+                    viewMode === 'cards' 
+                      ? "bg-brand-500 text-white" 
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  <FaThLarge className="h-4 w-4" />
+                  Cards
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {state.lastFetch && (
+                  <span className="text-xs text-gray-500 font-mono">
+                    Updated: {state.lastFetch.toLocaleTimeString()}
+                  </span>
+                )}
+                <Button
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <FaRedo className={isRefreshing ? "animate-spin" : ""} />
+                  Refresh
+                </Button>
+              </div>
+            </div>
           </div>
         </header>
 
@@ -419,8 +483,130 @@ export const MyContestsPage: React.FC = () => {
               </div>
             )}
 
-        {/* Contest Tabs */}
-        {totalContests > 0 && (
+        {/* Contest Display - List or Card View */}
+        {totalContests > 0 && viewMode === 'list' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Contest History List */}
+            <div className="lg:col-span-2">
+              {apiPortfolios.length > 0 ? (
+                <div className="bg-dark-200/80 backdrop-blur-sm border border-dark-300 rounded-lg">
+                  <ContestHistoryList 
+                    portfolios={apiPortfolios.filter(p => {
+                      // Apply search filter
+                      const matchesSearch = searchTerm === "" ||
+                        p.contest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        p.portfolio.some(t => 
+                          t.token?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          t.token?.symbol?.toLowerCase().includes(searchTerm.toLowerCase())
+                        );
+                      
+                      return matchesSearch;
+                    })} 
+                  />
+                </div>
+              ) : (
+                <Card className="bg-dark-200/80 backdrop-blur-sm border-dark-300">
+                  <CardContent className="p-6 text-center">
+                    <h3 className="text-lg font-medium text-gray-200 mb-2">
+                      No Contests Found
+                    </h3>
+                    <p className="text-gray-400">
+                      Join some contests to see them here.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Right Column - Contest Stats and Info */}
+            <div className="space-y-6">
+              {/* Contest Summary Stats */}
+              <Card className="bg-dark-200/80 backdrop-blur-sm border-dark-300">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold text-white">Contest Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-brand-400">{apiPortfolios.length}</div>
+                      <div className="text-xs text-gray-400">Total Contests</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-400">
+                        {apiPortfolios.filter(p => p.contest.status === 'completed' && p.final_rank && p.final_rank <= 3).length}
+                      </div>
+                      <div className="text-xs text-gray-400">Top 3 Finishes</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-400">
+                        {groupedContests.active.length}
+                      </div>
+                      <div className="text-xs text-gray-400">Active</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-400">
+                        {groupedContests.upcoming.length}
+                      </div>
+                      <div className="text-xs text-gray-400">Upcoming</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card className="bg-dark-200/80 backdrop-blur-sm border-dark-300">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold text-white">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button
+                    onClick={() => navigate("/contests")}
+                    className="w-full bg-brand-500 hover:bg-brand-600 text-white"
+                  >
+                    Browse New Contests
+                  </Button>
+                  <Button
+                    onClick={() => setViewMode('cards')}
+                    variant="outline"
+                    className="w-full bg-dark-300 border-dark-400 text-gray-300 hover:bg-dark-400"
+                  >
+                    Switch to Card View
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Contest Status Legend */}
+              <Card className="bg-dark-200/80 backdrop-blur-sm border-dark-300">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold text-white">Status Guide</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-gray-300">Pending - Contest hasn't started</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                    <span className="text-gray-300">Active - Contest is live</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-gray-300">Completed - Contest finished</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span className="text-gray-300">Cancelled - Contest cancelled</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Contest Tabs - Card View */}
+        {totalContests > 0 && viewMode === 'cards' && (
           <div 
             ref={containerRef}
             onTouchStart={handleTouchStart}

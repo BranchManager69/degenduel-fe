@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { TokenSearch } from "../../../components/common/TokenSearch";
 import { ServerCrashDisplay } from "../../../components/common/ServerCrashDisplay";
 import { AuthDebugPanel } from "../../../components/debug";
-import MiniLogo from "../../../components/logo/MiniLogo";
+import NanoLogo from "../../../components/logo/NanoLogo";
 import { TokenErrorBoundary } from "../../../components/shared/TokenErrorBoundary";
 import { AddTokenModal } from "../../../components/tokens-list/AddTokenModal";
 import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeTokensGrid";
@@ -456,12 +456,12 @@ export const TokensPage: React.FC = () => {
             <div className="flex items-center justify-between gap-4 mb-2">
               {/* Left side - Title and Refresh */}
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group flex items-center gap-3">
+                <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group flex items-center gap-6">
                   <div className="scale-150">
-                    <MiniLogo />
+                    <NanoLogo />
                   </div>
                   <span className="relative z-10 group-hover:animate-glitch">
-                    Trending Tokens
+                    Tokens
                   </span>
                   <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
                 </h1>
