@@ -62,11 +62,13 @@ export const MyContestsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("upcoming"); // Default to upcoming
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('list'); // Default to list view
   const [apiPortfolios, setApiPortfolios] = useState<UserPortfolio[]>([]); // Store raw API response for list view
+  const [retryCount, setRetryCount] = useState(0);
 
   // Touch/swipe handling for mobile
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const tabs = ["active", "upcoming", "completed", "cancelled"];
   const tabLabels = {
@@ -151,7 +153,16 @@ export const MyContestsPage: React.FC = () => {
       console.log("[MyContests] Fetching user participations...");
       
       // Fetch user participations (backend team just fixed this!)
-      const participations = await ddApi.contests.getUserParticipations(user.wallet_address);
+      let participations;
+      try {
+        participations = await ddApi.contests.getUserParticipations(user.wallet_address);
+      } catch (apiError: any) {
+        // Check if it's a 502 error
+        if (apiError?.status === 502 || apiError?.response?.status === 502) {
+          throw { status: 502, message: "Server is temporarily unavailable" };
+        }
+        throw apiError;
+      }
       
       // Also fetch full contest data to get complete information for ContestCard
       const allContests = await ddApi.contests.getAll();
@@ -167,7 +178,7 @@ export const MyContestsPage: React.FC = () => {
       );
       
       if (!Array.isArray(participations)) {
-        throw new Error("Invalid response format");
+        throw new Error("Invalid response format: participations array not found");
       }
 
       // Store raw API response for list view
@@ -214,13 +225,48 @@ export const MyContestsPage: React.FC = () => {
       });
       useStore.getState().setContests(cachedContests);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("[MyContests] Failed to fetch user contests:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Check for 502 errors with better error structure handling
+      const is502Error = (
+        (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'status' in error.response && error.response.status === 502) ||
+        (error && typeof error === 'object' && 'status' in error && error.status === 502) ||
+        errorMessage.includes('502') ||
+        errorMessage.toLowerCase().includes('bad gateway') ||
+        errorMessage.toLowerCase().includes('server is temporarily unavailable')
+      );
+      
+      // Auto-retry for 502 errors silently
+      if (is502Error && retryCount < 3) {
+        console.log(`[MyContests] Server down (502), retrying in 5 seconds... (attempt ${retryCount + 1}/3)`);
+        setRetryCount(prev => prev + 1);
+        
+        // Clear any existing retry timeout
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+        }
+        
+        retryTimeoutRef.current = setTimeout(() => {
+          fetchUserContests();
+        }, 5000);
+        
+        // Keep loading state true during retries
+        return;
+      }
+      
+      // If we've exhausted retries or it's not a 502, show error
       setState(prev => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : "Failed to load contests",
+        error: is502Error 
+          ? "Server is temporarily unavailable. Please try again later." 
+          : error instanceof Error ? error.message : "Failed to load contests",
       }));
+      
+      // Reset retry count on final error
+      setRetryCount(0);
     }
   }, [user?.wallet_address]); // FIXED: Only depend on wallet_address
 

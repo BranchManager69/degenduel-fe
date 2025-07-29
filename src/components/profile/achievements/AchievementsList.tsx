@@ -11,7 +11,10 @@ interface AchievementsListProps {
 export const AchievementsList: React.FC<AchievementsListProps> = ({
   achievements,
 }) => {
-  if (achievements.length === 0) {
+  // Ensure achievements is always an array
+  const safeAchievements = Array.isArray(achievements) ? achievements : [];
+  
+  if (safeAchievements.length === 0) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -58,7 +61,7 @@ export const AchievementsList: React.FC<AchievementsListProps> = ({
       }}
       className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4"
     >
-      {achievements.map((achievement, index) => (
+      {safeAchievements.map((achievement, index) => (
         <motion.div
           key={achievement.achievement}
           variants={{

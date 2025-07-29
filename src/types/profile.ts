@@ -25,7 +25,7 @@ export interface Achievement {
   description: string;
   earned_at: string;
   icon?: string;
-  rarity?: "common" | "rare" | "epic" | "legendary";
+  rarity?: "basic" | "rare" | "epic" | "legendary";
 }
 
 export interface ContestHistoryEntry {

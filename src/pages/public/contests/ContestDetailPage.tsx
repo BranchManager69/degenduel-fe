@@ -119,6 +119,9 @@ export const ContestDetails: React.FC = () => {
   // Add state for analytics participants with SOL values
   const [analyticsParticipants, setAnalyticsParticipants] = useState<any[]>([]);
   
+  // Add state for portfolio transactions
+  const [portfolioTransactions, setPortfolioTransactions] = useState<any>(null);
+  
   // Image loading states
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -406,6 +409,22 @@ export const ContestDetails: React.FC = () => {
         } catch (participationError) {
           console.error("Failed to check participation:", participationError);
           setIsParticipating(false);
+        }
+
+        // Fetch portfolio transactions for this specific contest
+        try {
+          const portfolioResponse = await fetch(`/api/contests/${id}/portfolio/${user.wallet_address}`);
+          if (portfolioResponse.ok) {
+            const portfolioData = await portfolioResponse.json();
+            console.log("Contest portfolio data:", portfolioData);
+            
+            if (portfolioData.transactions) {
+              setPortfolioTransactions(portfolioData.transactions);
+              console.log("Found contest portfolio transactions:", portfolioData.transactions);
+            }
+          }
+        } catch (portfolioError) {
+          console.log("Failed to fetch contest portfolio transactions:", portfolioError);
         }
       } else {
         setIsParticipating(false);
@@ -985,6 +1004,60 @@ export const ContestDetails: React.FC = () => {
                   <div className="p-4 w-full">
                     <div className="flex items-center justify-between">
                       <div className="text-left">
+                      {/* Transaction Badges - Show if user has transactions for this contest */}
+                      {isAuthenticated && portfolioTransactions && (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {portfolioTransactions.entry && (
+                            <a 
+                              href={portfolioTransactions.entry.solscan_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 rounded-md text-xs font-medium text-blue-300 hover:text-blue-200 transition-all duration-200 backdrop-blur-sm"
+                            >
+                              Paid {parseFloat(portfolioTransactions.entry.amount).toFixed(3)}
+                              <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                              <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                                <svg className="w-2 h-2 text-black" fill="currentColor" viewBox="0 0 20 20" strokeWidth="3">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            </a>
+                          )}
+                          {portfolioTransactions.prize && (
+                            <a 
+                              href={portfolioTransactions.prize.solscan_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded-md text-xs font-medium text-green-300 hover:text-green-200 transition-all duration-200 backdrop-blur-sm"
+                            >
+                              Won {parseFloat(portfolioTransactions.prize.amount).toFixed(3)}
+                              <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                              <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                                <svg className="w-2 h-2 text-black" fill="currentColor" viewBox="0 0 20 20" strokeWidth="3">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            </a>
+                          )}
+                          {portfolioTransactions.refund && (
+                            <a 
+                              href={portfolioTransactions.refund.solscan_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 rounded-md text-xs font-medium text-red-300 hover:text-red-200 transition-all duration-200 backdrop-blur-sm"
+                            >
+                              Canceled {parseFloat(portfolioTransactions.refund.amount).toFixed(3)}
+                              <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                              <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                                <svg className="w-2 h-2 text-black" fill="currentColor" viewBox="0 0 20 20" strokeWidth="3">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      
                       {displayStatus === "cancelled" ? (
                         <div className="text-xl font-semibold text-red-400">
                           Contest was cancelled before it started

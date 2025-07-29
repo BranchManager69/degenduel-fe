@@ -404,13 +404,13 @@ export const DidiAvatar = ({
           }}
         >
           <div 
-            className={`relative bg-white px-5 py-2.5 rounded-xl shadow-lg border-2 ${
+            className={`relative bg-white px-3 py-1.5 rounded-xl shadow-lg border-2 ${
               colorScheme === 'green' 
                 ? 'border-green-400/30' 
                 : 'border-purple-400/30'
             }`}
           >
-            <span className="text-sm font-semibold text-gray-800 whitespace-nowrap tracking-tight">
+            <span className="text-base font-semibold text-gray-800 whitespace-nowrap tracking-tight">
               {easterEggActivated ? "DIDI IS FREE!" : "Hey! DIDI needs you!"}
             </span>
             

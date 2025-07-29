@@ -26,6 +26,7 @@ import { MobileMenuButton } from './MobileMenuButton'; // TEMP
 import { UserMenu } from './user-menu/UserMenu';
 import SolanaTokenDisplay from "../SolanaTokenDisplay";
 import { config } from "../../config/config";
+import { useSolanaTokenData } from "../../hooks/data/useSolanaTokenData";
 // import { MenuBackdrop } from './menu/SharedMenuComponents';
 
 
@@ -211,18 +212,25 @@ export const Header: React.FC = () => {
                         {/* Balance or Dividends display */}
                         <div className="relative text-purple-100 flex items-center">
                           {isAuthenticated && user ? (
-                            <SolanaTokenDisplay 
+                            <BalanceOrDividends
                               mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS}
-                              walletAddress={user.wallet_address} 
-                              compact={true}
-                              className={`font-normal leading-none ${isCompact ? "text-sm" : "text-base"}`}
-                              showSupply={false}
-                              showHolders={false}
+                              walletAddress={user.wallet_address}
+                              isCompact={isCompact}
                             />
                           ) : (
-                            <span className={`font-semibold tracking-wider uppercase leading-none ${isCompact ? "text-xs" : "text-sm"}`}>
+                            <motion.span 
+                              className={`relative font-semibold tracking-wider uppercase leading-none ${isCompact ? "text-xs" : "text-sm"}`}
+                              initial={{ opacity: 0.7 }}
+                              animate={{ opacity: [0.7, 1, 1, 0.7] }}
+                              transition={{
+                                duration: 3,
+                                times: [0, 0.3, 0.7, 1],
+                                repeat: Infinity,
+                                repeatDelay: 7,
+                              }}
+                            >
                               DIVIDENDS
-                            </span>
+                            </motion.span>
                           )}
                         </div>
                         
@@ -287,15 +295,23 @@ export const Header: React.FC = () => {
                       <div className="relative flex items-center justify-between w-full pl-3 pr-0.5">
                         <div className="flex items-center gap-2">
                           {/* Login text */}
-                          <span
+                          <motion.span
                             className={`
                               text-white
                               font-semibold tracking-wider transition-all duration-300
                               ${isCompact ? "text-xs" : "text-sm"} uppercase
                             `}
+                            initial={{ opacity: 0.7 }}
+                            animate={{ opacity: [0.7, 1, 1, 0.7] }}
+                            transition={{
+                              duration: 3,
+                              times: [0, 0.3, 0.7, 1],
+                              repeat: Infinity,
+                              repeatDelay: 7,
+                            }}
                           >
                             LOGIN
-                          </span>
+                          </motion.span>
                         </div>
 
                         {/* Default avatar */}
@@ -356,15 +372,23 @@ export const Header: React.FC = () => {
                     <div className="relative flex items-center justify-between w-full pl-3 pr-0.5">
                       <div className="flex items-center gap-2">
                         {/* Login text */}
-                        <span
+                        <motion.span
                           className={`
                             text-white
                             font-semibold tracking-wider transition-all duration-300
                             ${isCompact ? "text-xs" : "text-sm"} uppercase
                           `}
+                          initial={{ opacity: 0.7 }}
+                          animate={{ opacity: [0.7, 1, 1, 0.7] }}
+                          transition={{
+                            duration: 3,
+                            times: [0, 0.3, 0.7, 1],
+                            repeat: Infinity,
+                            repeatDelay: 7,
+                          }}
                         >
                           LOGIN
-                        </span>
+                        </motion.span>
                       </div>
 
                       {/* Default avatar */}
@@ -399,5 +423,48 @@ export const Header: React.FC = () => {
       </div>
 
     </header>
+  );
+};
+
+// Custom component to show balance or DIVIDENDS text
+const BalanceOrDividends: React.FC<{
+  mintAddress?: string;
+  walletAddress?: string;
+  isCompact?: boolean;
+}> = ({ mintAddress, walletAddress, isCompact = false }) => {
+  const { tokenData, isLoading } = useSolanaTokenData(mintAddress, walletAddress);
+  
+  // Check if balance is zero or undefined
+  const hasBalance = tokenData?.userBalance && parseFloat(tokenData.userBalance.toString()) > 0;
+  
+  // If loading or has balance, show the normal display
+  if (isLoading || hasBalance) {
+    return (
+      <SolanaTokenDisplay 
+        mintAddress={mintAddress}
+        walletAddress={walletAddress} 
+        compact={true}
+        className={`font-normal leading-none ${isCompact ? "text-sm" : "text-base"}`}
+        showSupply={false}
+        showHolders={false}
+      />
+    );
+  }
+  
+  // If no balance, show DIVIDENDS text with animation
+  return (
+    <motion.span 
+      className={`relative font-semibold tracking-wider uppercase leading-none ${isCompact ? "text-xs" : "text-sm"}`}
+      initial={{ opacity: 0.7 }}
+      animate={{ opacity: [0.7, 1, 1, 0.7] }}
+      transition={{
+        duration: 3,
+        times: [0, 0.3, 0.7, 1],
+        repeat: Infinity,
+        repeatDelay: 7,
+      }}
+    >
+      DIVIDENDS
+    </motion.span>
   );
 };

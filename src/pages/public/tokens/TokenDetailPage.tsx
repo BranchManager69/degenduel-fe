@@ -24,6 +24,7 @@ import { TokenHelpers } from "../../../types";
 
 export const TokenDetailPage: React.FC = () => {
   const { address } = useParams<{ address: string }>();
+  const [showDebug, setShowDebug] = React.useState(false);
 
   // Use the individual token hook to get data for this specific token
   const {
@@ -72,7 +73,7 @@ export const TokenDetailPage: React.FC = () => {
     return (
       <div className="flex flex-col min-h-screen">
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Card className="bg-dark-300/50 backdrop-blur-sm border-red-500/20">
+          <Card className="border-red-500/20">
             <div className="p-8 text-center">
               <h2 className="text-2xl font-bold text-red-400 mb-4">Error</h2>
               <p className="text-gray-300 mb-6">
@@ -120,17 +121,26 @@ export const TokenDetailPage: React.FC = () => {
                 ← Back to Tokens
               </Link>
               
-              {/* WebSocket Connection Status */}
-              <div className="flex items-center gap-2 text-xs">
+              {/* Debug Button and WebSocket Connection Status */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShowDebug(!showDebug)}
+                  className="px-3 py-1 text-xs font-mono bg-red-600 hover:bg-red-700 text-white rounded"
+                >
+                  {showDebug ? 'HIDE DEBUG' : 'SHOW DEBUG'}
+                </button>
+                
+                <div className="flex items-center gap-2 text-xs">
                 <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
                 <span className={`font-mono ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
                   {isConnected ? 'Live Updates' : 'Offline'}
                 </span>
+                </div>
               </div>
             </div>
 
             {/* Token Header with Banner */}
-            <div className="relative bg-dark-300/50 backdrop-blur-sm rounded-xl overflow-hidden border border-dark-400">
+            <div className="relative rounded-xl overflow-hidden border border-dark-400">
               {/* Header Image Banner */}
               {token.header_image_url && (
                 <div 
@@ -238,13 +248,13 @@ export const TokenDetailPage: React.FC = () => {
                 transition={{ duration: 0.4, delay: 0.1 }}
                 className="lg:col-span-2"
               >
-                <Card className="bg-dark-300/50 backdrop-blur-sm border-dark-400">
+                <Card className="border-dark-400">
                   <div className="p-6">
                     <h2 className="text-xl font-bold text-white mb-4">Market Statistics</h2>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div 
-                        className="bg-gradient-to-br from-dark-400/50 to-dark-400/30 rounded-lg p-4 border border-white/5"
+                        className="rounded-lg p-4 border border-white/5"
                         style={{
                           ...(token.color && {
                             borderColor: `${token.color}40`,
@@ -259,7 +269,7 @@ export const TokenDetailPage: React.FC = () => {
                       </div>
                       
                       <div 
-                        className="bg-gradient-to-br from-dark-400/50 to-dark-400/30 rounded-lg p-4 border border-white/5"
+                        className="rounded-lg p-4 border border-white/5"
                         style={{
                           ...(token.color && {
                             borderColor: `${token.color}40`,
@@ -274,7 +284,7 @@ export const TokenDetailPage: React.FC = () => {
                       </div>
                       
                       <div 
-                        className="bg-gradient-to-br from-dark-400/50 to-dark-400/30 rounded-lg p-4 border border-white/5"
+                        className="rounded-lg p-4 border border-white/5"
                         style={{
                           ...(token.color && {
                             borderColor: `${token.color}40`,
@@ -289,7 +299,7 @@ export const TokenDetailPage: React.FC = () => {
                       </div>
                       
                       <div 
-                        className="bg-gradient-to-br from-dark-400/50 to-dark-400/30 rounded-lg p-4 border border-white/5"
+                        className="rounded-lg p-4 border border-white/5"
                         style={{
                           ...(token.color && {
                             borderColor: `${token.color}40`,
@@ -305,7 +315,7 @@ export const TokenDetailPage: React.FC = () => {
                       
                       {/* Liquidity */}
                       <div 
-                        className="bg-gradient-to-br from-dark-400/50 to-dark-400/30 rounded-lg p-4 border border-white/5"
+                        className="rounded-lg p-4 border border-white/5"
                         style={{
                           ...(token.color && {
                             borderColor: `${token.color}40`,
@@ -322,7 +332,7 @@ export const TokenDetailPage: React.FC = () => {
                       {/* Priority Score */}
                       {(token.priority_score || token.priorityScore) && (
                         <div 
-                          className="bg-gradient-to-br from-dark-400/50 to-dark-400/30 rounded-lg p-4 border border-white/5"
+                          className="rounded-lg p-4 border border-white/5"
                           style={{
                             ...(token.color && {
                               borderColor: `${token.color}40`,
@@ -359,7 +369,7 @@ export const TokenDetailPage: React.FC = () => {
                             return (
                               <div 
                                 key={period} 
-                                className="relative bg-dark-400/30 rounded-lg p-3 text-center overflow-hidden"
+                                className="relative rounded-lg p-3 text-center overflow-hidden border border-dark-400/50"
                               >
                                 {/* Performance bar background */}
                                 <div 
@@ -399,7 +409,7 @@ export const TokenDetailPage: React.FC = () => {
                                          volumes[periodKey as keyof typeof volumes] || 
                                          0;
                             return (
-                              <div key={period} className="text-center bg-dark-400/20 rounded p-2">
+                              <div key={period} className="text-center rounded p-2 border border-dark-400/30">
                                 <p className="text-gray-400 text-xs uppercase">{period}</p>
                                 <p className="text-sm font-semibold text-white">
                                   ${formatNumber(volume, "short")}
@@ -420,14 +430,45 @@ export const TokenDetailPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
               >
-                <Card className="bg-dark-300/50 backdrop-blur-sm border-dark-400">
+                <Card className="border-dark-400" ref={(el) => {
+                  if (el && showDebug) {
+                    const computed = window.getComputedStyle(el);
+                    const debugInfo = {
+                      backgroundColor: computed.backgroundColor,
+                      background: computed.background,
+                      opacity: computed.opacity,
+                      backdropFilter: computed.backdropFilter || 'none',
+                      className: el.className,
+                      allClasses: el.classList.toString(),
+                    };
+                    console.log('Token Information Card Styles:', debugInfo);
+                    
+                    // Create debug overlay
+                    const existingDebug = document.getElementById('token-info-debug');
+                    if (existingDebug) existingDebug.remove();
+                    
+                    const debugDiv = document.createElement('div');
+                    debugDiv.id = 'token-info-debug';
+                    debugDiv.style.cssText = 'position: fixed; top: 100px; right: 20px; background: black; color: white; padding: 20px; z-index: 999999; font-family: monospace; font-size: 12px; max-width: 400px; border: 2px solid red;';
+                    debugDiv.innerHTML = `
+                      <h3 style="color: red; margin: 0 0 10px 0;">TOKEN INFO CARD STYLES:</h3>
+                      <div>backgroundColor: ${debugInfo.backgroundColor}</div>
+                      <div>background: ${debugInfo.background}</div>
+                      <div>opacity: ${debugInfo.opacity}</div>
+                      <div>backdropFilter: ${debugInfo.backdropFilter}</div>
+                      <div>className: ${debugInfo.className}</div>
+                      <div>allClasses: ${debugInfo.allClasses}</div>
+                    `;
+                    document.body.appendChild(debugDiv);
+                  }
+                }}>
                   <div className="p-6">
                     <h2 className="text-xl font-bold text-white mb-4">Token Information</h2>
                     
                     {/* Contract Address with Copy Button */}
                     <div className="mb-4">
                       <p className="text-gray-400 text-sm mb-1">Contract Address</p>
-                      <div className="flex items-center space-x-2 bg-dark-400/30 rounded-lg p-2">
+                      <div className="flex items-center space-x-2 rounded-lg p-2 border border-dark-400/50">
                         <p className="text-white text-xs font-mono break-all flex-1">
                           {TokenHelpers.getAddress(token)}
                         </p>
@@ -436,7 +477,7 @@ export const TokenDetailPage: React.FC = () => {
                             const address = TokenHelpers.getAddress(token);
                             if (address) navigator.clipboard.writeText(address);
                           }}
-                          className="px-2 py-1 bg-gray-600 hover:bg-gray-500 text-white text-xs rounded transition-colors"
+                          className="px-2 py-1 border border-gray-600 hover:border-gray-400 text-white text-xs rounded transition-colors"
                         >
                           Copy
                         </button>
@@ -502,7 +543,7 @@ export const TokenDetailPage: React.FC = () => {
                             href={typeof website === 'string' ? website : website.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center space-x-2 p-2 bg-dark-400/20 rounded-lg hover:bg-dark-400/30 transition-colors group"
+                            className="flex items-center space-x-2 p-2 rounded-lg hover:bg-dark-400/10 transition-colors group border border-dark-400/30 hover:border-dark-400/50"
                           >
                             <div className="w-2 h-2 rounded-full bg-blue-400"></div>
                             <span className="text-blue-400 group-hover:text-blue-300 text-sm truncate">
@@ -526,7 +567,7 @@ export const TokenDetailPage: React.FC = () => {
                               href={social.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center space-x-2 p-2 bg-dark-400/20 rounded-lg hover:bg-dark-400/30 transition-colors group"
+                              className="flex items-center space-x-2 p-2 rounded-lg hover:bg-dark-400/10 transition-colors group border border-dark-400/30 hover:border-dark-400/50"
                             >
                               <div className={`w-2 h-2 rounded-full ${bgColor}`}></div>
                               <span className={`text-sm ${colorClass}`}>
@@ -554,7 +595,7 @@ export const TokenDetailPage: React.FC = () => {
                                          transactions[periodKey as keyof typeof transactions];
                             
                             return (
-                              <div key={period} className="text-center bg-dark-400/20 rounded p-2">
+                              <div key={period} className="text-center rounded p-2 border border-dark-400/30">
                                 <p className="text-gray-400 text-xs uppercase">{period}</p>
                                 <p className="text-sm font-semibold text-white">
                                   {typeof txData === 'object' && txData !== null

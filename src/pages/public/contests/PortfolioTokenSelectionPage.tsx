@@ -482,6 +482,9 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const { publicKey, signTransaction, connected, connect } = useWallet();
   const [loadingEntryStatus, setLoadingEntryStatus] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Track if we've shown the DIDI message for wallet analysis
+  const [hasShownWalletMessage, setHasShownWalletMessage] = useState(false);
   const [transactionState, setTransactionState] = useState<{
     status:
       | "idle"
@@ -1393,6 +1396,45 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     
     return true;
   }, [walletAnalysis, selectedTokens]);
+
+  // Show DIDI message when wallet analysis completes
+  useEffect(() => {
+    if (walletAnalysis && !walletAnalysisLoading && !hasShownWalletMessage && user?.wallet_address) {
+      // Only show message if we have tokens and they don't already match the portfolio
+      const hasTokens = walletAnalysis.tokens.filter(t => !t.isSOL).length > 0;
+      
+      if (hasTokens && !walletMatchesCurrentPortfolio) {
+        // Show a subtle DIDI message
+        const tokenCount = walletAnalysis.tokens.filter(t => !t.isSOL).length;
+        const totalValue = walletAnalysis.portfolio.deployedValue;
+        
+        const messages = [
+          `noticed you're holding ${tokenCount} token${tokenCount > 1 ? 's' : ''}. want to match your portfolio?`,
+          `your wallet has $${totalValue.toFixed(0)} in tokens. shall we sync up?`,
+          `found your holdings. the purple button is ready when you are.`,
+          `wallet scan complete. ${tokenCount} token${tokenCount > 1 ? 's' : ''} detected.`
+        ];
+        
+        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+        
+        toast(randomMessage, {
+          duration: 6000,
+          icon: '🤖',
+          style: {
+            background: '#1a1a2e',
+            color: '#fff',
+            border: '1px solid #7F00FF',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            fontSize: '14px',
+            fontFamily: 'monospace'
+          },
+        });
+        
+        setHasShownWalletMessage(true);
+      }
+    }
+  }, [walletAnalysis, walletAnalysisLoading, hasShownWalletMessage, walletMatchesCurrentPortfolio, user?.wallet_address]);
 
   // Apply wallet analysis suggestions to portfolio
   const applyWalletSuggestions = useCallback(() => {

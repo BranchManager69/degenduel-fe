@@ -672,7 +672,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                 if (message.metadata?.isUnderConstruction) {
                   textClassName = 'text-yellow-400 font-bold text-center';
                 } else {
-                  textClassName = 'text-gray-400 italic text-center';
+                  textClassName = 'text-gray-400 italic text-left pl-4';
                 }
                 break;
               case 'tool': // Added case for tool results
@@ -707,7 +707,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className={`${message.role === 'system' ? "whitespace-pre-wrap text-center" : "whitespace-pre-wrap"} ${
+                  className={`${message.role === 'system' ? "whitespace-pre-wrap" : "whitespace-pre-wrap"} ${
                     // Special edge-to-edge styling for under construction message
                     message.metadata?.isUnderConstruction 
                       ? "sticky top-0 z-20 -mx-3 px-3 py-1 bg-yellow-400/10 mb-2"
