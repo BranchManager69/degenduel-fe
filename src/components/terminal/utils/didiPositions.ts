@@ -85,11 +85,11 @@ export const POSITION_CONFIGS: PositionConfig[] = [
   {
     pattern: /^\/$/,
     position: {
-      left: '5px',
+      right: '5px',
       bottom: '5px',
       transform: 'scale(0.665)',
     },
-    description: 'Landing page - bottom left corner',
+    description: 'Landing page - bottom right corner',
   },
   {
     pattern: /\/admin/,
@@ -104,10 +104,10 @@ export const POSITION_CONFIGS: PositionConfig[] = [
     pattern: /\/contests\/\d+$/,
     position: {
       right: '5px',
-      bottom: '25%',
+      bottom: '5px',
       transform: 'scale(0.665)',
     },
-    description: 'Contest detail page - bottom right, 25% up',
+    description: 'Contest detail page - bottom right corner',
   },
   {
     pattern: /\/my-portfolios/,
@@ -122,10 +122,10 @@ export const POSITION_CONFIGS: PositionConfig[] = [
     pattern: /\/wallet/,
     position: {
       right: '5px',
-      bottom: '5px',
+      bottom: '80px',
       transform: 'scale(0.665)',
     },
-    description: 'Wallet page - bottom right corner',
+    description: 'Wallet page - bottom right, slightly elevated',
   },
   {
     pattern: /\/contest-credits/,

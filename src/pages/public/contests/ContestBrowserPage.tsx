@@ -29,6 +29,7 @@ import { CreateContestButton } from "../../../components/contest-browser/CreateC
 import { CreateContestModal } from "../../../components/contest-browser/CreateContestModal";
 import { AuthDebugPanel } from "../../../components/debug";
 import { ServerCrashDisplay } from "../../../components/common/ServerCrashDisplay";
+import NanoLogo from "../../../components/logo/NanoLogo";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContests } from "../../../hooks/websocket/topic-hooks/useContests";
 import { ddApi } from "../../../services/dd-api";
@@ -317,8 +318,11 @@ export const ContestBrowser: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-100">
-            Browse Contests
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 flex items-center gap-6">
+            <div className="scale-150">
+              <NanoLogo />
+            </div>
+            <span>Contests</span>
           </h1>
         </div>
 
@@ -359,9 +363,12 @@ export const ContestBrowser: React.FC = () => {
 
           {/* Enhanced Header Section */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 relative">
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 relative group flex items-center gap-6">
+              <div className="scale-150">
+                <NanoLogo />
+              </div>
               <span className="relative z-10 group-hover:animate-glitch">
-                Browse Contests
+                Contests
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/5 to-brand-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-data-stream-responsive" />
             </h1>

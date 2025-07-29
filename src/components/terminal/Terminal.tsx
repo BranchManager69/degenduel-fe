@@ -129,12 +129,18 @@ export const Terminal = ({
   const {
     messages: chatMessages,
     sendMessage: sendChatMessage,
-    isConnected: chatConnected
+    isConnected: chatConnected,
+    loadOlderMessages
   } = useGeneralChat();
   
   // Filter debug messages from chat and add to debug tab
   const actualChatMessages = chatMessages.filter(msg => !msg.username?.includes('DEBUG'));
   const newDebugMessages = chatMessages.filter(msg => msg.username?.includes('DEBUG'));
+  
+  // Refresh chat history function
+  const refreshChatHistory = () => {
+    loadOlderMessages(undefined, 100); // Load last 100 messages
+  };
   
   // Debug: Track message comparisons
   useEffect(() => {
@@ -658,8 +664,19 @@ export const Terminal = ({
       case 'ai':
         return conversationHistory;
       case 'chat-room':
+        // Add "under construction" message at the top
+        const underConstructionMessage: AIMessage = {
+          role: 'system',
+          content: 'CHAT ROOM UNDER CONSTRUCTION',
+          tool_calls: undefined,
+          metadata: {
+            isUnderConstruction: true,
+            isEdgeToEdge: true
+          }
+        };
+        
         // Convert filtered chat messages (no debug) to AI message format with enhanced metadata
-        return actualChatMessages.map((msg: GeneralChatMessage): AIMessage => {
+        const chatMessages = actualChatMessages.map((msg: GeneralChatMessage): AIMessage => {
           // Check if this is the user's own message - backend uses walletAddress field!
           const msgWallet = (msg as any).walletAddress; // Backend sends walletAddress, not user_id
           const isOwnMessage = msgWallet === user?.wallet_address;
@@ -681,6 +698,9 @@ export const Terminal = ({
             }
           };
         });
+        
+        // Return under construction message followed by chat messages
+        return [underConstructionMessage, ...chatMessages];
       case 'admin-chat':
         // For now, return empty array until admin chat is implemented
         return [{
@@ -1081,8 +1101,8 @@ export const Terminal = ({
       const timeSincePageLoad = (now.getTime() - pageLoadTime.getTime()) / 1000;
       const timeSinceLastInteraction = (now.getTime() - lastInteractionRef.current.getTime()) / 1000;
 
-      // Show message after 30 seconds on page AND 10 seconds since last interaction
-      if (timeSincePageLoad >= 30 && timeSinceLastInteraction >= 10) {
+      // Show message after 10 seconds on page AND 3 seconds since last interaction
+      if (timeSincePageLoad >= 10 && timeSinceLastInteraction >= 3) {
         const message = getProactiveMessage();
         
         // Add proactive message to conversation history
@@ -1099,7 +1119,7 @@ export const Terminal = ({
         
         console.log('[Terminal] Didi sent proactive message (once per session):', message);
       }
-    }, 31000); // Check after 31 seconds
+    }, 11000); // Check after 11 seconds
 
     return () => clearTimeout(timer);
   }, [pageLoadTime, lastInteractionTime, hasShownProactiveMessage, terminalMinimized, location.pathname]);
@@ -1236,26 +1256,36 @@ export const Terminal = ({
             }
           }}
         >
+          {/* Close button - absolutely positioned */}
+          <button
+            type="button" 
+            onClick={() => setTerminalMinimized(true)}
+            className="absolute top-3 right-4 z-50 flex items-center justify-center text-red-500 hover:text-red-700 transition-all font-bold text-2xl leading-none"
+            title="Minimize"
+          >
+            ×
+          </button>
+
           {/* Terminal Header - Browser style window controls */}
           <div className="flex justify-between items-center mb-2 border-b border-mauve/30 pb-2 flex-shrink-0">
-            <div className="text-xs font-bold flex items-center">
+            <div className="text-xs font-bold flex items-center flex-shrink-0 min-w-0">
               <span className="text-mauve">DEGEN</span>
               <span className="text-white">TERMINAL</span>
-              <span className="text-mauve-light mx-2">v6.9</span>
+              <span className="text-mauve-light mx-2 hidden sm:inline">v6.9</span>
               
               {easterEggActivated && (
-                <span className="text-green-400 ml-1">UNLOCKED</span>
+                <span className="text-green-400 ml-1 hidden sm:inline">UNLOCKED</span>
               )}
             </div>
             
-            {/* NEW: Tab System - Proper tabs */}
-            <div className="flex items-end flex-1 mx-4">
-              <div className="flex -mb-[1px]">
+            {/* NEW: Tab System - Proper tabs with overflow handling */}
+            <div className="flex items-end flex-1 mx-1 sm:mx-4 min-w-0 gap-2">
+              <div className="flex -mb-[1px] overflow-x-auto scrollbar-none max-w-full">
                 {getAvailableTabs().map((tab, index) => (
                   <button
                     key={tab.id}
                     onClick={() => switchMode(tab.id)}
-                    className={`relative px-3 py-1 text-xs transition-all flex items-center gap-1 rounded-t-md border-t border-l border-r ${
+                    className={`relative px-2 sm:px-3 py-1 text-xs transition-all flex items-center gap-1 rounded-t-md border-t border-l border-r flex-shrink-0 ${
                       currentMode === tab.id
                         ? 'bg-black/95 text-white border-purple-500/60'
                         : getTabColors(tab.id)
@@ -1268,7 +1298,7 @@ export const Terminal = ({
                     title={`Switch to ${tab.label} mode`}
                   >
                     <span className="text-[10px]">{tab.icon}</span>
-                    <span>{tab.label}</span>
+                    <span className="hidden sm:inline">{tab.label}</span>
                     {/* Connection indicator for chat */}
                     {tab.id === 'chat-room' && (
                       <span className={`ml-1 text-[8px] ${chatConnected ? 'text-green-400' : 'text-red-400'}`}>
@@ -1278,10 +1308,18 @@ export const Terminal = ({
                   </button>
                 ))}
               </div>
-            </div>
-            
-            {/* Browser-style window controls */}
-            <div className="flex items-center space-x-1">
+              
+              {/* Chat refresh button - only show in chat mode */}
+              {currentMode === 'chat-room' && (
+                <button
+                  onClick={refreshChatHistory}
+                  className="flex items-center justify-center w-6 h-6 text-teal-400 hover:text-teal-300 hover:bg-teal-900/30 rounded transition-all text-sm"
+                  title="Refresh chat history"
+                >
+                  ↻
+                </button>
+              )}
+              
               {/* Development component test dropdown */}
               {process.env.NODE_ENV === 'development' && (
                 <select
@@ -1365,18 +1403,7 @@ export const Terminal = ({
                   <option value="token_tracking_monitor" style={{backgroundColor: '#111827', color: '#d1d5db'}}>🖥️ DADDIOS Monitor</option>
                 </select>
               )}
-              
-              {/* Close/minimize button (red) - moved to rightmost position */}
-              <button
-                type="button" 
-                onClick={() => setTerminalMinimized(true)}
-                className="h-4 w-4 rounded-full bg-red-500 hover:bg-red-400 flex items-center justify-center transition-all hover:scale-110 shadow-sm hover:shadow-md"
-                title="Minimize"
-              >
-                <span className="text-black/80 text-[11px] font-semibold">×</span>
-              </button>
             </div>
-
           </div>
 
           {/* Terminal Content */}
@@ -1400,17 +1427,17 @@ export const Terminal = ({
             
           </div>
           
-          {/* Corner resize handle - positioned at top-right corner */}
+          {/* Corner resize handle - positioned to avoid close button */}
           <div
-            className={`absolute top-0 right-0 w-6 h-6 cursor-ne-resize ${
-              isResizing ? 'opacity-100' : 'opacity-70 hover:opacity-100'
-            } transition-all z-50 hover:drop-shadow-[0_0_4px_rgba(168,85,247,0.5)]`}
+            className={`absolute top-0 right-0 w-8 h-8 cursor-ne-resize ${
+              isResizing ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+            } transition-all z-40 hover:drop-shadow-[0_0_4px_rgba(168,85,247,0.5)] hidden sm:block`}
             title="Drag to resize"
             onMouseDown={startResize}
           >
             {/* Triangle corner indicator */}
             <svg 
-              className="w-6 h-6 text-purple-500" 
+              className="w-8 h-8 text-purple-500" 
               viewBox="0 0 24 24"
             >
               <path 

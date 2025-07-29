@@ -668,7 +668,12 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                 break;
               case 'system':
                 prefix = '';
-                textClassName = 'text-gray-400 italic text-center';
+                // Special styling for under construction messages
+                if (message.metadata?.isUnderConstruction) {
+                  textClassName = 'text-yellow-400 font-bold text-center';
+                } else {
+                  textClassName = 'text-gray-400 italic text-center';
+                }
                 break;
               case 'tool': // Added case for tool results
                  prefix = '[TOOL_RESULT] ';
@@ -703,12 +708,15 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
                   className={`${message.role === 'system' ? "whitespace-pre-wrap text-center" : "whitespace-pre-wrap"} ${
-                    message.role === 'chat' && message.metadata?.isOwnMessage 
-                      ? `bg-gray-800/40 border-l-2 border-green-400 pl-2 pr-2 py-0.5 -mx-3 px-3 ${
-                          // Check if next message is also own message to remove gap
-                          messages[i + 1]?.metadata?.isOwnMessage ? '' : 'mb-0.5'
-                        }` 
-                      : message.role === 'chat' ? "pl-1 mb-0.5" : ""
+                    // Special edge-to-edge styling for under construction message
+                    message.metadata?.isUnderConstruction 
+                      ? "sticky top-0 z-20 -mx-3 px-3 py-1 bg-yellow-400/10 mb-2"
+                      : message.role === 'chat' && message.metadata?.isOwnMessage 
+                        ? `bg-gray-800/40 border-l-2 border-green-400 pl-2 pr-2 py-0.5 -mx-3 px-3 ${
+                            // Check if next message is also own message to remove gap
+                            messages[i + 1]?.metadata?.isOwnMessage ? '' : 'mb-0.5'
+                          }` 
+                        : message.role === 'chat' ? "pl-1 mb-0.5" : ""
                   }`}
                 >
                 {/* Enhanced chat message display */}

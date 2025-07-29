@@ -24,6 +24,7 @@ import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "r
 // Unified Auth Contexts
 import { SolanaConnectionProvider, useSolanaConnection } from './contexts/SolanaConnectionContext';
 import { UnifiedAuthProvider } from "./contexts/UnifiedAuthContext";
+import { ReferralProvider } from "./hooks/social/useReferral";
 
 // @solana/kit related imports
 import { type Rpc, type SolanaRpcApi } from '@solana/rpc'; // Corrected: Use SolanaRpcApi from @solana/rpc
@@ -298,10 +299,12 @@ const AppProvidersAndContent: React.FC = () => {
       <WalletAdapterProviders>
         <UnifiedAuthProvider>
           <SolanaConnectionProvider>
-            <ToastProvider>
-              <AppContent />
-              <Toaster position="top-right" />
-            </ToastProvider>
+            <ReferralProvider>
+              <ToastProvider>
+                <AppContent />
+                <Toaster position="top-right" />
+              </ToastProvider>
+            </ReferralProvider>
           </SolanaConnectionProvider>
         </UnifiedAuthProvider>
       </WalletAdapterProviders>

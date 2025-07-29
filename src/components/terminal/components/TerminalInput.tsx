@@ -28,8 +28,9 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   const handleSendCommand = () => {
     if (!userInput.trim()) return;
     const command = userInput.trim();
-    setUserInput('');
     onEnter(command);
+    // Clear input after calling onEnter to ensure proper state update
+    setTimeout(() => setUserInput(''), 0);
   };
 
   // Auto-resize textarea based on content

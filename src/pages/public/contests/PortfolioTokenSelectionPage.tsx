@@ -17,6 +17,7 @@ import PortfolioPreviewModal from "../../../components/portfolio-selection/Portf
 import { PortfolioSummary } from "../../../components/portfolio-selection/PortfolioSummary";
 import { TokenFilters } from "../../../components/portfolio-selection/TokenFilters";
 import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeTokensGrid";
+import { TokenSelectionList } from "../../../components/portfolio-selection/TokenSelectionList";
 import { PortfolioTokenCardBack } from "../../../components/portfolio-selection/PortfolioTokenCardBack";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
@@ -138,10 +139,10 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   
   // Special tokens that should always be available
   const SPECIAL_TOKEN_ADDRESSES = [
-    'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', // DUEL
     'So11111111111111111111111111111111111111112',   // SOL  
-    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',  // USDC
-    '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh'   // WBTC
+    'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', // DUEL
+    '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh', // WBTC
+    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'  // USDC
   ];
   
   // Use batch tokens hook for special tokens
@@ -239,15 +240,19 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   // All tokens including special ones and search results
   const allTokens = useMemo(() => {
     const specialAddresses = specialTokens.map(t => t.contractAddress?.toLowerCase());
-    const filteredMainTokens = mainTokens.filter(t => 
-      !specialAddresses.includes(t.contractAddress?.toLowerCase())
-    );
-    
-    // Merge search-added tokens with main tokens
     const searchTokensArray = Array.from(searchAddedTokens.values());
-    const mergedTokens = [...specialTokens, ...searchTokensArray, ...filteredMainTokens];
+    const searchAddresses = searchTokensArray.map(t => (t.address || t.contractAddress)?.toLowerCase());
     
-    // Deduplicate by address
+    // Filter main tokens to exclude both special tokens and existing portfolio tokens
+    const filteredMainTokens = mainTokens.filter(t => {
+      const address = t.contractAddress?.toLowerCase();
+      return !specialAddresses.includes(address) && !searchAddresses.includes(address);
+    });
+    
+    // Merge in correct order: existing portfolio tokens FIRST, then special tokens, then main tokens
+    const mergedTokens = [...searchTokensArray, ...specialTokens, ...filteredMainTokens];
+    
+    // Deduplicate by address (though filtering above should prevent most duplicates)
     const seen = new Set<string>();
     return mergedTokens.filter(token => {
       const address = (token.address || token.contractAddress)?.toLowerCase();
@@ -445,7 +450,11 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const [selectedTokens, setSelectedTokens] = useState<Map<string, number>>(
     new Map(),
   );
-  // View mode removed - only using card view now
+  // View mode for token display
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    const saved = localStorage.getItem('portfolioViewMode');
+    return (saved as 'grid' | 'list') || 'list';
+  });
   const [contest, setContest] = useState<Contest | null>(null);
   const [contestLoading, setContestLoading] = useState(true);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -614,10 +623,19 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                           name: searchToken.name || 'Unknown Token',
                           decimals: searchToken.decimals || 9,
                           image_url: searchToken.image_url || '',
+                          header_image_url: searchToken.header_image_url || null,
+                          color: searchToken.color || null,
                           price: searchToken.price || 0,
                           market_cap: searchToken.market_cap || 0,
                           volume_24h: searchToken.volume_24h || 0,
                           change_24h: searchToken.change_24h || 0,
+                          tags: searchToken.tags || [],
+                          total_supply: searchToken.total_supply || null,
+                          fdv: searchToken.fdv || null,
+                          is_active: searchToken.is_active !== undefined ? searchToken.is_active : true,
+                          priceChanges: searchToken.priceChanges || null,
+                          volumes: searchToken.volumes || null,
+                          transactions: searchToken.transactions || null,
                         };
                         
                         missingTokensData.push(tokenForGrid);
@@ -633,10 +651,10 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                   // Filter out tokens with no valid data before adding
                   const validTokens = missingTokensData.filter(token => {
                     // Only include tokens that have essential data
+                    // Don't filter by price/market cap as some valid tokens might have 0 values
                     return token.symbol && 
                            token.symbol !== 'UNKNOWN' && 
-                           token.price !== undefined && token.price > 0 && 
-                           token.market_cap !== null && token.market_cap !== undefined && token.market_cap > 0;
+                           token.address;
                   });
                   
                   console.log(`Filtered to ${validTokens.length} valid tokens from ${missingTokensData.length} fetched`);
@@ -1347,6 +1365,34 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   // Determine if we're in offline mode (needed before token handler)
   const isOfflineMode = !isTokenDataConnected && !isInWsGracePeriod;
   const showOfflineIndicator = isOfflineMode && memoizedTokens.length > 0;
+
+  // Check if wallet analysis matches current portfolio (to skip animation if already applied)
+  const walletMatchesCurrentPortfolio = useMemo(() => {
+    if (!walletAnalysis || !walletAnalysis.tokens.length || selectedTokens.size === 0) {
+      return false;
+    }
+    
+    // Get non-SOL tokens from wallet analysis
+    const walletTokens = walletAnalysis.tokens.filter(t => !t.isSOL);
+    
+    // Check if we have the same tokens selected
+    const walletAddresses = new Set(walletTokens.map(t => t.mint));
+    const portfolioAddresses = new Set(selectedTokens.keys());
+    
+    // Quick check: different number of tokens = not matching
+    if (walletAddresses.size !== portfolioAddresses.size) {
+      return false;
+    }
+    
+    // Check if all addresses match
+    for (const addr of walletAddresses) {
+      if (!portfolioAddresses.has(addr)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }, [walletAnalysis, selectedTokens]);
 
   // Apply wallet analysis suggestions to portfolio
   const applyWalletSuggestions = useCallback(() => {
@@ -2278,11 +2324,13 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                           <Button
                             onClick={walletAnalysisLoading || !walletAnalysis ? undefined : applyWalletSuggestions}
                             disabled={walletAnalysisLoading || !walletAnalysis?.tokens?.length}
-                            className={`px-3 py-2 text-sm font-bold transition-all duration-200 shadow-lg ${
+                            className={`px-3 py-2 text-sm font-bold transition-all duration-300 shadow-lg ${
                               walletAnalysisLoading
                                 ? 'bg-gradient-to-r from-gray-600 to-gray-700 border-gray-600 text-gray-300'
                                 : walletAnalysis?.tokens?.length
-                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 border-purple-500 text-white hover:shadow-purple-500/25'
+                                ? walletMatchesCurrentPortfolio
+                                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 border-green-500 text-white hover:shadow-green-500/25'
+                                  : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 border-purple-500 text-white hover:shadow-purple-500/25 animate-pulse hover:animate-none'
                                 : 'bg-gradient-to-r from-gray-600 to-gray-700 border-gray-600 text-gray-400 cursor-not-allowed'
                             }`}
                           >
@@ -2290,7 +2338,9 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                               {walletAnalysisLoading 
                                 ? "ANALYZING..." 
                                 : walletAnalysis?.tokens?.length 
-                                ? "MATCH MY BAGS"
+                                ? walletMatchesCurrentPortfolio
+                                  ? "ALREADY MATCHED"
+                                  : "MATCH MY BAGS"
                                 : "NO WALLET DATA"
                               }
                             </span>
@@ -2375,6 +2425,42 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                         sortBy={sortBy}
                         onSortChange={setSortBy}
                       />
+                      
+                      {/* View Mode Toggle */}
+                      <div className="inline-flex bg-dark-300/50 rounded-lg p-1">
+                        <button
+                          onClick={() => {
+                            setViewMode('list');
+                            localStorage.setItem('portfolioViewMode', 'list');
+                          }}
+                          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                            viewMode === 'list'
+                              ? 'bg-brand-500 text-white shadow-sm'
+                              : 'text-gray-400 hover:text-gray-300'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                              d="M4 6h16M4 12h16M4 18h16" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setViewMode('grid');
+                            localStorage.setItem('portfolioViewMode', 'grid');
+                          }}
+                          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                            viewMode === 'grid'
+                              ? 'bg-brand-500 text-white shadow-sm'
+                              : 'text-gray-400 hover:text-gray-300'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
 
                     {/* DEBUG PANEL - Contest Data (Super Admin Only) */}
@@ -2560,14 +2646,34 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Enhanced Token Grid - Visual rich cards with infinite scroll */}
+                    {/* Token Display - Grid or List based on view mode */}
                     <div className="relative">
-                      <CreativeTokensGrid
-                        tokens={visibleTokens}
-                        backContent="portfolio"
-                        selectedTokens={selectedTokens}
-                        renderBackContent={renderBackContent}
-                      />
+                      {viewMode === 'grid' ? (
+                        <CreativeTokensGrid
+                          tokens={visibleTokens}
+                          backContent="portfolio"
+                          selectedTokens={selectedTokens}
+                          renderBackContent={renderBackContent}
+                        />
+                      ) : (
+                        <TokenSelectionList
+                          tokens={visibleTokens}
+                          selectedTokens={selectedTokens}
+                          onTokenSelect={handleTokenSelect}
+                          onWeightChange={(contractAddress, newWeight) => {
+                            setSelectedTokens(prev => {
+                              const newMap = new Map(prev);
+                              if (newWeight === 0) {
+                                newMap.delete(contractAddress);
+                              } else {
+                                newMap.set(contractAddress, newWeight);
+                              }
+                              return newMap;
+                            });
+                          }}
+                          remainingWeight={portfolioMetrics.remainingWeight}
+                        />
+                      )}
                       
                       {/* Load More Trigger - Subtle infinite scroll indicator */}
                       {hasMoreTokens && (
@@ -2644,7 +2750,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
 
                       <div className="mt-4 sm:mt-6">
                         {/* Transaction Status Indicator - Different styling */}
-                        {transactionState.status !== "idle" && (
+                        {transactionState.status !== "idle" && transactionState.status !== "success" && (
                           <div
                             className={`mb-4 p-3 rounded-lg border font-mono text-xs ${
                               transactionState.status === "error"

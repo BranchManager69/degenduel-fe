@@ -5,6 +5,7 @@ import { CountdownTimer } from '../ui/CountdownTimer';
 import { ShareContestButton } from './ShareContestButton';
 import { formatCurrency } from '../../lib/utils';
 import { ContestDetails } from '../../types';
+import NanoLogo from '../logo/NanoLogo';
 
 interface ContestLobbyHeaderProps {
   contest: ContestDetails;
@@ -175,8 +176,11 @@ export const ContestLobbyHeader: React.FC<ContestLobbyHeaderProps> = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent"
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent flex items-center gap-6"
           >
+            <div className="scale-150">
+              <NanoLogo />
+            </div>
             {contest.name}
           </motion.h1>
           

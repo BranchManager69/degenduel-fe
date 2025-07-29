@@ -48,6 +48,8 @@ export interface AIMessage {
     isAdmin?: boolean;
     profilePicture?: string;
     isOwnMessage?: boolean;
+    isUnderConstruction?: boolean;
+    isEdgeToEdge?: boolean;
   }; // For additional message metadata
 }
 
@@ -360,6 +362,7 @@ class AIService {
                 // Handle different event types based on the guide
                 switch (eventData.type) {
                   case 'chunk':
+                  case 'content_delta': // Support backend's new format
                     console.log(`[AI Service Stream] Processing chunk delta: "${eventData.delta}"`);
                     if (eventData.delta) {
                       fullContent += eventData.delta;

@@ -23,6 +23,17 @@ interface BalanceDataPoint {
   dividend_percentage?: number;
   daily_contest_revenue?: number;
   isExtrapolated?: boolean;
+  dividend_status?: 'pending' | 'completed' | 'failed';
+  dividend_amount_sol?: number;
+  dividend_paid_at?: string;
+  dividend_transaction?: {
+    id: number;
+    amount_sol: number;
+    status: string;
+    created_at: string;
+    processed_at: string;
+    tx_signature: string;
+  };
 }
 
 interface UserData {
@@ -66,6 +77,20 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
   const [contestsPerDay, setContestsPerDay] = useState(6);
   const [avgEntryFee, setAvgEntryFee] = useState(0.25);
   const [avgParticipants, setAvgParticipants] = useState(50);
+  const [demoHoldingsMillions, setDemoHoldingsMillions] = useState(10.0); // 10.0M DUEL default
+  
+  // Mobile tab state
+  const [activeTab, setActiveTab] = useState<'platform' | 'holdings' | 'earnings'>('platform');
+  
+  // Auto-retry state
+  const [retryCount, setRetryCount] = useState(0);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Countdown timer state - must be declared before any conditional returns
+  const [timeUntilNextDividend, setTimeUntilNextDividend] = useState('');
+  
+  // Convert millions to actual holdings (0 means use real balance for logged-in users)
+  const demoHoldings = demoHoldingsMillions === 0 && !demoMode ? 0 : demoHoldingsMillions * 1000000;
   
   // Calculate simulated daily revenue
   const simulatedDailyRevenue = contestsPerDay * avgEntryFee * avgParticipants;
@@ -78,6 +103,11 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
       day: 'numeric',
       year: 'numeric'
     });
+  };
+
+  // Handle click on date with transaction signature
+  const handleDateClick = (txSignature: string) => {
+    window.open(`https://solscan.io/tx/${txSignature}`, '_blank');
   };
 
   // Format large numbers (e.g., 31.7M for balance)
@@ -188,43 +218,43 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
       setIsLoading(true);
       setError(null);
       
-      // If in demo mode, use example data
+      // If in demo mode, fetch from public endpoint
       if (demoMode) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const response = await axios.get('/api/duel-token-balances');
         
-        // Generate demo snapshot data (6 days of real data, today will be extrapolated)
-        const demoSnapshots: BalanceDataPoint[] = [];
-        const now = new Date();
-        
-        // Generate 6 daily snapshots starting from yesterday (skip today to simulate missing data)
-        for (let i = 1; i <= 6; i++) {
-          const date = new Date(now);
-          date.setDate(date.getDate() - i);
-          date.setHours(0, 0, 0, 0);
+        if (response.data && response.data.success) {
+          const { platform_revenue, statistics } = response.data.data;
           
-          const balance = 31814255 - (i * 50000) + Math.random() * 20000;
-          const totalSupply = 150000000 + Math.random() * 5000000;
-          const percentage = (balance / totalSupply) * 100;
+          // Use the user-configured demo holdings
+          const demoBalance = demoHoldings;
           
-          demoSnapshots.push({
-            id: 1000 + i,
-            balance_lamports: (balance * 1000000).toString(),
-            balance_duel: balance,
-            timestamp: date.toISOString(),
-            total_registered_supply: totalSupply,
-            dividend_percentage: parseFloat(percentage.toFixed(2)),
-            isExtrapolated: false
+          // Convert platform revenue data to our format
+          const demoSnapshots: BalanceDataPoint[] = platform_revenue.daily_history.map((day: any, index: number) => {
+            const percentage = (demoBalance / statistics.total_supply_tracked) * 100;
+            
+            return {
+              id: 1000 + index,
+              balance_lamports: (demoBalance * 1000000).toString(),
+              balance_duel: demoBalance,
+              timestamp: day.timestamp,
+              total_registered_supply: statistics.total_supply_tracked,
+              dividend_percentage: parseFloat(percentage.toFixed(2)),
+              daily_contest_revenue: day.daily_contest_revenue,
+              isExtrapolated: false
+            };
           });
+          
+          // Generate extrapolated data for missing days (including today)
+          const extrapolatedData = generateExtrapolatedData(demoSnapshots, demoBalance);
+          
+          // Combine actual and extrapolated data, sort newest first
+          const allData = [...extrapolatedData, ...demoSnapshots];
+          allData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          
+          setTableData(allData);
+        } else {
+          throw new Error('Failed to fetch demo data');
         }
-        
-        // Generate extrapolated data for missing days (including today)
-        const extrapolatedData = generateExtrapolatedData(demoSnapshots, 31814255);
-        
-        // Combine actual and extrapolated data, sort newest first
-        const allData = [...extrapolatedData, ...demoSnapshots];
-        allData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        
-        setTableData(allData);
         return;
       }
       
@@ -255,20 +285,105 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
         
         setTableData(allData);
         setUserData(data.wallet);
+        
+        // Clear error and reset retry count on success
+        setError(null);
+        setRetryCount(0);
+        
+        // Clear any pending retry timeout
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+          retryTimeoutRef.current = null;
+        }
       } else {
         throw new Error('Failed to fetch snapshot data');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching DUEL snapshot data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load snapshot data');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load snapshot data';
+      
+      // Check if it's a 502 error and auto-retry silently
+      if (err?.response?.status === 502 || errorMessage.includes('502')) {
+        setRetryCount(prev => prev + 1);
+        
+        // Clear any existing retry timeout
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+        }
+        
+        // Set up auto-retry after 5 seconds - silently
+        retryTimeoutRef.current = setTimeout(() => {
+          fetchSnapshotData();
+        }, 5000);
+        
+        // Don't set error or change loading state for 502s
+        return;
+      }
+      
+      // Only set error for non-502 errors
+      setError(errorMessage);
     } finally {
-      setIsLoading(false);
+      // Only set loading false if not a 502 error
+      if (!error || !error.includes('502')) {
+        setIsLoading(false);
+      }
     }
   };
 
-  // Fetch data when component mounts
+  // Fetch data when component mounts or demo mode changes
   useEffect(() => {
     fetchSnapshotData();
+    
+    // Cleanup on unmount
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, [demoMode]);
+
+  // Countdown timer effect - must be before any conditional returns
+  useEffect(() => {
+    const getNextDividendDate = () => {
+      const now = new Date();
+      const nextSunday = new Date(now);
+      
+      // Set to next Sunday
+      nextSunday.setUTCDate(now.getUTCDate() + (7 - now.getUTCDay()) % 7);
+      if (nextSunday <= now) {
+        nextSunday.setUTCDate(nextSunday.getUTCDate() + 7);
+      }
+      
+      // Set to midnight UTC
+      nextSunday.setUTCHours(0, 0, 0, 0);
+      return nextSunday;
+    };
+
+    const updateCountdown = () => {
+      const now = new Date();
+      const nextDividend = getNextDividendDate();
+      const diff = nextDividend.getTime() - now.getTime();
+      
+      if (diff <= 0) {
+        setTimeUntilNextDividend('Processing...');
+        return;
+      }
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (days > 0) {
+        setTimeUntilNextDividend(`${days}d ${hours}h ${minutes}m`);
+      } else {
+        setTimeUntilNextDividend(`${hours}h ${minutes}m`);
+      }
+    };
+    
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Animate totals when table data changes
@@ -291,7 +406,12 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
         ? simulatedDailyRevenue 
         : (snapshot.daily_contest_revenue || 0);
       const totalDividendsForDay = revenue * 0.1;
-      const percentage = snapshot.dividend_percentage || 0;
+      
+      // Calculate dividend percentage based on effective balance (override or actual)
+      const effectiveBalance = (!demoMode && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel;
+      const percentage = snapshot.total_registered_supply > 0 
+        ? (effectiveBalance / snapshot.total_registered_supply) * 100 
+        : 0;
       const myDividendForDay = totalDividendsForDay * (percentage / 100);
       return sum + myDividendForDay;
     }, 0);
@@ -330,17 +450,42 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
   }, [tableData, demoMode, simulatedDailyRevenue, simulatorExpanded]);
 
   if (error) {
+    const is502Error = error.includes('502');
+    
+    // For 502 errors, just show loading spinner - server is restarting
+    if (is502Error) {
+      return (
+        <div className={`${className}`}>
+          <div className="bg-dark-300/30 rounded-lg overflow-hidden">
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-brand-400 border-t-transparent mb-4"></div>
+                <p className="text-gray-400">Loading snapshot data...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // For other errors, show a simple error state
     return (
       <div className={`${className}`}>
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
-          <p className="text-red-400 text-center mb-4">{error}</p>
-          <div className="text-center">
-            <button 
-              onClick={fetchSnapshotData}
-              className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors"
-            >
-              Retry
-            </button>
+        <div className="bg-dark-300/30 rounded-lg overflow-hidden">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <p className="text-gray-400 mb-4">Unable to load dividend data</p>
+              <button 
+                onClick={() => {
+                  setError(null);
+                  setRetryCount(0);
+                  fetchSnapshotData();
+                }}
+                className="px-4 py-2 bg-dark-400 hover:bg-dark-500 text-gray-200 rounded-lg transition-colors text-sm"
+              >
+                Try Again
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -349,89 +494,173 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
 
   return (
     <div className={`${className}`}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          background: #9945FF;
+          cursor: pointer;
+          border-radius: 50%;
+          transition: background 0.15s ease-in-out;
+        }
+        .slider::-webkit-slider-thumb:hover {
+          background: #b969ff;
+        }
+        .slider::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          background: #9945FF;
+          cursor: pointer;
+          border-radius: 50%;
+          border: none;
+          transition: background 0.15s ease-in-out;
+        }
+        .slider::-moz-range-thumb:hover {
+          background: #b969ff;
+        }
+        .slider::-webkit-slider-runnable-track {
+          background: rgba(153, 69, 255, 0.1);
+          border-radius: 4px;
+        }
+        .slider::-moz-range-track {
+          background: rgba(153, 69, 255, 0.1);
+          border-radius: 4px;
+        }
+      `}} />
       {/* Revenue Simulator */}
       {(
-        <div className="mb-4 bg-dark-300/30 rounded-lg overflow-hidden">
+        <div className="mb-4 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-lg overflow-hidden border border-purple-500/30">
           <button
             onClick={() => setSimulatorExpanded(!simulatorExpanded)}
-            className="w-full px-4 py-3 flex items-center justify-between hover:bg-dark-300/50 transition-colors"
+            className="w-full px-6 py-4 flex items-center justify-between hover:from-purple-600/30 hover:to-blue-600/30 bg-gradient-to-r transition-all duration-200 group"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 flex-1">
+              <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-blue-300">
+                WHAT IF...?
+              </span>
+              <span className="text-sm font-medium text-gray-300">
+                {simulatorExpanded ? 'Customize your platform projections below' : 'Estimate your daily SOL airdrop amount'}
+              </span>
+            </div>
+            <div className="bg-purple-500/20 rounded-full p-2 group-hover:bg-purple-500/30 transition-colors">
               <svg 
-                className={`w-4 h-4 transition-transform ${simulatorExpanded ? 'rotate-90' : ''}`} 
+                className={`w-5 h-5 transition-transform ${simulatorExpanded ? 'rotate-90' : ''} text-purple-300`} 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              <span className="text-sm font-medium text-gray-300">
-                What If...?
-              </span>
-              <span className="text-xs text-gray-500">
-                (Daily Platform Revenue: {simulatedDailyRevenue.toFixed(2)} SOL)
-              </span>
             </div>
-            <span className="text-xs text-gray-400">
-              {simulatorExpanded ? 'Click to collapse' : 'Click to customize'}
-            </span>
           </button>
           
           {simulatorExpanded && (
             <div className="px-4 pb-4 pt-2 border-t border-gray-700/50">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">
-                    Contests per Day
+                  <label className="block text-xs font-medium text-gray-400 mb-2">
+                    Your DUEL Holdings {!demoMode && '(Override)'}: <span className="text-white font-semibold">{demoHoldingsMillions.toFixed(1)}M</span>
                   </label>
                   <input
-                    type="number"
+                    type="range"
+                    min="0"
+                    max="50"
+                    step="0.1"
+                    value={demoHoldingsMillions}
+                    onChange={(e) => setDemoHoldingsMillions(parseFloat(e.target.value))}
+                    className="w-full h-2 bg-dark-300 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                  <div className="text-[10px] text-gray-500 mt-1">
+                    {demoHoldingsMillions > 0 ? (
+                      <>= {((demoHoldings / (tableData[0]?.total_registered_supply || 1)) * 100).toFixed(4)}% of supply</>
+                    ) : !demoMode ? (
+                      <>Using your actual balance</>
+                    ) : (
+                      <>0.0M DUEL</>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-2">
+                    Contests per Day: <span className="text-white font-semibold">{contestsPerDay}</span>
+                  </label>
+                  <input
+                    type="range"
                     min="1"
                     max="100"
+                    step="1"
                     value={contestsPerDay}
-                    onChange={(e) => setContestsPerDay(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full px-3 py-2 bg-dark-200 border border-gray-700 rounded-md text-white text-sm focus:outline-none focus:border-brand-400"
+                    onChange={(e) => setContestsPerDay(parseInt(e.target.value))}
+                    className="w-full h-2 bg-dark-300 rounded-lg appearance-none cursor-pointer slider"
                   />
+                  <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                    <span>1</span>
+                    <span>100</span>
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">
-                    Average Entry Fee (SOL)
+                  <label className="block text-xs font-medium text-gray-400 mb-2">
+                    Average Entry Fee: <span className="text-white font-semibold inline-flex items-center gap-1">
+                      {avgEntryFee.toFixed(2)}
+                      <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                    </span>
                   </label>
                   <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
+                    type="range"
+                    min="0.1"
+                    max="5"
+                    step="0.1"
                     value={avgEntryFee}
-                    onChange={(e) => setAvgEntryFee(Math.max(0.01, parseFloat(e.target.value) || 0.01))}
-                    className="w-full px-3 py-2 bg-dark-200 border border-gray-700 rounded-md text-white text-sm focus:outline-none focus:border-brand-400"
+                    onChange={(e) => setAvgEntryFee(parseFloat(e.target.value))}
+                    className="w-full h-2 bg-dark-300 rounded-lg appearance-none cursor-pointer slider"
                   />
+                  <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                    <span>0.1</span>
+                    <span>5.0</span>
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">
-                    Avg Participants per Contest
+                  <label className="block text-xs font-medium text-gray-400 mb-2">
+                    Avg Participants: <span className="text-white font-semibold">{avgParticipants}</span>
                   </label>
                   <input
-                    type="number"
-                    min="2"
-                    max="1000"
+                    type="range"
+                    min="3"
+                    max="100"
+                    step="1"
                     value={avgParticipants}
-                    onChange={(e) => setAvgParticipants(Math.max(2, parseInt(e.target.value) || 2))}
-                    className="w-full px-3 py-2 bg-dark-200 border border-gray-700 rounded-md text-white text-sm focus:outline-none focus:border-brand-400"
+                    onChange={(e) => setAvgParticipants(parseInt(e.target.value))}
+                    className="w-full h-2 bg-dark-300 rounded-lg appearance-none cursor-pointer slider"
                   />
+                  <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                    <span>3</span>
+                    <span>100</span>
+                  </div>
                 </div>
               </div>
               
               <div className="mt-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-400">
-                    Formula: {contestsPerDay} contests × {avgEntryFee} SOL × {avgParticipants} participants = 
-                    <span className="font-semibold text-brand-400 ml-1">{simulatedDailyRevenue.toFixed(2)} SOL/day</span>
+                  <div className="text-sm text-gray-400 flex items-center flex-wrap">
+                    <span>Formula: {contestsPerDay} contests × </span>
+                    <span className="inline-flex items-center gap-1 mx-1">
+                      {avgEntryFee}
+                      <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                    </span>
+                    <span>× {avgParticipants} participants = </span>
+                    <span className="font-semibold text-brand-400 ml-1 inline-flex items-center gap-1">
+                      {simulatedDailyRevenue.toFixed(2)}
+                      <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                      <span>/day</span>
+                    </span>
                   </div>
                   <button
                     onClick={() => {
                       setContestsPerDay(6);
                       setAvgEntryFee(0.25);
                       setAvgParticipants(50);
+                      if (demoMode) setDemoHoldingsMillions(10.0);
                     }}
                     className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
                   >
@@ -488,6 +717,17 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
 
       {/* Table */}
       <div className="bg-dark-300/30 rounded-lg overflow-hidden">
+        {/* Next Dividend Countdown */}
+        {!demoMode && timeUntilNextDividend && (
+          <div className="bg-gradient-to-r from-purple-900/20 via-dark-300/30 to-green-900/20 px-4 py-2 border-b border-gray-800">
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <span className="text-gray-400">Next dividend payout:</span>
+              <span className="text-white font-medium">{timeUntilNextDividend}</span>
+              <span className="text-gray-500 text-xs">(Sunday 00:00 UTC)</span>
+            </div>
+          </div>
+        )}
+        
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
@@ -501,77 +741,120 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-800">
+              <table className="min-w-full divide-y divide-gray-800 md:table-fixed"
+                     style={{ minWidth: '800px' }}>
               <thead>
                 <tr style={{backgroundColor: 'transparent', background: 'none'}}>
-                  <th className="pb-1 px-0" style={{backgroundColor: 'transparent', background: 'none', border: 'none'}}>
+                  {/* Date column - always visible */}
+                  <th className="pb-1 px-0 sticky left-0 z-10 bg-dark-200" style={{backgroundColor: 'transparent', background: 'none', border: 'none'}}>
                     <div className="bg-black/20 rounded-t-lg py-0.5 text-[10px] uppercase text-gray-500 font-medium text-center border-l border-t border-r border-gray-800">
                       &nbsp;
                     </div>
                   </th>
-                  <th colSpan={5} className="pb-1 px-0" style={{backgroundColor: 'transparent', background: 'none', border: 'none'}}>
+                  
+                  {/* Platform section */}
+                  <th colSpan={5} className={`pb-1 px-0 md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{backgroundColor: 'transparent', background: 'none', border: 'none'}}>
                     <div className="bg-dark-400/20 rounded-t-lg py-0.5 text-[10px] uppercase text-gray-500 font-medium text-center border-l border-t border-r border-gray-800">
                       Platform
                     </div>
                   </th>
-                  <th colSpan={5} className="pb-1 px-0" style={{backgroundColor: 'transparent', background: 'none', border: 'none'}}>
+                  {/* Platform strip when inactive on mobile */}
+                  <th className={`pb-1 px-0 md:hidden ${activeTab === 'platform' ? 'hidden' : 'table-cell'} cursor-pointer`} 
+                      style={{backgroundColor: 'transparent', background: 'none', border: 'none', width: '30px'}}
+                      onClick={() => setActiveTab('platform')}>
+                    <div className="bg-dark-400/40 hover:bg-dark-400/60 rounded-t-lg py-0.5 border-l border-t border-r border-gray-800 h-full min-h-[20px] transition-colors"/>
+                  </th>
+                  
+                  {/* Holdings section */}
+                  <th colSpan={5} className={`pb-1 px-0 md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`} style={{backgroundColor: 'transparent', background: 'none', border: 'none'}}>
                     <div className="bg-blue-400/20 rounded-t-lg py-0.5 text-[10px] uppercase text-gray-500 font-medium text-center border-l border-t border-r border-gray-800">
                       You
                     </div>
                   </th>
-                  <th colSpan={2} className="pb-1 px-0" style={{backgroundColor: 'transparent', background: 'none', border: 'none'}}>
+                  {/* Holdings strip when inactive on mobile */}
+                  <th className={`pb-1 px-0 md:hidden ${activeTab === 'holdings' ? 'hidden' : 'table-cell'} cursor-pointer`}
+                      style={{backgroundColor: 'transparent', background: 'none', border: 'none', width: '30px'}}
+                      onClick={() => setActiveTab('holdings')}>
+                    <div className="bg-blue-400/40 hover:bg-blue-400/60 rounded-t-lg py-0.5 border-l border-t border-r border-gray-800 h-full min-h-[20px] transition-colors"/>
+                  </th>
+                  
+                  {/* Earnings section */}
+                  <th colSpan={2} className={`pb-1 px-0 md:table-cell ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`} style={{backgroundColor: 'transparent', background: 'none', border: 'none'}}>
                     <div className="bg-purple-400/20 rounded-t-lg py-0.5 text-[10px] uppercase text-gray-500 font-medium text-center border-l border-t border-r border-gray-800">
                       DEGEN Dividend
                     </div>
                   </th>
+                  {/* Earnings strip when inactive on mobile */}
+                  <th className={`pb-1 px-0 md:hidden ${activeTab === 'earnings' ? 'hidden' : 'table-cell'} cursor-pointer`}
+                      style={{backgroundColor: 'transparent', background: 'none', border: 'none', width: '30px'}}
+                      onClick={() => setActiveTab('earnings')}>
+                    <div className="bg-purple-400/40 hover:bg-purple-400/60 rounded-t-lg py-0.5 border-l border-t border-r border-gray-800 h-full min-h-[20px] transition-colors"/>
+                  </th>
                 </tr>
                 <tr className="bg-dark-300/50">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  {/* Date column - always visible, sticky */}
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider sticky left-0 z-10 bg-dark-300/50 md:px-6">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider bg-dark-400/20 rounded-l-lg">
+                  
+                  {/* Platform columns */}
+                  <th className={`px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider bg-dark-400/20 rounded-l-lg md:table-cell md:px-6 ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
                     <div className="flex items-center justify-center gap-1">
-                      Revenue
+                      <span className="hidden md:inline">Revenue</span>
+                      <span className="md:hidden text-[10px]">Rev</span>
                       {!demoMode && simulatorExpanded && (
-                        <span className="text-[9px] bg-purple-500/30 text-purple-300 px-1.5 py-0.5 rounded">
-                          SIMULATED
+                        <span className="text-[8px] bg-purple-500/30 text-purple-300 px-1 py-0.5 rounded md:text-[9px] md:px-1.5">
+                          SIM
                         </span>
                       )}
                     </div>
                   </th>
-                  <th className="py-3 text-center text-xs font-medium text-gray-500 bg-dark-400/20" style={{width: '20px', paddingLeft: '2px', paddingRight: '2px'}}>
+                  <th className={`py-3 text-center text-xs font-medium text-gray-500 bg-dark-400/20 md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{width: '15px', paddingLeft: '1px', paddingRight: '1px'}}>
                     
                   </th>
-                  <th className="py-3 text-center text-xs font-medium text-gray-500 bg-dark-400/20" style={{width: '25px', paddingLeft: '2px', paddingRight: '2px'}}>
+                  <th className={`py-3 text-center text-xs font-medium text-gray-500 bg-dark-400/20 md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{width: '20px', paddingLeft: '1px', paddingRight: '1px'}}>
                     
                   </th>
-                  <th className="py-3 text-center text-xs font-medium text-gray-500 bg-dark-400/20" style={{width: '20px', paddingLeft: '2px', paddingRight: '2px'}}>
+                  <th className={`py-3 text-center text-xs font-medium text-gray-500 bg-dark-400/20 md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{width: '15px', paddingLeft: '1px', paddingRight: '1px'}}>
                     
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider bg-dark-400/20 rounded-r-lg border-r border-gray-800">
-                    <span className="underline">Dividends</span>
+                  <th className={`px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider bg-dark-400/20 rounded-r-lg border-r border-gray-800 md:table-cell md:px-6 ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
+                    <span className="underline">
+                      <span className="hidden md:inline">Dividends</span>
+                      <span className="md:hidden text-[10px]">Div</span>
+                    </span>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-blue-400/20 rounded-l-lg">
+                  {/* Platform strip when inactive */}
+                  <th className={`md:hidden ${activeTab === 'platform' ? 'hidden' : 'table-cell'} bg-dark-400/40`} style={{width: '30px'}}></th>
+                  
+                  {/* Holdings columns */}
+                  <th className={`px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-blue-400/20 rounded-l-lg md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                     You
                   </th>
-                  <th className="px-1 py-3 text-center text-xs font-medium text-gray-500 bg-blue-400/20">
+                  <th className={`px-1 py-3 text-center text-xs font-medium text-gray-500 bg-blue-400/20 md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                     ÷
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider bg-blue-400/20">
+                  <th className={`px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider bg-blue-400/20 md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                     All Users
                   </th>
-                  <th className="px-1 py-3 text-center text-xs font-medium text-gray-500 bg-blue-400/20">
+                  <th className={`px-1 py-3 text-center text-xs font-medium text-gray-500 bg-blue-400/20 md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                     =
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider bg-blue-400/20 rounded-r-lg">
+                  <th className={`px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider bg-blue-400/20 rounded-r-lg md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                     <span className="underline">Your Share</span>
                   </th>
-                  <th className="px-1 py-3 text-center text-xs font-medium text-gray-500 bg-purple-400/20 rounded-l-lg">
+                  {/* Holdings strip when inactive */}
+                  <th className={`md:hidden ${activeTab === 'holdings' ? 'hidden' : 'table-cell'} bg-blue-400/40`} style={{width: '30px'}}></th>
+                  
+                  {/* Earnings columns */}
+                  <th className={`px-1 py-3 text-center text-xs font-medium text-gray-500 bg-purple-400/20 rounded-l-lg md:table-cell ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`}>
                     •
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider bg-purple-400/20 rounded-r-lg">
+                  <th className={`px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider bg-purple-400/20 rounded-r-lg md:table-cell ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`}>
                     <span className="underline">Amount</span>
                   </th>
+                  {/* Earnings strip when inactive */}
+                  <th className={`md:hidden ${activeTab === 'earnings' ? 'hidden' : 'table-cell'} bg-purple-400/40`} style={{width: '30px'}}></th>
                 </tr>
               </thead>
               <tbody className="bg-dark-200/30 divide-y divide-gray-800">
@@ -590,7 +873,13 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                     ? simulatedDailyRevenue 
                     : (snapshot.daily_contest_revenue || 0);
                   const totalDividends = totalRevenue * 0.1;
-                  const myDividend = snapshot.dividend_percentage ? (totalDividends * snapshot.dividend_percentage / 100) : 0;
+                  
+                  // Calculate dividend percentage based on effective balance (override or actual)
+                  const effectiveBalance = (!demoMode && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel;
+                  const dividendPercentage = snapshot.total_registered_supply > 0 
+                    ? (effectiveBalance / snapshot.total_registered_supply) * 100 
+                    : 0;
+                  const myDividend = totalDividends * (dividendPercentage / 100);
                   
                   return (
                     <tr
@@ -600,13 +889,36 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                         isExtrapolated ? 'bg-orange-500/7 border-l-4 border-l-orange-400/50' : ''
                       }`}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {/* Date column - always visible, sticky */}
+                      <td className="px-2 py-3 whitespace-nowrap text-xs sticky left-0 z-10 bg-dark-200/30 md:px-6 md:py-4 md:text-sm">
                         <div className="flex flex-col">
-                          <span className={`${isToday ? 'text-gray-400' : isExtrapolated ? 'text-gray-400' : 'text-gray-300'} leading-none`}>
-                            {formatDate(snapshot.timestamp)}
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <span 
+                              className={`leading-none ${
+                                isToday ? 'text-gray-400' : isExtrapolated ? 'text-gray-400' : 'text-gray-300'
+                              } ${
+                                snapshot.dividend_transaction?.tx_signature 
+                                  ? 'cursor-pointer border-b border-dotted border-gray-400 hover:border-gray-300' 
+                                  : ''
+                              }`}
+                              onClick={() => {
+                                if (snapshot.dividend_transaction?.tx_signature) {
+                                  handleDateClick(snapshot.dividend_transaction.tx_signature);
+                                }
+                              }}
+                            >
+                              {formatDate(snapshot.timestamp)}
+                            </span>
+                            {snapshot.dividend_status === 'completed' && (
+                              <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                                <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
                           {isExtrapolated && (
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded mt-0.5 self-start leading-none ${
+                            <span className={`text-[9px] px-1 py-0.5 rounded mt-0.5 self-start leading-none md:text-[10px] md:px-1.5 ${
                               isToday 
                                 ? 'bg-cyan-500/20 text-cyan-400' 
                                 : 'bg-orange-500/20 text-orange-400'
@@ -615,44 +927,48 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                             </span>
                           )}
                         </div>
-                        </td>
+                      </td>
+                      {/* Platform columns */}
                       {totalRevenue > 0 ? (
                         <>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center bg-dark-400/10 rounded-l-lg">
+                          <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-dark-400/10 rounded-l-lg md:table-cell md:px-6 md:py-4 md:text-sm ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
                             {formatSolAmount(totalRevenue, false)}
                           </td>
-                          <td className="py-4 text-center text-xs text-gray-500 bg-dark-400/10" style={{width: '20px', paddingLeft: '2px', paddingRight: '2px'}}>
+                          <td className={`py-3 text-center text-[10px] text-gray-500 bg-dark-400/10 md:table-cell md:py-4 md:text-xs ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{width: '15px', paddingLeft: '1px', paddingRight: '1px'}}>
                             ×
                           </td>
-                          <td className="py-4 text-center text-xs text-gray-500 bg-dark-400/10" style={{width: '25px', paddingLeft: '2px', paddingRight: '2px'}}>
+                          <td className={`py-3 text-center text-[10px] text-gray-500 bg-dark-400/10 md:table-cell md:py-4 md:text-xs ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{width: '20px', paddingLeft: '1px', paddingRight: '1px'}}>
                             10%
                           </td>
-                          <td className="py-4 text-center text-xs text-gray-500 bg-dark-400/10" style={{width: '20px', paddingLeft: '2px', paddingRight: '2px'}}>
+                          <td className={`py-3 text-center text-[10px] text-gray-500 bg-dark-400/10 md:table-cell md:py-4 md:text-xs ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{width: '15px', paddingLeft: '1px', paddingRight: '1px'}}>
                             =
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center bg-dark-400/10 rounded-r-lg border-r border-gray-800">
+                          <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-dark-400/10 rounded-r-lg border-r border-gray-800 md:table-cell md:px-6 md:py-4 md:text-sm ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
                             {formatSolAmount(totalDividends, false)}
                           </td>
                         </>
                       ) : (
-                        <td colSpan={5} className="px-6 py-4 whitespace-nowrap text-sm text-center bg-dark-400/10 rounded-lg border-r border-gray-800">
-                          <span className="text-gray-500 text-xs">no paid contests</span>
+                        <td colSpan={5} className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-dark-400/10 rounded-lg border-r border-gray-800 md:table-cell md:px-6 md:py-4 md:text-sm ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
+                          <span className="text-gray-500 text-[10px] md:text-xs">no paid contests</span>
                         </td>
                       )}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm bg-blue-400/10 rounded-l-lg">
+                      {/* Platform strip when inactive on mobile */}
+                      <td className={`md:hidden ${activeTab === 'platform' ? 'hidden' : 'table-cell'} bg-dark-400/40`} style={{width: '30px'}}></td>
+                      {/* Holdings columns */}
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm bg-blue-400/10 rounded-l-lg md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                         <div className="flex items-center gap-2">
                           <span className={`font-medium ${isToday ? 'text-gray-400' : isExtrapolated ? 'text-gray-400' : 'text-white'}`}>
-                            {formatNumber(snapshot.balance_duel)}
+                            {formatNumber((!demoMode && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel)}
                           </span>
                           <div className="w-4 h-4">
                             <NanoLogo />
                           </div>
                         </div>
                       </td>
-                      <td className="px-1 py-4 text-center text-xs text-gray-500 bg-blue-400/10">
+                      <td className={`px-1 py-4 text-center text-xs text-gray-500 bg-blue-400/10 md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                         ÷
                       </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm text-center bg-blue-400/10 ${isToday ? 'text-gray-400' : isExtrapolated ? 'text-gray-400' : 'text-gray-300'}`}>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm text-center bg-blue-400/10 md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'} ${isToday ? 'text-gray-400' : isExtrapolated ? 'text-gray-400' : 'text-gray-300'}`}>
                         <div className="flex items-center justify-center gap-2">
                           <span>
                             {snapshot.total_registered_supply 
@@ -667,20 +983,26 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                           )}
                         </div>
                       </td>
-                      <td className="px-1 py-4 text-center text-xs text-gray-500 bg-blue-400/10">
+                      <td className={`px-1 py-4 text-center text-xs text-gray-500 bg-blue-400/10 md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                         =
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center bg-blue-400/10 rounded-r-lg">
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm text-center bg-blue-400/10 rounded-r-lg md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                         <span className={`text-xs ${isToday ? 'text-gray-500' : isExtrapolated ? 'text-gray-500' : 'text-gray-400'}`}>
-                          {formatPercentage(snapshot.dividend_percentage)}
+                          {formatPercentage(dividendPercentage)}
                         </span>
                       </td>
-                      <td className="px-1 py-4 text-center text-xs text-gray-500 bg-purple-400/10">
+                      {/* Holdings strip when inactive on mobile */}
+                      <td className={`md:hidden ${activeTab === 'holdings' ? 'hidden' : 'table-cell'} bg-blue-400/40`} style={{width: '30px'}}></td>
+                      
+                      {/* Earnings columns */}
+                      <td className={`px-1 py-4 text-center text-xs text-gray-500 bg-purple-400/10 md:table-cell ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`}>
                         •
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center bg-purple-400/10">
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm text-center bg-purple-400/10 md:table-cell ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`}>
                         {formatSolAmount(myDividend, false)}
                       </td>
+                      {/* Earnings strip when inactive on mobile */}
+                      <td className={`md:hidden ${activeTab === 'earnings' ? 'hidden' : 'table-cell'} bg-purple-400/40`} style={{width: '30px'}}></td>
                     </tr>
                   );
                 })}
@@ -689,53 +1011,63 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                 {(() => {
                   return (
                     <tr className="bg-dark-100/50 border-t-2 border-gray-600">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-white">
-                        ALL TIME
+                      <td className="px-2 py-3 whitespace-nowrap text-xs font-semibold text-white sticky left-0 z-10 bg-dark-100/50 md:px-6 md:py-4 md:text-sm">
+                        <span className="md:hidden">TOTAL</span>
+                        <span className="hidden md:inline">ALL TIME</span>
                       </td>
                       {animatedTotalRevenue > 0 ? (
                         <>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center bg-dark-400/20 rounded-l-lg font-semibold">
+                          <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-dark-400/20 rounded-l-lg font-semibold md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
                             {formatSolAmount(animatedTotalRevenue, false)}
                           </td>
-                          <td className="py-4 text-center text-xs text-gray-500 bg-dark-400/20" style={{width: '20px', paddingLeft: '2px', paddingRight: '2px'}}>
+                          <td className={`py-3 text-center text-[10px] text-gray-500 bg-dark-400/20 md:py-4 md:text-xs md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{width: '15px', paddingLeft: '1px', paddingRight: '1px'}}>
                             ×
                           </td>
-                          <td className="py-4 text-center text-xs text-gray-500 bg-dark-400/20" style={{width: '25px', paddingLeft: '2px', paddingRight: '2px'}}>
+                          <td className={`py-3 text-center text-[10px] text-gray-500 bg-dark-400/20 md:py-4 md:text-xs md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{width: '20px', paddingLeft: '1px', paddingRight: '1px'}}>
                             10%
                           </td>
-                          <td className="py-4 text-center text-xs text-gray-500 bg-dark-400/20" style={{width: '20px', paddingLeft: '2px', paddingRight: '2px'}}>
+                          <td className={`py-3 text-center text-[10px] text-gray-500 bg-dark-400/20 md:py-4 md:text-xs md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{width: '15px', paddingLeft: '1px', paddingRight: '1px'}}>
                             =
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center bg-dark-400/20 rounded-r-lg border-r border-gray-800 font-semibold">
+                          <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-dark-400/20 rounded-r-lg border-r border-gray-800 font-semibold md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
                             <span className="underline">{formatSolAmount(animatedTotalDividends, false)}</span>
                           </td>
                         </>
                       ) : (
-                        <td colSpan={5} className="px-6 py-4 whitespace-nowrap text-sm text-center bg-dark-400/20 rounded-lg border-r border-gray-800">
-                          <span className="text-gray-500 text-xs">—</span>
+                        <td colSpan={5} className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-dark-400/20 rounded-lg border-r border-gray-800 md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
+                          <span className="text-gray-500 text-[10px] md:text-xs">—</span>
                         </td>
                       )}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm bg-blue-400/20 rounded-l-lg text-center">
+                      {/* Platform strip when inactive on mobile */}
+                      <td className={`md:hidden ${activeTab === 'platform' ? 'hidden' : 'table-cell'} bg-dark-400/40`} style={{width: '30px'}}></td>
+                      {/* Holdings columns in totals */}
+                      <td className={`px-2 py-3 whitespace-nowrap text-xs bg-blue-400/20 rounded-l-lg text-center md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                         <span className="text-gray-500">—</span>
                       </td>
-                      <td className="px-1 py-4 text-center text-xs text-gray-500 bg-blue-400/20">
+                      <td className={`px-1 py-3 text-center text-[10px] text-gray-500 bg-blue-400/20 md:py-4 md:text-xs md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                         ÷
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center bg-blue-400/20">
+                      <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-blue-400/20 md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                         <span className="text-gray-500">—</span>
                       </td>
-                      <td className="px-1 py-4 text-center text-xs text-gray-500 bg-blue-400/20">
+                      <td className={`px-1 py-3 text-center text-[10px] text-gray-500 bg-blue-400/20 md:py-4 md:text-xs md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                         =
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center bg-blue-400/20 rounded-r-lg">
+                      <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-blue-400/20 rounded-r-lg md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                         <span className="text-gray-500">—</span>
                       </td>
-                      <td className="px-1 py-4 text-center text-xs text-gray-500 bg-purple-400/20">
+                      {/* Holdings strip when inactive on mobile */}
+                      <td className={`md:hidden ${activeTab === 'holdings' ? 'hidden' : 'table-cell'} bg-blue-400/40`} style={{width: '30px'}}></td>
+                      
+                      {/* Earnings columns in totals */}
+                      <td className={`px-1 py-3 text-center text-[10px] text-gray-500 bg-purple-400/20 md:py-4 md:text-xs md:table-cell ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`}>
                         •
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center bg-purple-400/20 font-semibold">
+                      <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-purple-400/20 font-semibold md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`}>
                         <span className="underline">{formatSolAmount(animatedTotalEarnings, false)}</span>
                       </td>
+                      {/* Earnings strip when inactive on mobile */}
+                      <td className={`md:hidden ${activeTab === 'earnings' ? 'hidden' : 'table-cell'} bg-purple-400/40`} style={{width: '30px'}}></td>
                     </tr>
                   );
                 })()}
@@ -752,8 +1084,11 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                   const newestDate = new Date(tableData[0].timestamp);
                   const daysDiff = Math.max(1, (newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
                   
-                  // Get average balance over the period
-                  const avgBalance = tableData.reduce((sum, snapshot) => sum + snapshot.balance_duel, 0) / tableData.length;
+                  // Get average balance over the period (using override if set)
+                  const avgBalance = tableData.reduce((sum, snapshot) => {
+                    const effectiveBalance = (!demoMode && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel;
+                    return sum + effectiveBalance;
+                  }, 0) / tableData.length;
                   
                   // Calculate daily return rate
                   const dailyReturn = animatedTotalEarnings / avgBalance / daysDiff;

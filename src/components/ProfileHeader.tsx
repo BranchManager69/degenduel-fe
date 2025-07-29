@@ -11,6 +11,7 @@
  */
 
 import React from 'react';
+import { getFullImageUrl } from '../utils/profileImageUtils';
 
 interface UserLevel {
   level_number: number;
@@ -79,10 +80,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       {user?.profile_image_url && (
         <a href="/me" className="relative hover:opacity-90 transition-opacity">
           <img 
-            src={user.profile_image_url} 
+            src={getFullImageUrl(user.profile_image_url)} 
             alt={user.nickname || ''}
             className="w-20 h-16 object-cover rounded-r-lg shadow-inner cursor-pointer"
             style={{ boxShadow: 'inset 0 0 8px rgba(0,0,0,0.3)' }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
           />
           <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-gray-900/20 to-transparent pointer-events-none rounded-l-lg"></div>
         </a>

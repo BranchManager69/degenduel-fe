@@ -26,8 +26,20 @@ export const useScrollHeader = (threshold: number = 50) => {
         };
       }
 
-      // Determine if we should be in compact mode
-      const shouldBeCompact = currentScroll > threshold;
+      // Use hysteresis to prevent rapid switching
+      // Different thresholds for compact on/off to create a "dead zone"
+      const compactOnThreshold = threshold;
+      const compactOffThreshold = threshold - 20; // 20px buffer zone
+      
+      let shouldBeCompact = prevState.isCompact;
+      
+      if (!prevState.isCompact && currentScroll > compactOnThreshold) {
+        // Switch to compact when scrolling down past threshold
+        shouldBeCompact = true;
+      } else if (prevState.isCompact && currentScroll < compactOffThreshold) {
+        // Switch to normal when scrolling up past lower threshold
+        shouldBeCompact = false;
+      }
 
       // Only update state if there's a meaningful change
       if (
@@ -54,7 +66,7 @@ export const useScrollHeader = (threshold: number = 50) => {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
-      timeoutId = setTimeout(handleScroll, 10); // Small delay for smooth performance
+      timeoutId = setTimeout(handleScroll, 50); // Increased delay to prevent flickering
     };
 
     window.addEventListener("scroll", debouncedScroll, { passive: true });

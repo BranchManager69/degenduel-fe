@@ -8,6 +8,7 @@ import { RevenueShareDiagram } from '../../components/RevenueShareDiagram';
 import { WalletPortfolioTable } from '../../components/WalletPortfolioTable';
 import { useStore } from '../../store/useStore';
 import MiniLogo from '../../components/logo/MiniLogo';
+import NanoLogo from '../../components/logo/NanoLogo';
 
 /**
  * Wallet Page Component
@@ -38,12 +39,17 @@ const WalletPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-white">Degen Dividends</h1>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-6">
+            <div className="scale-150">
+              <NanoLogo />
+            </div>
+            <span>Degen Dividends</span>
+          </h1>
         </div>
         
         {/* Flashy subheader */}
         <div className="text-center mb-8">
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9945FF] via-white to-[#14F195]"
               style={{
                 textShadow: '0 0 40px rgba(20, 241, 149, 0.5), 0 0 80px rgba(153, 69, 255, 0.3)',
@@ -54,37 +60,41 @@ const WalletPage: React.FC = () => {
           </h2>
           <div className="mt-4 relative">
             {/* Text content */}
-            <div className="flex items-center justify-center gap-8 relative z-10">
+            <div className="flex items-center justify-center gap-4 md:gap-8 relative z-10">
               {/* Step 1: Hold */}
-              <div className="flex items-center gap-2 animate-pulse" style={{ animationDelay: '0s' }}>
-              <span className="font-bold uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-600"
-                    style={{ 
-                      fontFamily: "'Inter', sans-serif", 
-                      textShadow: '0 0 30px rgba(168, 85, 247, 0.8)',
-                      filter: 'drop-shadow(0 0 10px rgba(168, 85, 247, 0.5))'
-                    }}>
-                Hold
-              </span> 
-              <div className="transform scale-110"><MiniLogo /></div>
-            </div>
-            
+              <div className="flex items-center gap-1 animate-pulse" style={{ animationDelay: '0s' }}>
+                <span className="uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-600"
+                      style={{ 
+                        fontFamily: "'Inter', sans-serif", 
+                        textShadow: '0 0 30px rgba(168, 85, 247, 0.8)',
+                        filter: 'drop-shadow(0 0 10px rgba(168, 85, 247, 0.5))'
+                      }}>
+                  Hold
+                </span> 
+                <div className="transform scale-75"><MiniLogo /></div>
+              </div>
+              
+              <span className="text-gray-600">•</span>
+              
               {/* Step 2: Earn */}
-              <div className="flex items-center gap-2 animate-pulse" style={{ animationDelay: '0.5s' }}>
-              <span className="font-bold uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"
-                    style={{ 
-                      fontFamily: "'Inter', sans-serif", 
-                      textShadow: '0 0 30px rgba(0, 212, 255, 0.8)',
-                      filter: 'drop-shadow(0 0 10px rgba(0, 212, 255, 0.5))'
-                    }}>
-                Earn
-              </span>
-              <img src="/assets/media/logos/solana.svg" alt="Solana" className="h-5 w-5 sm:h-6 sm:w-6" 
-                   style={{ filter: 'drop-shadow(0 0 8px rgba(0, 212, 255, 0.8))' }} />
-            </div>
-            
+              <div className="flex items-center gap-1 animate-pulse" style={{ animationDelay: '0.5s' }}>
+                <span className="uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500"
+                      style={{ 
+                        fontFamily: "'Inter', sans-serif", 
+                        textShadow: '0 0 30px rgba(0, 212, 255, 0.8)',
+                        filter: 'drop-shadow(0 0 10px rgba(0, 212, 255, 0.5))'
+                      }}>
+                  Earn
+                </span>
+                <img src="/assets/media/logos/solana.svg" alt="Solana" className="h-4 w-4" 
+                     style={{ filter: 'drop-shadow(0 0 8px rgba(0, 212, 255, 0.8))' }} />
+              </div>
+              
+              <span className="text-gray-600">•</span>
+              
               {/* Step 3: Profit */}
               <div className="flex items-center gap-1 animate-pulse" style={{ animationDelay: '1s' }}>
-                <span className="font-bold uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500"
+                <span className="uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500"
                       style={{ 
                         fontFamily: "'Inter', sans-serif", 
                         textShadow: '0 0 30px rgba(74, 222, 128, 0.8)',
@@ -92,7 +102,7 @@ const WalletPage: React.FC = () => {
                       }}>
                   Profit
                 </span> 
-                <span className="text-green-400 font-bold text-xl"
+                <span className="text-green-400 text-lg"
                       style={{ 
                         textShadow: '0 0 20px rgba(74, 222, 128, 0.8)',
                         filter: 'drop-shadow(0 0 10px rgba(74, 222, 128, 0.5))'
@@ -211,35 +221,17 @@ const WalletPage: React.FC = () => {
           )}
 
           {/* Single chart - full width */}
-          <div className="relative bg-dark-200/60 backdrop-blur-sm rounded-lg border border-gray-700/30 shadow-lg p-6">
-            <div className="opacity-60">
-              {selectedChart === 'snapshots' ? (
-                <DuelSnapshotChart height={400} demoMode={true} />
-              ) : (
-                <DuelBalanceChart height={400} demoMode={true} />
-              )}
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="bg-dark-300/90 backdrop-blur-sm px-6 py-3 rounded-lg border border-gray-600/30">
-                <p className="text-gray-300 font-semibold">
-                  {selectedChart === 'snapshots' ? 'Example Snapshot Data' : 'Example Holdings Chart'}
-                </p>
-              </div>
-            </div>
+          <div className="bg-dark-200/60 backdrop-blur-sm rounded-lg border border-gray-700/30 shadow-lg p-6">
+            {selectedChart === 'snapshots' ? (
+              <DuelSnapshotChart height={400} demoMode={true} />
+            ) : (
+              <DuelBalanceChart height={400} demoMode={true} />
+            )}
           </div>
           
           {/* Snapshot Data Table */}
           <div className="mt-8">
-            <div className="relative">
-              <div className="opacity-60">
-                <DuelSnapshotTable demoMode={true} />
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="bg-dark-300/90 backdrop-blur-sm px-6 py-3 rounded-lg border border-gray-600/30">
-                  <p className="text-gray-300 font-semibold">Login to View Your Actual Dividend History</p>
-                </div>
-              </div>
-            </div>
+            <DuelSnapshotTable demoMode={true} />
           </div>
           
           {/* Chart selector - only show if admin has multiple options */}
@@ -274,35 +266,17 @@ const WalletPage: React.FC = () => {
           )}
 
           {/* Single chart - full width */}
-          <div className={`relative bg-dark-200/60 backdrop-blur-sm rounded-lg border border-gray-700/30 shadow-lg p-6 ${isAdministrator ? '' : 'mt-8'}`}>
-            <div className="opacity-60">
-              {selectedChart === 'snapshots' ? (
-                <DuelSnapshotChart height={400} demoMode={true} />
-              ) : (
-                <DuelBalanceChart height={400} demoMode={true} />
-              )}
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="bg-dark-300/90 backdrop-blur-sm px-6 py-3 rounded-lg border border-gray-600/30">
-                <p className="text-gray-300 font-semibold">
-                  {selectedChart === 'snapshots' ? 'Example Snapshot Data' : 'Example Holdings Chart'}
-                </p>
-              </div>
-            </div>
+          <div className={`bg-dark-200/60 backdrop-blur-sm rounded-lg border border-gray-700/30 shadow-lg p-6 ${isAdministrator ? '' : 'mt-8'}`}>
+            {selectedChart === 'snapshots' ? (
+              <DuelSnapshotChart height={400} demoMode={true} />
+            ) : (
+              <DuelBalanceChart height={400} demoMode={true} />
+            )}
           </div>
           
           {/* Portfolio Holdings Table */}
           <div className="mt-8 bg-dark-200/60 backdrop-blur-sm rounded-lg border border-gray-700/30 shadow-lg p-6">
-            <div className="relative">
-              <div className="opacity-60">
-                <WalletPortfolioTable demoMode={true} />
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="bg-dark-300/90 backdrop-blur-sm px-6 py-3 rounded-lg border border-gray-600/30">
-                  <p className="text-gray-300 font-semibold">Your Portfolio Will Appear Here</p>
-                </div>
-              </div>
-            </div>
+            <WalletPortfolioTable demoMode={true} />
           </div>
         </div>
       </div>
@@ -313,13 +287,18 @@ const WalletPage: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header with title and profile */}
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold text-white">Degen Dividends</h1>
+        <h1 className="text-3xl font-bold text-white flex items-center gap-6">
+          <div className="scale-150">
+            <NanoLogo />
+          </div>
+          <span>Degen Dividends</span>
+        </h1>
         <ProfileHeader user={user} />
       </div>
       
       {/* Flashy subheader */}
       <div className="text-center mb-8">
-        <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9945FF] via-white to-[#14F195]"
             style={{
               textShadow: '0 0 40px rgba(20, 241, 149, 0.5), 0 0 80px rgba(153, 69, 255, 0.3)',
@@ -329,31 +308,23 @@ const WalletPage: React.FC = () => {
           </span>
         </h2>
         <div className="mt-3 flex items-center justify-center gap-4 sm:gap-6">
-          <div className="flex items-center gap-2 text-xl sm:text-2xl font-bold">
+          <div className="flex items-center gap-1 text-lg sm:text-xl">
             <span className="text-gray-200">Hold</span>
-            <div className="transform scale-110"><MiniLogo /></div>
+            <div className="transform scale-75"><MiniLogo /></div>
           </div>
           
-          <div className="flex items-center">
-            <div className="h-px w-4 bg-gradient-to-r from-transparent to-purple-500/50"></div>
-            <div className="w-2 h-2 rounded-full bg-purple-500/50 mx-1"></div>
-            <div className="h-px w-4 bg-gradient-to-l from-transparent to-purple-500/50"></div>
-          </div>
+          <span className="text-gray-600">•</span>
           
-          <div className="flex items-center gap-2 text-xl sm:text-2xl font-bold">
+          <div className="flex items-center gap-1 text-lg sm:text-xl">
             <span className="text-gray-200">Earn</span>
-            <img src="/assets/media/logos/solana.svg" alt="Solana" className="h-6 w-6 sm:h-7 sm:w-7" />
+            <img src="/assets/media/logos/solana.svg" alt="Solana" className="h-4 w-4" />
           </div>
           
-          <div className="flex items-center">
-            <div className="h-px w-4 bg-gradient-to-r from-transparent to-green-500/50"></div>
-            <div className="w-2 h-2 rounded-full bg-green-500/50 mx-1"></div>
-            <div className="h-px w-4 bg-gradient-to-l from-transparent to-green-500/50"></div>
-          </div>
+          <span className="text-gray-600">•</span>
           
-          <div className="text-xl sm:text-2xl font-bold">
+          <div className="flex items-center gap-1 text-lg sm:text-xl">
             <span className="text-gray-200">Profit</span>
-            <span className="text-green-400 ml-1 text-2xl sm:text-3xl">$</span>
+            <span className="text-green-400 text-xl">$</span>
           </div>
         </div>
       </div>
