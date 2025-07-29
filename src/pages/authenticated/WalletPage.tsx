@@ -144,7 +144,7 @@ const WalletPage: React.FC = () => {
                 Monitor your DUEL token balance, view historical snapshots, and track your share of platform revenue.
               </p>
               <p className="text-base mb-8">
-                DegenDuel shares 100% of platform revenue with DUEL holders through weekly dividend distributions.
+                DegenDuel shares 100% of platform revenue with DUEL holders through daily dividend distributions.
               </p>
             </div>
             
@@ -161,9 +161,9 @@ const WalletPage: React.FC = () => {
             
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
               <div className="bg-dark-300/50 rounded-lg p-4 border border-gray-700/20">
-                <h3 className="text-brand-400 font-semibold mb-2">Weekly Snapshots</h3>
+                <h3 className="text-brand-400 font-semibold mb-2">Daily Snapshots</h3>
                 <p className="text-gray-400 text-sm">
-                  Automatic weekly snapshots capture your DUEL balance for dividend calculations
+                  Automatic daily snapshots capture your DUEL balance for dividend calculations
                 </p>
               </div>
               <div className="bg-dark-300/50 rounded-lg p-4 border border-gray-700/20">

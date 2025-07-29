@@ -26,6 +26,8 @@ import { motion, useMotionValue } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AIMessage, aiService } from '../../services/ai';
+import { ddApi } from '../../services/dd-api';
+import { API_URL } from '../../config/config';
 import { useStore } from '../../store/useStore';
 
 // Import Dynamic UI System
@@ -124,6 +126,13 @@ export const Terminal = ({
   
   // Debug messages for debug tab
   const [debugMessages, setDebugMessages] = useState<AIMessage[]>([]);
+  
+  // Knowledge base state for admin tab
+  const [knowledgeBaseFiles, setKnowledgeBaseFiles] = useState<Array<{name: string, size: number, modified: string}>>([]);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [kbLoading, setKbLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<{name: string, content: string} | null>(null);
+  const [isLoadingFileContent, setIsLoadingFileContent] = useState(false);
   
   // NEW: Use general chat for chat room mode with debug message handler
   const {
@@ -250,9 +259,10 @@ export const Terminal = ({
   
   // Proactive messaging system state - use sessionStorage for persistence
   const [pageLoadTime, setPageLoadTime] = useState<Date>(new Date());
-  const [hasShownProactiveMessage, setHasShownProactiveMessage] = useState(() => {
-    // Check if we've already shown a proactive message this session
-    return sessionStorage.getItem('didi_proactive_shown') === 'true';
+  const [shownMessagePages, setShownMessagePages] = useState(() => {
+    // Check which page types we've already shown messages for
+    const stored = sessionStorage.getItem('didi_proactive_pages');
+    return stored ? JSON.parse(stored) : [];
   });
   const [lastInteractionTime, setLastInteractionTime] = useState<Date>(new Date());
   const lastInteractionRef = useRef<Date>(new Date());
@@ -277,7 +287,7 @@ export const Terminal = ({
     ];
     
     if (isAdministrator) {
-      tabs.push({ id: 'admin-chat' as TerminalMode, label: 'ADMIN', icon: '👑' });
+      tabs.push({ id: 'admin-chat' as TerminalMode, label: 'TRAIN', icon: '📚' });
     }
     
     if (isDevelopment) {
@@ -319,6 +329,25 @@ export const Terminal = ({
     return tokenElements.length > 0;
   };
   
+  // Get the page type for proactive messaging
+  const getPageType = () => {
+    const pathname = location.pathname;
+    
+    if (pathname.includes('/tokens')) return 'tokens';
+    if (pathname.includes('/contests/') && pathname.includes('/live')) return 'contest_live';
+    if (pathname.includes('/contests/') && pathname.includes('/select-tokens')) return 'contest_portfolio_selection';
+    if (pathname.includes('/contests/') && pathname.includes('/results')) return 'contest_results';
+    if (pathname.includes('/contests/') && !pathname.includes('/live') && !pathname.includes('/select-tokens') && !pathname.includes('/results')) return 'contest_detail';
+    if (pathname === '/') return 'home';
+    if (pathname === '/me') return 'my_profile';
+    if (pathname === '/my-contests') return 'my_contests';
+    if (pathname === '/my-portfolios') return 'my_portfolios';
+    if (pathname === '/wallet') return 'wallet';
+    if (pathname === '/relaunch') return 'relaunch';
+    if (pathname.includes('/profile')) return 'other_profile';
+    return null; // No proactive message for unrecognized pages
+  };
+
   // Generate contextual proactive message based on current page and state
   const getProactiveMessage = () => {
     const pathname = location.pathname;
@@ -328,19 +357,33 @@ export const Terminal = ({
       if (!tokensLoaded) {
         return "Sometimes tokens can take a while to load if they haven't appeared yet.";
       } else {
-        return "I can explain any token metrics you see here - just ask about price changes, volume, or what any of the data means.";
+        return "These are all the tokens that are supported on DegenDuel - I can explain any metrics or data you see here.";
       }
-    } else if (pathname.includes('/contest') && pathname.includes('/detail')) {
-      return "Want tips for building a winning portfolio for this contest? I can help you understand the rules and strategy.";
-    } else if (pathname.includes('/contest') && pathname.includes('/live')) {
+    } else if (pathname.includes('/contests/') && pathname.includes('/live')) {
       return "I can explain how the contest scoring works or help you understand what you're seeing in the leaderboard.";
+    } else if (pathname.includes('/contests/') && pathname.includes('/select-tokens')) {
+      return "Want tips for building a winning portfolio for this contest? I can help you understand the rules and token selection strategy.";
+    } else if (pathname.includes('/contests/') && pathname.includes('/results')) {
+      return "I can explain how the final results were calculated and help you understand the performance metrics and rankings.";
+    } else if (pathname.includes('/contests/') && !pathname.includes('/live') && !pathname.includes('/select-tokens') && !pathname.includes('/results')) {
+      return "I can answer any questions you have about this contest - rules, scoring, timeline, or strategy.";
     } else if (pathname === '/') {
       return "I can explain any of the market data, hot tokens, or features you see on DegenDuel.";
-    } else if (pathname.includes('/profile')) {
+    } else if (pathname === '/me') {
       return "I can help you understand your stats, achievements, or explain how the ranking system works.";
+    } else if (pathname === '/my-contests') {
+      return "I can help you evaluate your past contest performance and explain what the results mean for your strategy.";
+    } else if (pathname === '/my-portfolios') {
+      return "I can help you analyze your portfolio performance and understand what made certain picks successful or unsuccessful.";
+    } else if (pathname === '/wallet') {
+      return "I can walk you through the Degen Dividends calculation and explain how the daily revenue sharing works.";
+    } else if (pathname === '/relaunch') {
+      return "I can explain the DegenDuel relaunch and what it means for the platform and your tokens.";
+    } else if (pathname.includes('/profile')) {
+      return "I can explain what you're seeing on this user's profile - their stats, achievements, and performance history.";
     }
     
-    return "I can help you understand anything you see on DegenDuel - just ask!";
+    return null; // No message for unrecognized pages
   };
   
   // Generate page-specific context for Didi
@@ -441,10 +484,19 @@ export const Terminal = ({
 
   // Initialize with mode-appropriate welcome message
   useEffect(() => {
+    console.log('[Terminal] Mode changed to:', currentMode);
     if (currentMode === 'ai') {
       setConversationHistory([
         { role: 'assistant', content: "Hi, I'm Didi! Ask me anything about DegenDuel.", tool_calls: undefined },
       ]);
+    } else if (currentMode === 'admin-chat') {
+      console.log('[Terminal] Setting up admin-chat welcome message');
+      setConversationHistory([
+        { role: 'system', content: "💡 Drag & drop files here or use the upload button below\n          Type 'help' to see all commands", tool_calls: undefined },
+      ]);
+      
+      // Auto-load file list when switching to TRAIN tab
+      handleKnowledgeBaseCommand('list');
     }
     
     // Set up global UI handler
@@ -702,17 +754,404 @@ export const Terminal = ({
         // Return under construction message followed by chat messages
         return [underConstructionMessage, ...chatMessages];
       case 'admin-chat':
-        // For now, return empty array until admin chat is implemented
-        return [{
-          role: 'system',
-          content: 'Admin chat coming soon...',
-          tool_calls: undefined
-        }];
+        // Knowledge base mode - return conversation history, ensure it's always an array and filter out any undefined entries
+        return (conversationHistory || []).filter(msg => msg !== undefined && msg !== null);
       case 'debug':
         return debugMessages;
       default:
         return conversationHistory;
     }
+  };
+
+  // Handle file upload for knowledge base
+  const handleKnowledgeBaseFileUpload = async (file: File) => {
+    if (!file) return;
+    
+    // Debug: Check if user is loaded
+    if (!user) {
+      setConversationHistory(prev => [...prev, 
+        { role: 'system', content: `❌ Error: User not authenticated. Please log in first.`, tool_calls: undefined }
+      ]);
+      return;
+    }
+    
+    // Check file type
+    const allowedTypes = ['.md', '.txt', '.pdf', '.docx'];
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!allowedTypes.includes(fileExt)) {
+      setConversationHistory(prev => [...prev, 
+        { role: 'system', content: `❌ Invalid file type: ${fileExt}\nAllowed types: ${allowedTypes.join(', ')}`, tool_calls: undefined }
+      ]);
+      return;
+    }
+    
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      setConversationHistory(prev => [...prev, 
+        { role: 'system', content: `❌ File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB\nMax size: 10MB`, tool_calls: undefined }
+      ]);
+      return;
+    }
+    
+    setIsUploadingFile(true);
+    setConversationHistory(prev => [...prev, 
+      { role: 'system', content: `📤 Uploading ${file.name}...`, tool_calls: undefined }
+    ]);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // For FormData, we need to use native fetch but through the local proxy
+      // Use same pattern as ProfileImageManager - no headers, just credentials
+      const response = await fetch('/api/admin/knowledge/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+        // NO headers - let cookies do authentication
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setConversationHistory(prev => [...prev, 
+          { role: 'system', content: `✅ File uploaded: ${data.filename}\n📁 Size: ${(data.size / 1024).toFixed(1)}KB\n⚠️ Restart server to load it into Didi's knowledge.`, tool_calls: undefined }
+        ]);
+      } else {
+        // Handle specific HTTP status codes
+        if (response.status === 502) {
+          throw new Error('Server is currently down. Please try again later.');
+        } else if (response.status === 503) {
+          throw new Error('Server is temporarily unavailable. Please try again in a few minutes.');
+        } else if (response.status === 504) {
+          throw new Error('Server timeout. The server might be overloaded.');
+        } else if (response.status === 401) {
+          throw new Error('Authentication required. Please log in again.');
+        } else if (response.status === 403) {
+          throw new Error('Access denied. You need admin privileges.');
+        } else if (response.status === 413) {
+          throw new Error('File too large. Maximum size is 10MB.');
+        } else if (response.status === 500) {
+          // Server error - try to get details
+          const errorText = await response.text();
+          let errorDetails = 'Internal server error';
+          try {
+            const errorData = JSON.parse(errorText);
+            errorDetails = errorData.message || errorData.error || errorDetails;
+          } catch {
+            if (errorText && errorText.length < 200) {
+              errorDetails = errorText;
+            }
+          }
+          throw new Error(`Server error: ${errorDetails}`);
+        } else {
+          // Try to parse error message from response
+          const errorText = await response.text();
+          let errorMessage = `Upload failed (${response.status})`;
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch {
+            // If not JSON, use the text directly if it's short
+            if (errorText.length < 100) {
+              errorMessage = errorText || errorMessage;
+            }
+          }
+          throw new Error(errorMessage);
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      // Show user-friendly error message
+      const displayMessage = errorMessage.includes('Server is currently down') 
+        ? `⚠️ ${errorMessage}`
+        : `❌ Upload failed: ${errorMessage}`;
+      
+      setConversationHistory(prev => [...prev, 
+        { role: 'system', content: displayMessage, tool_calls: undefined }
+      ]);
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
+
+  // Handle file deletion for knowledge base
+  const handleDeleteFile = async (filename: string) => {
+    setConversationHistory(prev => [...prev, 
+      { role: 'user', content: `delete ${filename}` },
+      { role: 'system', content: `🗑️ Deleting ${filename}...`, tool_calls: undefined }
+    ]);
+    
+    try {
+      const response = await ddApi.fetch(`/admin/knowledge/files/${encodeURIComponent(filename)}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setConversationHistory(prev => [...prev, 
+          { role: 'system', content: `✅ ${data.message}\n📁 Local: ${data.localDeleted ? 'Deleted' : 'Not found'}\n🔍 Vector Store: ${data.vectorStoreDeleted} instance(s) deleted`, tool_calls: undefined }
+        ]);
+        
+        // Refresh file list after deletion
+        handleKnowledgeBaseCommand('list');
+      } else {
+        if (response.status === 404) {
+          throw new Error(`File "${filename}" not found`);
+        } else if (response.status === 403) {
+          throw new Error('Access denied. You need admin privileges.');
+        } else {
+          throw new Error(`Failed to delete file (${response.status})`);
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setConversationHistory(prev => [...prev, 
+        { role: 'system', content: `❌ Delete failed: ${errorMessage}`, tool_calls: undefined }
+      ]);
+    }
+  };
+
+  // Handle file content viewing
+  const handleViewFile = async (filename: string) => {
+    // Check if file type is supported
+    const supportedTypes = ['.md', '.txt'];
+    const fileExtension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+    
+    if (!supportedTypes.includes(fileExtension)) {
+      setConversationHistory(prev => [...prev, 
+        { role: 'system', content: `❌ File type not supported for viewing. Only .md and .txt files can be viewed.`, tool_calls: undefined }
+      ]);
+      return;
+    }
+
+    setIsLoadingFileContent(true);
+    
+    try {
+      const response = await ddApi.fetch(`/admin/knowledge/files/${encodeURIComponent(filename)}/content`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedFile({
+          name: filename,
+          content: data.content
+        });
+      } else {
+        if (response.status === 404) {
+          throw new Error(`File "${filename}" not found`);
+        } else if (response.status === 403) {
+          throw new Error('Access denied. You need admin privileges.');
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to load file content');
+        }
+      }
+    } catch (error: any) {
+      setConversationHistory(prev => [...prev, 
+        { role: 'system', content: `❌ Error viewing ${filename}: ${error.message}`, tool_calls: undefined }
+      ]);
+    } finally {
+      setIsLoadingFileContent(false);
+    }
+  };
+
+  // Handle knowledge base commands
+  const handleKnowledgeBaseCommand = async (command: string) => {
+    const trimmedCommand = command.trim();
+    
+    // Help command
+    if (trimmedCommand === 'help' || trimmedCommand === '?') {
+      setConversationHistory(prev => [...prev, 
+        { role: 'user', content: command },
+        { role: 'system', content: `📚 Knowledge Base Commands:
+• help - Show this help message
+• list - List all knowledge base files
+• view <filename> - View content of .md or .txt files
+• note <title> | <content> - Add a quick note (use | to separate title and content)
+• upload - Click the upload button below or drag & drop files
+• delete <filename> - Delete a file from knowledge base
+• restart - Restart the server to load new knowledge
+• clear - Clear terminal
+
+📁 File Management:
+• Files appear in the sidebar → with delete buttons (×) and view icons (👁)
+• Click viewable files (.md, .txt) to see their content
+• Drag & drop files directly onto the terminal
+• Or click the "Upload File" button below
+• Supported: .md, .txt, .pdf, .docx (max 10MB)
+
+Examples:
+• view TOKEN_SYSTEM_MAP.md
+• note API Rate Limits | DegenDuel API allows 100 requests per minute
+• delete old_notes.md`, tool_calls: undefined }
+      ]);
+      return;
+    }
+    
+    // List files command
+    if (trimmedCommand === 'list') {
+      setConversationHistory(prev => [...prev, { role: 'user', content: command }]);
+      setKbLoading(true);
+      try {
+        const response = await ddApi.fetch('/admin/knowledge/files');
+        if (response.status === 502 || response.status === 503) {
+          setConversationHistory(prev => [...prev, 
+            { role: 'system', content: `⚠️ Server is currently down. Please try again later.`, tool_calls: undefined }
+          ]);
+          return;
+        }
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Handle new response format with local and vectorStore arrays
+          const allFiles = data.local || data.files || [];
+          setKnowledgeBaseFiles(allFiles);
+          
+          const fileList = allFiles.length > 0 
+            ? allFiles.map((f: any) => `• ${f.name} (${(f.size / 1024).toFixed(1)}KB) - ${new Date(f.modified).toLocaleDateString()}`).join('\n')
+            : 'No files in knowledge base yet.';
+          
+          // Show summary of local vs vector store files
+          const localCount = data.local?.length || 0;
+          const vectorCount = data.vectorStore?.length || 0;
+          const duplicates = data.duplicatesInVectorStore || 0;
+          
+          const summary = `📁 Knowledge Base Files (${localCount} local, ${vectorCount} in vector store${duplicates > 0 ? `, ${duplicates} duplicates` : ''}):\n${fileList}`;
+          
+          setConversationHistory(prev => [...prev, 
+            { role: 'system', content: summary, tool_calls: undefined }
+          ]);
+        } else {
+          throw new Error('Failed to fetch files');
+        }
+      } catch (error) {
+        setConversationHistory(prev => [...prev, 
+          { role: 'system', content: `❌ Error: Failed to fetch knowledge base files`, tool_calls: undefined }
+        ]);
+      } finally {
+        setKbLoading(false);
+      }
+      return;
+    }
+    
+    // Add note command
+    if (trimmedCommand.startsWith('note ')) {
+      const noteContent = trimmedCommand.substring(5);
+      const [title, ...contentParts] = noteContent.split('|');
+      const content = contentParts.join('|').trim();
+      
+      if (!title || !content) {
+        setConversationHistory(prev => [...prev, 
+          { role: 'user', content: command },
+          { role: 'system', content: '❌ Invalid note format. Use: note <title> | <content>', tool_calls: undefined }
+        ]);
+        return;
+      }
+      
+      setConversationHistory(prev => [...prev, { role: 'user', content: command }]);
+      setKbLoading(true);
+      
+      try {
+        const response = await ddApi.fetch('/admin/knowledge/quick-note', {
+          method: 'POST',
+          body: JSON.stringify({ title: title.trim(), content: content })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setConversationHistory(prev => [...prev, 
+            { role: 'system', content: `✅ Note saved: ${data.filename}\n⚠️ Restart server to load it into Didi's knowledge.`, tool_calls: undefined }
+          ]);
+        } else {
+          throw new Error('Failed to save note');
+        }
+      } catch (error) {
+        setConversationHistory(prev => [...prev, 
+          { role: 'system', content: `❌ Error: Failed to save note`, tool_calls: undefined }
+        ]);
+      } finally {
+        setKbLoading(false);
+      }
+      return;
+    }
+    
+    // Upload instructions
+    if (trimmedCommand === 'upload') {
+      setConversationHistory(prev => [...prev, 
+        { role: 'user', content: command },
+        { role: 'system', content: `📤 File Upload:\nDrag and drop files onto this terminal, or use the file picker in the terminal footer.\nSupported: .md, .txt, .pdf, .docx (max 10MB)`, tool_calls: undefined }
+      ]);
+      return;
+    }
+    
+    // Server restart command
+    if (trimmedCommand === 'restart') {
+      setConversationHistory(prev => [...prev, 
+        { role: 'user', content: command },
+        { role: 'system', content: `🔄 Restarting server...\nThis will take about 60 seconds.`, tool_calls: undefined }
+      ]);
+      
+      try {
+        const response = await ddApi.fetch('/admin/server/restart', {
+          method: 'POST'
+        });
+        
+        if (response.ok) {
+          setConversationHistory(prev => [...prev, 
+            { role: 'system', content: `✅ Server restart initiated. Knowledge base will be reloaded.`, tool_calls: undefined }
+          ]);
+        } else {
+          throw new Error('Failed to restart server');
+        }
+      } catch (error) {
+        setConversationHistory(prev => [...prev, 
+          { role: 'system', content: `❌ Error: Failed to restart server. You may need to do it manually.`, tool_calls: undefined }
+        ]);
+      }
+      return;
+    }
+    
+    // View file command
+    if (trimmedCommand.startsWith('view ')) {
+      const filename = trimmedCommand.substring(5).trim();
+      if (!filename) {
+        setConversationHistory(prev => [...prev, 
+          { role: 'user', content: command },
+          { role: 'system', content: '❌ Usage: view <filename>', tool_calls: undefined }
+        ]);
+        return;
+      }
+      
+      setConversationHistory(prev => [...prev, { role: 'user', content: command }]);
+      await handleViewFile(filename);
+      return;
+    }
+
+    // Clear command
+    if (trimmedCommand === 'clear') {
+      setConversationHistory([]);
+      return;
+    }
+    
+    // Delete file command
+    if (trimmedCommand.startsWith('delete ')) {
+      const filename = trimmedCommand.substring(7).trim();
+      if (!filename) {
+        setConversationHistory(prev => [...prev, 
+          { role: 'user', content: command },
+          { role: 'system', content: '❌ Please specify a filename to delete.\nExample: delete myfile.md', tool_calls: undefined }
+        ]);
+        return;
+      }
+      
+      await handleDeleteFile(filename);
+      return;
+    }
+    
+    // Unknown command
+    setConversationHistory(prev => [...prev, 
+      { role: 'user', content: command },
+      { role: 'system', content: `❓ Unknown command: "${trimmedCommand}" - Type 'help' for available commands.`, tool_calls: undefined }
+    ]);
   };
 
   // Update handleEnterCommand to handle both AI and Chat modes
@@ -729,8 +1168,8 @@ export const Terminal = ({
       }
       return; // Exit early for chat mode
     } else if (currentMode === 'admin-chat') {
-      // Admin chat not implemented yet
-      console.warn('[Terminal] Admin chat not implemented yet');
+      // Handle knowledge base commands in admin mode
+      await handleKnowledgeBaseCommand(command);
       return;
     } else if (currentMode === 'debug') {
       // Debug mode - add command as debug message
@@ -914,6 +1353,21 @@ export const Terminal = ({
               type: "file_search",
               enabled: true,
               description: "Search DegenDuel knowledge base and documentation"
+            },
+            {
+              type: "token_lookup",
+              enabled: true,
+              description: "Look up token information by symbol or address"
+            },
+            {
+              type: "portfolio_lookup",
+              enabled: true,
+              description: "Get user portfolio information and holdings"
+            },
+            {
+              type: "contest_data",
+              enabled: true,
+              description: "Get contest and leaderboard data"
             }
           ],
           onChunk: (chunk: string) => {
@@ -1033,10 +1487,10 @@ export const Terminal = ({
 
   // Proactive messaging system
   useEffect(() => {
-    // Reset state when page changes, but respect global session flag
+    // Reset state when page changes, but keep track of shown page types
     setPageLoadTime(new Date());
     setLastInteractionTime(new Date());
-    // Don't reset hasShownProactiveMessage - let it stay true for the entire session
+    // Don't reset shownMessagePages - let them persist for the entire session
   }, [location.pathname]);
 
   // Update Didi's position when location changes
@@ -1092,8 +1546,10 @@ export const Terminal = ({
 
   // Proactive message timer
   useEffect(() => {
-    if (hasShownProactiveMessage || !terminalMinimized) {
-      return; // Don't show if already shown or terminal is open
+    const currentPageType = getPageType();
+    
+    if (!currentPageType || shownMessagePages.includes(currentPageType) || !terminalMinimized) {
+      return; // Don't show if no page type defined, already shown, or terminal is open
     }
 
     const timer = setTimeout(() => {
@@ -1105,6 +1561,9 @@ export const Terminal = ({
       if (timeSincePageLoad >= 10 && timeSinceLastInteraction >= 3) {
         const message = getProactiveMessage();
         
+        // Only proceed if we have a message for this page
+        if (!message) return;
+        
         // Add proactive message to conversation history
         setConversationHistory(prev => [...prev, { 
           role: 'assistant', 
@@ -1112,17 +1571,18 @@ export const Terminal = ({
           tool_calls: undefined 
         }]);
         
-        // Show unread indicator and mark as shown globally
+        // Show unread indicator and mark this page type as shown
         setHasUnreadMessages(true);
-        setHasShownProactiveMessage(true);
-        sessionStorage.setItem('didi_proactive_shown', 'true');
+        const updatedPages = [...shownMessagePages, currentPageType];
+        setShownMessagePages(updatedPages);
+        sessionStorage.setItem('didi_proactive_pages', JSON.stringify(updatedPages));
         
-        console.log('[Terminal] Didi sent proactive message (once per session):', message);
+        console.log(`[Terminal] Didi sent proactive message for ${currentPageType}:`, message);
       }
     }, 11000); // Check after 11 seconds
 
     return () => clearTimeout(timer);
-  }, [pageLoadTime, lastInteractionTime, hasShownProactiveMessage, terminalMinimized, location.pathname]);
+  }, [pageLoadTime, lastInteractionTime, shownMessagePages, terminalMinimized, location.pathname]);
 
   // Mobile keyboard handling to keep terminal above keyboard on iOS
   useEffect(() => {
@@ -1173,6 +1633,22 @@ export const Terminal = ({
           ref={terminalRef}
           key="terminal"
           className={`bg-black/95 border border-purple-500/60 text-sm ${terminalHeight > 450 ? 'xl:text-base' : ''} fixed bottom-4 left-4 p-4 ${terminalHeight > 450 ? 'xl:p-5' : ''} rounded-md z-[99998] shadow-2xl pointer-events-auto flex flex-col`}
+          onDragOver={(e) => {
+            if (currentMode === 'admin-chat') {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
+          onDrop={(e) => {
+            if (currentMode === 'admin-chat') {
+              e.preventDefault();
+              e.stopPropagation();
+              const files = Array.from(e.dataTransfer.files);
+              if (files.length > 0) {
+                handleKnowledgeBaseFileUpload(files[0]);
+              }
+            }
+          }}
           style={{ 
             perspective: "1000px",
             transformStyle: "preserve-3d",
@@ -1409,11 +1885,137 @@ export const Terminal = ({
           {/* Terminal Content */}
           <div ref={terminalContentRef} className="flex flex-col flex-1 min-h-0">
             
-            {/* Pass display messages to TerminalConsole (AI or Chat) - takes remaining space */}
-            <TerminalConsole 
-              messages={getDisplayMessages()} // Pass the appropriate message array based on mode
-              size="flexible" // Override fixed heights
-            />
+            {/* Split layout for TRAIN tab, normal layout for others */}
+            {currentMode === 'admin-chat' ? (
+              <div className="flex flex-1 min-h-0 gap-2">
+                {/* Main conversation area (70%) */}
+                <div 
+                  className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden"
+                  onWheel={(e) => {
+                    // Let the TerminalConsole handle its own scrolling
+                    // Only stop propagation if we're not actually scrolling
+                    const target = e.currentTarget;
+                    const isScrollable = target.scrollHeight > target.clientHeight;
+                    if (!isScrollable) {
+                      e.stopPropagation();
+                    }
+                  }}
+                >
+                  {selectedFile ? (
+                    /* File content view */
+                    <div className="flex flex-col flex-1 min-h-0">
+                      <div className="flex items-center justify-between p-2 border-b border-purple-500/30">
+                        <div className="flex items-center gap-2">
+                          <span className="text-purple-300 font-semibold">📄 {selectedFile.name}</span>
+                          {isLoadingFileContent && <span className="text-xs text-gray-400">Loading...</span>}
+                        </div>
+                        <button 
+                          className="text-gray-400 hover:text-gray-300 text-sm"
+                          onClick={() => setSelectedFile(null)}
+                          title="Back to conversation"
+                        >
+                          ← Back
+                        </button>
+                      </div>
+                      <div className="flex-1 min-h-0 overflow-y-auto p-3 text-gray-300 text-sm bg-black/20">
+                        <pre className="whitespace-pre-wrap font-mono">{selectedFile.content}</pre>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Normal conversation view */
+                    <TerminalConsole 
+                      messages={getDisplayMessages()}
+                      size="flexible"
+                    />
+                  )}
+                </div>
+                
+                {/* File list sidebar (30%) */}
+                <div className="w-32 flex-shrink-0 border-l border-purple-500/30 pl-2 text-xs flex flex-col min-h-0">
+                  <div className="text-purple-300 font-semibold mb-1">📁 Files</div>
+                  <div className="space-y-0.5 flex-1 overflow-y-auto text-gray-400"
+                       onWheel={(e) => e.stopPropagation()}>
+                    {knowledgeBaseFiles.length === 0 ? (
+                      <div className="text-gray-500 italic">No files</div>
+                    ) : (
+                      knowledgeBaseFiles.map((file, index) => {
+                        // Check if file type is supported for viewing
+                        const supportedTypes = ['.md', '.txt'];
+                        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                        const isViewable = supportedTypes.includes(fileExtension);
+                        
+                        return (
+                          <div key={index} className="flex items-center justify-between hover:bg-purple-900/20 px-1 py-0.5 rounded">
+                            <div 
+                              className={`truncate flex-1 min-w-0 ${isViewable ? 'cursor-pointer hover:text-purple-300' : ''}`}
+                              title={isViewable ? `Click to view ${file.name}` : file.name}
+                              onClick={() => isViewable && handleViewFile(file.name)}
+                            >
+                              <span className={isViewable ? 'hover:underline' : ''}>
+                                {file.name.length > 12 ? `${file.name.substring(0, 9)}...` : file.name}
+                              </span>
+                              {isViewable && <span className="ml-1 text-xs text-purple-400">👁</span>}
+                            </div>
+                            <button 
+                              className="text-red-400 hover:text-red-300 ml-1 text-xs"
+                              onClick={() => handleDeleteFile(file.name)}
+                              title={`Delete ${file.name}`}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                  
+                  {/* Refresh button */}
+                  <button 
+                    className="text-purple-400 hover:text-purple-300 text-xs mt-2 w-full text-left"
+                    onClick={() => handleKnowledgeBaseCommand('list')}
+                    disabled={kbLoading}
+                  >
+                    {kbLoading ? '⟳' : '🔄'} Refresh
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Normal layout for other tabs */
+              <TerminalConsole 
+                messages={getDisplayMessages()}
+                size="flexible"
+              />
+            )}
+            
+            {/* File upload button for admin mode - moved above input */}
+            {currentMode === 'admin-chat' && (
+              <div className="flex items-center justify-between px-2 py-1 border-t border-purple-500/30">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-400 hover:text-gray-300 transition-colors">
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".md,.txt,.pdf,.docx"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleKnowledgeBaseFileUpload(file);
+                      }
+                    }}
+                    disabled={isUploadingFile}
+                  />
+                  <span className="flex items-center gap-1">
+                    {isUploadingFile ? (
+                      <>⏳ Uploading...</>
+                    ) : (
+                      <>📎 Upload File</>
+                    )}
+                  </span>
+                </label>
+                <span className="text-xs text-gray-500">
+                  {kbLoading ? 'Loading...' : 'Drag & drop files here'}
+                </span>
+              </div>
+            )}
             
             {/* Use extracted TerminalInput component - fixed height */}
             <TerminalInput

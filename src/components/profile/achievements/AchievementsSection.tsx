@@ -13,6 +13,15 @@ export const AchievementsSection: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to determine rarity based on achievement type
+  const getRarityForAchievement = (achievementType: string): "basic" | "rare" | "epic" | "legendary" => {
+    // More realistic scaling
+    if (achievementType.includes("hundred") || achievementType.includes("100")) return "legendary";
+    if (achievementType.includes("fifty") || achievementType.includes("50")) return "epic";
+    if (achievementType.includes("twenty") || achievementType.includes("20") || achievementType.includes("ten") || achievementType.includes("10")) return "rare";
+    return "basic"; // 1-5 contests is basic tier
+  };
+
   useEffect(() => {
     const loadAchievements = async () => {
       if (!user?.wallet_address || maintenanceMode) {
@@ -25,7 +34,21 @@ export const AchievementsSection: React.FC = () => {
         const achievementsResponse = await ddApi.stats.getAchievements(
           user.wallet_address,
         );
-        setAchievements(achievementsResponse);
+        // Ensure we always have an array
+        const achievementsArray = Array.isArray(achievementsResponse) 
+          ? achievementsResponse 
+          : achievementsResponse?.achievements || [];
+        
+        // Map API response to expected Achievement type
+        const mappedAchievements = achievementsArray.map((item: any) => ({
+          achievement: item.achievement,
+          description: item.display_name || item.description || item.achievement,
+          earned_at: item.achieved_at || item.earned_at || new Date().toISOString(),
+          icon: item.icon,
+          rarity: item.rarity || getRarityForAchievement(item.achievement)
+        }));
+        
+        setAchievements(mappedAchievements);
       } catch (err) {
         if (err instanceof Response && err.status === 503) {
           // Maintenance mode response, don't set error

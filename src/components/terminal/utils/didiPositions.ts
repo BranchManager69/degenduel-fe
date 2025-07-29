@@ -77,10 +77,19 @@ export const POSITION_CONFIGS: PositionConfig[] = [
     pattern: /\/profile/,
     position: {
       right: '20px',
-      top: '120px',
-      transform: 'scale(0.665)',
+      top: '50%',
+      transform: 'translateY(-50%) scale(0.665)',
     },
-    description: 'Profile pages - top right',
+    description: 'Profile pages - middle right',
+  },
+  {
+    pattern: /^\/me$/,
+    position: {
+      right: '20px',
+      top: '50%',
+      transform: 'translateY(-50%) scale(0.665)',
+    },
+    description: 'Private profile page - middle right',
   },
   {
     pattern: /^\/$/,

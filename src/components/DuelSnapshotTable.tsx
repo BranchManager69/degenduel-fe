@@ -346,17 +346,13 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
   useEffect(() => {
     const getNextDividendDate = () => {
       const now = new Date();
-      const nextSunday = new Date(now);
+      const nextMidnight = new Date(now);
       
-      // Set to next Sunday
-      nextSunday.setUTCDate(now.getUTCDate() + (7 - now.getUTCDay()) % 7);
-      if (nextSunday <= now) {
-        nextSunday.setUTCDate(nextSunday.getUTCDate() + 7);
-      }
+      // Set to next midnight UTC (daily dividends)
+      nextMidnight.setUTCDate(now.getUTCDate() + 1);
+      nextMidnight.setUTCHours(0, 0, 0, 0);
       
-      // Set to midnight UTC
-      nextSunday.setUTCHours(0, 0, 0, 0);
-      return nextSunday;
+      return nextMidnight;
     };
 
     const updateCountdown = () => {
@@ -723,7 +719,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
             <div className="flex items-center justify-center gap-2 text-sm">
               <span className="text-gray-400">Next dividend payout:</span>
               <span className="text-white font-medium">{timeUntilNextDividend}</span>
-              <span className="text-gray-500 text-xs">(Sunday 00:00 UTC)</span>
+              <span className="text-gray-500 text-xs">(Daily at 00:00 UTC)</span>
             </div>
           </div>
         )}

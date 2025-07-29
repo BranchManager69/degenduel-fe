@@ -20,7 +20,7 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={`rounded-lg bg-dark-200/70 text-gray-100 shadow-sm ${className}`}
+      className={`rounded-lg text-gray-100 shadow-sm ${className}`}
       onClick={handleClick}
     >
       {children}

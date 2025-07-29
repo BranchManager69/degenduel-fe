@@ -23,6 +23,8 @@ interface UseIndividualTokenReturn {
   error: string | null;
   lastUpdate: Date | null;
   refresh: () => void;
+  lastRawMessage: any; // For debugging
+  messageHistory: any[]; // Last 10 messages
 }
 
 export function useIndividualToken(tokenAddress: string): UseIndividualTokenReturn {
@@ -30,6 +32,8 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [lastRawMessage, setLastRawMessage] = useState<any>(null);
+  const [messageHistory, setMessageHistory] = useState<any[]>([]);
 
   const ws = useWebSocket();
   const isSubscribed = useRef(false);
@@ -112,6 +116,14 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
     if (message.type === 'DATA' && message.topic === topic && message.data) {
       console.log(`[useIndividualToken] Received update for ${tokenAddress}:`, message.data);
 
+      // Store raw message for debugging
+      setLastRawMessage(message.data);
+      setMessageHistory(prev => [...prev.slice(-9), {
+        timestamp: new Date().toISOString(),
+        data: message.data,
+        fields: Object.keys(message.data || {})
+      }]);
+
       const updatedToken = transformToken(message.data);
       setToken(updatedToken);
       setLastUpdate(new Date());
@@ -164,6 +176,8 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
     isConnected: ws.isConnected,
     error,
     lastUpdate,
-    refresh: fetchToken
+    refresh: fetchToken,
+    lastRawMessage,
+    messageHistory
   };
 }

@@ -149,10 +149,8 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
                     </div>
                   )}
 
-                  <h4 className="text-lg font-bold text-gray-100 group-hover:text-white transition-colors">
-                    <span
-                      className={`${styles.text} bg-clip-text text-transparent relative z-10 group-hover:animate-pulse-slow`}
-                    >
+                  <h4 className="text-sm font-bold uppercase tracking-wider">
+                    <span className={`${styles.text} bg-clip-text text-transparent`}>
                       {achievement.description}
                     </span>
                   </h4>

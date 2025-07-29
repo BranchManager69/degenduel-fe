@@ -10,7 +10,10 @@ interface AchievementsListProps {
 export const AchievementsList: React.FC<AchievementsListProps> = memo(({
   achievements,
 }) => {
-  if (achievements.length === 0) {
+  // Ensure achievements is always an array
+  const safeAchievements = Array.isArray(achievements) ? achievements : [];
+  
+  if (safeAchievements.length === 0) {
     return (
       <div className="p-6 rounded-lg border border-dark-300/20 bg-dark-200/30">
         <div className="text-center space-y-3">
@@ -30,7 +33,7 @@ export const AchievementsList: React.FC<AchievementsListProps> = memo(({
 
   return (
     <div className="divide-y divide-dark-300/20">
-      {achievements.map((achievement) => (
+      {safeAchievements.map((achievement) => (
         <AchievementCard key={achievement.achievement} achievement={achievement} />
       ))}
     </div>

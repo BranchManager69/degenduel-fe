@@ -15,6 +15,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { SimpleWalletButton, TwitterLoginButton, DiscordLoginButton, TelegramLoginButton, BiometricAuthButton } from "../../../components/auth";
 import Logo from "../../../components/ui/Logo";
+import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
 import { authDebug } from "../../../config/config";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 
@@ -115,7 +116,7 @@ const LoginPage: React.FC = () => {
               }}
               className="mb-[-40px] z-20"
             >
-              <div style={{ transform: 'scale(1.3)' }}>
+              <div style={{ transform: 'scale(1.4)' }}>
                 <Logo size="xl" animated={true} />
               </div>
             </motion.div>
