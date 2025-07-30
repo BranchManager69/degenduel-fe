@@ -44,6 +44,11 @@ export const StandaloneTokenCard: React.FC<StandaloneTokenCardProps> = ({ token 
       {/* Animations CSS */}
       <style dangerouslySetInnerHTML={{
         __html: `
+          @media (max-width: 767px) {
+            .mobile-text-sm { font-size: 0.875rem !important; }
+            .mobile-text-base { font-size: 1rem !important; }
+            .mobile-text-lg { font-size: 1.125rem !important; }
+          }
           @keyframes bannerScan {
             0%, 100% { object-position: center 95%; }
             25% { object-position: left 95%; }
@@ -86,7 +91,7 @@ export const StandaloneTokenCard: React.FC<StandaloneTokenCardProps> = ({ token 
         `
       }} />
 
-      <div className="aspect-[7/3] w-full perspective-1000">
+      <div className="aspect-[5/3] sm:aspect-[7/3] w-full perspective-1000">
         <div 
           className={`relative w-full h-full transition-transform duration-500 transform-style-3d
             ${isFlipped ? 'rotate-y-180' : ''}
@@ -132,16 +137,16 @@ export const StandaloneTokenCard: React.FC<StandaloneTokenCardProps> = ({ token 
             </div>
 
             {/* MAIN CONTENT - BOLD AND CLEAN */}
-            <div className="relative z-10 p-6 h-full flex flex-col justify-end">
+            <div className="relative z-10 p-2 md:p-6 h-full flex flex-col justify-end">
               {/* 24H CHANGE - BOTTOM RIGHT - ONLY SHOW IF POSITIVE */}
               {changeNum >= 0 && (
-                <div className="absolute right-6 bottom-6 text-right">
-                  <div className="text-3xl font-black text-green-400" style={{ 
+                <div className="absolute right-2 md:right-6 bottom-2 md:bottom-6 text-right">
+                  <div className="font-black text-green-400 text-base md:text-3xl mobile-text-base" style={{ 
                     textShadow: '0 0 30px rgba(34, 197, 94, 0.6), 4px 4px 8px rgba(0,0,0,1)'
                   }}>
                     +{formatPercentage(TokenHelpers.getPriceChange(token), false)}
                   </div>
-                  <div className="text-xs text-gray-400 uppercase tracking-wider mt-1">24h</div>
+                  <div className="text-[10px] md:text-xs text-gray-400 uppercase tracking-wider mt-1">24h</div>
                 </div>
               )}
 
@@ -149,21 +154,21 @@ export const StandaloneTokenCard: React.FC<StandaloneTokenCardProps> = ({ token 
               <div className="pb-0">
                 {token.symbol === 'SOL' ? (
                   <>
-                    <div className="text-4xl font-bold text-white" style={{ 
+                    <div className="font-bold text-white text-lg md:text-4xl mobile-text-lg" style={{ 
                       textShadow: '4px 4px 8px rgba(0,0,0,0.9), 2px 2px 4px rgba(0,0,0,1)' 
                     }}>
                       ${TokenHelpers.getPrice(token).toFixed(2)}
                     </div>
-                    <div className="text-sm text-gray-400 uppercase tracking-wider mt-1">SOL Price</div>
+                    <div className="text-[10px] md:text-sm text-gray-400 uppercase tracking-wider mt-1">SOL Price</div>
                   </>
                 ) : (
                   <>
-                    <div className="text-4xl font-bold text-white" style={{ 
+                    <div className="font-bold text-white text-lg md:text-4xl mobile-text-lg" style={{ 
                       textShadow: '4px 4px 8px rgba(0,0,0,0.9), 2px 2px 4px rgba(0,0,0,1)' 
                     }}>
                       ${formatNumber(TokenHelpers.getMarketCap(token), 'short')}
                     </div>
-                    <div className="text-sm text-gray-400 uppercase tracking-wider mt-1"><b>DUEL</b> Market Cap</div>
+                    <div className="text-[10px] md:text-sm text-gray-400 uppercase tracking-wider mt-1"><b>DUEL</b> Market Cap</div>
                   </>
                 )}
               </div>
@@ -228,20 +233,20 @@ export const StandaloneTokenCard: React.FC<StandaloneTokenCardProps> = ({ token 
                 )}
               </div>
               
-              <div className="relative z-10 h-full flex flex-col p-4">
+              <div className="relative z-10 h-full flex flex-col p-3 sm:p-4">
                 {/* Header - Symbol and Name in opposite corners */}
-                <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-2xl font-bold text-white" style={{
+                <div className="flex items-start justify-between mb-2 sm:mb-4">
+                  <h3 className="text-xl sm:text-2xl font-bold text-white" style={{
                     textShadow: '2px 2px 4px rgba(0,0,0,0.9)',
                     WebkitTextStroke: '0.5px rgba(0,0,0,0.8)'
                   }}>{token.symbol}</h3>
-                  <p className="text-sm text-gray-300 text-right max-w-[150px] truncate" style={{
+                  <p className="text-xs sm:text-sm text-gray-300 text-right max-w-[100px] sm:max-w-[150px] truncate" style={{
                     textShadow: '1px 1px 2px rgba(0,0,0,0.9)'
                   }}>{token.name}</p>
                 </div>
             
                 {/* JUPITER BUY BUTTON IN THE MIDDLE */}
-                <div className="flex-1 flex items-center justify-center px-4">
+                <div className="flex-1 flex items-center justify-center px-2 sm:px-4">
                   <a
                     href={`https://jup.ag/swap/SOL-${TokenHelpers.getAddress(token)}`}
                     target="_blank"
@@ -250,18 +255,18 @@ export const StandaloneTokenCard: React.FC<StandaloneTokenCardProps> = ({ token 
                     className="relative group w-full transform hover:scale-[1.02] transition-transform duration-200"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-[#C7F284] to-[#00D18C] rounded-2xl opacity-20 blur-xl group-hover:opacity-30 transition-opacity"></div>
-                    <div className="relative px-6 py-5 bg-gradient-to-br from-[#1a1f2e] via-[#232a3a] to-[#1a1f2e] rounded-2xl border-2 border-[#C7F284]/20 group-hover:border-[#C7F284]/40 transition-all overflow-hidden">
+                    <div className="relative px-3 sm:px-6 py-3 sm:py-5 bg-gradient-to-br from-[#1a1f2e] via-[#232a3a] to-[#1a1f2e] rounded-2xl border-2 border-[#C7F284]/20 group-hover:border-[#C7F284]/40 transition-all overflow-hidden">
                       {/* Animated gradient background */}
                       <div className="absolute inset-0 bg-gradient-to-r from-[#C7F284]/10 via-transparent to-[#00D18C]/10 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                       
-                      <div className="relative flex items-center justify-center gap-4">
+                      <div className="relative flex items-center justify-center gap-2 sm:gap-4">
                         <img 
                           src="/assets/media/logos/jup.png" 
                           alt="Jupiter" 
-                          className="w-8 h-8 group-hover:rotate-12 transition-transform duration-300"
+                          className="w-6 sm:w-8 h-6 sm:h-8 group-hover:rotate-12 transition-transform duration-300"
                         />
                         <div className="text-center">
-                          <div className="text-2xl font-black text-white tracking-tight">
+                          <div className="text-lg sm:text-2xl font-black text-white tracking-tight">
                             BUY NOW
                           </div>
                           <div className="text-sm text-[#C7F284] font-medium">

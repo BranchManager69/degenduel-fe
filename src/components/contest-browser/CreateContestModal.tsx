@@ -71,7 +71,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   React.useEffect(() => {
     const loadDuelToken = async () => {
       try {
-        const response = await fetch(`/api/tokens/search?search=DUEL&limit=1`);
+        const response = await fetch(`/api/tokens/search?search=F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX&limit=1`);
         if (response.ok) {
           const data = await response.json();
           if (data.tokens && data.tokens.length > 0) {

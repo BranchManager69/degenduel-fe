@@ -1,8 +1,6 @@
 import { motion } from 'framer-motion';
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { usePlatformStats } from '../../hooks/usePlatformStats';
-import { getContestImageUrl } from '../../lib/imageUtils';
 import { GlobalHighScore } from './GlobalHighScore';
 import { RecentContestWinner } from './RecentContestWinner';
 
@@ -202,7 +200,7 @@ const PlatformStats: React.FC = () => {
 
   return (
     <section className="py-8 bg-gradient-to-b from-transparent via-dark-200/10 to-transparent">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12">
         {/* Revenue Flow Section - Combined */}
         <div className="mb-6">
           <div className="max-w-sm mx-auto">
@@ -611,163 +609,9 @@ const PlatformStats: React.FC = () => {
 
         {/* Global High Score Section - Side by Side Comparison */}
         <div className="mt-8 w-full flex flex-col md:flex-row gap-4">
-          {/* Original Global High Score */}
+          {/* Global High Score */}
           <div className="flex-1">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="relative bg-gradient-to-br from-yellow-950/90 via-amber-950/80 to-yellow-900/90 border-2 border-yellow-600/60 hover:border-yellow-400/80 transition-all duration-300 overflow-hidden backdrop-blur-sm shadow-[0_0_40px_rgba(245,158,11,0.4)]"
-              style={{
-                clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))'
-              }}
-            >
-              {/* Crown background pattern */}
-              <div className="absolute inset-0 opacity-10 group-hover:opacity-15 transition-opacity duration-500">
-                <svg className="w-full h-full" viewBox="0 0 200 100" preserveAspectRatio="none">
-                  <path d="M20 80 L40 20 L60 80 L80 30 L100 80 L120 25 L140 80 L160 35 L180 80" 
-                    stroke="#f59e0b" strokeWidth="0.5" fill="none" strokeDasharray="2,2" />
-                  <circle cx="100" cy="50" r="25" fill="none" stroke="#f59e0b" strokeWidth="0.3" strokeDasharray="3,3" />
-                </svg>
-              </div>
-
-              {/* Golden corner accents */}
-              <div className="absolute top-0 right-0 w-4 h-4 bg-gradient-to-br from-yellow-400/60 to-transparent"></div>
-              <div className="absolute bottom-0 left-0 w-4 h-4 bg-gradient-to-tr from-yellow-400/60 to-transparent"></div>
-
-              {/* Title Section - Moved to Top */}
-              <div className="text-center p-4 relative z-20">
-                <h3 className="text-2xl font-bold text-yellow-200 mb-2 whitespace-nowrap" style={{
-                  textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
-                }}>
-                  ALL TIME BEST PERFORMANCE
-                </h3>
-                <div className="flex flex-col items-center mb-4">
-                  <div className="relative mb-3">
-                    {/* Circular glow behind profile picture */}
-                    <div className="absolute inset-0 w-16 h-16 rounded-full bg-gradient-to-r from-yellow-400/40 to-amber-400/40 blur-md scale-150"></div>
-                    <img 
-                      src={stats.global_high_score.profile_image_url} 
-                      alt={stats.global_high_score.nickname}
-                      className="relative w-16 h-16 rounded-full border-3 border-yellow-400/80 shadow-lg"
-                    />
-                    {/* Username overlapping bottom of profile picture */}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/2">
-                      <h4 className="text-xl font-bold text-white whitespace-nowrap" style={{
-                        textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
-                      }}>{stats.global_high_score.nickname}</h4>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center gap-2">
-                    {/* Level Info */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-yellow-300 text-sm font-bold" style={{
-                        textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
-                      }}>
-                        Level {stats.global_high_score.level} - {stats.global_high_score.level_title}
-                      </span>
-                      <span className="text-yellow-200 text-sm" style={{
-                        textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
-                      }}>
-                        ({stats.global_high_score.experience_points.toLocaleString()} XP)
-                      </span>
-                    </div>
-                    
-                    {/* Contest Info */}
-                    <div className="flex items-center gap-2">
-                      <Link 
-                        to={`/contests/${stats.global_high_score.contest_id}`}
-                        className="text-yellow-200 text-lg font-bold hover:text-white hover:underline transition-colors cursor-pointer"
-                        style={{
-                          textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
-                        }}
-                      >
-                        {stats.global_high_score.contest_name}
-                      </Link>
-                      <span className="text-white text-sm font-medium" style={{
-                        textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
-                      }}>
-                        {new Date(stats.global_high_score.contest_start_time).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Performance Stats - Centered across full width */}
-                <div className="flex gap-4 justify-center">
-                  <div className="text-center">
-                    <span className="text-yellow-300/80 text-xs block">Start</span>
-                    <div className="text-white font-bold text-sm">
-                      <span className="inline-flex items-center gap-1">
-                        {parseFloat(stats.global_high_score.initial_balance_sol.toFixed(2)).toString()}
-                        <img 
-                          src="/assets/media/logos/solana.svg" 
-                          alt="SOL" 
-                          className="w-5 h-5 inline-block"
-                        />
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="text-center">
-                    <span className="text-yellow-300/80 text-xs block">End</span>
-                    <div className="text-white font-bold text-sm">
-                      <span className="inline-flex items-center gap-1">
-                        {parseFloat(stats.global_high_score.portfolio_value_sol.toFixed(2)).toString()}
-                        <img 
-                          src="/assets/media/logos/solana.svg" 
-                          alt="SOL" 
-                          className="w-5 h-5 inline-block"
-                        />
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="text-center">
-                    <span className="text-yellow-300/80 text-xs block">Gain</span>
-                    <div className={`text-xl font-bold ${stats.global_high_score.percentage_gain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {stats.global_high_score.percentage_gain >= 0 ? '+' : ''}{stats.global_high_score.percentage_gain.toFixed(1)}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contest Banner Image */}
-              {stats.global_high_score.contest_image_url && (
-                <div 
-                  className="absolute inset-x-0 top-0 h-40 overflow-hidden"
-                  style={{
-                    maskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)'
-                  }}
-                >
-                  <style>{`
-                    @keyframes globalHighScoreScan {
-                      0%, 100% { transform: translateY(0); }
-                      40% { transform: translateY(-20%); }
-                      60% { transform: translateY(-20%); }
-                    }
-                  `}</style>
-                  <img 
-                    src={getContestImageUrl(stats.global_high_score.contest_image_url) || ""} 
-                    alt={stats.global_high_score.contest_name}
-                    className="w-full h-56 object-cover object-top group-hover:scale-110"
-                    style={{
-                      animation: 'globalHighScoreScan 20s ease-in-out infinite',
-                      transition: 'transform 0.7s ease-out',
-                      filter: 'brightness(0.85) saturate(1.1)'
-                    }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
-              )}
-
-
-              {/* Golden glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-yellow-600/0 via-yellow-500/0 to-yellow-400/0 hover:from-yellow-600/5 hover:via-yellow-500/3 hover:to-yellow-400/5 mix-blend-screen transition-all duration-500" />
-            </motion.div>
+            <GlobalHighScore data={stats.global_high_score} delay={0.6} />
           </div>
 
         {/* Recent Contest Winner */}

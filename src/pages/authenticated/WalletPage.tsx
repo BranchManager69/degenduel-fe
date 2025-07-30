@@ -39,11 +39,11 @@ const WalletPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-white flex items-center gap-6">
-            <div className="scale-150">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white flex items-center gap-2 sm:gap-4 md:gap-6">
+            <div className="scale-100 sm:scale-125 md:scale-150">
               <NanoLogo />
             </div>
-            <span>Degen Dividends</span>
+            <span className="whitespace-nowrap">Degen Dividends</span>
           </h1>
         </div>
         
@@ -286,12 +286,12 @@ const WalletPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header with title and profile */}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold text-white flex items-center gap-6">
-          <div className="scale-150">
+      <div className="flex justify-between items-center mb-4 gap-4">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white flex items-center gap-2 sm:gap-4 md:gap-6">
+          <div className="scale-100 sm:scale-125 md:scale-150">
             <NanoLogo />
           </div>
-          <span>Degen Dividends</span>
+          <span className="whitespace-nowrap">Degen Dividends</span>
         </h1>
         <ProfileHeader user={user} />
       </div>

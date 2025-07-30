@@ -69,10 +69,10 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         
         {/* Row 3: Combined Level/Title and XP */}
         <div className="flex items-center mt-1 justify-end">
-          <span className="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-l text-xs font-medium border border-amber-500/30">
+          <span className="bg-amber-500/20 text-amber-400 px-1 sm:px-2 py-0.5 rounded-l text-[10px] sm:text-xs font-medium border border-amber-500/30 whitespace-nowrap">
             LVL {user?.user_level?.level_number || 0} • {user?.user_level?.title || 'Unranked'}
           </span>
-          <span className="bg-gray-700/50 text-gray-300 px-2 py-0.5 rounded-r text-xs font-medium border border-gray-600/30 border-l-0">
+          <span className="bg-gray-700/50 text-gray-300 px-1 sm:px-2 py-0.5 rounded-r text-[10px] sm:text-xs font-medium border border-gray-600/30 border-l-0 whitespace-nowrap">
             {(user?.experience_points || 0).toLocaleString()} XP
           </span>
         </div>
@@ -82,7 +82,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <img 
             src={getFullImageUrl(user.profile_image_url)} 
             alt={user.nickname || ''}
-            className="w-20 h-16 object-cover rounded-r-lg shadow-inner cursor-pointer"
+            className="w-16 h-12 sm:w-20 sm:h-16 object-cover rounded-r-lg shadow-inner cursor-pointer"
             style={{ boxShadow: 'inset 0 0 8px rgba(0,0,0,0.3)' }}
             onError={(e) => {
               e.currentTarget.style.display = 'none';

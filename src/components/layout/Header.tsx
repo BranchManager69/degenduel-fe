@@ -433,7 +433,7 @@ const BalanceOrDividends: React.FC<{
   walletAddress?: string;
   isCompact?: boolean;
 }> = ({ mintAddress, walletAddress, isCompact = false }) => {
-  const { tokenData, isLoading } = useSolanaTokenData(mintAddress, walletAddress);
+  const { tokenData, isLoading } = useSolanaTokenData(mintAddress, walletAddress, undefined, true);
   
   // Check if balance is zero or undefined
   const hasBalance = tokenData?.userBalance && parseFloat(tokenData.userBalance.toString()) > 0;

@@ -1448,39 +1448,16 @@ export const ContestDetails: React.FC = () => {
                 </div>
                 {contest.wallet_address && (
                   <div className="flex items-center gap-2">
-                    <span className="relative inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-700/50 hover:bg-gray-700/70 rounded-full text-[10px] text-gray-400 hover:text-gray-300 cursor-help transition-colors group">
-                      <span>What's this?</span>
-                      <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                      
-                      {/* Tooltip */}
-                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-72 z-50">
-                        <div className="space-y-2">
-                          <p className="font-medium">Contest Wallet</p>
-                          <p>This is the dedicated wallet where entry fees are collected and prize payouts are distributed for this contest.</p>
-                          <div className="pt-2 border-t border-gray-700">
-                            <p className="font-medium text-blue-300 mb-1">🧪 Beta Feature</p>
-                            <p className="text-gray-300">
-                              Want to test our new real-wallet entry method? Send your entry fee directly to this address and we'll attempt to match your existing token holdings for contest participation.
-                            </p>
-                          </div>
-                        </div>
-                        {/* Arrow */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
-                      </div>
-                    </span>
-                    <span className="text-gray-500">
-                      Contest Wallet:
-                    </span>
-                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 text-sm">
+                        Wallet:
+                      </span>
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(contest.wallet_address!);
                           setShowCopied(true);
                           setTimeout(() => setShowCopied(false), 2000);
                         }}
-                        className="text-gray-300 font-mono text-xs hover:text-gray-100 cursor-pointer transition-colors relative"
+                        className="text-gray-300 font-mono text-xs hover:text-gray-100 cursor-pointer transition-colors relative truncate max-w-[200px] sm:max-w-none"
                         title="Click to copy wallet address"
                       >
                         {contest.wallet_address}
@@ -1509,7 +1486,28 @@ export const ContestDetails: React.FC = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                       </a>
-                    </div>
+                      <span className="relative inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-700/50 hover:bg-gray-700/70 rounded-full text-[10px] text-gray-400 hover:text-gray-300 cursor-help transition-colors group whitespace-nowrap">
+                        <span>What's this?</span>
+                        <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        
+                        {/* Tooltip */}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 w-72 z-50">
+                          <div className="space-y-2">
+                            <p className="font-medium">Contest Wallet</p>
+                            <p>This is the dedicated wallet where entry fees are collected and prize payouts are distributed for this contest.</p>
+                            <div className="pt-2 border-t border-gray-700">
+                              <p className="font-medium text-blue-300 mb-1">🧪 Beta Feature</p>
+                              <p className="text-gray-300">
+                                Want to test our new real-wallet entry method? Send your entry fee directly to this address and we'll attempt to match your existing token holdings for contest participation.
+                              </p>
+                            </div>
+                          </div>
+                          {/* Arrow */}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+                        </div>
+                      </span>
                   </div>
                 )}
               </div>
