@@ -154,7 +154,7 @@ export const ContestDetailHeader: React.FC<ContestDetailHeaderProps> = ({
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 space-y-2">
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold text-gray-100">
+              <h1 className="text-sm sm:text-base md:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-100 whitespace-nowrap overflow-hidden text-ellipsis">
                 {contest.name}
               </h1>
               {contestStatus === "live" && (

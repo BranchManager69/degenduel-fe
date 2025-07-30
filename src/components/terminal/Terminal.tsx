@@ -1375,7 +1375,7 @@ Examples:
             },
             {
               type: "update_profile",
-              enabled: !!user?.is_authenticated,
+              enabled: !!user?.wallet_address,
               description: "Update user profile information"
             }
           ],

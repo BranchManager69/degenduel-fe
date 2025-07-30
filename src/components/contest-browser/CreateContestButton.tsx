@@ -10,7 +10,7 @@ export const CreateContestButton: React.FC<CreateContestButtonProps> = ({
   return (
     <button
       onClick={onCreateClick}
-      className="group relative px-4 py-2 bg-gradient-to-br from-emerald-950/90 via-teal-950/80 to-green-950/90 border-2 border-emerald-700/40 rounded-xl hover:border-emerald-500/80 hover:shadow-lg hover:shadow-emerald-500/20 transition-all duration-300 overflow-hidden backdrop-blur-sm"
+      className="group relative w-full px-4 py-2 bg-gradient-to-br from-emerald-950/90 via-teal-950/80 to-green-950/90 border-2 border-emerald-700/40 rounded-xl hover:border-emerald-500/80 hover:shadow-lg hover:shadow-emerald-500/20 transition-all duration-300 overflow-hidden backdrop-blur-sm"
     >
       {/* Dynamic blueprint grid background */}
       <div className="absolute inset-0">

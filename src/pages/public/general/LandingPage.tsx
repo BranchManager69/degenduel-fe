@@ -713,20 +713,28 @@ export const LandingPage: React.FC = () => {
                 </motion.div>
 
                 {/* Contest Action Buttons - moved above the token cards */}
-                <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 md:gap-4 mt-8 mb-8">
-                  <CreateContestButton 
-                    onCreateClick={() => setIsCreateModalOpen(true)}
-                  />
-                  <ChallengeFriendButton 
-                    userRole={isAdministrator ? "admin" : "user"}
-                    availableCredits={undefined}
-                    onChallengeCreated={() => {
-                      // Refresh contests or navigate
-                      console.log('Challenge created!');
-                    }}
-                    currentUserNickname={user?.nickname}
-                  />
-                  <SpectateButton onSpectateClick={() => navigate("/contests")} />
+                <div className="mx-auto px-4" style={{ maxWidth: '400px' }}>
+                  <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-3 md:gap-4 mt-8 mb-8">
+                    <div className="w-full sm:w-auto" style={{ maxWidth: '320px' }}>
+                      <CreateContestButton 
+                        onCreateClick={() => setIsCreateModalOpen(true)}
+                      />
+                    </div>
+                    <div className="w-full sm:w-auto" style={{ maxWidth: '320px' }}>
+                      <ChallengeFriendButton 
+                        userRole={isAdministrator ? "admin" : "user"}
+                        availableCredits={undefined}
+                        onChallengeCreated={() => {
+                          // Refresh contests or navigate
+                          console.log('Challenge created!');
+                        }}
+                        currentUserNickname={user?.nickname}
+                      />
+                    </div>
+                    <div className="w-full sm:w-auto" style={{ maxWidth: '320px' }}>
+                      <SpectateButton onSpectateClick={() => navigate("/contests")} />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Platform Statistics Section */}
@@ -907,7 +915,7 @@ export const LandingPage: React.FC = () => {
                       />
                     </motion.div>
                   ) : !tokensError ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto items-center">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 max-w-4xl mx-auto items-center">
                       {/* DUEL Token Card */}
                       <motion.div 
                         className="flex justify-center"
@@ -916,11 +924,11 @@ export const LandingPage: React.FC = () => {
                         transition={{ duration: 0.6, delay: 0.3 }}
                       >
                         {duelToken ? (
-                          <div className="w-full max-w-lg mx-auto">
+                          <div className="w-full">
                             <StandaloneTokenCard token={duelToken} />
                           </div>
                         ) : (
-                          <div className="w-full max-w-lg mx-auto aspect-[7/3] bg-dark-200/50 rounded-2xl animate-pulse" />
+                          <div className="w-full aspect-[7/3] sm:aspect-[7/3] aspect-[5/3] bg-dark-200/50 rounded-2xl animate-pulse" />
                         )}
                       </motion.div>
 
@@ -932,11 +940,11 @@ export const LandingPage: React.FC = () => {
                         transition={{ duration: 0.6, delay: 0.4 }}
                       >
                         {solToken ? (
-                          <div className="w-full max-w-lg mx-auto">
+                          <div className="w-full">
                             <StandaloneTokenCard token={solToken} />
                           </div>
                         ) : (
-                          <div className="w-full max-w-lg mx-auto aspect-[7/3] bg-dark-200/50 rounded-2xl animate-pulse" />
+                          <div className="w-full aspect-[7/3] sm:aspect-[7/3] aspect-[5/3] bg-dark-200/50 rounded-2xl animate-pulse" />
                         )}
                       </motion.div>
                     </div>

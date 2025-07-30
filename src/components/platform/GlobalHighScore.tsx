@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { getContestImageUrl, getFullImageUrl } from '../../lib/imageUtils';
+import { getContestImageUrl } from '../../lib/imageUtils';
 
 interface GlobalHighScoreData {
   portfolio_value_usd: number;
@@ -60,7 +60,7 @@ export const GlobalHighScore: React.FC<GlobalHighScoreProps> = ({ data, delay = 
         <h3 className="text-2xl font-bold text-yellow-200 mb-2 whitespace-nowrap" style={{
           textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
         }}>
-          ALL TIME BEST PERFORMANCE
+          ALL TIME BEST
         </h3>
         <div className="flex flex-col items-center mb-4">
           <div className="relative mb-3">

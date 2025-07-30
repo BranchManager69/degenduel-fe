@@ -23,7 +23,7 @@
  * @updated 2025-04-30 - Added info about DD-RPC v2.0
  */
 
-import { PublicKey, TokenAccountsFilter } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { config } from '../../config/config';
 import { useSolanaConnection } from '../../contexts/SolanaConnectionContext';
@@ -97,7 +97,8 @@ export interface TokenData {
 export function useSolanaTokenData(
   mintAddress?: string,
   walletAddress?: string,
-  refetchInterval?: number
+  refetchInterval?: number,
+  skipTokenSupply?: boolean // Skip fetching token supply/decimals if only balance is needed
 ): {
   tokenData: TokenData | null;
   isLoading: boolean;
@@ -151,6 +152,13 @@ export function useSolanaTokenData(
 
   // Function to fetch token data
   const fetchTokenData = useCallback(async () => {
+    console.log('[useSolanaTokenData] fetchTokenData called for:', {
+      mint: effectiveMintAddress,
+      wallet: effectiveWalletAddress,
+      connectionTier,
+      timestamp: new Date().toISOString()
+    });
+    
     // Early return for validation failures
     if (!validationResult.valid) {
       setError(validationResult.error);
@@ -174,37 +182,24 @@ export function useSolanaTokenData(
     try {
       const mintPubkey = validationResult.mintPubkey!;
 
-      // Fetch token supply and decimals
-      const tokenSupply = await connection.getTokenSupply(mintPubkey);
-
-      // Calculate approximate holder count - this is an expensive operation so only do it
-      // for admin tier connections or periodically cache the result
+      // Initialize token data
+      let supply = '0';
+      let decimals = 0;
       let holders = undefined;
-      if (connectionTier === 'admin') {
-        try {
-          // Configure filter to look for all token accounts
-          const filter: TokenAccountsFilter = {
-            programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') // Token Program ID
-          };
 
-          // Get all accounts that hold this token
-          const tokenAccounts = await connection.getTokenAccountsByOwner(
-            mintPubkey,
-            filter
-          );
-
-          holders = tokenAccounts.value.length;
-        } catch (holderError) {
-          console.warn('Error fetching token holders:', holderError);
-          // This is non-critical, so continue without holder data
-        }
+      // Skip token supply fetch if only balance is needed
+      if (!skipTokenSupply) {
+        // Fetch token supply and decimals
+        const tokenSupply = await connection.getTokenSupply(mintPubkey);
+        supply = tokenSupply.value.amount;
+        decimals = tokenSupply.value.decimals;
       }
 
       // Basic token data
       const newTokenData: TokenData = {
         mintAddress: effectiveMintAddress!,
-        supply: tokenSupply.value.amount,
-        decimals: tokenSupply.value.decimals,
+        supply,
+        decimals,
         holders,
         symbol: effectiveMintAddress === config.SOLANA.DEGEN_TOKEN_ADDRESS ? 'DUEL' : 'Unknown'
       };
@@ -234,11 +229,28 @@ export function useSolanaTokenData(
               const parsedData = tokenAccount.parsed;
               if (parsedData.info?.tokenAmount?.uiAmount !== undefined) {
                 newTokenData.userBalance = parsedData.info.tokenAmount.uiAmount;
+                
+                // If we skipped token supply fetch, get decimals from here
+                if (skipTokenSupply && parsedData.info?.tokenAmount?.decimals !== undefined) {
+                  newTokenData.decimals = parsedData.info.tokenAmount.decimals;
+                }
               }
             }
           } else {
             // User has no tokens of this type
             newTokenData.userBalance = 0;
+            
+            // If we skipped token supply and user has no tokens, we need to fetch decimals
+            // This is rare but necessary for proper display
+            if (skipTokenSupply) {
+              try {
+                const tokenSupply = await connection.getTokenSupply(mintPubkey);
+                newTokenData.decimals = tokenSupply.value.decimals;
+              } catch (err) {
+                console.warn('Failed to fetch token decimals:', err);
+                newTokenData.decimals = 9; // Default to 9 decimals for SOL tokens
+              }
+            }
           }
         } catch (walletError) {
           console.warn('Error fetching token balance for wallet:', walletError);
@@ -258,7 +270,7 @@ export function useSolanaTokenData(
       setError(err instanceof Error ? err.message : 'Unknown error fetching token data');
       setIsLoading(false);
     }
-  }, [validationResult, connection, connectionTier, effectiveWalletAddress, isAuthenticated, effectiveMintAddress]);
+  }, [validationResult, connection, connectionTier, effectiveWalletAddress, isAuthenticated, effectiveMintAddress, skipTokenSupply]);
 
   // Fetch data on mount and when addresses change
   useEffect(() => {
