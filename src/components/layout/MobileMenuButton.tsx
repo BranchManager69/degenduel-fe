@@ -18,6 +18,7 @@ import { config } from "../../config/config";
 import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 import { useStore } from "../../store/useStore";
 import { getFullImageUrl } from "../../utils/profileImageUtils";
+import { getUserRoleColors } from "../../utils/roleColors";
 import { BiometricAuthButton, DiscordLoginButton, SimpleWalletButton, TelegramLoginButton, TwitterLoginButton } from "../auth";
 import NanoLogo from "../logo/NanoLogo";
 import SolanaTokenDisplay from "../SolanaTokenDisplay";
@@ -192,40 +193,13 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
     }
   }, [userLevel]);
 
-  // Add role-based button styling like desktop
+  // Use the same role-based button styling as desktop
   const buttonStyles = useMemo(() => {
-    // Super Admin styling takes precedence - match desktop exactly
-    if (isSuperAdmin) {
-      return {
-        bg: "bg-red-800/60",
-        text: "text-orange-300",
-        border: "border-red-600/50",
-        hover: {
-          bg: "group-hover:bg-red-700/70",
-          border: "group-hover:border-red-500/60",
-          glow: "",
-        },
-        ring: "",
-      };
-    }
-
-    // Admin styling takes secondary precedence - match desktop exactly
-    if (isAdministrator) {
-      return {
-        bg: "bg-amber-800/60",
-        text: "text-amber-300",
-        border: "border-amber-600/50",
-        hover: {
-          bg: "group-hover:bg-amber-700/70",
-          border: "group-hover:border-amber-500/60",
-          glow: "",
-        },
-        ring: "",
-      };
-    }
-
-    // For regular users, use level-based styling if they have a level
-    if (userLevel > 0) {
+    // Get role colors from the shared utility
+    const roleColors = getUserRoleColors(user);
+    
+    // For regular users with levels, use level-based styling
+    if (!user?.is_admin && !user?.is_superadmin && !user?.role && userLevel > 0) {
       const levelColors = getLevelColorScheme;
       return {
         bg: levelColors.bg,
@@ -239,20 +213,20 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
         ring: levelColors.ring,
       };
     }
-
-    // Default styling for users with no level - match desktop exactly
+    
+    // Use role colors from the utility
     return {
-      bg: "bg-purple-800/60",
-      text: "text-purple-200",
-      border: "border-purple-600/50",
+      bg: roleColors.bg,
+      text: roleColors.text,
+      border: roleColors.border,
       hover: {
-        bg: "group-hover:bg-purple-700/70",
-        border: "group-hover:border-purple-500/60",
-        glow: "",
+        bg: roleColors.hover?.bg || "",
+        border: roleColors.hover?.border || "",
+        glow: roleColors.glow || "",
       },
-      ring: "",
+      ring: roleColors.glow || "",
     };
-  }, [isAdministrator, isSuperAdmin, userLevel, getLevelColorScheme]);
+  }, [user, userLevel, getLevelColorScheme]);
 
   return (
     <div className={`relative ${className}`}>
@@ -264,47 +238,64 @@ export const MobileMenuButton: React.FC<MobileMenuButtonProps> = ({
           className="group relative mr-1"
           onClick={() => setIsOpen(false)}
         >
-          {/* Outer glow for mobile */}
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-60 blur-sm transition-all duration-300" />
+          {/* Outer glow that intensifies on hover */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-75 blur transition-all duration-300 group-hover:duration-200" />
           
           {/* Main container - compact for mobile, matching UserMenu height */}
-          <div className={`relative flex items-center gap-1 pl-2.5 pr-3
+          <div className={`relative flex items-center gap-1 pl-2 pr-3
             ${isCompact ? "h-7" : "h-8"}
             bg-gradient-to-r from-purple-900/40 via-purple-800/30 to-purple-900/40 
             backdrop-blur-sm rounded-full 
-            border border-purple-500/15 
-            transition-all duration-300
-            shadow-md shadow-purple-900/10`}>
+            border border-purple-500/15 group-hover:border-purple-400/30 
+            transition-all duration-300 transform group-hover:scale-105
+            shadow-lg shadow-purple-900/10 group-hover:shadow-purple-500/20`}>
+            
+            {/* Animated background gradient */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600/0 via-purple-500/10 to-purple-600/0 
+              opacity-0 group-hover:opacity-100 transition-opacity duration-500
+              animate-pulse" />
             
             {/* Balance or Dividends display */}
-            <div className="text-purple-100 flex items-center">
+            <div className="relative text-purple-100 flex items-center">
               {user ? (
                 <SolanaTokenDisplay 
                   mintAddress={config.SOLANA.DEGEN_TOKEN_ADDRESS}
                   walletAddress={user.wallet_address} 
                   compact={true}
-                  className={`font-medium leading-none ${isCompact ? "text-sm" : "text-base"}`}
+                  className={`font-normal leading-none ${isCompact ? "text-[10px]" : "text-xs"}`}
                   showSupply={false}
                   showHolders={false}
                 />
               ) : (
-                <span className={`font-medium leading-none ${isCompact ? "text-sm" : "text-base"}`}>
-                  Dividends
-                </span>
+                <motion.span 
+                  className={`relative font-semibold tracking-wider uppercase leading-none ${isCompact ? "text-[10px]" : "text-xs"}`}
+                  initial={{ opacity: 0.7 }}
+                  animate={{ opacity: [0.7, 1, 1, 0.7] }}
+                  transition={{
+                    duration: 3,
+                    times: [0, 0.3, 0.7, 1],
+                    repeat: Infinity,
+                    repeatDelay: 7,
+                  }}
+                >
+                  DIVIDENDS
+                </motion.span>
               )}
             </div>
             
-            {/* Token icon with more spacing */}
-            <div className="relative flex items-center justify-center w-4 h-4 ml-0.5">
-              <div className="w-4 h-4 flex items-center justify-center">
+            {/* Token icon - slightly smaller with more spacing */}
+            <div className="relative flex items-center justify-center w-4 h-4 ml-2">
+              <div className="absolute inset-0 bg-purple-400 rounded-full animate-ping opacity-20" />
+              <div className="relative w-4 h-4 flex items-center justify-center">
                 <NanoLogo />
               </div>
             </div>
             
-            {/* Chevron indicator */}
-            <svg className="w-3 h-3 ml-0.5 text-purple-300 group-hover:text-purple-200 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            {/* Shimmer effect overlay */}
+            <div className="absolute inset-0 rounded-full overflow-hidden">
+              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 
+                bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            </div>
           </div>
         </Link>
         

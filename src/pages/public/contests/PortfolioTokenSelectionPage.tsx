@@ -2792,7 +2792,9 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
 
                       <div className="mt-4 sm:mt-6">
                         {/* Transaction Status Indicator - Different styling */}
-                        {transactionState.status !== "idle" && transactionState.status !== "success" && (
+                        {/* Fixed: Removed "&& transactionState.status !== 'success'" condition that was preventing success status from showing */}
+                        {/* The inner code was already checking for success status, so excluding it from the outer condition caused TS errors */}
+                        {transactionState.status !== "idle" && (
                           <div
                             className={`mb-4 p-3 rounded-lg border font-mono text-xs ${
                               transactionState.status === "error"

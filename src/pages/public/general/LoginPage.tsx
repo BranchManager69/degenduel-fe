@@ -15,7 +15,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { SimpleWalletButton, TwitterLoginButton, DiscordLoginButton, TelegramLoginButton, BiometricAuthButton } from "../../../components/auth";
 import Logo from "../../../components/ui/Logo";
-import { HeroTitle } from "../../../components/landing/hero-title/HeroTitle";
 import { authDebug } from "../../../config/config";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 

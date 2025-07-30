@@ -95,7 +95,7 @@ export const PrivateProfilePage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 flex flex-col items-center justify-center relative overflow-hidden">
+      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
         {/* Background effects */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.1),transparent_70%)]"></div>
@@ -110,12 +110,12 @@ export const PrivateProfilePage: React.FC = () => {
           className="relative z-10 text-center max-w-md mx-auto p-8"
         >
           <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-8 shadow-2xl">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-2xl mx-auto mb-6 flex items-center justify-center border border-purple-500/20">
+            <div className="w-20 h-20 bg-purple-500/20 rounded-2xl mx-auto mb-6 flex items-center justify-center border border-purple-500/20">
               <svg className="w-10 h-10 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent mb-4">
+            <h2 className="text-2xl font-bold text-white mb-4">
               Connect Your Wallet
             </h2>
             <p className="text-gray-400 leading-relaxed">
@@ -129,7 +129,7 @@ export const PrivateProfilePage: React.FC = () => {
 
   // Profile Page
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 relative">
+    <div className="min-h-screen relative">
       {/* Refined background - much more subtle */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(139,92,246,0.03),transparent_50%)]"></div>

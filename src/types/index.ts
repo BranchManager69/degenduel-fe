@@ -117,6 +117,7 @@ export interface Contest {
   }>;
   contest_code: string;
   image_url?: string; // AI-generated contest image URL
+  wallet_address?: string; // Contest wallet address for entry fees and payouts
 }
 
 // Contest Entry Transaction
@@ -199,8 +200,8 @@ export interface Token {
   tags?: string[];
 
   // Supply Information
-  total_supply?: number | null;
-  raw_supply?: number | null;
+  total_supply?: number | string | null;
+  raw_supply?: number | string | null;
   decimals: number;
 
   // Discovery & Tracking
@@ -208,10 +209,63 @@ export interface Token {
   pairCreatedAt?: string | null;
   metadata_status?: string;
   refresh_interval_seconds?: number;
+  discovery_count?: number;
+  launchpad?: string | null;
+  price_calculation_method?: string;
 
   // Timestamps
   created_at?: string;
   updated_at?: string;
+  last_refresh_attempt?: string;
+  last_refresh_success?: string;
+  pool_price_calculated_at?: string;
+  last_is_active_evaluation_at?: string;
+  last_jupiter_sync_at?: string;
+  metadata_last_updated_at?: string;
+  score_calculated_at?: string;
+  last_price_change?: string;
+  last_priority_calculation?: string;
+  
+  // Additional metadata fields
+  coingeckoId?: string | null;
+  refresh_metadata?: {
+    enrichment_status?: string;
+    enrichment_attempts?: number;
+    enhanced_market_data?: {
+      volumes?: {
+        m5?: number;
+        h1?: number;
+        h6?: number;
+        h24?: number;
+      };
+      priceChanges?: {
+        m5?: number;
+        h1?: number;
+        h6?: number;
+        h24?: number;
+      };
+      transactions?: {
+        m5?: { buys: number; sells: number };
+        h1?: { buys: number; sells: number };
+        h6?: { buys: number; sells: number };
+        h24?: { buys: number; sells: number };
+      };
+      pairCreatedAt?: string;
+      fdv?: number;
+      boosts?: any;
+      liquidity?: number;
+      market_cap?: number;
+      volume_24h?: number;
+    };
+    last_enrichment_attempt?: string;
+    last_enrichment_success?: string;
+  };
+  manually_activated?: boolean;
+  source?: string | null;
+  pool_derived_price?: string;
+  pool_derived_volume_24h?: string;
+  pool_derived_liquidity?: string;
+  pool_derived_market_cap?: string | null;
 
   // FORMAT 1: Standard Tokens (/api/tokens, WebSocket) - NESTED STRUCTURE
   token_prices?: {
@@ -224,29 +278,6 @@ export interface Token {
     updated_at: string;
   } | null;
 
-  // Enhanced data in nested structure
-  refresh_metadata?: {
-    enhanced_market_data?: {
-      priceChanges?: {
-        m5: number;   // REAL backend keys!
-        h1: number;
-        h6: number;
-        h24: number;
-      };
-      volumes?: {
-        m5: number;
-        h1: number;
-        h6: number;
-        h24: number;
-      };
-      transactions?: {
-        m5: { buys: number; sells: number };
-        h1: { buys: number; sells: number };
-        h6: { buys: number; sells: number };
-        h24: { buys: number; sells: number };
-      };
-    };
-  };
 
   // Social links in array format
   token_socials?: Array<{
@@ -268,7 +299,7 @@ export interface Token {
       name: string;
       description: string;
     };
-  }>;
+  }> | any[];
 
   // FORMAT 2: Trending Tokens (/api/tokens/trending) - FLATTENED STRUCTURE
   // Direct price data as numbers
@@ -281,10 +312,10 @@ export interface Token {
 
   // Flattened enhanced data
   priceChanges?: {
-    m5: number;   // REAL backend keys!
-    h1: number;
-    h6: number;
-    h24: number;
+    m5?: number;   // REAL backend keys!
+    h1?: number;
+    h6?: number;
+    h24?: number;
   };
   
   // Alternative field name used by some endpoints
@@ -296,17 +327,17 @@ export interface Token {
   };
 
   volumes?: {
-    m5: number;
-    h1: number;
-    h6: number;
-    h24: number;
+    m5?: number;
+    h1?: number;
+    h6?: number;
+    h24?: number;
   };
 
   transactions?: {
-    m5: { buys: number; sells: number };
-    h1: { buys: number; sells: number };
-    h6: { buys: number; sells: number };
-    h24: { buys: number; sells: number };
+    m5?: { buys: number; sells: number };
+    h1?: { buys: number; sells: number };
+    h6?: { buys: number; sells: number };
+    h24?: { buys: number; sells: number };
   };
 
   // Flattened social data
@@ -464,7 +495,7 @@ export const TokenHelpers = {
   },
 
   // Get multi-timeframe price changes (handles both nested and flattened)
-  getPriceChanges(token: Token): { m5: number; h1: number; h6: number; h24: number } | null {
+  getPriceChanges(token: Token): { m5?: number; h1?: number; h6?: number; h24?: number } | null {
     // Trending format (flattened)
     if (token.priceChanges) return token.priceChanges;
     // Standard format (nested)
@@ -475,7 +506,7 @@ export const TokenHelpers = {
   },
 
   // Get multi-timeframe volumes (handles both nested and flattened)
-  getVolumes(token: Token): { m5: number; h1: number; h6: number; h24: number } | null {
+  getVolumes(token: Token): { m5?: number; h1?: number; h6?: number; h24?: number } | null {
     if (token.volumes) return token.volumes; // Trending format
     if (token.refresh_metadata?.enhanced_market_data?.volumes) {
       return token.refresh_metadata.enhanced_market_data.volumes; // Standard format
@@ -484,7 +515,7 @@ export const TokenHelpers = {
   },
 
   // Get multi-timeframe transactions (handles both nested and flattened)
-  getTransactions(token: Token): { m5: { buys: number; sells: number }; h1: { buys: number; sells: number }; h6: { buys: number; sells: number }; h24: { buys: number; sells: number } } | null {
+  getTransactions(token: Token): { m5?: { buys: number; sells: number }; h1?: { buys: number; sells: number }; h6?: { buys: number; sells: number }; h24?: { buys: number; sells: number } } | null {
     if (token.transactions) return token.transactions; // Trending format
     if (token.refresh_metadata?.enhanced_market_data?.transactions) {
       return token.refresh_metadata.enhanced_market_data.transactions; // Standard format

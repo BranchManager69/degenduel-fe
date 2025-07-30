@@ -217,9 +217,9 @@ export const MyPortfoliosPage: React.FC = () => {
           errorMessage.toLowerCase().includes('bad gateway')
         );
         
-        // Auto-retry for 502 errors silently
+        // Auto-retry for 502 errors silently (infinite retry every 5 seconds)
         if (is502Error) {
-          const currentRetryCount = retryCount;
+          console.log(`[MyPortfolios] Server down (502), retrying in 5 seconds... (attempt ${retryCount + 1})`);
           setRetryCount(prev => prev + 1);
           retryTimeoutRef.current = setTimeout(() => {
             fetchPortfolios();
@@ -228,11 +228,9 @@ export const MyPortfoliosPage: React.FC = () => {
           return;
         } else {
           setError("Failed to load your portfolios");
-        }
-      } finally {
-        // Only set loading false if not retrying a 502
-        if (!is502Error) {
           setLoading(false);
+          // Reset retry count on final error
+          setRetryCount(0);
         }
       }
     }, [contests, contestsLoading, user?.wallet_address]); // Removed retryCount from dependencies

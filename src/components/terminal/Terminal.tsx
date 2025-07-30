@@ -27,7 +27,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AIMessage, aiService } from '../../services/ai';
 import { ddApi } from '../../services/dd-api';
-import { API_URL } from '../../config/config';
 import { useStore } from '../../store/useStore';
 
 // Import Dynamic UI System

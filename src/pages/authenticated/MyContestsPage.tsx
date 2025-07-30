@@ -211,6 +211,9 @@ export const MyContestsPage: React.FC = () => {
       });
 
       console.log("[MyContests] State updated - isLoading: false, userContests.length:", userContests.length);
+      
+      // Reset retry count on successful fetch
+      setRetryCount(0);
 
       // FIXED: Get fresh cache reference and update properly
       const currentCachedContests = useStore.getState().contests || [];
@@ -238,9 +241,9 @@ export const MyContestsPage: React.FC = () => {
         errorMessage.toLowerCase().includes('server is temporarily unavailable')
       );
       
-      // Auto-retry for 502 errors silently
-      if (is502Error && retryCount < 3) {
-        console.log(`[MyContests] Server down (502), retrying in 5 seconds... (attempt ${retryCount + 1}/3)`);
+      // Auto-retry for 502 errors silently (infinite retry every 5 seconds)
+      if (is502Error) {
+        console.log(`[MyContests] Server down (502), retrying in 5 seconds... (attempt ${retryCount + 1})`);
         setRetryCount(prev => prev + 1);
         
         // Clear any existing retry timeout
@@ -290,6 +293,13 @@ export const MyContestsPage: React.FC = () => {
 
     // Fetch fresh data
     fetchUserContests();
+    
+    // Cleanup retry timeout on unmount
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
   }, [isAuthenticated, navigate, fetchUserContests]);
 
   // Manual refresh with loading state

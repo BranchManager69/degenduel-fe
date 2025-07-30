@@ -10,20 +10,6 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
   achievement,
 }) => {
 
-  const getAchievementIcon = (type: string) => {
-    if (achievement.icon) return achievement.icon;
-
-    switch (type) {
-      case "first_contest":
-        return "🎯";
-      case "three_contests":
-        return "🎲";
-      case "five_contests":
-        return "🏆";
-      default:
-        return "🌟";
-    }
-  };
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "Recently earned";

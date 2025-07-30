@@ -82,8 +82,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
   // Mobile tab state
   const [activeTab, setActiveTab] = useState<'platform' | 'holdings' | 'earnings'>('platform');
   
-  // Auto-retry state
-  const [retryCount, setRetryCount] = useState(0);
+  // Auto-retry state  
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Countdown timer state - must be declared before any conditional returns
@@ -286,9 +285,8 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
         setTableData(allData);
         setUserData(data.wallet);
         
-        // Clear error and reset retry count on success
+        // Clear error on success
         setError(null);
-        setRetryCount(0);
         
         // Clear any pending retry timeout
         if (retryTimeoutRef.current) {
@@ -304,7 +302,6 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
       
       // Check if it's a 502 error and auto-retry silently
       if (err?.response?.status === 502 || errorMessage.includes('502')) {
-        setRetryCount(prev => prev + 1);
         
         // Clear any existing retry timeout
         if (retryTimeoutRef.current) {
@@ -405,8 +402,8 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
       
       // Calculate dividend percentage based on effective balance (override or actual)
       const effectiveBalance = (!demoMode && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel;
-      const percentage = snapshot.total_registered_supply > 0 
-        ? (effectiveBalance / snapshot.total_registered_supply) * 100 
+      const percentage = (snapshot.total_registered_supply || 0) > 0 
+        ? (effectiveBalance / (snapshot.total_registered_supply || 1)) * 100 
         : 0;
       const myDividendForDay = totalDividendsForDay * (percentage / 100);
       return sum + myDividendForDay;
@@ -474,7 +471,6 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
               <button 
                 onClick={() => {
                   setError(null);
-                  setRetryCount(0);
                   fetchSnapshotData();
                 }}
                 className="px-4 py-2 bg-dark-400 hover:bg-dark-500 text-gray-200 rounded-lg transition-colors text-sm"
@@ -872,8 +868,8 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                   
                   // Calculate dividend percentage based on effective balance (override or actual)
                   const effectiveBalance = (!demoMode && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel;
-                  const dividendPercentage = snapshot.total_registered_supply > 0 
-                    ? (effectiveBalance / snapshot.total_registered_supply) * 100 
+                  const dividendPercentage = (snapshot.total_registered_supply || 0) > 0 
+                    ? (effectiveBalance / (snapshot.total_registered_supply || 1)) * 100 
                     : 0;
                   const myDividend = totalDividends * (dividendPercentage / 100);
                   
