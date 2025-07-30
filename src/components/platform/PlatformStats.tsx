@@ -1,5 +1,5 @@
-import React from 'react';
 import { motion } from 'framer-motion';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { usePlatformStats } from '../../hooks/usePlatformStats';
 import { getContestImageUrl } from '../../lib/imageUtils';
@@ -52,7 +52,7 @@ const PlatformStats: React.FC = () => {
       <div className="py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-4">Platform Statistics</h2>
+            <h2 className="text-2xl font-bold mb-8 font-cyber tracking-wide bg-gradient-to-r from-green-400 to-brand-500 text-transparent bg-clip-text">Platform Statistics</h2>
             <div className="flex justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
             </div>
@@ -203,7 +203,7 @@ const PlatformStats: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Revenue Flow Section - Combined */}
         <div className="mb-6">
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-sm mx-auto">
             {/* Total Revenue with Distribution */}
             <motion.div
               initial={{ opacity: 0, y: -20 }}
@@ -255,7 +255,7 @@ const PlatformStats: React.FC = () => {
         </div>
 
         {/* Platform Activity Section - Bottom Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto">
           {/* Contest Breakdown - Modified StatItem */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -612,7 +612,7 @@ const PlatformStats: React.FC = () => {
         )}
 
         {/* Global High Score Section */}
-        <div className="mt-8">
+        <div className="mt-8 w-full lg:w-1/2">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -634,6 +634,86 @@ const PlatformStats: React.FC = () => {
             {/* Golden corner accents */}
             <div className="absolute top-0 right-0 w-4 h-4 bg-gradient-to-br from-yellow-400/60 to-transparent"></div>
             <div className="absolute bottom-0 left-0 w-4 h-4 bg-gradient-to-tr from-yellow-400/60 to-transparent"></div>
+
+            {/* Title Section - Moved to Top */}
+            <div className="text-center p-4 relative z-20">
+              <h3 className="text-2xl font-bold text-yellow-200 mb-2 whitespace-nowrap" style={{
+                textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
+              }}>
+                ALL TIME BEST PERFORMANCE
+              </h3>
+              <div className="flex flex-col items-center mb-4">
+                <div className="relative mb-3">
+                  {/* Circular glow behind profile picture */}
+                  <div className="absolute inset-0 w-16 h-16 rounded-full bg-gradient-to-r from-yellow-400/40 to-amber-400/40 blur-md scale-150"></div>
+                  <img 
+                    src={stats.global_high_score.profile_image_url} 
+                    alt={stats.global_high_score.nickname}
+                    className="relative w-16 h-16 rounded-full border-3 border-yellow-400/80 shadow-lg"
+                  />
+                  {/* Username overlapping bottom of profile picture */}
+                  <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/2">
+                    <h4 className="text-xl font-bold text-white whitespace-nowrap" style={{
+                      textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
+                    }}>{stats.global_high_score.nickname}</h4>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Link 
+                    to={`/contests/${stats.global_high_score.contest_id}`}
+                    className="text-yellow-200 text-lg font-bold hover:text-white hover:underline transition-colors cursor-pointer"
+                    style={{
+                      textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
+                    }}
+                  >
+                    {stats.global_high_score.contest_name}
+                  </Link>
+                  <span className="text-white text-sm font-medium" style={{
+                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
+                  }}>
+                    {new Date(stats.global_high_score.contest_start_time).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Performance Stats - Centered across full width */}
+              <div className="flex gap-4 justify-center">
+                <div className="text-center">
+                  <span className="text-yellow-300/80 text-xs block">Start</span>
+                  <div className="text-white font-bold text-sm">
+                    <span className="inline-flex items-center gap-1">
+                      {parseFloat(stats.global_high_score.initial_balance_sol.toFixed(2)).toString()}
+                      <img 
+                        src="/assets/media/logos/solana.svg" 
+                        alt="SOL" 
+                        className="w-5 h-5 inline-block"
+                      />
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <span className="text-yellow-300/80 text-xs block">End</span>
+                  <div className="text-white font-bold text-sm">
+                    <span className="inline-flex items-center gap-1">
+                      {parseFloat(stats.global_high_score.portfolio_value_sol.toFixed(2)).toString()}
+                      <img 
+                        src="/assets/media/logos/solana.svg" 
+                        alt="SOL" 
+                        className="w-5 h-5 inline-block"
+                      />
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <span className="text-yellow-300/80 text-xs block">Gain</span>
+                  <div className={`text-xl font-bold ${stats.global_high_score.percentage_gain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {stats.global_high_score.percentage_gain >= 0 ? '+' : ''}{stats.global_high_score.percentage_gain.toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Contest Banner Image */}
             {stats.global_high_score.contest_image_url && (
@@ -667,67 +747,6 @@ const PlatformStats: React.FC = () => {
               </div>
             )}
 
-            <div className={`relative p-6 ${stats.global_high_score.contest_image_url ? 'pt-20' : ''}`}>
-              <div className="text-center mb-4 relative z-10">
-                <h3 className="text-3xl font-bold text-yellow-200 mb-1" style={{
-                  textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
-                }}>
-                  GLOBAL HIGH SCORE
-                </h3>
-                <p className="text-yellow-300/80 text-sm uppercase tracking-widest">All-Time Best Performance</p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-[70%_30%] gap-4 items-stretch">
-                {/* Player Info - Now takes 70% of space */}
-                <div className="text-center lg:text-left">
-                  <div className="flex items-center justify-center lg:justify-start gap-3 mb-2">
-                    <img 
-                      src={stats.global_high_score.profile_image_url} 
-                      alt={stats.global_high_score.nickname}
-                      className="w-12 h-12 rounded-full border-2 border-yellow-400/60 shadow-lg"
-                    />
-                    <div>
-                      <h4 className="text-lg font-bold text-white">{stats.global_high_score.nickname}</h4>
-                      <div className="flex items-center gap-2">
-                        <Link 
-                          to={`/contests/${stats.global_high_score.contest_id}`}
-                          className="text-yellow-300/80 text-xs hover:text-yellow-200 hover:underline transition-colors"
-                        >
-                          {stats.global_high_score.contest_name}
-                        </Link>
-                        <span className="text-yellow-400/70 text-[10px]">
-                          {new Date(stats.global_high_score.contest_start_time).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* All Stats side by side */}
-                <div className="text-center flex justify-between gap-2">
-                  <div className="flex-1">
-                    <span className="text-yellow-300/80 text-xs block">Start</span>
-                    <div className="text-white font-bold text-sm">
-                      {formatSOL(stats.global_high_score.initial_balance_sol)}
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1">
-                    <span className="text-yellow-300/80 text-xs block">End</span>
-                    <div className="text-white font-bold text-sm">
-                      {formatSOL(stats.global_high_score.portfolio_value_sol)}
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1">
-                    <span className="text-yellow-300/80 text-xs block">Gain</span>
-                    <div className="text-xl font-bold text-yellow-300">
-                      +{stats.global_high_score.percentage_gain.toFixed(1)}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Golden glow effect */}
             <div className="absolute inset-0 bg-gradient-to-tr from-yellow-600/0 via-yellow-500/0 to-yellow-400/0 hover:from-yellow-600/5 hover:via-yellow-500/3 hover:to-yellow-400/5 mix-blend-screen transition-all duration-500" />

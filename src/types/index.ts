@@ -221,6 +221,7 @@ export interface Token {
   pool_price_calculated_at?: string;
   last_is_active_evaluation_at?: string;
   last_jupiter_sync_at?: string;
+  last_processed_at?: string;  // Generic name for multi-source data processing timestamp
   metadata_last_updated_at?: string;
   score_calculated_at?: string;
   last_price_change?: string;

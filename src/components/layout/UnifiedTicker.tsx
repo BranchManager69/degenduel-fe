@@ -217,7 +217,13 @@ export const UnifiedTicker: React.FC<Props> = ({
 
   // Scroll animation with proper modulo math
   const animateScroll = useCallback((timestamp: number) => {
-    if (!scrollableContentRef.current || isInteractingRef.current || isHoverPausedRef.current) {
+    if (!scrollableContentRef.current) {
+      animationFrameIdRef.current = null; 
+      return;
+    }
+    
+    // Only pause for actual user interaction, not hover
+    if (isInteractingRef.current) {
       animationFrameIdRef.current = null; 
       return;
     }
@@ -244,28 +250,6 @@ export const UnifiedTicker: React.FC<Props> = ({
     scrollableContentRef.current.style.transform = `translate3d(${newTranslateX}px, 0, 0)`;
     animationFrameIdRef.current = requestAnimationFrame(animateScroll);
   }, []);
-
-  // Start animation when content overflows
-  useEffect(() => {
-    console.log(`[UnifiedTicker] Animation check - overflows: ${contentOverflows}, animating: ${!!animationFrameIdRef.current}`);
-    
-    if (contentOverflows && 
-        !isInteractingRef.current && 
-        !isHoverPausedRef.current && 
-        !animationFrameIdRef.current) {
-      console.log('[UnifiedTicker] Starting animation from effect');
-      lastTimestampRef.current = 0;
-      animationFrameIdRef.current = requestAnimationFrame(animateScroll);
-    }
-    
-    return () => {
-      if (animationFrameIdRef.current) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-        animationFrameIdRef.current = null;
-      }
-    };
-  }, [contentOverflows, animateScroll]);
-
 
   // Mixed ticker items - contest, 10 tokens, contest, 10 tokens...
   const originalTickerItems = useMemo(() => {
@@ -713,6 +697,22 @@ export const UnifiedTicker: React.FC<Props> = ({
     return items;
   }, [sortedContests, displayTokens, isOverallLoading, finalDataConnected, duelAnnouncementItem, navigate, isCompact, showVolume]);
 
+  // Start animation - just start it always
+  useEffect(() => {
+    if (originalTickerItems.length > 0 && !animationFrameIdRef.current) {
+      console.log('[UnifiedTicker] Starting animation');
+      lastTimestampRef.current = 0;
+      animationFrameIdRef.current = requestAnimationFrame(animateScroll);
+    }
+    
+    return () => {
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
+      }
+    };
+  }, [originalTickerItems.length, animateScroll]);
+
   // Measure content after ticker items change
   useLayoutEffect(() => {
     if (scrollableContentRef.current && viewportRef.current && originalTickerItems.length > 0) {
@@ -834,7 +834,7 @@ export const UnifiedTicker: React.FC<Props> = ({
     }
     
     resumeTimeoutIdRef.current = setTimeout(() => {
-      if (contentOverflows && !isHoverPausedRef.current && !animationFrameIdRef.current) {
+      if (!isHoverPausedRef.current && !animationFrameIdRef.current) {
         console.log('[UnifiedTicker] Resuming animation after interaction');
         lastTimestampRef.current = 0;
         animationFrameIdRef.current = requestAnimationFrame(animateScroll);
@@ -871,8 +871,8 @@ export const UnifiedTicker: React.FC<Props> = ({
     
     isHoverPausedRef.current = false;
     
-    // Resume animation if content overflows and not interacting
-    if (contentOverflows && !isInteractingRef.current && !animationFrameIdRef.current) {
+    // Resume animation if not interacting
+    if (!isInteractingRef.current && !animationFrameIdRef.current) {
       console.log('[UnifiedTicker] Resuming animation on mouse leave');
       lastTimestampRef.current = 0;
       animationFrameIdRef.current = requestAnimationFrame(animateScroll);
@@ -900,7 +900,7 @@ export const UnifiedTicker: React.FC<Props> = ({
       <div className="flex items-center justify-center h-full w-full">
         <div className="flex items-center space-x-2 text-white/60">
           <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="text-sm font-medium">Loading market data...</span>
+          <span className="text-sm font-medium">Loading...</span>
         </div>
       </div>
     );
@@ -912,7 +912,7 @@ export const UnifiedTicker: React.FC<Props> = ({
       <div className="flex items-center justify-center h-full w-full">
         <div className="flex items-center space-x-2 text-yellow-400/80">
           <WifiOff className="w-4 h-4" />
-          <span className="text-sm font-medium">Connecting to market data...</span>
+          <span className="text-sm font-medium">Server unavailable</span>
         </div>
       </div>
     );
