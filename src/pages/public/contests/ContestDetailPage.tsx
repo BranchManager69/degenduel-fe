@@ -12,7 +12,7 @@
  * @updated 2025-01-29
  */
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
@@ -119,12 +119,16 @@ export const ContestDetails: React.FC = () => {
   // Add state for analytics participants with SOL values
   const [analyticsParticipants, setAnalyticsParticipants] = useState<any[]>([]);
   
-  // Add state for portfolio transactions
+  // Add state for portfolio transactions and participation
   const [portfolioTransactions, setPortfolioTransactions] = useState<any>(null);
+  const [hasPortfolio, setHasPortfolio] = useState<boolean>(false);
   
   // Image loading states
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  
+  // Copy feedback state
+  const [showCopied, setShowCopied] = useState(false);
   
   
   // Mouse position tracking for parallax effect
@@ -417,6 +421,11 @@ export const ContestDetails: React.FC = () => {
           if (portfolioResponse.ok) {
             const portfolioData = await portfolioResponse.json();
             console.log("Contest portfolio data:", portfolioData);
+            
+            // Check if user has a portfolio (participated)
+            if (portfolioData.portfolio && portfolioData.portfolio.length > 0) {
+              setHasPortfolio(true);
+            }
             
             if (portfolioData.transactions) {
               setPortfolioTransactions(portfolioData.transactions);
@@ -1004,56 +1013,77 @@ export const ContestDetails: React.FC = () => {
                   <div className="p-4 w-full">
                     <div className="flex items-center justify-between">
                       <div className="text-left">
-                      {/* Transaction Badges - Show if user has transactions for this contest */}
-                      {isAuthenticated && portfolioTransactions && (
+                      {/* Transaction Badges - Show based on contest status and participation */}
+                      {isAuthenticated && hasPortfolio && (
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {portfolioTransactions.entry && (
+                          {/* Entry Badge - Show for all statuses if user participated */}
+                          {portfolioTransactions?.entry ? (
                             <a 
                               href={portfolioTransactions.entry.solscan_url} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 rounded-md text-xs font-medium text-blue-300 hover:text-blue-200 transition-all duration-200 backdrop-blur-sm"
                             >
-                              Paid {parseFloat(portfolioTransactions.entry.amount).toFixed(3)}
-                              <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
+                              <span className="border-b border-dashed border-white inline-flex items-center gap-1">Entered {parseFloat(portfolioTransactions.entry.amount).toFixed(3)}<img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" /></span>
                               <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
                                 <svg className="w-2 h-2 text-black" fill="currentColor" viewBox="0 0 20 20" strokeWidth="3">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
                               </div>
                             </a>
+                          ) : (
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-500/20 border border-gray-500/40 rounded-md text-xs font-medium text-gray-400 backdrop-blur-sm">
+                              Entered
+                              <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3 opacity-50" />
+                            </div>
                           )}
-                          {portfolioTransactions.prize && (
-                            <a 
-                              href={portfolioTransactions.prize.solscan_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded-md text-xs font-medium text-green-300 hover:text-green-200 transition-all duration-200 backdrop-blur-sm"
-                            >
-                              Won {parseFloat(portfolioTransactions.prize.amount).toFixed(3)}
-                              <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
-                              <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
-                                <svg className="w-2 h-2 text-black" fill="currentColor" viewBox="0 0 20 20" strokeWidth="3">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
+                          
+                          {/* Payout Badge - Only show for completed status */}
+                          {displayStatus === "completed" && (
+                            portfolioTransactions?.prize ? (
+                              <a 
+                                href={portfolioTransactions.prize.solscan_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 rounded-md text-xs font-medium text-green-300 hover:text-green-200 transition-all duration-200 backdrop-blur-sm"
+                              >
+                                <span className="border-b border-dashed border-white inline-flex items-center gap-1">Won {parseFloat(portfolioTransactions.prize.amount).toFixed(3)}<img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" /></span>
+                                <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                                  <svg className="w-2 h-2 text-black" fill="currentColor" viewBox="0 0 20 20" strokeWidth="3">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </a>
+                            ) : (
+                              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-500/20 border border-gray-500/40 rounded-md text-xs font-medium text-gray-400 backdrop-blur-sm">
+                                Won
+                                <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3 opacity-50" />
                               </div>
-                            </a>
+                            )
                           )}
-                          {portfolioTransactions.refund && (
-                            <a 
-                              href={portfolioTransactions.refund.solscan_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 rounded-md text-xs font-medium text-red-300 hover:text-red-200 transition-all duration-200 backdrop-blur-sm"
-                            >
-                              Canceled {parseFloat(portfolioTransactions.refund.amount).toFixed(3)}
-                              <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" />
-                              <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
-                                <svg className="w-2 h-2 text-black" fill="currentColor" viewBox="0 0 20 20" strokeWidth="3">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
+                          
+                          {/* Refund Badge - Only show for cancelled status */}
+                          {displayStatus === "cancelled" && (
+                            portfolioTransactions?.refund ? (
+                              <a 
+                                href={portfolioTransactions.refund.solscan_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 rounded-md text-xs font-medium text-red-300 hover:text-red-200 transition-all duration-200 backdrop-blur-sm"
+                              >
+                                <span className="border-b border-dashed border-white inline-flex items-center gap-1">Refunded {parseFloat(portfolioTransactions.refund.amount).toFixed(3)}<img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3" /></span>
+                                <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                                  <svg className="w-2 h-2 text-black" fill="currentColor" viewBox="0 0 20 20" strokeWidth="3">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </a>
+                            ) : (
+                              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-500/20 border border-gray-500/40 rounded-md text-xs font-medium text-gray-400 backdrop-blur-sm">
+                                Refunded
+                                <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3 opacity-50" />
                               </div>
-                            </a>
+                            )
                           )}
                         </div>
                       )}
@@ -1351,7 +1381,7 @@ export const ContestDetails: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-500">Structure:</span>
+                    <span className="text-gray-500">Payout Structure:</span>
                     <span className="text-gray-300 font-medium">
                       {(() => {
                         const payoutStructure = contest?.settings?.payout_structure;
@@ -1370,6 +1400,7 @@ export const ContestDetails: React.FC = () => {
                         
                         if (winnerPercentage >= 0.45 && winnerPercentage <= 0.55) {
                           // Around 50% of players win - likely double up
+                          // TODO: Consider removing coefficient of variation check since Double Up contests have equal payouts by design
                           // Check if payouts are relatively equal (variance test)
                           const avgPayout = payouts.reduce((sum, p) => sum + p, 0) / payouts.length;
                           const variance = payouts.reduce((sum, p) => sum + Math.pow(p - avgPayout, 2), 0) / payouts.length;
@@ -1399,6 +1430,56 @@ export const ContestDetails: React.FC = () => {
                     </span>
                   </div>
                 </div>
+                {contest.wallet_address && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500 flex items-center gap-1">
+                      Contest Wallet:
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-700/50 hover:bg-gray-700/70 rounded-full text-[10px] text-gray-400 hover:text-gray-300 cursor-help transition-colors">
+                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>What's this?</span>
+                      </span>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(contest.wallet_address!);
+                          setShowCopied(true);
+                          setTimeout(() => setShowCopied(false), 2000);
+                        }}
+                        className="text-gray-300 font-mono text-xs hover:text-gray-100 cursor-pointer transition-colors relative"
+                        title="Click to copy wallet address"
+                      >
+                        {contest.wallet_address}
+                        <AnimatePresence>
+                          {showCopied && (
+                            <motion.span 
+                              initial={{ opacity: 0, y: -2 }}
+                              animate={{ opacity: 1, y: -4 }}
+                              exit={{ opacity: 0, y: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-green-400 text-xs font-sans pointer-events-none"
+                            >
+                              Copied!
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
+                      </button>
+                      <a
+                        href={`https://solscan.io/account/${contest.wallet_address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 hover:bg-gray-700 rounded transition-colors"
+                        title="View on Solscan"
+                      >
+                        <svg className="w-3 h-3 text-gray-400 hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

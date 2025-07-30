@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Token, TokenHelpers } from '../../types';
 import { formatNumber, formatPercentage, formatTokenPrice } from '../../utils/format';
 import { Plus, Minus } from 'lucide-react';

@@ -430,7 +430,8 @@ export const TokenDetailPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
               >
-                <Card className="border-dark-400" ref={(el) => {
+                <Card className="border-dark-400">
+                  <div ref={(el: HTMLDivElement | null) => {
                   if (el && showDebug) {
                     const computed = window.getComputedStyle(el);
                     const debugInfo = {
@@ -609,6 +610,7 @@ export const TokenDetailPage: React.FC = () => {
                         </div>
                       </div>
                     )}
+                  </div>
                   </div>
                 </Card>
               </motion.div>
