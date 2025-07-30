@@ -169,6 +169,7 @@ export const TokenDetailPageNew: React.FC = () => {
       { key: 'first_seen_on_jupiter_at', value: token.first_seen_on_jupiter_at, label: 'first_seen_on_jupiter_at' },
       { key: 'last_is_active_evaluation_at', value: token.last_is_active_evaluation_at, label: 'last_is_active_evaluation_at' },
       { key: 'last_jupiter_sync_at', value: token.last_jupiter_sync_at, label: 'last_jupiter_sync_at' },
+      { key: 'last_processed_at', value: token.last_processed_at, label: 'last_processed_at' },
       { key: 'last_price_change', value: token.last_price_change, label: 'last_price_change' },
       { key: 'last_priority_calculation', value: token.last_priority_calculation, label: 'last_priority_calculation' },
       { key: 'last_refresh_attempt', value: token.last_refresh_attempt, label: 'last_refresh_attempt' },
@@ -351,16 +352,15 @@ export const TokenDetailPageNew: React.FC = () => {
             </p>
           </div>
 
-          {/* Timeline Section - Admin Only */}
-          {(user?.role === 'admin' || user?.role === 'superadmin') && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8 p-6 bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg"
-            >
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span className="text-red-400">🔒</span> Token Lifecycle Timeline
-              </h3>
+          {/* Timeline Section - Public */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-6 bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg"
+          >
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <span className="text-blue-400">📅</span> Token Lifecycle Timeline
+            </h3>
               
               {/* Timeline */}
               <div className="relative">
@@ -456,47 +456,7 @@ export const TokenDetailPageNew: React.FC = () => {
                 </div>
               </div>
               
-              {/* Additional timeline metadata */}
-              <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                {token.last_refresh_attempt && (
-                  <div className="bg-dark-300/50 rounded p-2">
-                    <p className="text-gray-500">Last Refresh Attempt</p>
-                    <p className="text-gray-300">
-                      <span className="hidden sm:inline">{getTimeAgo(token.last_refresh_attempt)}</span>
-                      <span className="sm:hidden">{getTimeAgo(token.last_refresh_attempt, true)}</span>
-                    </p>
-                  </div>
-                )}
-                {token.pool_price_calculated_at && (
-                  <div className="bg-dark-300/50 rounded p-2">
-                    <p className="text-gray-500">Price Calculated</p>
-                    <p className="text-gray-300">
-                      <span className="hidden sm:inline">{getTimeAgo(token.pool_price_calculated_at)}</span>
-                      <span className="sm:hidden">{getTimeAgo(token.pool_price_calculated_at, true)}</span>
-                    </p>
-                  </div>
-                )}
-                {token.last_is_active_evaluation_at && (
-                  <div className="bg-dark-300/50 rounded p-2">
-                    <p className="text-gray-500">Activity Evaluated</p>
-                    <p className="text-gray-300">
-                      <span className="hidden sm:inline">{getTimeAgo(token.last_is_active_evaluation_at)}</span>
-                      <span className="sm:hidden">{getTimeAgo(token.last_is_active_evaluation_at, true)}</span>
-                    </p>
-                  </div>
-                )}
-                {token.last_jupiter_sync_at && (
-                  <div className="bg-dark-300/50 rounded p-2">
-                    <p className="text-gray-500">Jupiter Sync</p>
-                    <p className="text-gray-300">
-                      <span className="hidden sm:inline">{getTimeAgo(token.last_jupiter_sync_at)}</span>
-                      <span className="sm:hidden">{getTimeAgo(token.last_jupiter_sync_at, true)}</span>
-                    </p>
-                  </div>
-                )}
-              </div>
             </motion.div>
-          )}
 
           {/* Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -591,6 +551,7 @@ export const TokenDetailPageNew: React.FC = () => {
                 <div className="h-full">
                   <div className="p-6">
                     
+
                     {/* Compact Grid with Shared Headers */}
                     <div className="space-y-3">
                       {/* Time Period Headers */}
@@ -665,6 +626,26 @@ export const TokenDetailPageNew: React.FC = () => {
 
                     {/* Additional Metadata */}
                     <div className="border-t border-dark-400/50 pt-4 mt-4 space-y-2">
+                      {(token.last_processed_at || token.last_jupiter_sync_at) && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Last Processed</span>
+                          <span>
+                            <span className="text-gray-400 text-xs">
+                              <span className="hidden sm:inline">{getTimeAgo(token.last_processed_at || token.last_jupiter_sync_at!)}</span>
+                              <span className="sm:hidden">{getTimeAgo(token.last_processed_at || token.last_jupiter_sync_at!, true)}</span>
+                            </span>
+                            <span className="text-white ml-3">
+                              {new Date(token.last_processed_at || token.last_jupiter_sync_at!).toLocaleString([], { 
+                                year: 'numeric', 
+                                month: 'numeric', 
+                                day: 'numeric', 
+                                hour: 'numeric', 
+                                minute: '2-digit' 
+                              })}
+                            </span>
+                          </span>
+                        </div>
+                      )}
                       {token.refresh_metadata?.enhanced_market_data?.pairCreatedAt && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-400">Pool Created</span>

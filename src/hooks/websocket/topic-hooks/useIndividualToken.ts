@@ -100,6 +100,7 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
       open_graph_image_url: data.open_graph_image_url,
       last_is_active_evaluation_at: data.last_is_active_evaluation_at,
       last_jupiter_sync_at: data.last_jupiter_sync_at,
+      last_processed_at: data.last_processed_at,
       manually_activated: data.manually_activated,
       metadata_last_updated_at: data.metadata_last_updated_at,
       degenduel_score: data.degenduel_score,
@@ -117,6 +118,14 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
   }, [tokenAddress]);
 
   // Transform partial updates - ONLY includes fields that were sent
+  // 
+  // ⚠️  CRITICAL WARNING: This is a manual allowlist of WebSocket fields!
+  // ⚠️  If backend adds new fields to WebSocket messages, they must be added here
+  // ⚠️  or they will be SILENTLY IGNORED (like last_jupiter_sync_at was)
+  // 
+  // TODO: Replace this manual field mapping with automatic field detection
+  // or use a more robust merging strategy that doesn't require maintenance
+  //
   const transformPartialToken = useCallback((data: any): Partial<Token> => {
     const partial: Partial<Token> = {};
     
@@ -184,6 +193,7 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
     if (data.open_graph_image_url !== undefined) partial.open_graph_image_url = data.open_graph_image_url;
     if (data.last_is_active_evaluation_at !== undefined) partial.last_is_active_evaluation_at = data.last_is_active_evaluation_at;
     if (data.last_jupiter_sync_at !== undefined) partial.last_jupiter_sync_at = data.last_jupiter_sync_at;
+    if (data.last_processed_at !== undefined) partial.last_processed_at = data.last_processed_at;
     if (data.manually_activated !== undefined) partial.manually_activated = data.manually_activated;
     if (data.metadata_last_updated_at !== undefined) partial.metadata_last_updated_at = data.metadata_last_updated_at;
     if (data.degenduel_score !== undefined) partial.degenduel_score = data.degenduel_score;
@@ -212,6 +222,10 @@ export function useIndividualToken(tokenAddress: string): UseIndividualTokenRetu
       // Use the direct token endpoint!
       const response = await fetch(`/api/tokens/${tokenAddress}`);
       if (!response.ok) {
+        // Handle server downtime with user-friendly message
+        if (response.status === 502 || response.status === 503 || response.status === 504) {
+          throw new Error('Server temporarily unavailable.');
+        }
         throw new Error(`Failed to fetch token: ${response.statusText}`);
       }
 
