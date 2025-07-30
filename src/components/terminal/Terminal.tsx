@@ -1367,6 +1367,16 @@ Examples:
               type: "contest_data",
               enabled: true,
               description: "Get contest and leaderboard data"
+            },
+            {
+              type: "get_profile",
+              enabled: true,  // Always available
+              description: "Get current user's profile information"
+            },
+            {
+              type: "update_profile",
+              enabled: !!user?.is_authenticated,
+              description: "Update user profile information"
             }
           ],
           onChunk: (chunk: string) => {
