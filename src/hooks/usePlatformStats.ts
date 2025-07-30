@@ -26,6 +26,32 @@ export interface PlatformStats {
     user_id: number;
     nickname: string;
     profile_image_url: string;
+    experience_points: number;
+    user_level_id: number;
+    level: number;
+    level_title: string;
+  };
+  recent_contest_winner: {
+    portfolio_value_usd: number;
+    portfolio_value_sol: number;
+    initial_balance_usd: number;
+    initial_balance_sol: number;
+    percentage_gain: number;
+    contest_id: number;
+    contest_name: string;
+    contest_image_url: string;
+    contest_start_time: string;
+    historical_sol_price: {
+      price: number;
+      timestamp: string;
+    };
+    user_id: number;
+    nickname: string;
+    profile_image_url: string;
+    experience_points: number;
+    user_level_id: number;
+    level: number;
+    level_title: string;
   };
   token_discovery: {
     discovered_today: number;

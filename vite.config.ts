@@ -66,6 +66,16 @@ export default defineConfig(({ command, mode }): UserConfig => {
           protocol: "ws",
         },
         proxy: {
+          "^/uploads/.*": {
+            target: "http://localhost:3004", // Point to local backend
+            changeOrigin: true,
+            secure: false,
+          },
+          "^/images/.*": {
+            target: "http://localhost:3004", // Point to local backend for images
+            changeOrigin: true,
+            secure: false,
+          },
           "^/api/.*": {
             target: "https://degenduel.me", // MANUAL OVERRIDE
             changeOrigin: true,

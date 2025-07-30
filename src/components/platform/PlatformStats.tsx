@@ -3,6 +3,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { usePlatformStats } from '../../hooks/usePlatformStats';
 import { getContestImageUrl } from '../../lib/imageUtils';
+import { GlobalHighScore } from './GlobalHighScore';
+import { RecentContestWinner } from './RecentContestWinner';
 
 interface StatItemProps {
   label: string;
@@ -332,9 +334,8 @@ const PlatformStats: React.FC = () => {
             <div className="absolute top-0 right-0 w-3 h-3 bg-gradient-to-br from-emerald-500/40 to-transparent"></div>
             <div className="absolute bottom-0 left-0 w-3 h-3 bg-gradient-to-tr from-emerald-500/40 to-transparent"></div>
             
-            <div className="relative p-4 text-center">
-              <p className="text-emerald-300/90 font-bold text-sm uppercase tracking-widest mb-3">Token Stats</p>
-              <div className="space-y-2">
+            <div className="relative p-6 text-center">
+              <div className="space-y-0.5 mb-2">
                 <div className="flex justify-between items-center">
                   <span className="text-emerald-300/80 text-xs">Active</span>
                   <span className="text-white font-bold text-sm">{formatNumber(stats.active_tokens)}</span>
@@ -344,16 +345,17 @@ const PlatformStats: React.FC = () => {
                   <span className="text-white font-bold text-sm">{formatNumber(stats.token_discovery.by_source.dual_detection + stats.token_discovery.by_source.legacy)}</span>
                 </div>
               </div>
+              <p className="text-emerald-300/90 font-bold text-sm uppercase tracking-widest">Token Stats</p>
             </div>
             
             <div className="absolute inset-0 bg-gradient-to-tr from-emerald-600/0 via-emerald-500/0 to-emerald-400/0 group-hover:from-emerald-600/5 group-hover:via-emerald-500/3 group-hover:to-emerald-400/5 mix-blend-screen transition-all duration-500" />
           </motion.div>
         </div>
 
-        {/* Token Discovery Section - only show if we have 10+ recent tokens */}
-        {stats.token_discovery && totalRecentTokens >= 10 && (
-          <div className="mt-10 mb-10">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
+        {/* Token Discovery Section - only show if we have 5+ recent tokens */}
+        {stats.token_discovery && totalRecentTokens >= 5 && (
+          <div className="mt-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-4xl mx-auto">
               
               {/* Launch Pad Breakdown Card */}
               <motion.div
@@ -374,31 +376,32 @@ const PlatformStats: React.FC = () => {
                   </svg>
                 </div>
                 
-                <div className="relative p-6">
-                  <h3 className="text-lg font-bold text-cyan-200 mb-6">
-                    TOKEN SOURCES
+                <div className="relative p-4 h-full flex flex-col">
+                  <h3 className="text-sm font-bold text-cyan-200 mb-3">
+                    TOKENS RECENTLY ADDED
                   </h3>
                   
-                  <div className="flex justify-between items-end h-40 gap-3">
+                  <div className="flex justify-between items-end flex-1 gap-2" style={{ minHeight: '120px' }}>
                     {launchPadBreakdown.map((item) => {
                       const percentage = totalRecentTokens > 0 ? (item.count / totalRecentTokens * 100) : 0;
-                      const barHeight = maxCount > 0 ? (item.count / maxCount * 100) : 0;
+                      const barHeight = maxCount > 0 ? (item.count / maxCount * 80) : 0;
                       
                       return (
                         <div key={item.name} className="flex-1 flex flex-col items-center justify-end">
-                          {/* Percentage above bar */}
-                          <div className="mb-1 text-xs font-bold text-white">
-                            {percentage.toFixed(0)}%
-                          </div>
-                          
-                          {/* Bar */}
-                          <div className="relative w-full max-w-[60px]">
+                          {/* Bar with percentage */}
+                          <div className="relative w-full max-w-[60px] flex flex-col items-center">
+                            {/* Percentage */}
+                            <div className="mb-1 text-xs font-bold text-white">
+                              {percentage.toFixed(0)}%
+                            </div>
+                            
+                            {/* Bar */}
                             <motion.div
-                              className="relative bg-gradient-to-t from-cyan-500/80 to-cyan-400/60 rounded-t"
+                              className="relative bg-gradient-to-t from-cyan-500/80 to-cyan-400/60 rounded-t w-full"
                               initial={{ height: 0 }}
-                              animate={{ height: `${Math.max(barHeight * 1.2, 3)}px` }}
+                              animate={{ height: `${Math.max(barHeight, 8)}px` }}
                               transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
-                              style={{ minHeight: '3px' }}
+                              style={{ minHeight: '8px' }}
                             >
                               {/* Count inside bar */}
                               {item.count > 0 && (
@@ -410,10 +413,10 @@ const PlatformStats: React.FC = () => {
                           </div>
                           
                           {/* Icon or placeholder */}
-                          <div className="mt-2 w-8 h-8 flex items-center justify-center">
+                          <div className="mt-1 w-6 h-6 flex items-center justify-center">
                             {item.icon ? (
                               item.name === 'Believe' ? (
-                                <div className="w-8 h-8 rounded-full overflow-hidden bg-lime-400">
+                                <div className="w-6 h-6 rounded-full overflow-hidden bg-lime-400">
                                   <img 
                                     src={item.icon} 
                                     alt={item.name}
@@ -443,13 +446,6 @@ const PlatformStats: React.FC = () => {
                       );
                     })}
                   </div>
-                  
-                  <div className="mt-6 pt-3 border-t border-cyan-600/30">
-                    <div className="text-center">
-                      <span className="text-cyan-300/90 text-sm">Tokens recently added to DegenDuel:</span>
-                      <span className="text-white font-bold font-mono ml-2">{totalRecentTokens}</span>
-                    </div>
-                  </div>
                 </div>
                 
                 {/* Corner accents */}
@@ -476,13 +472,13 @@ const PlatformStats: React.FC = () => {
                   </svg>
                 </div>
                 
-                <div className="relative p-6">
-                  <h3 className="text-lg font-bold text-cyan-200 mb-4">
+                <div className="relative p-4">
+                  <h3 className="text-sm font-bold text-cyan-200 mb-2">
                     24-HOUR DISCOVERY TIMELINE
                   </h3>
                   
                   {/* Hourly stacked bar chart */}
-                  <div className="relative h-32">
+                  <div className="relative h-20">
                     <div className="absolute inset-0 flex items-end justify-between gap-[2px]">
                       {hourlyBreakdown.map((hourData, index) => {
                         const barHeight = maxHourlyTotal > 0 ? (hourData.total / maxHourlyTotal * 100) : 0;
@@ -503,9 +499,9 @@ const PlatformStats: React.FC = () => {
                             <motion.div
                               className="relative w-full"
                               initial={{ height: 0 }}
-                              animate={{ height: `${Math.max(barHeight, 2)}%` }}
+                              animate={{ height: `${Math.max(barHeight, 5)}%` }}
                               transition={{ duration: 0.8, ease: "easeOut", delay: index * 0.02 }}
-                              style={{ minHeight: hourData.total > 0 ? '4px' : '1px' }}
+                              style={{ minHeight: hourData.total > 0 ? '8px' : '2px' }}
                             >
                               {/* Stack segments for each launch pad */}
                               {['Pump.fun', 'Believe', 'LetsBONK', 'Jupiter Studio', 'Other'].map(platform => {
@@ -551,18 +547,18 @@ const PlatformStats: React.FC = () => {
                   </div>
                   
                   {/* Legend with logos - spread out */}
-                  <div className="mt-10 flex flex-wrap justify-center gap-6">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-gradient-to-t from-emerald-600 to-emerald-500 rounded"></div>
+                  <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-gradient-to-t from-emerald-600 to-emerald-500 rounded"></div>
                       <img 
                         src="/assets/media/logos/pump.png" 
                         alt="Pump.fun"
-                        className="w-5 h-5 object-contain"
+                        className="w-4 h-4 object-contain"
                       />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-gradient-to-t from-lime-400 to-lime-300 rounded"></div>
-                      <div className="w-5 h-5 rounded-full overflow-hidden bg-lime-400">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-gradient-to-t from-lime-400 to-lime-300 rounded"></div>
+                      <div className="w-4 h-4 rounded-full overflow-hidden bg-lime-400">
                         <img 
                           src="/assets/media/logos/believe.png" 
                           alt="Believe"
@@ -570,34 +566,36 @@ const PlatformStats: React.FC = () => {
                         />
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-gradient-to-t from-orange-500 to-orange-400 rounded"></div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-gradient-to-t from-orange-500 to-orange-400 rounded"></div>
                       <img 
                         src="/assets/media/logos/bonk_fun.png" 
                         alt="LetsBONK"
-                        className="w-5 h-5 object-contain"
+                        className="w-4 h-4 object-contain"
                       />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-gradient-to-t from-teal-500 to-teal-400 rounded"></div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-gradient-to-t from-teal-500 to-teal-400 rounded"></div>
                       <img 
                         src="/assets/media/logos/jup.png" 
                         alt="Jupiter Studio"
-                        className="w-5 h-5 object-contain"
+                        className="w-4 h-4 object-contain"
                       />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-gradient-to-t from-gray-500 to-gray-400 rounded"></div>
-                      <div className="w-5 h-5 flex items-center justify-center">
-                        <span className="text-[9px] text-cyan-400/70 font-semibold">OTHER</span>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-gradient-to-t from-gray-500 to-gray-400 rounded"></div>
+                      <div className="w-4 h-4 flex items-center justify-center">
+                        <span className="text-[8px] text-cyan-400/70 font-semibold">OTHER</span>
                       </div>
                     </div>
                   </div>
                   
                   {/* Summary stats */}
-                  <div className="mt-6 pt-3 border-t border-cyan-600/30">
+                  <div className="mt-3 pt-2 border-t border-cyan-600/30">
                     <div className="text-center">
-                      <span className="text-cyan-300/90 text-sm">{stats.token_discovery.discovered_today} tokens today • {formatNumber(stats.token_discovery.discovered_this_week)} this week</span>
+                      <span className="text-cyan-300/90 text-xs">
+                        <span className="text-white font-bold">{stats.token_discovery.discovered_today}</span> tokens today • <span className="text-white font-bold">{formatNumber(stats.token_discovery.discovered_this_week)}</span> this week
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -611,147 +609,172 @@ const PlatformStats: React.FC = () => {
           </div>
         )}
 
-        {/* Global High Score Section */}
-        <div className="mt-8 w-full lg:w-1/2">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="relative bg-gradient-to-br from-yellow-950/90 via-amber-950/80 to-yellow-900/90 border-2 border-yellow-600/60 hover:border-yellow-400/80 transition-all duration-300 overflow-hidden backdrop-blur-sm shadow-[0_0_40px_rgba(245,158,11,0.4)]"
-            style={{
-              clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))'
-            }}
-          >
-            {/* Crown background pattern */}
-            <div className="absolute inset-0 opacity-10 group-hover:opacity-15 transition-opacity duration-500">
-              <svg className="w-full h-full" viewBox="0 0 200 100" preserveAspectRatio="none">
-                <path d="M20 80 L40 20 L60 80 L80 30 L100 80 L120 25 L140 80 L160 35 L180 80" 
-                  stroke="#f59e0b" strokeWidth="0.5" fill="none" strokeDasharray="2,2" />
-                <circle cx="100" cy="50" r="25" fill="none" stroke="#f59e0b" strokeWidth="0.3" strokeDasharray="3,3" />
-              </svg>
-            </div>
-
-            {/* Golden corner accents */}
-            <div className="absolute top-0 right-0 w-4 h-4 bg-gradient-to-br from-yellow-400/60 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 w-4 h-4 bg-gradient-to-tr from-yellow-400/60 to-transparent"></div>
-
-            {/* Title Section - Moved to Top */}
-            <div className="text-center p-4 relative z-20">
-              <h3 className="text-2xl font-bold text-yellow-200 mb-2 whitespace-nowrap" style={{
-                textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
-              }}>
-                ALL TIME BEST PERFORMANCE
-              </h3>
-              <div className="flex flex-col items-center mb-4">
-                <div className="relative mb-3">
-                  {/* Circular glow behind profile picture */}
-                  <div className="absolute inset-0 w-16 h-16 rounded-full bg-gradient-to-r from-yellow-400/40 to-amber-400/40 blur-md scale-150"></div>
-                  <img 
-                    src={stats.global_high_score.profile_image_url} 
-                    alt={stats.global_high_score.nickname}
-                    className="relative w-16 h-16 rounded-full border-3 border-yellow-400/80 shadow-lg"
-                  />
-                  {/* Username overlapping bottom of profile picture */}
-                  <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/2">
-                    <h4 className="text-xl font-bold text-white whitespace-nowrap" style={{
-                      textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
-                    }}>{stats.global_high_score.nickname}</h4>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Link 
-                    to={`/contests/${stats.global_high_score.contest_id}`}
-                    className="text-yellow-200 text-lg font-bold hover:text-white hover:underline transition-colors cursor-pointer"
-                    style={{
-                      textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
-                    }}
-                  >
-                    {stats.global_high_score.contest_name}
-                  </Link>
-                  <span className="text-white text-sm font-medium" style={{
-                    textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
-                  }}>
-                    {new Date(stats.global_high_score.contest_start_time).toLocaleDateString()}
-                  </span>
-                </div>
+        {/* Global High Score Section - Side by Side Comparison */}
+        <div className="mt-8 w-full flex flex-col md:flex-row gap-4">
+          {/* Original Global High Score */}
+          <div className="flex-1">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="relative bg-gradient-to-br from-yellow-950/90 via-amber-950/80 to-yellow-900/90 border-2 border-yellow-600/60 hover:border-yellow-400/80 transition-all duration-300 overflow-hidden backdrop-blur-sm shadow-[0_0_40px_rgba(245,158,11,0.4)]"
+              style={{
+                clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))'
+              }}
+            >
+              {/* Crown background pattern */}
+              <div className="absolute inset-0 opacity-10 group-hover:opacity-15 transition-opacity duration-500">
+                <svg className="w-full h-full" viewBox="0 0 200 100" preserveAspectRatio="none">
+                  <path d="M20 80 L40 20 L60 80 L80 30 L100 80 L120 25 L140 80 L160 35 L180 80" 
+                    stroke="#f59e0b" strokeWidth="0.5" fill="none" strokeDasharray="2,2" />
+                  <circle cx="100" cy="50" r="25" fill="none" stroke="#f59e0b" strokeWidth="0.3" strokeDasharray="3,3" />
+                </svg>
               </div>
-              
-              {/* Performance Stats - Centered across full width */}
-              <div className="flex gap-4 justify-center">
-                <div className="text-center">
-                  <span className="text-yellow-300/80 text-xs block">Start</span>
-                  <div className="text-white font-bold text-sm">
-                    <span className="inline-flex items-center gap-1">
-                      {parseFloat(stats.global_high_score.initial_balance_sol.toFixed(2)).toString()}
-                      <img 
-                        src="/assets/media/logos/solana.svg" 
-                        alt="SOL" 
-                        className="w-5 h-5 inline-block"
-                      />
-                    </span>
+
+              {/* Golden corner accents */}
+              <div className="absolute top-0 right-0 w-4 h-4 bg-gradient-to-br from-yellow-400/60 to-transparent"></div>
+              <div className="absolute bottom-0 left-0 w-4 h-4 bg-gradient-to-tr from-yellow-400/60 to-transparent"></div>
+
+              {/* Title Section - Moved to Top */}
+              <div className="text-center p-4 relative z-20">
+                <h3 className="text-2xl font-bold text-yellow-200 mb-2 whitespace-nowrap" style={{
+                  textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
+                }}>
+                  ALL TIME BEST PERFORMANCE
+                </h3>
+                <div className="flex flex-col items-center mb-4">
+                  <div className="relative mb-3">
+                    {/* Circular glow behind profile picture */}
+                    <div className="absolute inset-0 w-16 h-16 rounded-full bg-gradient-to-r from-yellow-400/40 to-amber-400/40 blur-md scale-150"></div>
+                    <img 
+                      src={stats.global_high_score.profile_image_url} 
+                      alt={stats.global_high_score.nickname}
+                      className="relative w-16 h-16 rounded-full border-3 border-yellow-400/80 shadow-lg"
+                    />
+                    {/* Username overlapping bottom of profile picture */}
+                    <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/2">
+                      <h4 className="text-xl font-bold text-white whitespace-nowrap" style={{
+                        textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
+                      }}>{stats.global_high_score.nickname}</h4>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center gap-2">
+                    {/* Level Info */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-yellow-300 text-sm font-bold" style={{
+                        textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
+                      }}>
+                        Level {stats.global_high_score.level} - {stats.global_high_score.level_title}
+                      </span>
+                      <span className="text-yellow-200 text-sm" style={{
+                        textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
+                      }}>
+                        ({stats.global_high_score.experience_points.toLocaleString()} XP)
+                      </span>
+                    </div>
+                    
+                    {/* Contest Info */}
+                    <div className="flex items-center gap-2">
+                      <Link 
+                        to={`/contests/${stats.global_high_score.contest_id}`}
+                        className="text-yellow-200 text-lg font-bold hover:text-white hover:underline transition-colors cursor-pointer"
+                        style={{
+                          textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
+                        }}
+                      >
+                        {stats.global_high_score.contest_name}
+                      </Link>
+                      <span className="text-white text-sm font-medium" style={{
+                        textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
+                      }}>
+                        {new Date(stats.global_high_score.contest_start_time).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="text-center">
-                  <span className="text-yellow-300/80 text-xs block">End</span>
-                  <div className="text-white font-bold text-sm">
-                    <span className="inline-flex items-center gap-1">
-                      {parseFloat(stats.global_high_score.portfolio_value_sol.toFixed(2)).toString()}
-                      <img 
-                        src="/assets/media/logos/solana.svg" 
-                        alt="SOL" 
-                        className="w-5 h-5 inline-block"
-                      />
-                    </span>
+                {/* Performance Stats - Centered across full width */}
+                <div className="flex gap-4 justify-center">
+                  <div className="text-center">
+                    <span className="text-yellow-300/80 text-xs block">Start</span>
+                    <div className="text-white font-bold text-sm">
+                      <span className="inline-flex items-center gap-1">
+                        {parseFloat(stats.global_high_score.initial_balance_sol.toFixed(2)).toString()}
+                        <img 
+                          src="/assets/media/logos/solana.svg" 
+                          alt="SOL" 
+                          className="w-5 h-5 inline-block"
+                        />
+                      </span>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="text-center">
-                  <span className="text-yellow-300/80 text-xs block">Gain</span>
-                  <div className={`text-xl font-bold ${stats.global_high_score.percentage_gain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {stats.global_high_score.percentage_gain >= 0 ? '+' : ''}{stats.global_high_score.percentage_gain.toFixed(1)}%
+                  
+                  <div className="text-center">
+                    <span className="text-yellow-300/80 text-xs block">End</span>
+                    <div className="text-white font-bold text-sm">
+                      <span className="inline-flex items-center gap-1">
+                        {parseFloat(stats.global_high_score.portfolio_value_sol.toFixed(2)).toString()}
+                        <img 
+                          src="/assets/media/logos/solana.svg" 
+                          alt="SOL" 
+                          className="w-5 h-5 inline-block"
+                        />
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <span className="text-yellow-300/80 text-xs block">Gain</span>
+                    <div className={`text-xl font-bold ${stats.global_high_score.percentage_gain >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {stats.global_high_score.percentage_gain >= 0 ? '+' : ''}{stats.global_high_score.percentage_gain.toFixed(1)}%
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Contest Banner Image */}
-            {stats.global_high_score.contest_image_url && (
-              <div 
-                className="absolute inset-x-0 top-0 h-40 overflow-hidden"
-                style={{
-                  maskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)',
-                  WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)'
-                }}
-              >
-                <style>{`
-                  @keyframes globalHighScoreScan {
-                    0%, 100% { transform: translateY(0); }
-                    40% { transform: translateY(-20%); }
-                    60% { transform: translateY(-20%); }
-                  }
-                `}</style>
-                <img 
-                  src={getContestImageUrl(stats.global_high_score.contest_image_url) || ""} 
-                  alt={stats.global_high_score.contest_name}
-                  className="w-full h-56 object-cover object-top group-hover:scale-110"
+              {/* Contest Banner Image */}
+              {stats.global_high_score.contest_image_url && (
+                <div 
+                  className="absolute inset-x-0 top-0 h-40 overflow-hidden"
                   style={{
-                    animation: 'globalHighScoreScan 20s ease-in-out infinite',
-                    transition: 'transform 0.7s ease-out',
-                    filter: 'brightness(0.85) saturate(1.1)'
+                    maskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)',
+                    WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 70%, transparent 100%)'
                   }}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
+                >
+                  <style>{`
+                    @keyframes globalHighScoreScan {
+                      0%, 100% { transform: translateY(0); }
+                      40% { transform: translateY(-20%); }
+                      60% { transform: translateY(-20%); }
+                    }
+                  `}</style>
+                  <img 
+                    src={getContestImageUrl(stats.global_high_score.contest_image_url) || ""} 
+                    alt={stats.global_high_score.contest_name}
+                    className="w-full h-56 object-cover object-top group-hover:scale-110"
+                    style={{
+                      animation: 'globalHighScoreScan 20s ease-in-out infinite',
+                      transition: 'transform 0.7s ease-out',
+                      filter: 'brightness(0.85) saturate(1.1)'
+                    }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
 
 
-            {/* Golden glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-yellow-600/0 via-yellow-500/0 to-yellow-400/0 hover:from-yellow-600/5 hover:via-yellow-500/3 hover:to-yellow-400/5 mix-blend-screen transition-all duration-500" />
-          </motion.div>
+              {/* Golden glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-yellow-600/0 via-yellow-500/0 to-yellow-400/0 hover:from-yellow-600/5 hover:via-yellow-500/3 hover:to-yellow-400/5 mix-blend-screen transition-all duration-500" />
+            </motion.div>
+          </div>
+
+        {/* Recent Contest Winner */}
+        <div className="flex-1">
+          <RecentContestWinner data={stats.recent_contest_winner} delay={0.8} />
         </div>
+      </div>
       </div>
     </section>
   );

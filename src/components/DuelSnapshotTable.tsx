@@ -129,23 +129,45 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
   };
 
   // Format SOL amount (returns JSX element)
-  const formatSolAmount = (amount: number, isItalic: boolean = false) => {
+  const formatSolAmount = (amount: number, isItalic: boolean = false, isBold: boolean = false, txSignature?: string) => {
     if (amount === 0) {
       return <span className={`${isItalic ? 'italic' : ''} text-gray-500`}>–</span>;
     }
     
-    return (
+    // Format with up to 6 decimals, removing trailing zeros
+    const formatted = amount.toFixed(6).replace(/\.?0+$/, '');
+    
+    const content = (
       <div className="flex items-center justify-center gap-1">
-        <span className={`${isItalic ? 'italic' : ''} text-white`}>
-          {amount.toFixed(2)}
-        </span>
         <img 
           src="/assets/media/logos/solana.svg" 
           alt="SOL" 
-          className="w-4 h-4"
+          className="w-3 h-3"
         />
+        <span className={`${isItalic ? 'italic' : ''} ${isBold ? 'font-bold' : ''} text-white`}>
+          {formatted}
+        </span>
+        {txSignature && (
+          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        )}
       </div>
     );
+    
+    if (txSignature) {
+      return (
+        <button
+          onClick={() => handleDateClick(txSignature)}
+          className="hover:opacity-80 transition-opacity cursor-pointer"
+          title="View transaction on Solscan"
+        >
+          {content}
+        </button>
+      );
+    }
+    
+    return content;
   };
 
   // Generate extrapolated data for missing days
@@ -365,16 +387,17 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       
       if (days > 0) {
-        setTimeUntilNextDividend(`${days}d ${hours}h ${minutes}m`);
+        setTimeUntilNextDividend(`${days}d ${hours}h ${minutes}m ${seconds}s`);
       } else {
-        setTimeUntilNextDividend(`${hours}h ${minutes}m`);
+        setTimeUntilNextDividend(`${hours}h ${minutes}m ${seconds}s`);
       }
     };
     
     updateCountdown();
-    const interval = setInterval(updateCountdown, 60000); // Update every minute
+    const interval = setInterval(updateCountdown, 1000); // Update every second
     
     return () => clearInterval(interval);
   }, []);
@@ -401,7 +424,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
       const totalDividendsForDay = revenue * 0.1;
       
       // Calculate dividend percentage based on effective balance (override or actual)
-      const effectiveBalance = (!demoMode && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel;
+      const effectiveBalance = (!demoMode && simulatorExpanded && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel;
       const percentage = (snapshot.total_registered_supply || 0) > 0 
         ? (effectiveBalance / (snapshot.total_registered_supply || 1)) * 100 
         : 0;
@@ -708,14 +731,14 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
       )}
 
       {/* Table */}
-      <div className="bg-dark-300/30 rounded-lg overflow-hidden">
+      <div className="rounded-lg overflow-hidden">
         {/* Next Dividend Countdown */}
         {!demoMode && timeUntilNextDividend && (
-          <div className="bg-gradient-to-r from-purple-900/20 via-dark-300/30 to-green-900/20 px-4 py-2 border-b border-gray-800">
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <span className="text-gray-400">Next dividend payout:</span>
-              <span className="text-white font-medium">{timeUntilNextDividend}</span>
-              <span className="text-gray-500 text-xs">(Daily at 00:00 UTC)</span>
+          <div className="px-4 py-3 text-center border-b border-gray-800/50">
+            <div className="flex items-center justify-center gap-3 text-sm">
+              <span className="text-gray-400 uppercase tracking-wide">Next Dividend:</span>
+              <span className="text-xl font-bold text-white">{timeUntilNextDividend}</span>
+              <span className="text-gray-600">Daily at Midnight UTC • up to 20min</span>
             </div>
           </div>
         )}
@@ -739,7 +762,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                 <tr style={{backgroundColor: 'transparent', background: 'none'}}>
                   {/* Date column - always visible */}
                   <th className="pb-1 px-0 sticky left-0 z-10 bg-dark-200" style={{backgroundColor: 'transparent', background: 'none', border: 'none'}}>
-                    <div className="bg-black/20 rounded-t-lg py-0.5 text-[10px] uppercase text-gray-500 font-medium text-center border-l border-t border-r border-gray-800">
+                    <div className="py-0.5 text-[10px] uppercase text-gray-500 font-medium text-center">
                       &nbsp;
                     </div>
                   </th>
@@ -785,7 +808,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                 </tr>
                 <tr className="bg-dark-300/50">
                   {/* Date column - always visible, sticky */}
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider sticky left-0 z-10 bg-dark-300/50 md:px-6">
+                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider sticky left-0 z-10 bg-dark-300/50 md:px-3">
                     Date
                   </th>
                   
@@ -867,7 +890,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                   const totalDividends = totalRevenue * 0.1;
                   
                   // Calculate dividend percentage based on effective balance (override or actual)
-                  const effectiveBalance = (!demoMode && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel;
+                  const effectiveBalance = (!demoMode && simulatorExpanded && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel;
                   const dividendPercentage = (snapshot.total_registered_supply || 0) > 0 
                     ? (effectiveBalance / (snapshot.total_registered_supply || 1)) * 100 
                     : 0;
@@ -882,25 +905,9 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                       }`}
                     >
                       {/* Date column - always visible, sticky */}
-                      <td className="px-2 py-3 whitespace-nowrap text-xs sticky left-0 z-10 bg-dark-200/30 md:px-6 md:py-4 md:text-sm">
-                        <div className="flex flex-col">
+                      <td className="px-2 py-2 whitespace-nowrap text-xs sticky left-0 z-10 bg-dark-200/30 md:px-3 md:py-3 md:text-xs text-right">
+                        <div className="flex flex-col items-end">
                           <div className="flex items-center gap-1">
-                            <span 
-                              className={`leading-none ${
-                                isToday ? 'text-gray-400' : isExtrapolated ? 'text-gray-400' : 'text-gray-300'
-                              } ${
-                                snapshot.dividend_transaction?.tx_signature 
-                                  ? 'cursor-pointer border-b border-dotted border-gray-400 hover:border-gray-300' 
-                                  : ''
-                              }`}
-                              onClick={() => {
-                                if (snapshot.dividend_transaction?.tx_signature) {
-                                  handleDateClick(snapshot.dividend_transaction.tx_signature);
-                                }
-                              }}
-                            >
-                              {formatDate(snapshot.timestamp)}
-                            </span>
                             {snapshot.dividend_status === 'completed' && (
                               <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
                                 <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -908,14 +915,32 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                                 </svg>
                               </div>
                             )}
+                            <span 
+                              className={`leading-none ${
+                                isToday ? 'text-gray-400' : isExtrapolated ? 'text-gray-400' : 'text-gray-300'
+                              }`}
+                            >
+                              {formatDate(snapshot.timestamp)}
+                            </span>
                           </div>
-                          {isExtrapolated && (
-                            <span className={`text-[9px] px-1 py-0.5 rounded mt-0.5 self-start leading-none md:text-[10px] md:px-1.5 ${
-                              isToday 
-                                ? 'bg-cyan-500/20 text-cyan-400' 
-                                : 'bg-orange-500/20 text-orange-400'
-                            }`}>
-                              {isToday ? 'Today' : 'Pending'}
+                          {(isExtrapolated && isToday) && (
+                            <span className="bg-cyan-500/20 text-cyan-400 text-[9px] px-1 py-0.5 rounded mt-0.5 self-center leading-none md:text-[10px] md:px-1.5">
+                              Today
+                            </span>
+                          )}
+                          {(isExtrapolated && !isToday) && (
+                            <span className="bg-orange-500/20 text-orange-400 text-[9px] px-1 py-0.5 rounded mt-0.5 self-center leading-none md:text-[10px] md:px-1.5">
+                              Pending
+                            </span>
+                          )}
+                          {(!isExtrapolated && snapshot.dividend_status === 'pending') && (
+                            <span className="bg-yellow-500/20 text-yellow-400 text-[9px] px-1 py-0.5 rounded mt-0.5 self-center leading-none md:text-[10px] md:px-1.5">
+                              Pending
+                            </span>
+                          )}
+                          {(!isExtrapolated && snapshot.dividend_status === 'completed') && (
+                            <span className="bg-green-500/20 text-green-400 text-[9px] px-1 py-0.5 rounded mt-0.5 self-center leading-none md:text-[10px] md:px-1.5">
+                              Completed
                             </span>
                           )}
                         </div>
@@ -949,8 +974,8 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                       {/* Holdings columns */}
                       <td className={`px-6 py-4 whitespace-nowrap text-sm bg-blue-400/10 rounded-l-lg md:table-cell ${activeTab === 'holdings' ? 'table-cell' : 'hidden'}`}>
                         <div className="flex items-center gap-2">
-                          <span className={`font-medium ${isToday ? 'text-gray-400' : isExtrapolated ? 'text-gray-400' : 'text-white'}`}>
-                            {formatNumber((!demoMode && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel)}
+                          <span className={`${isToday ? 'text-gray-400' : isExtrapolated ? 'text-gray-400' : 'text-white'}`}>
+                            {formatNumber((!demoMode && simulatorExpanded && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel)}
                           </span>
                           <div className="w-4 h-4">
                             <NanoLogo />
@@ -991,7 +1016,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                         •
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap text-sm text-center bg-purple-400/10 md:table-cell ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`}>
-                        {formatSolAmount(myDividend, false)}
+                        {formatSolAmount(myDividend, false, true, snapshot.dividend_transaction?.tx_signature)}
                       </td>
                       {/* Earnings strip when inactive on mobile */}
                       <td className={`md:hidden ${activeTab === 'earnings' ? 'hidden' : 'table-cell'} bg-purple-400/40`} style={{width: '30px'}}></td>
@@ -1009,7 +1034,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                       </td>
                       {animatedTotalRevenue > 0 ? (
                         <>
-                          <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-dark-400/20 rounded-l-lg font-semibold md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
+                          <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-dark-400/20 rounded-l-lg md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
                             {formatSolAmount(animatedTotalRevenue, false)}
                           </td>
                           <td className={`py-3 text-center text-[10px] text-gray-500 bg-dark-400/20 md:py-4 md:text-xs md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{width: '15px', paddingLeft: '1px', paddingRight: '1px'}}>
@@ -1021,7 +1046,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                           <td className={`py-3 text-center text-[10px] text-gray-500 bg-dark-400/20 md:py-4 md:text-xs md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{width: '15px', paddingLeft: '1px', paddingRight: '1px'}}>
                             =
                           </td>
-                          <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-dark-400/20 rounded-r-lg border-r border-gray-800 font-semibold md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
+                          <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-dark-400/20 rounded-r-lg border-r border-gray-800 md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
                             <span className="underline">{formatSolAmount(animatedTotalDividends, false)}</span>
                           </td>
                         </>
@@ -1055,8 +1080,8 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                       <td className={`px-1 py-3 text-center text-[10px] text-gray-500 bg-purple-400/20 md:py-4 md:text-xs md:table-cell ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`}>
                         •
                       </td>
-                      <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-purple-400/20 font-semibold md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`}>
-                        <span className="underline">{formatSolAmount(animatedTotalEarnings, false)}</span>
+                      <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-purple-400/20 md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`}>
+                        <span className="underline">{formatSolAmount(animatedTotalEarnings, false, true)}</span>
                       </td>
                       {/* Earnings strip when inactive on mobile */}
                       <td className={`md:hidden ${activeTab === 'earnings' ? 'hidden' : 'table-cell'} bg-purple-400/40`} style={{width: '30px'}}></td>
@@ -1078,7 +1103,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                   
                   // Get average balance over the period (using override if set)
                   const avgBalance = tableData.reduce((sum, snapshot) => {
-                    const effectiveBalance = (!demoMode && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel;
+                    const effectiveBalance = (!demoMode && simulatorExpanded && demoHoldings > 0) ? demoHoldings : snapshot.balance_duel;
                     return sum + effectiveBalance;
                   }, 0) / tableData.length;
                   
