@@ -201,8 +201,9 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
         
         console.log('[PortfolioTokenSelectionPage] Loading initial tokens via trending API');
         
-        // Fetch first batch with fixed initial limit
-        const response = await fetch(`/api/tokens/all?limit=50&offset=0&format=paginated`);
+        // Fetch first batch with fixed initial limit and current sort
+        const sortParam = getSortParam(sortBy);
+        const response = await fetch(`/api/tokens/all?limit=50&offset=0&format=paginated&sort=${sortParam}`);
         if (!response.ok) {
           throw new Error(`Failed to fetch tokens: ${response.statusText}`);
         }
@@ -345,7 +346,8 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     try {
       setIsInitialLoading(true);
       
-      const response = await fetch(`/api/tokens/all?limit=50&offset=0&format=paginated`);
+      const sortParam = getSortParam(sortBy);
+      const response = await fetch(`/api/tokens/all?limit=50&offset=0&format=paginated&sort=${sortParam}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch tokens: ${response.statusText}`);
       }
@@ -386,8 +388,9 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
       // Calculate offset based on current tokens
       const offset = mainTokens.length;
       
-      // Fetch next batch
-      const response = await fetch(`/api/tokens/all?limit=${TOKENS_PER_PAGE}&offset=${offset}&format=paginated`);
+      // Fetch next batch with current sort
+      const sortParam = getSortParam(sortBy);
+      const response = await fetch(`/api/tokens/all?limit=${TOKENS_PER_PAGE}&offset=${offset}&format=paginated&sort=${sortParam}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch more tokens: ${response.statusText}`);
       }
@@ -735,8 +738,61 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   // Sort state for this page only - default to 'change24h' to show hot movers first
   const [sortBy, setSortBy] = useState<'default' | 'marketCap' | 'volume' | 'change24h' | 'price'>('change24h');
   
-  // For backward compatibility, alias tokens as sortedTokens
-  // (backend already sorts by 24h price change)
+  // Map frontend sort values to API sort parameter
+  const getSortParam = useCallback((sortValue: typeof sortBy): string => {
+    switch (sortValue) {
+      case 'marketCap': return 'market_cap';
+      case 'volume': return 'volume_24h';
+      case 'change24h': return 'change_24h';
+      case 'price': return 'price';
+      case 'default': return 'change_24h'; // Default to 24h change
+      default: return 'change_24h';
+    }
+  }, []);
+  
+  // Handle sort changes - reload tokens with new sort
+  const handleSortChange = useCallback(async (newSort: typeof sortBy) => {
+    if (newSort === sortBy) return; // No change
+    
+    setSortBy(newSort);
+    
+    // Reset tokens and reload with new sort
+    setMainTokens([]);
+    setIsInitialLoading(true);
+    
+    try {
+      const sortParam = getSortParam(newSort);
+      const response = await fetch(`/api/tokens/all?limit=50&offset=0&format=paginated&sort=${sortParam}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tokens: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.tokens && Array.isArray(data.tokens)) {
+        const transformedTokens = data.tokens.map((token: any) => ({
+          ...token,
+          contractAddress: token.address || token.contractAddress,
+          marketCap: String(token.market_cap || token.marketCap || 0),
+          volume24h: String(token.volume_24h || token.volume24h || 0),
+          change24h: String(token.change_24h || token.change24h || 0),
+          status: token.is_active === false ? "inactive" : "active"
+        } as Token));
+        
+        setMainTokens(transformedTokens);
+        
+        if (data.pagination) {
+          setTotalTokenCount(data.pagination.total);
+        }
+      }
+    } catch (error) {
+      console.error('[PortfolioTokenSelectionPage] Error loading tokens with new sort:', error);
+    } finally {
+      setIsInitialLoading(false);
+    }
+  }, [sortBy, getSortParam]);
+  
+  // Backend now handles sorting, so tokens are already sorted
   const sortedTokens = tokens;
   const memoizedTokens = tokens; // Also alias for backward compatibility
 
@@ -2465,7 +2521,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                       <TokenFilters
                         onTokenSearchSelect={handleTokenSearchSelect}
                         sortBy={sortBy}
-                        onSortChange={setSortBy}
+                        onSortChange={handleSortChange}
                       />
                       
                       {/* View Mode Toggle */}

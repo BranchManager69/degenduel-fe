@@ -84,7 +84,10 @@ export const Header: React.FC = () => {
   const headerHeight = isCompact ? "h-12 sm:h-14" : "h-14 sm:h-16";
 
   return (
-    <header
+    <motion.header
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
       className={`sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${headerHeight}
       ${isCompact ? 'bg-dark-200/30 backdrop-blur-lg' : 'bg-dark-200/30 backdrop-blur-lg'}
       ${isMobileMenuOpen ? 'backdrop-blur-[8px] bg-dark-200/60' : ''}
@@ -148,7 +151,7 @@ export const Header: React.FC = () => {
             >
               <Link 
                 to="/contests" 
-                className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+                className="text-gray-400 hover:text-white transition-colors text-xs sm:text-sm font-medium"
               >
                 Contests
               </Link>
@@ -160,7 +163,7 @@ export const Header: React.FC = () => {
             >
               <Link 
                 to="/tokens" 
-                className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
+                className="text-gray-400 hover:text-white transition-colors text-xs sm:text-sm font-medium"
               >
                 Tokens
               </Link>
@@ -461,7 +464,7 @@ export const Header: React.FC = () => {
         
       </div>
 
-    </header>
+    </motion.header>
   );
 };
 
