@@ -164,13 +164,13 @@ const LiquiditySimulationModal: React.FC<LiquiditySimulationModalProps> = ({
               duration: 0.4,
               ease: [0.19, 1.0, 0.22, 1.0],
             }}
-            className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto z-10"
+            className="relative w-full max-w-3xl z-10"
           >
             {/* Outer glow effect */}
             <div className="absolute -inset-1 bg-gradient-to-br from-green-400/30 via-transparent to-emerald-400/30 blur-md rounded-xl"></div>
             
             {/* Modal content */}
-            <div className="relative bg-dark-800 backdrop-blur-sm rounded-xl overflow-hidden border border-green-400/30 shadow-xl shadow-dark-900/50 p-6">
+            <div className="relative bg-dark-800 backdrop-blur-sm rounded-xl border border-green-400/30 shadow-xl shadow-dark-900/50 p-6 max-h-[90vh] overflow-y-auto">
               {/* Close button */}
               <button
                 onClick={handleClose}
