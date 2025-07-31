@@ -141,6 +141,8 @@ const NotificationsPage = lazy(() => import('./pages/authenticated/Notifications
 const TokenSelection = lazy(() => import('./pages/public/contests/PortfolioTokenSelectionPage').then(module => ({ default: module.PortfolioTokenSelectionPage })));
 const PrivateProfilePage = lazy(() => import('./pages/authenticated/PrivateProfilePage').then(module => ({ default: module.PrivateProfilePage })));
 const WalletPage = lazy(() => import('./pages/authenticated/WalletPage'));
+const RelaunchPage = lazy(() => import('./pages/authenticated/RelaunchPage'));
+const LPPage = lazy(() => import('./pages/authenticated/LPPage'));
 
 // Example routes lazy loaded
 const ContestChatExample = lazy(() => import('./pages/examples/ContestChatExample'));
@@ -480,6 +482,14 @@ const AppContent: React.FC = () => {
           <Route
             path="/wallet"
             element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><WalletPage /></Suspense></MaintenanceGuard>}
+          />
+          <Route
+            path="/relaunch"
+            element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><RelaunchPage /></Suspense></MaintenanceGuard>}
+          />
+          <Route
+            path="/lp"
+            element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><LPPage /></Suspense></MaintenanceGuard>}
           />
           <Route
             path="/contest-credits"

@@ -196,11 +196,6 @@ const PlatformStats: React.FC = () => {
           </div>
         </div>
 
-        {/* Latest Winner - Second */}
-        <div className="mb-4">
-          <RecentContestWinner data={stats.recent_contest_winner} delay={0.2} />
-        </div>
-
         {/* Platform Activity Section - Three side by side stats */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-3xl mx-auto mb-4">
           {/* Contest Breakdown - Modified StatItem */}
@@ -297,13 +292,20 @@ const PlatformStats: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* All Time Best - After the 3 stats */}
-        <div className="mb-4">
-          <GlobalHighScore data={stats.global_high_score} delay={0.4} />
+        {/* Winner Cards - Side by side on desktop, stacked on mobile */}
+        <div className="mt-4 mb-6 w-full flex flex-col lg:flex-row gap-4">
+          {/* Latest Winner */}
+          <div className="flex-1">
+            <RecentContestWinner data={stats.recent_contest_winner} delay={0.4} />
+          </div>
+          {/* All Time Best */}
+          <div className="flex-1">
+            <GlobalHighScore data={stats.global_high_score} delay={0.5} />
+          </div>
         </div>
 
-        {/* Token Discovery Section - only show Launch Pad Breakdown if we have 5+ recent tokens */}
-        {stats.token_discovery && totalRecentTokens >= 5 && (
+        {/* Token Discovery Section - TEMPORARILY REMOVED - only show Launch Pad Breakdown if we have 5+ recent tokens */}
+        {false && stats?.token_discovery && totalRecentTokens >= 5 && (
           <div className="mt-6 mb-6">
             <div className="max-w-md mx-auto">
               
