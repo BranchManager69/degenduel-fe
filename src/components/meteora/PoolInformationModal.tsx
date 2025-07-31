@@ -84,7 +84,8 @@ const PoolInformationModal: React.FC<PoolInformationModalProps> = ({
   };
 
   const formatFeeRate = (rate: number) => {
-    return (rate / 100).toFixed(2) + '%';
+    // Meteora uses basis points where 10000 = 100%
+    return (rate / 10000).toFixed(2) + '%';
   };
 
   const formatPrice = (price: string) => {
@@ -125,13 +126,13 @@ const PoolInformationModal: React.FC<PoolInformationModalProps> = ({
               duration: 0.4,
               ease: [0.19, 1.0, 0.22, 1.0],
             }}
-            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto z-10"
+            className="relative w-full max-w-2xl z-10"
           >
             {/* Outer glow effect */}
             <div className="absolute -inset-1 bg-gradient-to-br from-blue-400/30 via-transparent to-blue-400/30 blur-md rounded-xl"></div>
             
             {/* Modal content */}
-            <div className="relative bg-dark-800 backdrop-blur-sm rounded-xl overflow-hidden border border-blue-400/30 shadow-xl shadow-dark-900/50 p-6">
+            <div className="relative bg-dark-800 backdrop-blur-sm rounded-xl border border-blue-400/30 shadow-xl shadow-dark-900/50 p-6 max-h-[90vh] overflow-y-auto">
               {/* Close button */}
               <button
                 onClick={handleClose}

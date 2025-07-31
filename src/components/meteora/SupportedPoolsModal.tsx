@@ -125,13 +125,13 @@ const SupportedPoolsModal: React.FC<SupportedPoolsModalProps> = ({
               duration: 0.4,
               ease: [0.19, 1.0, 0.22, 1.0],
             }}
-            className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto z-10"
+            className="relative w-full max-w-4xl z-10"
           >
             {/* Outer glow effect */}
             <div className="absolute -inset-1 bg-gradient-to-br from-cyan-400/30 via-transparent to-teal-400/30 blur-md rounded-xl"></div>
             
             {/* Modal content */}
-            <div className="relative bg-dark-800 backdrop-blur-sm rounded-xl overflow-hidden border border-cyan-400/30 shadow-xl shadow-dark-900/50 p-6">
+            <div className="relative bg-dark-800 backdrop-blur-sm rounded-xl border border-cyan-400/30 shadow-xl shadow-dark-900/50 p-6 max-h-[90vh] overflow-y-auto">
               {/* Close button */}
               <button
                 onClick={handleClose}

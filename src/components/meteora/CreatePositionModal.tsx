@@ -181,7 +181,7 @@ const CreatePositionModal: React.FC<CreatePositionModalProps> = ({
               duration: 0.4,
               ease: [0.19, 1.0, 0.22, 1.0],
             }}
-            className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto z-10"
+            className="relative w-full max-w-3xl z-10"
           >
             {/* Outer glow effect */}
             <div className={`absolute -inset-1 blur-md rounded-xl ${
@@ -193,7 +193,7 @@ const CreatePositionModal: React.FC<CreatePositionModalProps> = ({
             }`}></div>
             
             {/* Modal content */}
-            <div className={`relative bg-dark-800 backdrop-blur-sm rounded-xl overflow-hidden shadow-xl shadow-dark-900/50 p-6 ${
+            <div className={`relative bg-dark-800 backdrop-blur-sm rounded-xl shadow-xl shadow-dark-900/50 p-6 max-h-[90vh] overflow-y-auto ${
               transactionStatus === 'success' 
                 ? 'border border-green-400/30'
                 : transactionStatus === 'error'
