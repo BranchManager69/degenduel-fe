@@ -427,7 +427,7 @@ export const DuelSnapshotChart: React.FC<DuelSnapshotChartProps> = ({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={height}>
-            <ComposedChart data={chartData} margin={{ left: 60, right: 60 }}>
+            <ComposedChart data={chartData} margin={{ left: 20, right: 20 }}>
               <CartesianGrid 
                 strokeDasharray="3 3" 
                 stroke="#374151" 

@@ -116,9 +116,17 @@ export const ContestCard: React.FC<ContestCardProps> = ({
           : "border-red-500/60 hover:border-red-400/80 hover:shadow-red-500/10"
       }`}
     >
-      {/* Contest Image with Parallax Effect */}
+      {/* Contest Image - Show More of Image */}
       {getContestImageUrl(contest.image_url) && (
-        <div className="absolute inset-0 overflow-hidden">
+        <div 
+          className="absolute inset-x-0 z-10"
+          style={{
+            top: '-6rem', // Start much higher to show more
+            height: 'clamp(20rem, 25vw, 30rem)', // Much taller container
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 60%, transparent 85%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 60%, transparent 85%)'
+          }}
+        >
           {/* Initial loading state - show spinner */}
           {!imageLoaded && !imageError && !imageBlurhash && (
             <div className="absolute inset-0 flex items-center justify-center bg-dark-300/50 z-10">
@@ -137,18 +145,13 @@ export const ContestCard: React.FC<ContestCardProps> = ({
             />
           )}
           
-          {/* Actual image with parallax effect */}
+          {/* Actual image */}
           {!imageError && (
             <motion.div 
               initial={{ opacity: 0 }}
-              animate={imageLoaded ? { opacity: 0.15 } : { opacity: 0 }}
+              animate={imageLoaded ? { opacity: 0.6 } : { opacity: 0 }}
               transition={{ duration: 1.6 }}
               className="absolute inset-0"
-              style={{ 
-                // Subtle 3D rotation based on mouse position
-                perspective: "1000px",
-                perspectiveOrigin: "center"
-              }}
             >
               <motion.div
                 style={{
@@ -161,7 +164,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                   transition: "transform 0.3s ease-out"
                 }}
               >
-                <motion.img
+                <img
                   src={getContestImageUrl(contest.image_url)}
                   alt={contest.name}
                   onLoad={() => {
@@ -180,23 +183,15 @@ export const ContestCard: React.FC<ContestCardProps> = ({
                     target.src = '/assets/media/banners/concepts/concept0_cybergrid.png';
                     setImageError(true);
                   }}
-                  initial={{ scale: 1.2, filter: "blur(8px)" }}
-                  animate={{ filter: "blur(0px)" }}
-                  transition={{ filter: { duration: 1.2 } }}
-                  className="w-full h-full"
+                  className="w-full h-full object-cover object-center group-hover:scale-110"
                   style={{ 
-                    objectFit: 'cover',
-                    objectPosition: 'center center',
-                    minWidth: '100%',
-                    width: '100%',
-                    height: 'auto'
+                    transition: 'transform 0.7s ease-out'
                   }}
                 />
               </motion.div>
               
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-dark-200 via-dark-200/95 to-transparent" />
-
+              {/* Gradient overlay - lighter to show more image */}
+              <div className="absolute inset-0 bg-gradient-to-t from-dark-200/90 via-dark-200/40 to-transparent" />
             </motion.div>
           )}
         </div>
@@ -224,7 +219,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
       <div className="absolute -inset-[1px] bg-gradient-to-r from-brand-400/10 via-brand-500/10 to-brand-600/10 rounded-lg blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
       {/* Enhanced Header with Banner Style - Mobile Responsive */}
-      <div className="relative px-4 pt-4 pb-14 sm:px-6 sm:pt-6 sm:pb-14 space-y-2">
+      <div className={`relative px-4 pb-14 sm:px-6 sm:pb-14 space-y-2 ${getContestImageUrl(contest.image_url) ? 'pt-32' : 'pt-4 sm:pt-6'}`}>
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
           
           {/* Contest Name and Status */}
@@ -364,7 +359,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
         </div>
 
         {/* Contest Description - aligned to top - Mobile Responsive */}
-        <div className="relative py-0 flex flex-col justify-start min-h-[2.5rem] sm:min-h-[3rem]">
+        <div className="relative py-0 flex flex-col justify-start min-h-[3.5rem] sm:min-h-[4.5rem]">
           {displayStatus === "cancelled" ? (
             <div className="relative h-full w-full overflow-hidden">
               {/* More compact cancellation stamp */}
@@ -454,7 +449,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
               
               {/* Original description more visible behind */}
               <p
-                className="text-xs sm:text-sm text-gray-500/40 line-clamp-2 sm:line-clamp-3 min-h-[2.5rem] sm:min-h-[3rem]"
+                className="text-xs sm:text-sm text-gray-500/40 line-clamp-3 sm:line-clamp-4 min-h-[3.5rem] sm:min-h-[4.5rem]"
                 title={contest.description}
               >
                 {contest.description || "No description available"}
@@ -463,7 +458,7 @@ export const ContestCard: React.FC<ContestCardProps> = ({
             </div>
           ) : (
             <p
-              className="text-xs sm:text-sm text-gray-300 line-clamp-2 italic font-medium tracking-wide text-left border-l-2 border-gray-600/50 pl-3 py-1 bg-gradient-to-r from-gray-900/20 to-transparent min-h-[2.5rem] sm:min-h-[3rem]"
+              className="text-xs sm:text-sm text-gray-300 line-clamp-3 sm:line-clamp-4 italic font-medium tracking-wide text-left border-l-2 border-gray-600/50 pl-3 py-1 bg-gradient-to-r from-gray-900/20 to-transparent min-h-[3.5rem] sm:min-h-[4.5rem]"
               title={contest.description}
               style={{textShadow: '1px 1px 2px rgba(0,0,0,0.8)'}}
             >

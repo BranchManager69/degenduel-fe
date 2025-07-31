@@ -140,7 +140,7 @@ export const Header: React.FC = () => {
           </motion.div>
 
           {/* Navigation Menu */}
-          <nav className="hidden sm:flex items-center gap-6 ml-8">
+          <nav className="flex items-center gap-2 sm:gap-6 ml-1 sm:ml-8">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -168,7 +168,7 @@ export const Header: React.FC = () => {
           </nav>
 
           {/* Spacer */}
-          <div className="flex-1"></div> 
+          <div className="hidden sm:flex flex-1"></div> 
 
           {/* User Menu */}
           <div
@@ -342,7 +342,7 @@ export const Header: React.FC = () => {
             </div>
 
             {/* Mobile Menu Button / Login */}
-            <div className="md:hidden">
+            <div className="md:hidden flex items-center gap-1">
               {isAuthenticated && user ? (
                 <MobileMenuButton 
                   isCompact={isCompact}
@@ -351,13 +351,50 @@ export const Header: React.FC = () => {
                   onMenuToggle={setIsMobileMenuOpen}
                 />
               ) : (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }} 
-                  animate={{ opacity: 1, x: 0 }} 
-                  transition={{ duration: 0.4, delay: 0.2 }}
-                >
+                <>
+                  {/* Mobile Dividends Display for logged out users */}
                   <Link
-                    to="/login"
+                    to="/wallet"
+                    className="group relative"
+                  >
+                    <div className={`relative flex items-center gap-1 pl-2 pr-3 
+                      ${isCompact ? "h-7" : "h-8"}
+                      bg-gradient-to-r from-purple-900/40 via-purple-800/30 to-purple-900/40 
+                      backdrop-blur-sm rounded-full 
+                      border border-purple-500/15
+                      transition-all duration-300`}>
+                      
+                      <div className="relative text-purple-100 flex items-center">
+                        <motion.span 
+                          className={`relative font-semibold tracking-wider uppercase leading-none ${isCompact ? "text-[10px]" : "text-xs"}`}
+                          initial={{ opacity: 0.7 }}
+                          animate={{ opacity: [0.7, 1, 1, 0.7] }}
+                          transition={{
+                            duration: 3,
+                            times: [0, 0.3, 0.7, 1],
+                            repeat: Infinity,
+                            repeatDelay: 7,
+                          }}
+                        >
+                          DIVIDENDS
+                        </motion.span>
+                      </div>
+                      
+                      <div className="relative flex items-center justify-center w-4 h-4 ml-1">
+                        <div className="relative w-4 h-4 flex items-center justify-center">
+                          <NanoLogo />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                  
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    transition={{ duration: 0.4, delay: 0.2 }}
+                  >
+                    <Link
+                      to="/login"
                     className={`
                       relative group overflow-hidden transition-all duration-300 ease-out
                       ${isCompact ? "h-7" : "h-8"} flex items-center
@@ -414,6 +451,7 @@ export const Header: React.FC = () => {
                     </div>
                   </Link>
                 </motion.div>
+                </>
               )}
             </div>
 

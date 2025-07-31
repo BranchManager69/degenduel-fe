@@ -93,21 +93,29 @@ export const GlobalHighScore: React.FC<GlobalHighScoreProps> = ({ data, delay = 
               </span>
             </div>
             
-            {/* Contest Info */}
-            <div className="flex items-center gap-2">
+            {/* Contest Info with Date */}
+            <div className="flex flex-col items-center gap-1">
               <Link 
                 to={`/contests/${data.contest_id}`}
-                className="text-yellow-200 text-lg font-bold hover:text-white hover:underline transition-colors cursor-pointer"
+                className="text-yellow-200 text-xl sm:text-2xl font-bold hover:text-white underline decoration-yellow-400/50 hover:decoration-white transition-all cursor-pointer"
                 style={{
                   textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
                 }}
               >
                 {data.contest_name}
               </Link>
-              <span className="text-white text-sm font-medium" style={{
+              <span className="text-yellow-300/90 text-xs font-medium" style={{
                 textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000'
               }}>
-                {new Date(data.contest_start_time).toLocaleDateString()}
+                {new Date(data.contest_start_time).toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric',
+                  year: 'numeric'
+                })} at {new Date(data.contest_start_time).toLocaleTimeString('en-US', { 
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true
+                })}
               </span>
             </div>
           </div>

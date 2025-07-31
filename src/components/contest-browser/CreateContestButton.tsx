@@ -89,10 +89,10 @@ export const CreateContestButton: React.FC<CreateContestButtonProps> = ({
         
         <div className="flex flex-col items-start">
           <span className="text-xs text-emerald-300/80 group-hover:text-emerald-200 transition-colors uppercase tracking-wider font-medium whitespace-nowrap">
-            Host Your Own
+            Host Public
           </span>
-          <span className="font-black text-gray-100 text-lg -mt-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-emerald-300 group-hover:via-teal-300 group-hover:to-green-300 transition-all duration-300 whitespace-nowrap">
-            CREATE CONTEST
+          <span className="font-black text-gray-100 text-sm sm:text-base -mt-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-emerald-300 group-hover:via-teal-300 group-hover:to-green-300 transition-all duration-300 whitespace-nowrap">
+            CONTEST
           </span>
         </div>
       </div>

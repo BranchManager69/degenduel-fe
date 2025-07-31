@@ -10,7 +10,7 @@ export const SpectateButton: React.FC<SpectateButtonProps> = ({
   return (
     <button
       onClick={onSpectateClick}
-      className="group relative px-4 py-2 bg-gradient-to-br from-purple-950/90 via-indigo-950/80 to-purple-950/90 border-2 border-purple-700/40 rounded-xl hover:border-purple-500/80 hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-300 overflow-hidden backdrop-blur-sm"
+      className="group relative w-full px-4 py-2 bg-gradient-to-br from-purple-950/90 via-indigo-950/80 to-purple-950/90 border-2 border-purple-700/40 rounded-xl hover:border-purple-500/80 hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-300 overflow-hidden backdrop-blur-sm"
     >
       {/* Dynamic theater curtain pattern background */}
       <div className="absolute inset-0">

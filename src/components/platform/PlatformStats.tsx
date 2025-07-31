@@ -34,9 +34,9 @@ const StatItem: React.FC<StatItemProps> = ({ label, value, delay = 0 }) => (
     <div className="absolute top-0 right-0 w-3 h-3 bg-gradient-to-br from-emerald-500/40 to-transparent"></div>
     <div className="absolute bottom-0 left-0 w-3 h-3 bg-gradient-to-tr from-emerald-500/40 to-transparent"></div>
     
-    <div className="relative p-6 text-center">
-      <h3 className="text-2xl font-bold text-white mb-2 font-mono tracking-wider group-hover:text-emerald-200 transition-colors">{value}</h3>
-      <p className="text-emerald-300/90 font-bold text-sm uppercase tracking-widest">{label}</p>
+    <div className="relative p-3 sm:p-6 text-center">
+      <h3 className="text-lg sm:text-2xl font-bold text-white mb-1 sm:mb-2 font-mono tracking-wider group-hover:text-emerald-200 transition-colors">{value}</h3>
+      <p className="text-emerald-300/90 font-bold text-xs sm:text-sm uppercase tracking-widest">{label}</p>
     </div>
     
     {/* Subtle glow effect */}
@@ -139,72 +139,14 @@ const PlatformStats: React.FC = () => {
   const totalRecentTokens = launchPadBreakdown.reduce((sum, item) => sum + item.count, 0);
   const maxCount = Math.max(...launchPadBreakdown.map(item => item.count), 1);
 
-  // Create hourly breakdown for the last 24 hours
-  const getHourlyBreakdown = () => {
-    if (!stats.token_discovery?.recent_tokens) return [];
-    
-    const now = new Date();
-    const hourlyData: Array<{
-      hour: number;
-      'Pump.fun': number;
-      'Believe': number;
-      'LetsBONK': number;
-      'Jupiter Studio': number;
-      'Other': number;
-      total: number;
-    }> = [];
-    
-    // Initialize 24 hours of data
-    for (let i = 23; i >= 0; i--) {
-      const hourStart = new Date(now);
-      hourStart.setHours(now.getHours() - i, 0, 0, 0);
-      
-      hourlyData.push({
-        hour: hourStart.getHours(),
-        'Pump.fun': 0,
-        'Believe': 0,
-        'LetsBONK': 0,
-        'Jupiter Studio': 0,
-        'Other': 0,
-        total: 0
-      });
-    }
-    
-    // Count tokens by hour and launch pad
-    stats.token_discovery.recent_tokens.forEach(token => {
-      const tokenDate = new Date(token.created_at);
-      const hoursSinceToken = Math.floor((now.getTime() - tokenDate.getTime()) / (1000 * 60 * 60));
-      
-      if (hoursSinceToken < 24) {
-        const hourIndex = 23 - hoursSinceToken;
-        if (hourIndex >= 0 && hourIndex < 24) {
-          const address = token.address.toLowerCase();
-          let category = 'Other';
-          
-          if (address.endsWith('pump')) category = 'Pump.fun';
-          else if (token.address.endsWith('BLV')) category = 'Believe';
-          else if (address.endsWith('bonk')) category = 'LetsBONK';
-          else if (address.endsWith('jups')) category = 'Jupiter Studio';
-          
-          (hourlyData[hourIndex] as any)[category]++;
-          hourlyData[hourIndex].total++;
-        }
-      }
-    });
-    
-    return hourlyData;
-  };
 
-  const hourlyBreakdown = getHourlyBreakdown();
-  const maxHourlyTotal = Math.max(...hourlyBreakdown.map(h => h.total), 1);
 
   return (
-    <section className="py-8 bg-gradient-to-b from-transparent via-dark-200/10 to-transparent">
+    <section className="py-4 bg-gradient-to-b from-transparent via-dark-200/10 to-transparent">
       <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12">
-        {/* Revenue Flow Section - Combined */}
-        <div className="mb-6">
+        {/* Total Revenue - First */}
+        <div className="mb-4">
           <div className="max-w-sm mx-auto">
-            {/* Total Revenue with Distribution */}
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -237,7 +179,7 @@ const PlatformStats: React.FC = () => {
                     {/* Center - Total Revenue */}
                     <div className="text-center">
                       <h3 className="text-3xl font-bold text-white mb-2 font-mono tracking-wider group-hover:text-purple-200 transition-colors">{formatSOL(stats.total_revenue)}</h3>
-                      <p className="text-purple-300/90 font-bold text-sm uppercase tracking-widest">Total Revenue</p>
+                      <p className="text-purple-300/90 font-bold text-sm uppercase tracking-widest">Activity</p>
                     </div>
                     
                     {/* Right - Holders */}
@@ -254,8 +196,13 @@ const PlatformStats: React.FC = () => {
           </div>
         </div>
 
-        {/* Platform Activity Section - Bottom Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto">
+        {/* Latest Winner - Second */}
+        <div className="mb-4">
+          <RecentContestWinner data={stats.recent_contest_winner} delay={0.2} />
+        </div>
+
+        {/* Platform Activity Section - Three side by side stats */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-3xl mx-auto mb-4">
           {/* Contest Breakdown - Modified StatItem */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -280,22 +227,22 @@ const PlatformStats: React.FC = () => {
             <div className="absolute top-0 right-0 w-3 h-3 bg-gradient-to-br from-emerald-500/40 to-transparent"></div>
             <div className="absolute bottom-0 left-0 w-3 h-3 bg-gradient-to-tr from-emerald-500/40 to-transparent"></div>
             
-            <div className="relative p-6">
+            <div className="relative p-3 sm:p-6">
               {/* Main content - same as other StatItems */}
-              <h3 className="text-2xl font-bold text-white mb-2 font-mono tracking-wider group-hover:text-emerald-200 transition-colors text-center">{formatNumber(stats.total_contests)}</h3>
-              <p className="text-emerald-300/90 font-bold text-sm uppercase tracking-widest text-center">Total Contests</p>
+              <h3 className="text-lg sm:text-2xl font-bold text-white mb-1 sm:mb-2 font-mono tracking-wider group-hover:text-emerald-200 transition-colors text-center">{formatNumber(stats.total_contests)}</h3>
+              <p className="text-emerald-300/90 font-bold text-xs sm:text-sm uppercase tracking-widest text-center">Contests</p>
               
               {/* Paid/Free indicators on sides */}
               <div className="absolute inset-y-0 left-3 flex items-center">
                 <div className="text-center">
-                  <div className="text-xs font-bold text-emerald-400">{stats.paid_contests}</div>
-                  <div className="text-[9px] text-gray-400 uppercase">paid</div>
+                  <div className="text-xs font-bold text-emerald-400 leading-tight">{stats.paid_contests}</div>
+                  <div className="text-[9px] text-gray-400 uppercase leading-tight">paid</div>
                 </div>
               </div>
               <div className="absolute inset-y-0 right-3 flex items-center">
                 <div className="text-center">
-                  <div className="text-xs font-bold text-emerald-400">{stats.free_contests}</div>
-                  <div className="text-[9px] text-gray-400 uppercase">free</div>
+                  <div className="text-xs font-bold text-emerald-400 leading-tight">{stats.free_contests}</div>
+                  <div className="text-[9px] text-gray-400 uppercase leading-tight">free</div>
                 </div>
               </div>
             </div>
@@ -305,7 +252,7 @@ const PlatformStats: React.FC = () => {
           </motion.div>
           
           <StatItem
-            label="Active Players"
+            label="Players"
             value={formatNumber(stats.total_users)}
             delay={0.3}
           />
@@ -332,28 +279,33 @@ const PlatformStats: React.FC = () => {
             <div className="absolute top-0 right-0 w-3 h-3 bg-gradient-to-br from-emerald-500/40 to-transparent"></div>
             <div className="absolute bottom-0 left-0 w-3 h-3 bg-gradient-to-tr from-emerald-500/40 to-transparent"></div>
             
-            <div className="relative p-6 text-center">
-              <div className="space-y-0.5 mb-2">
+            <div className="relative p-3 sm:p-6 text-center">
+              <div className="space-y-0.5 mb-1 sm:mb-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-emerald-300/80 text-xs">Active</span>
-                  <span className="text-white font-bold text-sm">{formatNumber(stats.active_tokens)}</span>
+                  <span className="text-emerald-300/80 text-[10px] sm:text-xs">Active</span>
+                  <span className="text-white font-bold text-xs sm:text-sm">{formatNumber(stats.active_tokens)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-emerald-300/80 text-xs">Total</span>
-                  <span className="text-white font-bold text-sm">{formatNumber(stats.token_discovery.by_source.dual_detection + stats.token_discovery.by_source.legacy)}</span>
+                  <span className="text-emerald-300/80 text-[10px] sm:text-xs">Total</span>
+                  <span className="text-white font-bold text-xs sm:text-sm">{formatNumber(stats.token_discovery.by_source.dual_detection + stats.token_discovery.by_source.legacy)}</span>
                 </div>
               </div>
-              <p className="text-emerald-300/90 font-bold text-sm uppercase tracking-widest">Token Stats</p>
+              <p className="text-emerald-300/90 font-bold text-xs sm:text-sm uppercase tracking-widest">Tokens</p>
             </div>
             
             <div className="absolute inset-0 bg-gradient-to-tr from-emerald-600/0 via-emerald-500/0 to-emerald-400/0 group-hover:from-emerald-600/5 group-hover:via-emerald-500/3 group-hover:to-emerald-400/5 mix-blend-screen transition-all duration-500" />
           </motion.div>
         </div>
 
-        {/* Token Discovery Section - only show if we have 5+ recent tokens */}
+        {/* All Time Best - After the 3 stats */}
+        <div className="mb-4">
+          <GlobalHighScore data={stats.global_high_score} delay={0.4} />
+        </div>
+
+        {/* Token Discovery Section - only show Launch Pad Breakdown if we have 5+ recent tokens */}
         {stats.token_discovery && totalRecentTokens >= 5 && (
           <div className="mt-6 mb-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-4xl mx-auto">
+            <div className="max-w-md mx-auto">
               
               {/* Launch Pad Breakdown Card */}
               <motion.div
@@ -451,174 +403,10 @@ const PlatformStats: React.FC = () => {
                 <div className="absolute bottom-0 left-0 w-3 h-3 bg-gradient-to-tr from-cyan-400/40 to-transparent"></div>
               </motion.div>
               
-              {/* Discovery Rate Card */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-                className="relative bg-gradient-to-br from-cyan-950/90 via-teal-950/80 to-cyan-900/90 border-2 border-cyan-600/50 hover:border-cyan-400/70 transition-all duration-300 overflow-hidden backdrop-blur-sm"
-                style={{
-                  clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))'
-                }}
-              >
-                {/* Tech grid background */}
-                <div className="absolute inset-0 opacity-10 group-hover:opacity-15 transition-opacity duration-500">
-                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <circle cx="50" cy="50" r="35" fill="none" stroke="#06b6d4" strokeWidth="0.3" strokeDasharray="3,3" />
-                    <line x1="0" y1="50" x2="100" y2="50" stroke="#06b6d4" strokeWidth="0.2" />
-                    <line x1="50" y1="0" x2="50" y2="100" stroke="#06b6d4" strokeWidth="0.2" />
-                  </svg>
-                </div>
-                
-                <div className="relative p-4">
-                  <h3 className="text-sm font-bold text-cyan-200 mb-2">
-                    24-HOUR DISCOVERY TIMELINE
-                  </h3>
-                  
-                  {/* Hourly stacked bar chart */}
-                  <div className="relative h-20">
-                    <div className="absolute inset-0 flex items-end justify-between gap-[2px]">
-                      {hourlyBreakdown.map((hourData, index) => {
-                        const barHeight = maxHourlyTotal > 0 ? (hourData.total / maxHourlyTotal * 100) : 0;
-                        
-                        // Define colors for each launch pad based on their actual brand colors
-                        const colors = {
-                          'Pump.fun': 'from-emerald-600 to-emerald-500',
-                          'Believe': 'from-lime-400 to-lime-300',
-                          'LetsBONK': 'from-orange-500 to-orange-400',
-                          'Jupiter Studio': 'from-teal-500 to-teal-400',
-                          'Other': 'from-gray-500 to-gray-400'
-                        };
-                        
-                        let cumulativeHeight = 0;
-                        
-                        return (
-                          <div key={index} className="flex-1 relative flex flex-col justify-end">
-                            <motion.div
-                              className="relative w-full"
-                              initial={{ height: 0 }}
-                              animate={{ height: `${Math.max(barHeight, 5)}%` }}
-                              transition={{ duration: 0.8, ease: "easeOut", delay: index * 0.02 }}
-                              style={{ minHeight: hourData.total > 0 ? '8px' : '2px' }}
-                            >
-                              {/* Stack segments for each launch pad */}
-                              {['Pump.fun', 'Believe', 'LetsBONK', 'Jupiter Studio', 'Other'].map(platform => {
-                                if ((hourData as any)[platform] === 0) return null;
-                                const segmentHeight = ((hourData as any)[platform] / hourData.total) * 100;
-                                const bottom = cumulativeHeight;
-                                cumulativeHeight += segmentHeight;
-                                
-                                return (
-                                  <div
-                                    key={platform}
-                                    className={`absolute w-full bg-gradient-to-t ${(colors as any)[platform]} opacity-80`}
-                                    style={{
-                                      bottom: `${bottom}%`,
-                                      height: `${segmentHeight}%`
-                                    }}
-                                  />
-                                );
-                              })}
-                              
-                              {/* Show count on hover */}
-                              {hourData.total > 0 && (
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                  <span className="text-[8px] font-bold text-white bg-black/50 px-1 rounded">
-                                    {hourData.total}
-                                  </span>
-                                </div>
-                              )}
-                            </motion.div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    {/* Time labels */}
-                    <div className="absolute -bottom-6 inset-x-0 flex justify-between text-[8px] text-cyan-400/50">
-                      <span>24h ago</span>
-                      <span>18h</span>
-                      <span>12h</span>
-                      <span>6h</span>
-                      <span>Now</span>
-                    </div>
-                  </div>
-                  
-                  {/* Legend with logos - spread out */}
-                  <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs">
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-gradient-to-t from-emerald-600 to-emerald-500 rounded"></div>
-                      <img 
-                        src="/assets/media/logos/pump.png" 
-                        alt="Pump.fun"
-                        className="w-4 h-4 object-contain"
-                      />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-gradient-to-t from-lime-400 to-lime-300 rounded"></div>
-                      <div className="w-4 h-4 rounded-full overflow-hidden bg-lime-400">
-                        <img 
-                          src="/assets/media/logos/believe.png" 
-                          alt="Believe"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-gradient-to-t from-orange-500 to-orange-400 rounded"></div>
-                      <img 
-                        src="/assets/media/logos/bonk_fun.png" 
-                        alt="LetsBONK"
-                        className="w-4 h-4 object-contain"
-                      />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-gradient-to-t from-teal-500 to-teal-400 rounded"></div>
-                      <img 
-                        src="/assets/media/logos/jup.png" 
-                        alt="Jupiter Studio"
-                        className="w-4 h-4 object-contain"
-                      />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-gradient-to-t from-gray-500 to-gray-400 rounded"></div>
-                      <div className="w-4 h-4 flex items-center justify-center">
-                        <span className="text-[8px] text-cyan-400/70 font-semibold">OTHER</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Summary stats */}
-                  <div className="mt-3 pt-2 border-t border-cyan-600/30">
-                    <div className="text-center">
-                      <span className="text-cyan-300/90 text-xs">
-                        <span className="text-white font-bold">{stats.token_discovery.discovered_today}</span> tokens today • <span className="text-white font-bold">{formatNumber(stats.token_discovery.discovered_this_week)}</span> this week
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Corner accents */}
-                <div className="absolute top-0 right-0 w-3 h-3 bg-gradient-to-br from-cyan-400/40 to-transparent"></div>
-                <div className="absolute bottom-0 left-0 w-3 h-3 bg-gradient-to-tr from-cyan-400/40 to-transparent"></div>
-              </motion.div>
-              
             </div>
           </div>
         )}
 
-        {/* Global High Score Section - Side by Side Comparison */}
-        <div className="mt-8 w-full flex flex-col md:flex-row gap-4">
-          {/* Global High Score */}
-          <div className="flex-1">
-            <GlobalHighScore data={stats.global_high_score} delay={0.6} />
-          </div>
-
-        {/* Recent Contest Winner */}
-        <div className="flex-1">
-          <RecentContestWinner data={stats.recent_contest_winner} delay={0.8} />
-        </div>
-      </div>
       </div>
     </section>
   );
