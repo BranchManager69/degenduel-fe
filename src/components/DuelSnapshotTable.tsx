@@ -278,6 +278,48 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
     return extrapolatedRows;
   };
 
+  // Generate fallback demo data
+  const generateDemoData = (): BalanceDataPoint[] => {
+    const now = new Date();
+    const demoData: BalanceDataPoint[] = [];
+    
+    // Generate 7 days of demo data
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const balance = 31814255 - (i * 100000) + Math.random() * 50000;
+      const totalSupply = 134134959;
+      const percentage = (balance / totalSupply) * 100;
+      const dailyRevenue = i === 0 ? 0 : (Math.random() * 10 + 5); // 5-15 SOL for past days, 0 for today
+      
+      demoData.push({
+        id: 1000 + i,
+        balance_lamports: (balance * 1000000).toString(),
+        balance_duel: balance,
+        timestamp: date.toISOString(),
+        total_registered_supply: totalSupply,
+        dividend_percentage: parseFloat(percentage.toFixed(2)),
+        daily_contest_revenue: dailyRevenue,
+        isExtrapolated: i === 0, // Today is extrapolated
+        dividend_status: i > 0 ? 'completed' : undefined,
+        dividend_amount_sol: i > 0 ? (dailyRevenue * 0.1 * percentage / 100) : undefined,
+        dividend_paid_at: i > 0 ? date.toISOString() : undefined,
+        dividend_transaction: i > 0 ? {
+          id: 1000 + i,
+          amount_sol: dailyRevenue * 0.1 * percentage / 100,
+          status: 'completed',
+          created_at: date.toISOString(),
+          processed_at: date.toISOString(),
+          tx_signature: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d'
+        } : undefined
+      });
+    }
+    
+    return demoData;
+  };
+
   // Fetch snapshot data
   const fetchSnapshotData = async () => {
     try {
@@ -397,8 +439,17 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
         return;
       }
       
-      // Only set error for non-502 errors
-      setError(errorMessage);
+      // For demo mode, provide fallback data if API fails
+      if (demoMode) {
+        const fallbackData = generateDemoData();
+        setTableData(fallbackData);
+        setError(null);
+        setIsLoading(false);
+        return;
+      } else {
+        // Only set error for non-502 errors
+        setError(errorMessage);
+      }
     } finally {
       // Only set loading false if not a 502 error
       if (!error || !error.includes('502')) {
@@ -505,9 +556,22 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
       // Easing function (ease-out-cubic)
       const eased = 1 - Math.pow(1 - progress, 3);
       
-      setAnimatedTotalRevenue(startRevenue + (finalRevenue - startRevenue) * eased);
-      setAnimatedTotalDividends(startDividends + (finalDividends - startDividends) * eased);
-      setAnimatedTotalEarnings(startEarnings + (finalEarnings - startEarnings) * eased);
+      // Round based on mode - no decimals for demo, 2 decimals for regular
+      const currentRevenue = startRevenue + (finalRevenue - startRevenue) * eased;
+      const currentDividends = startDividends + (finalDividends - startDividends) * eased;
+      const currentEarnings = startEarnings + (finalEarnings - startEarnings) * eased;
+      
+      if (demoMode) {
+        // No decimals for demo mode
+        setAnimatedTotalRevenue(Math.round(currentRevenue));
+        setAnimatedTotalDividends(Math.round(currentDividends));
+        setAnimatedTotalEarnings(Math.round(currentEarnings));
+      } else {
+        // 2 decimals for regular mode
+        setAnimatedTotalRevenue(Math.round(currentRevenue * 100) / 100);
+        setAnimatedTotalDividends(Math.round(currentDividends * 100) / 100);
+        setAnimatedTotalEarnings(Math.round(currentEarnings * 100) / 100);
+      }
       
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
@@ -523,7 +587,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
     };
   }, [tableData, demoMode, simulatedDailyRevenue, simulatorExpanded]);
 
-  if (error) {
+  if (error && !demoMode) {
     const is502Error = error.includes('502');
     
     // For 502 errors, just show loading spinner - server is restarting
@@ -700,7 +764,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                     <div className="flex items-center justify-center gap-1">
                       <span className="hidden md:inline">Revenue</span>
                       <span className="md:hidden text-[10px]">Rev</span>
-                      {!demoMode && simulatorExpanded && (
+                      {(demoMode || simulatorExpanded) && (
                         <span className="text-[8px] bg-purple-500/30 text-purple-300 px-1 py-0.5 rounded md:text-[9px] md:px-1.5">
                           SIM
                         </span>
@@ -751,7 +815,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                   <th className={`px-0.5 py-3 text-center text-[10px] font-medium text-gray-400 uppercase tracking-wider bg-purple-400/20 rounded-r-lg sm:text-xs md:table-cell md:px-4 ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`}>
                     <div className="flex items-center justify-center gap-1">
                       <span className="bg-gray-700/30 px-1.5 py-0.5 rounded text-white font-semibold">Your Airdrop</span>
-                      {!demoMode && simulatorExpanded && (
+                      {(demoMode || simulatorExpanded) && (
                         <span className="text-[8px] bg-purple-500/30 text-purple-300 px-1 py-0.5 rounded md:text-[9px] md:px-1.5">
                           SIM
                         </span>
@@ -816,7 +880,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                           </span>
                           {(isExtrapolated && isToday) && (
                             <span className="bg-cyan-500/20 text-cyan-400 text-[9px] px-1 py-0.5 rounded leading-none md:text-[10px] md:px-1.5">
-                              Today
+                              Pending
                             </span>
                           )}
                           {(isExtrapolated && !isToday) && (
@@ -945,7 +1009,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                       {animatedTotalRevenue > 0 ? (
                         <>
                           <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-dark-400/20 rounded-l-lg md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
-                            {formatSolAmount(animatedTotalRevenue, false, false, undefined, true, 2)}
+                            {formatSolAmount(animatedTotalRevenue, false, false, undefined, true, demoMode ? 0 : 2)}
                           </td>
                           <td className={`py-3 text-center text-[10px] text-gray-500 bg-dark-400/20 md:py-4 md:text-xs md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`} style={{width: '15px', paddingLeft: '1px', paddingRight: '1px'}}>
                             ×
@@ -957,7 +1021,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                             =
                           </td>
                           <td className={`px-2 py-3 whitespace-nowrap text-xs text-center bg-dark-400/20 rounded-r-lg border-r border-gray-800 md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'platform' ? 'table-cell' : 'hidden'}`}>
-                            <span className="underline">{formatSolAmount(animatedTotalDividends, false, false, undefined, true, 2)}</span>
+                            <span className="underline">{formatSolAmount(animatedTotalDividends, false, false, undefined, true, demoMode ? 0 : 2)}</span>
                           </td>
                         </>
                       ) : (
@@ -1003,7 +1067,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                         •
                       </td>
                       <td className={`px-0.5 py-3 whitespace-nowrap text-xs text-center bg-purple-400/20 md:px-6 md:py-4 md:text-sm md:table-cell ${activeTab === 'earnings' ? 'table-cell' : 'hidden'}`}>
-                        <span className="underline">{formatSolAmount(animatedTotalEarnings, false, true, undefined, true, 2)}</span>
+                        <span className="underline">{formatSolAmount(animatedTotalEarnings, false, true, undefined, true, demoMode ? 0 : 2)}</span>
                       </td>
                       {/* Earnings strip when inactive on mobile */}
                       <td className={`md:hidden ${activeTab === 'earnings' ? 'hidden' : 'table-cell'} bg-purple-400/40 cursor-pointer hover:bg-purple-400/60 transition-colors`} style={{width: '30px'}} onClick={() => setActiveTab('earnings')}>

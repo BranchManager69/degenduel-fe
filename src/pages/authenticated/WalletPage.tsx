@@ -132,18 +132,12 @@ const WalletPage: React.FC = () => {
           `}} />
         </div>
         
-        {/* Revenue Share Diagram - Always visible */}
-        <RevenueShareDiagram />
-        
-        {/* Placeholder content for logged out users */}
-        <div className="mt-12 bg-dark-200/60 backdrop-blur-sm rounded-lg border border-gray-700/30 shadow-lg p-8">
-          <div className="text-center space-y-6">
+        {/* Demo mode header with CTA */}
+        <div className="mt-8 p-6 mb-6">
+          <div className="text-center space-y-4">
             <div className="text-gray-400">
-              <h2 className="text-2xl font-semibold mb-4 text-white">Track Your DUEL Holdings & Dividends</h2>
-              <p className="text-lg mb-6">
-                Monitor your DUEL token balance, view historical snapshots, and track your share of platform revenue.
-              </p>
-              <p className="text-base mb-8">
+              <h2 className="text-xl font-semibold mb-2 text-white">Track Your Revenue Share</h2>
+              <p className="text-sm mb-2">
                 DegenDuel shares 100% of platform revenue with DUEL holders through daily dividend distributions.
               </p>
             </div>
@@ -151,7 +145,7 @@ const WalletPage: React.FC = () => {
             <div className="flex justify-center">
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-white 
+                className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white 
                   bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 
                   rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-brand-500/25"
               >
@@ -159,126 +153,20 @@ const WalletPage: React.FC = () => {
               </Link>
             </div>
             
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-              <div className="bg-dark-300/50 rounded-lg p-4 border border-gray-700/20">
-                <h3 className="text-brand-400 font-semibold mb-2">Daily Snapshots</h3>
-                <p className="text-gray-400 text-sm">
-                  Automatic daily snapshots capture your DUEL balance for dividend calculations
-                </p>
-              </div>
-              <div className="bg-dark-300/50 rounded-lg p-4 border border-gray-700/20">
-                <h3 className="text-brand-400 font-semibold mb-2">Revenue Sharing</h3>
-                <p className="text-gray-400 text-sm">
-                  100% of platform fees distributed proportionally to all DUEL holders
-                </p>
-              </div>
-              <div className="bg-dark-300/50 rounded-lg p-4 border border-gray-700/20">
-                <h3 className="text-brand-400 font-semibold mb-2">Portfolio Tracking</h3>
-                <p className="text-gray-400 text-sm">
-                  View your complete token portfolio and historical balance changes
-                </p>
-              </div>
-            </div>
+            <p className="text-xs text-gray-500 text-center">
+              Example data showing potential earnings
+            </p>
           </div>
         </div>
         
-        {/* Placeholder Charts and Tables for Logged Out Users */}
-        <div className="mt-12">
-          <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold text-white mb-2">See How It Works</h3>
-            <p className="text-gray-400">Example data showing potential earnings from DUEL holdings</p>
-          </div>
-          
-          {/* Chart selector - only show if admin has multiple options */}
-          {isAdministrator && (
-            <div className="mb-6 flex justify-center">
-              <div className="bg-dark-300/50 rounded-lg p-1 flex gap-1">
-                <button
-                  onClick={() => setSelectedChart('snapshots')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                    selectedChart === 'snapshots'
-                      ? 'bg-brand-500 text-white shadow-lg'
-                      : 'text-gray-300 hover:text-white hover:bg-dark-200/50'
-                  }`}
-                >
-                  Daily Snapshots
-                </button>
-                <button
-                  onClick={() => setSelectedChart('balance')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                    selectedChart === 'balance'
-                      ? 'bg-brand-500 text-white shadow-lg'
-                      : 'text-gray-300 hover:text-white hover:bg-dark-200/50'
-                  }`}
-                >
-                  <div className="flex flex-col items-center">
-                    <span>Balance History</span>
-                    <span className="text-red-400 text-xs">ADMIN ONLY</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Single chart - full width */}
-          <div className="bg-dark-200/60 backdrop-blur-sm rounded-lg border border-gray-700/30 shadow-lg p-6">
-            {selectedChart === 'snapshots' ? (
-              <DuelSnapshotChart height={400} demoMode={true} />
-            ) : (
-              <DuelBalanceChart height={400} demoMode={true} />
-            )}
-          </div>
-          
-          {/* Snapshot Data Table */}
-          <div className="mt-8">
-            <DuelSnapshotTable demoMode={true} />
-          </div>
-          
-          {/* Chart selector - only show if admin has multiple options */}
-          {isAdministrator && (
-            <div className="mt-8 mb-6 flex justify-center">
-              <div className="bg-dark-300/50 rounded-lg p-1 flex gap-1">
-                <button
-                  onClick={() => setSelectedChart('snapshots')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                    selectedChart === 'snapshots'
-                      ? 'bg-brand-500 text-white shadow-lg'
-                      : 'text-gray-300 hover:text-white hover:bg-dark-200/50'
-                  }`}
-                >
-                  Daily Snapshots
-                </button>
-                <button
-                  onClick={() => setSelectedChart('balance')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                    selectedChart === 'balance'
-                      ? 'bg-brand-500 text-white shadow-lg'
-                      : 'text-gray-300 hover:text-white hover:bg-dark-200/50'
-                  }`}
-                >
-                  <div className="flex flex-col items-center">
-                    <span>Balance History</span>
-                    <span className="text-red-400 text-xs">ADMIN ONLY</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Single chart - full width */}
-          <div className={`bg-dark-200/60 backdrop-blur-sm rounded-lg border border-gray-700/30 shadow-lg p-6 ${isAdministrator ? '' : 'mt-8'}`}>
-            {selectedChart === 'snapshots' ? (
-              <DuelSnapshotChart height={400} demoMode={true} />
-            ) : (
-              <DuelBalanceChart height={400} demoMode={true} />
-            )}
-          </div>
-          
-          {/* Portfolio Holdings Table */}
-          <div className="mt-8 bg-dark-200/60 backdrop-blur-sm rounded-lg border border-gray-700/30 shadow-lg p-6">
-            <WalletPortfolioTable demoMode={true} />
-          </div>
+        {/* Snapshot Data Table */}
+        <div>
+          <DuelSnapshotTable demoMode={true} />
         </div>
+        
+        {/* Revenue Share Diagram - Always visible */}
+        <RevenueShareDiagram />
+        
       </div>
     );
   }
