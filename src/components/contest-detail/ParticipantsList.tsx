@@ -547,7 +547,7 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
   };
 
   return (
-    <div className="space-y-6 bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
+    <div className="space-y-6">
       {/* Enhanced Header */}
       <div className="flex flex-col space-y-3">
         <div className="flex items-center justify-between">

@@ -55,6 +55,9 @@ export const WalletPortfolioTable: React.FC<WalletPortfolioTableProps> = ({
 
   // Format number with appropriate suffix
   const formatValue = (value: number): string => {
+    // Guard against null/undefined/NaN
+    if (value == null || isNaN(value)) return '$0';
+    
     if (value >= 1000) {
       return `$${(value / 1000).toFixed(2)}K`;
     } else if (value >= 1) {
@@ -68,6 +71,9 @@ export const WalletPortfolioTable: React.FC<WalletPortfolioTableProps> = ({
 
   // Format token balance
   const formatBalance = (balance: number): string => {
+    // Guard against null/undefined/NaN
+    if (balance == null || isNaN(balance)) return '0';
+    
     if (balance >= 1000000) {
       return `${(balance / 1000000).toFixed(2)}M`;
     } else if (balance >= 1000) {
@@ -174,7 +180,7 @@ export const WalletPortfolioTable: React.FC<WalletPortfolioTableProps> = ({
             </div>
             <div>
               <span className="text-gray-400">Deployed:</span>
-              <span className="text-white font-semibold ml-2">{portfolio.deploymentRatio.toFixed(1)}%</span>
+              <span className="text-white font-semibold ml-2">{(portfolio.deploymentRatio ?? 0).toFixed(1)}%</span>
             </div>
           </div>
         )}

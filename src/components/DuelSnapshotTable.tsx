@@ -163,7 +163,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
 
   // Format SOL amount (returns JSX element)
   const formatSolAmount = (amount: number, isItalic: boolean = false, isBold: boolean = false, txSignature?: string, showUsd: boolean = false, maxDecimals: number = 6) => {
-    if (amount === 0) {
+    if (amount === null || amount === undefined || amount === 0) {
       return <span className={`${isItalic ? 'italic' : ''} text-gray-500`}>–</span>;
     }
     

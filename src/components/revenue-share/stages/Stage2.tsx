@@ -113,24 +113,25 @@ Player.displayName = 'Player';
 export const Stage2 = () => {
   // Fixed PnL values for each player
   const basePnL = [+40, -23, +3, +22, -50];
-  const [, setCurrentPnL] = useState(basePnL);
+  const [currentPnL, setCurrentPnL] = useState(basePnL);
   const [leaderIndex, setLeaderIndex] = useState(0);
   
   // Generate animation paths once
   const [animationPaths] = useState(() => generatePaths());
   
-  // Update leader when PnL changes
+  // Update leader whenever PnL changes
+  useEffect(() => {
+    const maxIndex = currentPnL.reduce((maxIdx, val, idx) => 
+      val > currentPnL[maxIdx] ? idx : maxIdx, 0
+    );
+    setLeaderIndex(maxIndex);
+  }, [currentPnL]);
+  
+  // Update PnL values
   const handlePnLChange = useCallback((index: number, value: number) => {
     setCurrentPnL(prev => {
       const newPnL = [...prev];
       newPnL[index] = value;
-      
-      // Find the player with highest PnL
-      const maxIndex = newPnL.reduce((maxIdx, val, idx) => 
-        val > newPnL[maxIdx] ? idx : maxIdx, 0
-      );
-      setLeaderIndex(maxIndex);
-      
       return newPnL;
     });
   }, []);

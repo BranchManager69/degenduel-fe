@@ -6,63 +6,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ContestChat } from "../../../components/contest-chat/ContestChat";
 import { ContestDetailHeaderNew } from "../../../components/contest-detail/ContestDetailHeaderNew";
-import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
-import { MultiParticipantChartV2 } from "../../../components/contest-lobby/MultiParticipantChartV2";
-import { UserPerformanceCard } from "../../../components/contest-lobby/UserPerformanceCard";
-import { PrizeStructure } from "../../../components/contest-detail/PrizeStructure";
+import { Badge } from "../../../components/ui/Badge";
+import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
 import { formatCurrency } from "../../../lib/utils";
 // import { ddApi } from "../../../services/dd-api"; // No longer needed - using fetch directly
 import { ContestViewData, TokenHoldingPerformance } from "../../../types";
-
-// Interface for leaderboard entries as returned by the API
-interface ApiLeaderboardEntry {
-  wallet_address: string;
-  initial_balance: string;
-  portfolio_value: string;
-  rank: number;
-  final_rank: number;
-  prize_amount: string;
-  nickname: string;
-  profile_image_url: string;
-  role: string;
-  flair: string;
-  portfolio: any[];
-}
-
-// Interface for analytics participant data
-interface AnalyticsParticipant {
-  wallet_address: string;
-  username?: string;
-  nickname?: string;
-  rank?: number;
-  total_value_sol?: number;
-  pnl_percent?: number;
-  profile_image_url?: string;
-  role?: string;
-  flair?: string;
-  equipped_skin?: string;
-  line_design?: string;
-  is_admin?: boolean;
-  is_superadmin?: boolean;
-  is_banned?: boolean;
-  user_level?: number;
-  experience_points?: number;
-  total_contests_entered?: number;
-  contests_won?: number;
-  twitter_handle?: string;
-  prize_amount?: string;
-}
-
-// Interface for analytics API response
-interface AnalyticsData {
-  participants?: AnalyticsParticipant[];
-  sol_price_source?: string;
-  sol_price_timestamp?: string;
-  contest_status?: string;
-}
 import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
 
 // Contest Results page - enhanced with next-level UI and interactive features
@@ -74,42 +25,14 @@ export const ContestResults: React.FC = () => {
   const [contestViewData, setContestViewData] = useState<ContestViewData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [analyticsParticipants, setAnalyticsParticipants] = useState<any[]>([]);
   
   const [activeTab, setActiveTab] = useState<'results' | 'details' | 'chat'>('results');
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [animationComplete] = useState(false);
   
-  // headerRef removed - no longer needed with unified header
+  const headerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-
-  // Transform leaderboard entries to participant format, preferring analytics data with SOL values
-  const transformedParticipants = useMemo(() => {
-    // Use analytics data if available (has SOL values and profile pictures)
-    if (analyticsParticipants.length > 0) {
-      return analyticsParticipants;
-    }
-    
-    // Fallback to leaderboard data if analytics not available
-    if (!contestViewData?.leaderboard) return [];
-    
-    return (contestViewData.leaderboard as unknown as ApiLeaderboardEntry[]).map((entry) => ({
-      wallet_address: entry.wallet_address,
-      nickname: entry.nickname,
-      profile_image_url: entry.profile_image_url,
-      rank: entry.final_rank,
-      portfolio_value: entry.portfolio_value,
-      initial_portfolio_value: entry.initial_balance,
-      performance_percentage: (() => {
-        const initial = parseFloat(entry.initial_balance);
-        const final = parseFloat(entry.portfolio_value);
-        if (initial === 0) return "0";
-        return ((final - initial) / initial * 100).toFixed(2);
-      })(),
-      prize_awarded: entry.prize_amount
-    }));
-  }, [analyticsParticipants, contestViewData?.leaderboard]);
 
   // Initial data fetch
   useEffect(() => {
@@ -122,104 +45,18 @@ export const ContestResults: React.FC = () => {
     const fetchContestResults = async () => {
       setIsLoading(true); setError(null);
       try {
-        // Fetch both full contest details and leaderboard data like live page does
-        const [contestResponse, leaderboardResponse] = await Promise.all([
-          fetch(`/api/contests/${contestId}`),
-          fetch(`/api/contests/${contestId}/leaderboard`)
-        ]);
-        
-        if (!contestResponse.ok) {
-          throw new Error(`Failed to fetch contest details: ${contestResponse.status}`);
+        // Backend team confirmed: use /contests/:id/leaderboard for results
+        const response = await fetch(`/api/contests/${contestId}/leaderboard`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch leaderboard: ${response.status}`);
         }
-        if (!leaderboardResponse.ok) {
-          throw new Error(`Failed to fetch leaderboard: ${leaderboardResponse.status}`);
-        }
+        const data = await response.json();
         
-        const contestData = await contestResponse.json();
-        const leaderboardData = await leaderboardResponse.json();
-
-        // Fetch analytics data for SOL values (similar to detail page)
-        let analyticsData: AnalyticsData | null = null;
-        try {
-          const analyticsResponse = await fetch(`/api/portfolio-analytics/contests/${contestId}/performance/detailed`, {
-            credentials: 'same-origin'
-          });
-          
-          if (analyticsResponse.ok) {
-            analyticsData = await analyticsResponse.json();
-            console.log("Portfolio analytics data fetched:", analyticsData);
-            
-            // Transform analytics participants to match ParticipantsList expected format
-            const transformedAnalyticsParticipants = (analyticsData?.participants || []).map((p: AnalyticsParticipant) => {
-              // Find matching leaderboard entry to get profile image
-              const leaderboardEntry = (leaderboardData.leaderboard || []).find(
-                (entry: any) => entry.wallet_address === p.wallet_address
-              );
-              
-              return {
-              wallet_address: p.wallet_address,
-              nickname: p.username || p.nickname || `Player ${p.rank || 0}`,
-              portfolio_value: p.total_value_sol?.toString() || '0', // SOL value from analytics
-              performance_percentage: p.pnl_percent?.toString() || '0',
-              rank: p.rank,
-              is_current_user: false, // Results page doesn't highlight current user
-              is_ai_agent: false,
-              profile_image_url: leaderboardEntry?.profile_image_url || p.profile_image_url, // Get from leaderboard data
-              role: p.role || "user",
-              flair: p.flair,
-              equipped_skin: p.equipped_skin,
-              line_design: p.line_design,
-              is_admin: p.is_admin || false,
-              is_superadmin: p.is_superadmin || false,
-              is_banned: p.is_banned || false,
-              user_level: p.user_level,
-              experience_points: p.experience_points,
-              total_contests_entered: p.total_contests_entered,
-              contests_won: p.contests_won,
-              twitter_handle: p.twitter_handle,
-              sol_price_source: analyticsData?.sol_price_source,
-              sol_price_timestamp: analyticsData?.sol_price_timestamp,
-              contest_status: analyticsData?.contest_status,
-              prize_awarded: p.prize_amount || null
-            };
-            });
-            
-            setAnalyticsParticipants(transformedAnalyticsParticipants);
-          }
-        } catch (analyticsError) {
-          console.warn("Failed to fetch analytics data:", analyticsError);
-        }
-        
-        // Transform contest details to match ContestDetails interface like live page
-        const transformedContest = {
-          id: contestData.id.toString(),
-          name: contestData.name,
-          description: contestData.description || '',
-          status: contestData.status,
-          startTime: contestData.start_time,
-          endTime: contestData.end_time,
-          entryFee: contestData.entry_fee || '0',
-          prizePool: contestData.prize_pool,
-          totalPrizePool: contestData.current_prize_pool || contestData.prize_pool,
-          currency: contestData.currency || 'SOL',
-          participantCount: leaderboardData.contest.participant_count || contestData.participant_count,
-          image_url: contestData.image_url, // This is what was missing!
-          settings: {
-            difficulty: contestData.settings?.difficulty || 'guppy',
-            maxParticipants: contestData.max_participants || null, // This comes from top-level, not settings
-            minParticipants: contestData.min_participants || 1,    // This too
-            tokenTypesAllowed: contestData.settings?.tokenTypesAllowed || ['SPL'],
-            startingPortfolioValue: contestData.settings?.startingPortfolioValue || '100',
-            payout_structure: contestData.settings?.payout_structure
-          },
-          isCurrentUserParticipating: !!leaderboardData.leaderboard?.find((entry: any) => entry.is_current_user)
-        };
-        
-        // Transform the response to match expected ContestViewData structure
+        // Transform the leaderboard response to match expected ContestViewData structure
         const viewData: ContestViewData = {
-          contest: transformedContest,
-          leaderboard: leaderboardData.leaderboard,
-          currentUserPerformance: leaderboardData.leaderboard.find((entry: any) => entry.is_current_user) || null
+          contest: data.contest,
+          leaderboard: data.leaderboard,
+          currentUserPerformance: data.leaderboard.find((entry: any) => entry.is_current_user) || null
         };
         
         setContestViewData(viewData);
@@ -441,71 +278,236 @@ export const ContestResults: React.FC = () => {
                 // Results page doesn't need countdown handling
               }}
               error={error}
-              showActionButton={false} // Hide action button on results page
+              showActionButton={false} // Hide action button on results page too
             />
           )}
           
-          {/* User Performance Card - Only shows if user participated */}
-          {currentUserPerformance && (
-            <div className="mb-6">
-              <UserPerformanceCard 
-                userPerformance={{
-                  rank: (currentUserPerformance as unknown as ApiLeaderboardEntry).final_rank,
-                  portfolio_value: (currentUserPerformance as unknown as ApiLeaderboardEntry).portfolio_value,
-                  performance_percentage: (() => {
-                    const entry = currentUserPerformance as unknown as ApiLeaderboardEntry;
-                    const initial = parseFloat(entry.initial_balance);
-                    const final = parseFloat(entry.portfolio_value);
-                    if (initial === 0) return "0";
-                    return ((final - initial) / initial * 100).toFixed(2);
-                  })(),
-                  prize_awarded: (currentUserPerformance as unknown as ApiLeaderboardEntry).prize_amount
-                }}
-              />
-            </div>
-          )}
-          
-          {/* Contest Performance Chart */}
-          <div className="mb-6">
-            <MultiParticipantChartV2 
-              contestId={contestIdFromParams!}
-              contestStatus="completed"
-              participants={transformedParticipants}
-              timeInterval="1h"
-              maxParticipants={transformedParticipants.length}
-              hoveredParticipant={null}
-            />
-          </div>
-          
-          {/* Left Column: Prize Structure above Final Rankings */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div>
-              {/* Prize Structure */}
-              <div className="mb-6">
-                <PrizeStructure
-                  prizePool={parseFloat(contestDetails?.prizePool || '0')}
-                  entryFee={parseFloat(contestDetails?.entryFee || '0')}
-                  maxParticipants={contestDetails?.settings?.maxParticipants || 0}
-                  currentParticipants={contestDetails?.participantCount || 0}
-                  contestType={contestDetails?.settings?.difficulty || ''}
-                  contestStatus={contestDetails?.status || ''}
-                />
-              </div>
+          {/* Tab Navigation */}
+          <div 
+                className="text-3xl font-bold text-gray-100 group-hover:animate-glitch flex items-center"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                Contest Results
+                <motion.div
+                  className="ml-3"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3, type: "spring" }}
+                >
+                  <Badge variant="destructive">ENDED</Badge>
+                </motion.div>
+              </motion.h1>
+
+              {/* Contest Name */}
+              <motion.h2
+                className="text-xl text-gray-300 mt-1"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                {contestDetails.name}
+              </motion.h2>
               
-              {/* Final Rankings */}
-              <ParticipantsList 
-                participants={transformedParticipants}
-                contestStatus="completed"
-                prizePool={parseFloat(contestDetails?.prizePool || '0')}
-                contestId={contestIdFromParams!}
-                onParticipantHover={() => {}} // Results page doesn't need hover
-                hoveredParticipant={null}
-              />
+              {/* Contest Completion Date */}
+              <motion.p 
+                className="text-gray-400 mt-2 italic"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                Contest completed on {new Date(contestDetails.endTime).toLocaleDateString()}
+              </motion.p>
+              
+              {/* User result summary banner */}
+              <motion.div
+                className="mt-4 px-4 py-2 bg-brand-900/30 border border-brand-500/30 rounded-md flex items-center justify-between"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+
+                {/* User Result Summary Banner */}
+                <div className="flex items-center">
+                  <div className="flex flex-col">
+                    <span className="text-brand-300 font-medium">
+                      Your Rank: <span className="text-white font-bold">{userRankForDisplay ?? 'N/A'}</span>
+                    </span>
+                    <span className="text-gray-400 text-sm">
+                      Final value: <span className="text-white font-mono">{currentUserPerformance ? formatCurrency(parseFloat(currentUserPerformance.portfolioValue)) : 'N/A'}</span>
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Flexible Prize Indicator - Works with any payout structure */}
+                {(parseFloat(currentUserLeaderboardEntry?.prizeAwarded || "0") > 0) && (
+                  <motion.div 
+                    className="bg-yellow-900/30 px-3 py-2 rounded-md border border-yellow-500/30 flex items-center"
+                    whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(234, 179, 8, 0.3)" }}
+                    initial={{ scale: 1 }}
+                    animate={{ 
+                      scale: [1, 1.05, 1],
+                      boxShadow: [
+                        "0 0 0px rgba(234, 179, 8, 0)",
+                        "0 0 15px rgba(234, 179, 8, 0.4)",
+                        "0 0 0px rgba(234, 179, 8, 0)"
+                      ]
+                    }}
+                    transition={{ 
+                      repeat: 2,
+                      repeatType: "reverse",
+                      duration: 1.5
+                    }}
+                  >
+                    {/* Custom rank indicator with sophisticated styling */}
+                    <motion.div 
+                      className="mr-3 flex items-center justify-center"
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 1.5, delay: 1, repeat: 1 }}
+                    >
+                      {(() => {
+                        // Get current user's rank (accounting for tied positions)
+                        const currentUser = leaderboardEntriesForDisplay.find(entry => entry.isCurrentUser);
+                        const rank = currentUser?.rank || 0;
+                        
+                        // Different styled indicators based on rank
+                        if (rank === 1) {
+                          return (
+                            <div className="relative w-8 h-8">
+                              {/* Gold medal shape */}
+                              <motion.div 
+                                className="absolute inset-0 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 border border-yellow-200 shadow-lg"
+                                animate={{ 
+                                  boxShadow: [
+                                    "0 0 5px rgba(234, 179, 8, 0.5)",
+                                    "0 0 15px rgba(234, 179, 8, 0.8)",
+                                    "0 0 5px rgba(234, 179, 8, 0.5)"
+                                  ]
+                                }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center font-bold text-yellow-800 text-xs">1</div>
+                              {/* Crown accent */}
+                              <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-4 h-2 bg-yellow-300 border border-yellow-400" 
+                                style={{
+                                  clipPath: "polygon(0% 100%, 20% 0%, 40% 100%, 60% 0%, 80% 100%, 100% 0%, 100% 100%)"
+                                }}
+                              />
+                            </div>
+                          );
+                        }
+                        
+                        if (rank === 2) {
+                          return (
+                            <div className="relative w-8 h-8">
+                              {/* Silver medal shape */}
+                              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 border border-gray-200 shadow-md" />
+                              <div className="absolute inset-0 flex items-center justify-center font-bold text-gray-700 text-xs">2</div>
+                              {/* Subtle accent line */}
+                              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-[1px] bg-gray-400/60" />
+                            </div>
+                          );
+                        }
+                        
+                        if (rank === 3) {
+                          return (
+                            <div className="relative w-8 h-8">
+                              {/* Bronze medal shape */}
+                              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 border border-amber-300 shadow-md" />
+                              <div className="absolute inset-0 flex items-center justify-center font-bold text-amber-900 text-xs">3</div>
+                              {/* Subtle accent curve */}
+                              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/4 w-4 h-4 border-b border-amber-500/50 rounded-full" />
+                            </div>
+                          );
+                        }
+                        
+                        // For any other rank, show a stylized number badge
+                        return (
+                          <div className="relative w-8 h-8">
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-brand-400/80 to-brand-600/80 border border-brand-300/30 shadow-sm" />
+                            <div className="absolute inset-0 flex items-center justify-center font-bold text-white text-xs">
+                              {rank}
+                            </div>
+                            {/* Decorative accent */}
+                            <div className="absolute inset-0 rounded-full border-2 border-brand-400/20 scale-90" />
+                          </div>
+                        );
+                      })()}
+                    </motion.div>
+
+                    {/* Prize Awarded Section */}
+                    <div className="flex flex-col">
+
+                      {/* Prize Awarded Header */}
+                      <span className="text-yellow-300 font-medium">Prize Awarded</span>
+                      
+                      {/* Prize Awarded */}
+                      <span className="text-white font-mono text-base font-bold">
+                        {formatCurrency(parseFloat(currentUserLeaderboardEntry?.prizeAwarded || "0"))}
+                      </span>
+                      
+                      {/* Show rank info for context */}
+                      <span className="text-yellow-200/70 text-xs mt-0.5">
+                        {(() => {
+                          const rank = leaderboardEntriesForDisplay.find(entry => entry.isCurrentUser)?.rank;
+                          // Handle special cases for 1st, 2nd, 3rd
+                          if (rank === 1) return "1st Place";
+                          if (rank === 2) return "2nd Place";
+                          if (rank === 3) return "3rd Place";
+                          if (rank) return `${rank}th Place`;
+                          return "Winner";
+                        })()}
+                      </span>
+
+                    </div>
+                  </motion.div>
+                )}
+                
+              </motion.div>
             </div>
             
-            {/* Right Column - Empty for now */}
-            <div>
+            {/* Action Buttons */}
+            <div className="mt-4 sm:mt-0 flex flex-col sm:items-end gap-3">
+              {/* Share Contest Button - Removed for completed contests */}
+              {/* Contest is completed, no need to share for recruiting participants */}
+              
+              <Button
+                onClick={() => navigate("/contests")}
+                className="relative group overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-400/20 via-brand-500/20 to-brand-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-data-stream-responsive" />
+                <span className="relative flex items-center font-medium group-hover:animate-glitch">
+                  Join New Contest
+                  <svg
+                    className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </span>
+              </Button>
+              
+              {/* Mobile Menu Button */}
+              <button
+                aria-expanded={mobileMenuOpen}
+                aria-label="Toggle mobile menu"
+                className="md:hidden bg-dark-300 hover:bg-dark-400 text-gray-300 px-2 py-1 rounded-md self-start mt-2"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+              </button>
             </div>
+
           </div>
           
           {/* Tab Navigation */}
@@ -703,7 +705,7 @@ export const ContestResults: React.FC = () => {
                         <div className="space-y-3">
                           {leaderboardEntriesForDisplay.map((entry) => (
                             <div 
-                              key={entry.userId || entry.username}
+                              key={entry.username}
                               className={`flex items-center justify-between py-2 px-3 rounded-lg ${
                                 entry.isCurrentUser
                                   ? 'bg-brand-500/20 border border-brand-500/30'
@@ -1118,7 +1120,7 @@ export const ContestResults: React.FC = () => {
                           <div className="space-y-3">
                             {leaderboardEntriesForDisplay.slice(0, 3).map((entry) => (
                               <div 
-                                key={entry.userId || entry.username}
+                                key={entry.username}
                                 className={`flex items-center justify-between py-2 px-3 rounded-lg ${
                                   entry.isCurrentUser
                                     ? 'bg-brand-500/20 border border-brand-500/30'
@@ -1230,6 +1232,35 @@ export const ContestResults: React.FC = () => {
 
         </div>
       </div>
+      
+      {/* Floating Action Button for Mobile Chat Toggle */}
+      <AnimatePresence>
+        {activeTab !== 'chat' && (
+          <motion.button
+            aria-label="Open chat"
+            className="md:hidden fixed bottom-16 right-6 bg-brand-500 text-white rounded-full p-3 shadow-lg z-20 flex items-center justify-center"
+            onClick={() => {
+              setActiveTab('chat');
+              setUnreadMessages(0);
+            }}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            {unreadMessages > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center">
+                {unreadMessages}
+              </span>
+            )}
+          </motion.button>
+        )}
+      </AnimatePresence>
+      
     </div>
   );
 };

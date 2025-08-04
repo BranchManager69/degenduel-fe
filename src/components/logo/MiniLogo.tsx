@@ -1,6 +1,10 @@
 import React from 'react';
 
-const MiniLogo: React.FC = () => {
+interface MiniLogoProps {
+  showBeta?: boolean;
+}
+
+const MiniLogo: React.FC<MiniLogoProps> = ({ showBeta = false }) => {
   return (
     <div className="flex items-center gap-0">
       {/* First D - Russo One - Purple */}
@@ -23,6 +27,25 @@ const MiniLogo: React.FC = () => {
         <span style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 900, fontSize: '16px', letterSpacing: '-0.05em', color: '#FFFFFF' }}>E</span>
         <span style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 900, fontSize: '16px', letterSpacing: '-0.05em', color: '#FFFFFF' }}>L</span>
       </div>
+      
+      {/* BETA text - optional */}
+      {showBeta && (
+        <span
+          style={{
+            fontFamily: "'Orbitron', sans-serif",
+            fontWeight: 900,
+            fontSize: '8px',
+            letterSpacing: '0.05em',
+            color: '#9D4EDD',
+            marginLeft: '0.3em',
+            opacity: 0.8,
+            transform: 'translateY(-0.2em)',
+            display: 'inline-block'
+          }}
+        >
+          BETA
+        </span>
+      )}
     </div>
   );
 };
