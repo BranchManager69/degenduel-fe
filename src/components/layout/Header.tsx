@@ -132,11 +132,40 @@ export const Header: React.FC = () => {
             transition={{ duration: 0.4, delay: 0.1 }}
           >
             <Link to="/" className="flex items-center" aria-label="Home">
-              {/* Use NanoLogo when compact, MiniLogo otherwise */}
-              {isCompact 
-                ? <NanoLogo /> 
-                : <MiniLogo />
-              } 
+              <div className="relative">
+                {/* Use NanoLogo when compact, MiniLogo otherwise - without BETA */}
+                {isCompact 
+                  ? <NanoLogo showBeta={false} /> 
+                  : <MiniLogo showBeta={false} />
+                }
+                
+                {/* Animated BETA text */}
+                <motion.span
+                  initial={false}
+                  animate={{
+                    fontSize: isCompact ? '5px' : '8px',
+                    opacity: isCompact ? 0.6 : 0.8,
+                    x: isCompact ? '-50%' : '2px',
+                    y: isCompact ? '12px' : '-2px',
+                    left: isCompact ? '50%' : '100%',
+                  }}
+                  transition={{
+                    duration: 0.3,
+                    ease: 'easeInOut'
+                  }}
+                  style={{
+                    fontFamily: isCompact ? "'Russo One', sans-serif" : "'Orbitron', sans-serif",
+                    fontWeight: isCompact ? 'normal' : 900,
+                    letterSpacing: isCompact ? '0.1em' : '0.05em',
+                    color: '#9D4EDD',
+                    position: 'absolute',
+                    whiteSpace: 'nowrap',
+                    transformOrigin: 'left center'
+                  }}
+                >
+                  BETA
+                </motion.span>
+              </div>
               {/* <IntroLogo /> */} {/* another option - full name */}
               {/* <Logo /> */} {/* another option - old logo image */}
             </Link>
@@ -242,7 +271,7 @@ export const Header: React.FC = () => {
                         <div className="relative flex items-center justify-center w-4 h-4 ml-2">
                           <div className="absolute inset-0 bg-purple-400 rounded-full animate-ping opacity-20" />
                           <div className="relative w-4 h-4 flex items-center justify-center">
-                            <NanoLogo />
+                            <NanoLogo showBeta={false} />
                           </div>
                         </div>
                         
@@ -385,7 +414,7 @@ export const Header: React.FC = () => {
                       
                       <div className="relative flex items-center justify-center w-4 h-4 ml-1">
                         <div className="relative w-4 h-4 flex items-center justify-center">
-                          <NanoLogo />
+                          <NanoLogo showBeta={false} />
                         </div>
                       </div>
                     </div>

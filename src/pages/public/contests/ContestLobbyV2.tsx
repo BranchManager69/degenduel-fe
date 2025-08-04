@@ -22,7 +22,7 @@ import { EnhancedPortfolioDisplay } from "../../../components/contest-lobby/Enha
 import { LiveTradeActivity } from "../../../components/contest-lobby/LiveTradeActivity";
 import { MultiParticipantChartV2 } from "../../../components/contest-lobby/MultiParticipantChartV2";
 
-import { ContestLobbyHeader } from "../../../components/contest-lobby/ContestLobbyHeader";
+import { ContestDetailHeaderNew } from "../../../components/contest-detail/ContestDetailHeaderNew";
 import { UserPerformanceCard } from "../../../components/contest-lobby/UserPerformanceCard";
 import { Button } from "../../../components/ui/Button";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
@@ -369,8 +369,7 @@ export const ContestLobbyV2: React.FC = () => {
   // Chart hover state - for coordinating between ParticipantsList and MultiParticipantChart
   const [hoveredParticipant, setHoveredParticipant] = useState<string | null>(null);
   
-  // View mode state for leaderboard tab
-  const [leaderboardViewMode, setLeaderboardViewMode] = useState<'carousel' | 'list'>('list');
+  // View mode state for leaderboard tab (removed - not used with new header)
   
   // Switch away from Trade tab if user logs out
   useEffect(() => {
@@ -381,9 +380,7 @@ export const ContestLobbyV2: React.FC = () => {
   //const [unreadMessages] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   
-  // Mouse position tracking for parallax effect
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
+  // Mouse position tracking removed - handled by new header component
 
   // WebSocket hooks
   const { contestViewData: wsUpdatedData } = useContestViewUpdates(contestIdFromParams || null, contestViewData);
@@ -554,6 +551,7 @@ export const ContestLobbyV2: React.FC = () => {
           totalPrizePool: contestData.current_prize_pool || contestData.prize_pool,
           currency: contestData.currency || 'SOL',
           participantCount: liveData.contest.participant_count || contestData.participant_count,
+          image_url: contestData.image_url, // Add the contest image
           settings: {
             difficulty: contestData.settings?.difficulty || 'guppy',
             maxParticipants: contestData.max_participants || null,
@@ -668,29 +666,7 @@ export const ContestLobbyV2: React.FC = () => {
     userWalletAddress: user?.wallet_address
   });
 
-  // Mouse move handler for parallax effect (desktop only)
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    if (!target) return;
-    
-    // Get card dimensions and position
-    const rect = target.getBoundingClientRect();
-    
-    // Calculate mouse position relative to card center (values from -0.5 to 0.5)
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    
-    // Update mouse position state
-    setMousePosition({ x, y });
-  };
-  
-  // Mouse enter/leave handlers
-  const handleMouseEnter = () => setIsHovering(true);
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    // Reset to center position when not hovering
-    setMousePosition({ x: 0, y: 0 });
-  };
+  // Mouse handlers removed - handled by new header component
 
   // Setup OG meta tags - use useMemo to prevent infinite re-renders
   const contestForMeta = useMemo(() => contestViewData?.contest, [contestViewData?.contest?.id, contestViewData?.contest?.name]);
@@ -825,36 +801,98 @@ export const ContestLobbyV2: React.FC = () => {
   }
 
   const contest = contestViewData.contest;
+  
+  // Transform contest to match ContestDetailHeaderNew expectations
+  const contestForHeader = contest ? {
+    id: parseInt(contest.id),
+    name: contest.name,
+    description: contest.description,
+    status: contest.status,
+    start_time: contest.startTime,
+    end_time: contest.endTime,
+    entry_fee: contest.entryFee,
+    prize_pool: contest.prizePool,
+    total_prize_pool: contest.totalPrizePool,
+    participant_count: contest.participantCount,
+    max_participants: contest.settings.maxParticipants || 0,
+    min_participants: contest.settings.minParticipants || 2,
+    // Add missing required Contest fields
+    allowed_buckets: [],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    contest_code: `contest_${contest.id}`,
+    image_url: (contestViewData.contest as any).image_url, // Add the missing image_url
+    settings: {
+      ...contest.settings,
+      max_participants: contest.settings.maxParticipants || 0,
+      payout_structure: (contestViewData.contest.settings as any)?.payout_structure
+    },
+    wallet_address: (contestViewData.contest as any).wallet_address,
+    cancellation_reason: (contestViewData.contest as any).cancellation_reason
+  } : null;
+  
+  // Determine display status
+  const getDisplayStatus = () => {
+    if (!contest) return 'pending';
+    if (contest.status === 'cancelled') return 'cancelled';
+    const now = new Date();
+    const startTime = new Date(contest.startTime);
+    const endTime = new Date(contest.endTime);
+    const hasStarted = now >= startTime;
+    const hasEnded = now >= endTime;
+    if (hasEnded) return 'completed';
+    if (hasStarted) return 'active';
+    return 'pending';
+  };
+  
+  const displayStatus = getDisplayStatus() as 'active' | 'pending' | 'completed' | 'cancelled';
+  const hasPortfolio = !!portfolio && portfolio.tokens && portfolio.tokens.length > 0;
+  const isParticipating = contest?.isCurrentUserParticipating || hasPortfolio;
 
   return (
     <SilentErrorBoundary>
-      <div className="min-h-screen">
-        
-        {/* Beautiful Header with Parallax Effect */}
-        <ContestLobbyHeader
-          contest={contest}
-          participants={effectiveParticipants}
-          mousePosition={mousePosition}
-          isHovering={isHovering}
-          onMouseMove={handleMouseMove}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          showViewToggle={activeTab === 'leaderboard'}
-          viewMode={leaderboardViewMode}
-          onViewModeChange={setLeaderboardViewMode}
-          onAction1={() => {
-            // Placeholder for future action 1
-            console.log('Action 1 clicked');
-          }}
-          onAction2={() => {
-            // Placeholder for future action 2
-            console.log('Action 2 clicked');
-          }}
-        />
+      <div className="flex flex-col min-h-screen">
+        {/* Breadcrumb navigation */}
+        <div className="w-full">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+            <div className="flex items-center text-sm text-gray-400">
+              <a href="/" className="hover:text-brand-400 transition-colors">
+                Home
+              </a>
+              <span className="mx-2">›</span>
+              <a href="/contests" className="hover:text-brand-400 transition-colors">
+                Contests
+              </a>
+              <span className="mx-2">›</span>
+              <span className="text-gray-300">{contest?.name || 'Contest'}</span>
+            </div>
+          </div>
+        </div>
 
         {/* Content Section */}
         <div className="relative z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            {/* Beautiful Header with Parallax Effect */}
+            {contestForHeader && (
+              <ContestDetailHeaderNew
+                contest={contestForHeader}
+                displayStatus={displayStatus}
+                isAuthenticated={!!user}
+                hasPortfolio={hasPortfolio}
+                isParticipating={isParticipating}
+                portfolioTransactions={null} // Not needed for live page
+                onActionButtonClick={() => {
+                  // No action button on live page
+                }}
+                getActionButtonLabel={() => ''}
+                handleCountdownComplete={() => {
+                  // Refresh data when countdown completes
+                  window.location.reload();
+                }}
+                error={error}
+                showActionButton={false} // Hide action button on live page
+              />
+            )}
             
             {/* Beautiful Tab Navigation with Premium Effects */}
             <div className="mt-8 flex items-center gap-2 p-1 bg-dark-300/30 backdrop-blur-sm rounded-lg border border-dark-200">
@@ -982,7 +1020,7 @@ export const ContestLobbyV2: React.FC = () => {
               {activeTab === 'leaderboard' && (
                 <div className="space-y-6">
                   <AnimatePresence mode="wait">
-                    {leaderboardViewMode === 'carousel' ? (
+                    {false ? ( // Default to list mode since toggle was removed
                       <motion.div
                         key="carousel"
                         initial={{ opacity: 0, y: 20 }}

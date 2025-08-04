@@ -20,6 +20,7 @@ interface ContestDetailHeaderNewProps {
   getActionButtonLabel: () => string;
   handleCountdownComplete?: () => void;
   error?: string | null;
+  showActionButton?: boolean; // New prop to control button visibility
 }
 
 // Utility function to format contest duration
@@ -60,6 +61,7 @@ export const ContestDetailHeaderNew: React.FC<ContestDetailHeaderNewProps> = ({
   getActionButtonLabel,
   handleCountdownComplete,
   error,
+  showActionButton = true, // Default to true for backward compatibility
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -535,10 +537,10 @@ export const ContestDetailHeaderNew: React.FC<ContestDetailHeaderNewProps> = ({
                   
                   {/* Share Contest Button */}
                   <div className="flex-shrink-0">
-                    {contest && (
+                    {contest && contest.id && (
                       <SilentErrorBoundary>
                         <ShareContestButton
-                          contestId={contest.id.toString()}
+                          contestId={String(contest.id)}
                           contestName={contest.name}
                           prizePool={contest.total_prize_pool || contest.prize_pool || "0"}
                         />
@@ -599,24 +601,25 @@ export const ContestDetailHeaderNew: React.FC<ContestDetailHeaderNewProps> = ({
           )}
           
           {/* Edge-to-Edge Action Button */}
-          <button
-            onClick={onActionButtonClick}
-            disabled={displayStatus === "cancelled"}
-            className={`absolute bottom-0 left-0 right-0 h-12 font-medium transition-all text-center relative overflow-hidden ${
-              displayStatus === "cancelled"
-                ? "bg-dark-400 text-gray-500 cursor-not-allowed"
-                : displayStatus === "active"
-                ? "bg-gradient-to-r from-green-600 via-green-500 to-emerald-500 hover:from-green-500 hover:via-green-400 hover:to-emerald-400 text-white font-bold shadow-lg shadow-green-500/25 border-t-2 border-green-400/50"
-                : displayStatus === "completed"
-                ? "bg-gradient-to-r from-blue-800 via-blue-600 to-indigo-600 hover:from-blue-700 hover:via-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border-t border-blue-400/30"
-                : isParticipating
-                ? "bg-gradient-to-r from-purple-800 via-purple-600 to-violet-600 hover:from-purple-700 hover:via-purple-500 hover:to-violet-500 text-white font-semibold shadow-lg shadow-purple-500/20"
-                : "bg-gradient-to-r from-brand-800 via-brand-600 to-indigo-600 hover:from-brand-700 hover:via-brand-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-brand-500/20"
-            }`}
-            style={displayStatus === "active" ? {
-              animation: "subtle-pulse 2s ease-in-out infinite alternate"
-            } : {}}
-          >
+          {showActionButton && (
+            <button
+              onClick={onActionButtonClick}
+              disabled={displayStatus === "cancelled"}
+              className={`absolute bottom-0 left-0 right-0 h-12 font-medium transition-all text-center relative overflow-hidden ${
+                displayStatus === "cancelled"
+                  ? "bg-dark-400 text-gray-500 cursor-not-allowed"
+                  : displayStatus === "active"
+                  ? "bg-gradient-to-r from-green-600 via-green-500 to-emerald-500 hover:from-green-500 hover:via-green-400 hover:to-emerald-400 text-white font-bold shadow-lg shadow-green-500/25 border-t-2 border-green-400/50"
+                  : displayStatus === "completed"
+                  ? "bg-gradient-to-r from-blue-800 via-blue-600 to-indigo-600 hover:from-blue-700 hover:via-blue-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-blue-500/20 border-t border-blue-400/30"
+                  : isParticipating
+                  ? "bg-gradient-to-r from-purple-800 via-purple-600 to-violet-600 hover:from-purple-700 hover:via-purple-500 hover:to-violet-500 text-white font-semibold shadow-lg shadow-purple-500/20"
+                  : "bg-gradient-to-r from-brand-800 via-brand-600 to-indigo-600 hover:from-brand-700 hover:via-brand-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-brand-500/20"
+              }`}
+              style={displayStatus === "active" ? {
+                animation: "subtle-pulse 2s ease-in-out infinite alternate"
+              } : {}}
+            >
             {displayStatus === "active" && (
               <>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
@@ -637,6 +640,7 @@ export const ContestDetailHeaderNew: React.FC<ContestDetailHeaderNewProps> = ({
               </span>
             )}
           </button>
+          )}
         </div>
       </div>
     </div>

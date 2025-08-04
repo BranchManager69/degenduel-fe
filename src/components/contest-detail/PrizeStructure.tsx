@@ -1,5 +1,5 @@
 import React from "react";
-import { formatCurrency } from "../../lib/utils";
+// import { formatCurrency } from "../../lib/utils"; // Not used after removing Degen Dividends
 import { useIndividualToken } from "../../hooks/websocket/topic-hooks/useIndividualToken";
 
 interface PrizeStructureProps {
@@ -49,7 +49,7 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
   const maxWinnerPool = maxTotalCollected - maxPlatformFee;
   
   // For display purposes, use the max pool for pending (optimistic view)
-  const platformFee = isPending ? maxPlatformFee : minPlatformFee;
+  // const platformFee = isPending ? maxPlatformFee : minPlatformFee; // Not used after removing Degen Dividends
   
   // Prize distribution calculation is now done inline in the visual payout distribution section
 
@@ -60,7 +60,7 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
           opacity: 1;
         }
       `}</style>
-      <div className="space-y-6 bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-100">Payout Structure</h3>
@@ -68,18 +68,30 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
 
       {/* Visual Payout Distribution */}
       <div className="mt-6">
-        <div className="h-40 flex items-end gap-1 relative">
-          {(() => {
-            const totalPositions = maxParticipants || 10;
+        {(() => {
+          // For pending contests, use max participants; for active/completed, use actual participants
+          const totalPositions = (contestStatus === "pending" || contestStatus === "upcoming") 
+            ? maxParticipants || 10 
+            : currentParticipants || 10;
+          
+          // For pending contests, limit to 20 for display; for active/completed, show all participants
+          const maxDisplayPositions = (contestStatus === "pending" || contestStatus === "upcoming") 
+            ? Math.min(totalPositions, 20)
+            : totalPositions;
+
+          return (
+            <>
+              <div className="h-40 flex items-end gap-1 relative">
+                {(() => {
             const maxPercent = payoutStructure && Object.keys(payoutStructure).length > 0
               ? Math.round((Object.values(payoutStructure)[0] as number) * 100)
               : 69; // Fallback to default first place percentage
             
-            // Create array for all positions
-            const positions = [];
-            let lastPayingPosition = 0;
-            
-            for (let i = 1; i <= Math.min(totalPositions, 20); i++) {
+                  // Create array for all positions
+                  const positions = [];
+                  let lastPayingPosition = 0;
+                  
+                  for (let i = 1; i <= maxDisplayPositions; i++) {
               const payout = payoutStructure ? payoutStructure[`place_${i}`] : 
                             (i === 1 ? 0.69 : i === 2 ? 0.20 : i === 3 ? 0.11 : 0);
               const isPaying = payout > 0;
@@ -189,42 +201,21 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
               </>
             );
           })()}
-          {maxParticipants > 20 && (
+          
+          {totalPositions > maxDisplayPositions && (
             <div className="flex-1 flex flex-col items-center justify-end">
               <div className="text-xs text-gray-500">...</div>
             </div>
           )}
         </div>
+        </>
+      );
+    })()}
       </div>
 
       {/* Pool Details */}
       <div className="pt-4 border-t border-dark-300/50 space-y-3">
 
-        {/* Platform Fee - Only show if not crown contest */}
-        {PLATFORM_FEE > 0 && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">Degen Dividends</span>
-                <a 
-                  href="/wallet" 
-                  className="text-brand-400 hover:text-brand-300 underline text-xs"
-                >
-                  What's this?
-                </a>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-300">
-                  {formatCurrency(platformFee)}
-                </span>
-                <span className="text-gray-500">({PLATFORM_FEE}%)</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="text-xs text-gray-500">Daily SOL airdrop to DUEL holders</span>
-            </div>
-          </div>
-        )}
 
         {/* Challenge Contest Badge */}
         {contestType === "CHALLENGE" && (

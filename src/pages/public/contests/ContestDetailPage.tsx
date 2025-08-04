@@ -322,15 +322,24 @@ export const ContestDetails: React.FC = () => {
             const transformedAnalyticsParticipants = (analyticsData.participants || []).map((p: any) => ({
               wallet_address: p.wallet_address,
               nickname: p.username || p.nickname || `Player ${p.rank || 0}`,
-              portfolio_value: p.total_value_sol?.toString() || '0', // SOL value instead of USD
+              portfolio_value: p.total_value_sol?.toString() || '0', // SOL value from analytics
               performance_percentage: p.pnl_percent?.toString() || '0',
               rank: p.rank,
               is_current_user: p.wallet_address === user?.wallet_address,
               is_ai_agent: false,
-              profile_image_url: null,
-              role: p.role || "user", // Add role field
+              profile_image_url: p.profile_image_url, // Now available from backend
+              role: p.role || "user",
+              flair: p.flair,
+              equipped_skin: p.equipped_skin,
+              line_design: p.line_design,
               is_admin: p.is_admin || false,
               is_superadmin: p.is_superadmin || false,
+              is_banned: p.is_banned || false,
+              user_level: p.user_level,
+              experience_points: p.experience_points,
+              total_contests_entered: p.total_contests_entered,
+              contests_won: p.contests_won,
+              twitter_handle: p.twitter_handle,
               // Add price source metadata
               sol_price_source: analyticsData.sol_price_source,
               sol_price_timestamp: analyticsData.sol_price_timestamp,
@@ -915,8 +924,35 @@ export const ContestDetails: React.FC = () => {
 
           {/* Content Grid - Better Balanced Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Participants Only */}
+            {/* Left Column - Prize Structure and Participants */}
             <div className="space-y-8">
+              {/* Prize Distribution - Only show if prize pool > 0 */}
+              {(() => {
+                const prizePool = Number(contest.entry_fee) > 0 
+                  ? Number(contest.entry_fee) * contest.max_participants
+                  : Number(contest.total_prize_pool || contest.prize_pool || "0");
+                
+                if (prizePool > 0) {
+                  return (
+                    <div className="group relative">
+                      <SilentErrorBoundary>
+                        <PrizeStructure
+                          prizePool={prizePool}
+                          entryFee={Number(contest?.entry_fee || 0)}
+                          maxParticipants={Number(contest?.max_participants || 0)}
+                          currentParticipants={Number(contest?.participant_count || 0)}
+                          contestType={(contest as any)?.contest_type}
+                          payoutStructure={contest?.settings?.payout_structure}
+                          contestStatus={displayStatus}
+                          minParticipants={Number(contest?.min_participants || 0)}
+                        />
+                      </SilentErrorBoundary>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               {/* Participants Section */}
               {(realtimeParticipants.length > 0 || (Array.isArray(contest.participants) && contest.participants.length > 0)) ? (
                 <div className="group relative">
@@ -972,35 +1008,8 @@ export const ContestDetails: React.FC = () => {
               )}
             </div>
 
-            {/* Right Column - Prize & Referral & Rules */}
+            {/* Right Column - Referral & Rules */}
             <div className="space-y-8">
-              {/* Prize Distribution - Only show if prize pool > 0 */}
-              {(() => {
-                const prizePool = Number(contest.entry_fee) > 0 
-                  ? Number(contest.entry_fee) * contest.max_participants
-                  : Number(contest.total_prize_pool || contest.prize_pool || "0");
-                
-                if (prizePool > 0) {
-                  return (
-                    <div className="group relative">
-                      <SilentErrorBoundary>
-                        <PrizeStructure
-                          prizePool={prizePool}
-                          entryFee={Number(contest?.entry_fee || 0)}
-                          maxParticipants={Number(contest?.max_participants || 0)}
-                          currentParticipants={Number(contest?.participant_count || 0)}
-                          contestType={(contest as any)?.contest_type}
-                          payoutStructure={contest?.settings?.payout_structure}
-                          contestStatus={displayStatus}
-                          minParticipants={Number(contest?.min_participants || 0)}
-                        />
-                      </SilentErrorBoundary>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-              
               {/* Referral Progress Card */}
               {displayStatus === "pending" && (contest as any)?.contest_type !== "CHALLENGE" && (
                 <div className="group relative">

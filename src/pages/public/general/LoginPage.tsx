@@ -28,24 +28,32 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Get the path to redirect to after login (default to contests)
-  const from = location.state?.from?.pathname || "/contests";
+  // Get the path to redirect to after login from multiple sources
+  const urlParams = new URLSearchParams(location.search);
+  const returnUrl = urlParams.get('returnUrl');
+  const from = location.state?.from?.pathname;
   
   // Store intended destination in localStorage for social auth redirects
   React.useEffect(() => {
-    if (from && from !== "/") {
-      localStorage.setItem("auth_redirect_path", from);
-      authDebug('LoginPage', 'Stored auth redirect path', { from });
+    const redirectPath = returnUrl || from;
+    if (redirectPath && redirectPath !== "/") {
+      localStorage.setItem("auth_redirect_path", redirectPath);
+      authDebug('LoginPage', 'Stored auth redirect path', { 
+        returnUrl, 
+        from, 
+        storedPath: redirectPath 
+      });
     }
-  }, [from]);
+  }, [returnUrl, from]);
 
   // If already logged in, redirect to original destination
   React.useEffect(() => {
     if (user) {
       const storedPath = localStorage.getItem("auth_redirect_path");
-      const redirectTo = storedPath || from;
+      const redirectTo = storedPath || returnUrl || from || "/"; // Check all sources
       authDebug('LoginPage', 'User authenticated, redirecting', { 
         redirectTo,
+        returnUrl,
         fromState: from,
         fromStorage: storedPath,
         user: user.nickname || user.wallet_address
@@ -53,7 +61,7 @@ const LoginPage: React.FC = () => {
       localStorage.removeItem("auth_redirect_path");
       navigate(redirectTo, { replace: true });
     }
-  }, [user, navigate, from]);
+  }, [user, navigate, returnUrl, from]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">

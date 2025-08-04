@@ -51,6 +51,14 @@ interface PortfolioToken {
   weight: number;
 }
 
+// Special tokens that should always be available - defined outside component to prevent re-creation
+const SPECIAL_TOKEN_ADDRESSES = [
+  'So11111111111111111111111111111111111111112',   // SOL  
+  'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', // DUEL
+  '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh', // WBTC
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'  // USDC
+];
+
 // Token Card Skeleton Component
 function TokenCardSkeleton() {
   return (
@@ -136,14 +144,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const navigate = useNavigate();
   const { isSuperAdmin } = useMigratedAuth();
   const { referralCode } = useReferral();
-  
-  // Special tokens that should always be available
-  const SPECIAL_TOKEN_ADDRESSES = [
-    'So11111111111111111111111111111111111111112',   // SOL  
-    'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', // DUEL
-    '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh', // WBTC
-    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'  // USDC
-  ];
   
   // Use batch tokens hook for special tokens
   const { 
@@ -450,9 +450,20 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     };
   }, [hasMoreTokens, isLoadingMore, tokenListLoading, loadMoreTokens]);
   
-  const [selectedTokens, setSelectedTokens] = useState<Map<string, number>>(
-    new Map(),
-  );
+  const [selectedTokens, setSelectedTokens] = useState<Map<string, number>>(() => {
+    // Try to restore saved portfolio for this contest
+    try {
+      const saved = localStorage.getItem(`portfolio_${contestId}`);
+      if (saved) {
+        const selections = JSON.parse(saved);
+        console.log(`[Portfolio] Restored ${Object.keys(selections).length} saved token selections for contest ${contestId}`);
+        return new Map(Object.entries(selections).map(([key, value]) => [key, Number(value)]));
+      }
+    } catch (error) {
+      console.warn('[Portfolio] Failed to restore saved selections:', error);
+    }
+    return new Map();
+  });
   // View mode for token display
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
     const saved = localStorage.getItem('portfolioViewMode');
@@ -470,6 +481,22 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const [inputWalletAddress, setInputWalletAddress] = useState("");
   const [isAnalyzingWallet, setIsAnalyzingWallet] = useState(false);
   const user = useStore((state) => state.user);
+  
+  // Save portfolio selections to localStorage when they change
+  useEffect(() => {
+    if (contestId && selectedTokens.size > 0) {
+      try {
+        const selections = Object.fromEntries(selectedTokens);
+        localStorage.setItem(`portfolio_${contestId}`, JSON.stringify(selections));
+        console.log(`[Portfolio] Saved ${selectedTokens.size} token selections for contest ${contestId}`);
+      } catch (error) {
+        console.warn('[Portfolio] Failed to save selections:', error);
+      }
+    } else if (contestId && selectedTokens.size === 0) {
+      // Clear saved data when no selections
+      localStorage.removeItem(`portfolio_${contestId}`);
+    }
+  }, [selectedTokens, contestId]);
   
   // Wallet analysis hook - only runs if user is logged in
   const { 
@@ -794,7 +821,13 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   
   // Backend now handles sorting, so tokens are already sorted
   const sortedTokens = tokens;
-  const memoizedTokens = tokens; // Also alias for backward compatibility
+  
+  // Properly memoize tokens to prevent rapid re-subscriptions
+  // Only re-memoize when the actual token set changes (not just prices)
+  const memoizedTokens = useMemo(() => tokens, [
+    // Create a stable dependency based on token addresses
+    tokens.map(t => t.address || t.contractAddress).sort().join(',')
+  ]);
 
   // visibleTokens are just tokens (already paginated and includes special tokens)
   const visibleTokens = tokens;
@@ -955,6 +988,12 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
           status: "success",
           message: hasExistingPortfolio ? "Portfolio updated successfully!" : "Success! You have entered the free contest.",
         });
+        
+        // Clear saved portfolio data after successful submission
+        if (contestId) {
+          localStorage.removeItem(`portfolio_${contestId}`);
+          console.log(`[Portfolio] Cleared saved portfolio data for contest ${contestId} after successful submission`);
+        }
 
         toast.success(hasExistingPortfolio ? "Portfolio updated successfully!" : "Successfully entered free contest!", { duration: 5000 });
 
@@ -1223,6 +1262,12 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
           message: hasExistingPortfolio ? "Portfolio updated successfully!" : "Success! You have entered the contest.",
           signature: confirmedSignature,
         });
+        
+        // Clear saved portfolio data after successful submission
+        if (contestId) {
+          localStorage.removeItem(`portfolio_${contestId}`);
+          console.log(`[Portfolio] Cleared saved portfolio data for contest ${contestId} after successful submission`);
+        }
 
         toast.success(
           <div>
@@ -2015,18 +2060,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     console.log("⏳ PortfolioTokenSelectionPage: Rendering skeleton loading state (no cached tokens)");
     return (
       <div className="flex flex-col min-h-screen">
-        {/* Background effects */}
-        <div className="fixed inset-0 z-0">
-          <div className="absolute inset-0 bg-dark-100"></div>
-          <div 
-            className="absolute inset-0 opacity-5"
-            style={{
-              backgroundImage: 'repeating-linear-gradient(0deg, rgba(34, 197, 94, 0.3) 0px, transparent 1px, transparent 20px, rgba(34, 197, 94, 0.3) 21px)',
-              backgroundSize: '20px 40px'
-            }}
-          />
-        </div>
-
         {/* Content */}
         <div className="relative z-10">
           <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 relative">
@@ -2294,43 +2327,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
           </div>
         )}
         
-        {/* DIFFERENT BACKGROUND: Matrix-style instead of cyber grid */}
-        <div className="fixed inset-0 z-0">
-          <div className="absolute inset-0 bg-dark-100"></div>
-          {/* Matrix rain effect */}
-          <div 
-            className="absolute inset-0 opacity-5"
-            style={{
-              backgroundImage: 'repeating-linear-gradient(0deg, rgba(34, 197, 94, 0.3) 0px, transparent 1px, transparent 20px, rgba(34, 197, 94, 0.3) 21px)',
-              backgroundSize: '20px 40px',
-              animation: 'matrix-rain 20s linear infinite'
-            }}
-          />
-          
-          {/* Floating hexagons instead of particles */}
-          <div className="absolute inset-0 pointer-events-none">
-            {Array.from({ length: 15 }).map((_, i) => {
-              const left = `${Math.random() * 100}%`;
-              const top = `${Math.random() * 100}%`;
-              const duration = `${Math.random() * 10 + 15}s`;
-              const delay = `${Math.random() * 3}s`;
-              
-              return (
-                <div
-                  key={i}
-                  className="absolute w-3 h-3 border border-emerald-500/20 transform rotate-45 animate-pulse"
-                  style={{
-                    left,
-                    top,
-                    animationDuration: duration,
-                    animationDelay: delay
-                  }}
-                />
-              );
-            })}
-          </div>
-        </div>
-
         {/* Content Section */}
         <div className="relative z-10">
           <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 relative">
@@ -2561,8 +2557,8 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* DEBUG PANEL - Contest Data (Super Admin Only) */}
-                    {contest && isSuperAdmin && (
+                    {/* DEBUG PANEL - Contest Data (Super Admin + Development Only) */}
+                    {contest && isSuperAdmin && process.env.NODE_ENV === 'development' && (
                       <div className="mb-4 p-4 bg-dark-300/50 border border-yellow-500/30 rounded-lg">
                         <div 
                           className="flex items-center justify-between cursor-pointer"
@@ -2624,8 +2620,8 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Wallet Analysis Debug Panel - Development Only */}
-                    {process.env.NODE_ENV === 'development' && user?.wallet_address && (
+                    {/* Wallet Analysis Debug Panel - Super Admin + Development Only */}
+                    {isSuperAdmin && process.env.NODE_ENV === 'development' && user?.wallet_address && (
                       <div className="mb-4 p-4 bg-dark-300/50 border border-blue-500/30 rounded-lg">
                         <div 
                           className="flex items-center justify-between cursor-pointer"
@@ -2696,8 +2692,8 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* DEBUG PANEL - Token Data (Super Admin Only) */}
-                    {isSuperAdmin && (
+                    {/* DEBUG PANEL - Token Data (Super Admin + Development Only) */}
+                    {isSuperAdmin && process.env.NODE_ENV === 'development' && (
                       <div className="mb-4 p-4 bg-dark-300/50 border border-purple-500/30 rounded-lg">
                         <div 
                           className="flex items-center justify-between cursor-pointer"
