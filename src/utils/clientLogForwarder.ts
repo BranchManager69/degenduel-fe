@@ -111,6 +111,9 @@ interface LogEntry {
   context?: Record<string, any>;
   userId?: string;
   userWallet?: string;
+  username?: string;
+  role?: string;
+  authMethod?: string;
   sessionId: string;
   url: string;
   userAgent: string;
@@ -298,8 +301,11 @@ const addToQueue = (level: LogLevel, args: any[], context: Record<string, any> =
       message: truncatedMessage,
       timestamp: new Date().toISOString(),
       context,
-      userId: user?.wallet_address, // Use wallet_address as userId
+      userId: user?.id, // Use the actual user ID
       userWallet: user?.wallet_address,
+      username: user?.username,
+      role: user?.role,
+      authMethod: user?.auth_method,
       sessionId,
       url: window.location.href,
       userAgent: navigator.userAgent,

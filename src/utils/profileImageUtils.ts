@@ -20,10 +20,9 @@ export function getFullImageUrl(imageUrl: string | null | undefined): string {
     return imageUrl;
   }
 
-  // For relative paths, just use /api prefix and let the proxy handle it
-  // The frontend already has /api/* proxied to the backend
-  // This avoids CORS issues and works just like all other API calls
-  return `/api${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+  // Profile images are served directly from frontend without /api prefix
+  // Frontend proxy serves images directly at the root level
+  return imageUrl;
 }
 
 /**
