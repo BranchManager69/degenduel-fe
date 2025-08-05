@@ -383,26 +383,31 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
           isExtrapolated: false
         }));
         
-        // Force inject today's row
-        const todayUTC = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
-        const todayRow = {
-          id: 9999,
-          balance_lamports: (actualData[0].balance_duel * 1000000).toString(),
-          balance_duel: actualData[0].balance_duel,
-          timestamp: todayUTC,
-          total_registered_supply: actualData[0].total_registered_supply,
-          dividend_percentage: actualData[0].dividend_percentage,
-          daily_contest_revenue: 0,
-          isExtrapolated: true,
-          dividend_status: undefined,
-          dividend_amount_sol: undefined,
-          dividend_paid_at: undefined,
-          dividend_transaction: undefined
-        };
+        // Only inject today's row if we have actual data to base it on
+        let allData = actualData;
         
-        // Combine today + actual data, sort newest first
-        const allData = [todayRow, ...actualData];
-        allData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        if (actualData.length > 0) {
+          // Force inject today's row based on most recent snapshot
+          const todayUTC = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
+          const todayRow = {
+            id: 9999,
+            balance_lamports: (actualData[0].balance_duel * 1000000).toString(),
+            balance_duel: actualData[0].balance_duel,
+            timestamp: todayUTC,
+            total_registered_supply: actualData[0].total_registered_supply,
+            dividend_percentage: actualData[0].dividend_percentage,
+            daily_contest_revenue: 0,
+            isExtrapolated: true,
+            dividend_status: undefined,
+            dividend_amount_sol: undefined,
+            dividend_paid_at: undefined,
+            dividend_transaction: undefined
+          };
+          
+          // Combine today + actual data, sort newest first
+          allData = [todayRow, ...actualData];
+          allData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        }
         
         setTableData(allData);
         setUserData(data.wallet);
@@ -686,10 +691,6 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
               <p className="text-gray-400">Loading snapshot data...</p>
             </div>
           </div>
-        ) : tableData.length === 0 ? (
-          <div className="flex items-center justify-center py-12">
-            <p className="text-gray-400">No snapshot data available</p>
-          </div>
         ) : (
           <div className="overflow-x-auto">
               <table className="w-full divide-y divide-gray-800 md:table-fixed">
@@ -827,7 +828,24 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                 </tr>
               </thead>
               <tbody className="bg-dark-200/30">
-                {tableData.map((snapshot) => {
+                {tableData.length === 0 ? (
+                  <tr>
+                    <td colSpan={13} className="px-4 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-4">
+                        <div className="text-gray-400">
+                          <p className="text-lg font-medium mb-2">No dividend data available yet</p>
+                          <p className="text-sm text-gray-500">Your first snapshot will appear after midnight UTC</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <svg className="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Check out the "What If...?" simulator below to see potential earnings!</span>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : tableData.map((snapshot) => {
                   const isExtrapolated = snapshot.isExtrapolated;
                   const isToday = isExtrapolated && (() => {
                     const todayUTC = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
@@ -999,7 +1017,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                 })}
                 
                 {/* Totals Row */}
-                {(() => {
+                {tableData.length > 0 && (() => {
                   return (
                     <tr className="bg-dark-100/50 border-t-2 border-gray-600">
                       <td className="px-2 py-3 whitespace-nowrap text-xs font-semibold text-white sticky left-0 z-10 bg-dark-100/50 md:px-6 md:py-4 md:text-sm">
@@ -1082,7 +1100,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                 })()}
                 
                 {/* APY Row */}
-                {(() => {
+                {tableData.length > 0 && (() => {
                   // Calculate APY based on the data
                   const hasValidData = tableData.length > 0 && animatedTotalEarnings > 0;
                   
@@ -1293,7 +1311,7 @@ export const DuelSnapshotTable: React.FC<DuelSnapshotTableProps> = ({
                 </div>
                 
                 {/* Projection for logged-in users - only show when simulator is collapsed */}
-                {!demoMode && tableData.length > 0 && !simulatorExpanded && (
+                {!demoMode && !simulatorExpanded && (
                   <div className="bg-dark-400/20 rounded-lg p-3 border border-gray-700/50">
                     <div className="text-xs text-gray-500 mb-1">Based on your current holdings:</div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">

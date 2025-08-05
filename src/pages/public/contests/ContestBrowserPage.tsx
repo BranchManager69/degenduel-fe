@@ -46,7 +46,6 @@ export const ContestBrowser: React.FC = () => {
   const [isRestLoading, setIsRestLoading] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
   const [hideCancelled, setHideCancelled] = useState(true);
-  const [detailedChallenges, setDetailedChallenges] = useState<Record<string, any>>({});
 
   // **NEW: Use WebSocket-based contest data instead of REST API**
   const {
@@ -126,54 +125,6 @@ export const ContestBrowser: React.FC = () => {
     }
   };
 
-  // Batch fetch detailed challenge data
-  const fetchDetailedChallenges = async (challengeContests: Contest[]) => {
-    const challengeIds = challengeContests
-      .filter(contest => contest.max_participants === 2)
-      .map(contest => contest.id.toString());
-
-    console.log('[DUEL DEBUG] Found duels to fetch detailed data for:', challengeIds);
-    if (challengeIds.length === 0) return;
-
-    try {
-      const detailedResults = await Promise.all(
-        challengeIds.map(async (id) => {
-          try {
-            console.log(`[DUEL DEBUG] Fetching detailed data for contest ${id}...`);
-            const response = await fetch(`/api/contests/${id}`);
-            if (response.ok) {
-              const data = await response.json();
-              console.log(`[DUEL DEBUG] Contest ${id} detailed data:`, {
-                contest_type: data.data?.contest_type,
-                challenger_user: data.data?.challenger_user,
-                challenged_user: data.data?.challenged_user,
-                challenge_status: data.data?.challenge_status
-              });
-              return { id, data: data.success ? data.data : null };
-            }
-            console.log(`[DUEL DEBUG] Failed to fetch contest ${id} - response not ok`);
-            return { id, data: null };
-          } catch (error) {
-            console.error(`[DUEL DEBUG] Failed to fetch detailed data for contest ${id}:`, error);
-            return { id, data: null };
-          }
-        })
-      );
-
-      const detailedMap: Record<string, any> = {};
-      detailedResults.forEach(({ id, data }) => {
-        if (data) {
-          detailedMap[id] = data;
-        }
-      });
-
-      console.log('[DUEL DEBUG] Final detailed challenges map:', detailedMap);
-      setDetailedChallenges(detailedMap);
-    } catch (error) {
-      console.error('[DUEL DEBUG] Failed to batch fetch challenge details:', error);
-    }
-  };
-
   // **FALLBACK: REST API retry function for compatibility**
   const fetchContestsViaRest = async () => {
     try {
@@ -241,11 +192,12 @@ export const ContestBrowser: React.FC = () => {
   }, []); // Only run once on mount
 
   // Batch fetch detailed challenge data when contests change
-  useEffect(() => {
-    if (contests.length > 0) {
-      fetchDetailedChallenges(contests);
-    }
-  }, [contests]);
+  // DISABLED: This was causing excessive API calls
+  // useEffect(() => {
+  //   if (contests.length > 0) {
+  //     fetchDetailedChallenges(contests);
+  //   }
+  // }, [contests]);
 
   
 
@@ -478,7 +430,6 @@ export const ContestBrowser: React.FC = () => {
                     <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {activeContests.map((contest) => {
                         const isDuel = contest.max_participants === 2;
-                        const detailedData = detailedChallenges[contest.id.toString()];
                         
                         return (
                           <div
@@ -487,7 +438,7 @@ export const ContestBrowser: React.FC = () => {
                           >
                             {isDuel ? (
                               <DuelCard
-                                contest={{...contest, ...detailedData} as any}
+                                contest={contest}
                                 onClick={() => navigate(`/contests/${contest.id}`)}
                               />
                             ) : (
@@ -540,7 +491,6 @@ export const ContestBrowser: React.FC = () => {
                     <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {pendingContests.map((contest) => {
                         const isDuel = contest.max_participants === 2;
-                        const detailedData = detailedChallenges[contest.id.toString()];
                         
                         return (
                           <div
@@ -549,7 +499,7 @@ export const ContestBrowser: React.FC = () => {
                           >
                             {isDuel ? (
                               <DuelCard
-                                contest={{...contest, ...detailedData} as any}
+                                contest={contest}
                                 onClick={() => navigate(`/contests/${contest.id}`)}
                               />
                             ) : (
@@ -592,7 +542,6 @@ export const ContestBrowser: React.FC = () => {
                   <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 opacity-60">
                     {completedContests.map((contest) => {
                       const isDuel = contest.max_participants === 2;
-                      const detailedData = detailedChallenges[contest.id.toString()];
                       
                       return (
                         <div
@@ -601,7 +550,7 @@ export const ContestBrowser: React.FC = () => {
                         >
                           {isDuel ? (
                             <DuelCard
-                              contest={{...contest, ...detailedData} as any}
+                              contest={contest}
                               onClick={() => navigate(`/contests/${contest.id}`)}
                             />
                           ) : (
@@ -646,7 +595,6 @@ export const ContestBrowser: React.FC = () => {
                   <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {cancelledContests.map((contest) => {
                       const isDuel = contest.max_participants === 2;
-                      const detailedData = detailedChallenges[contest.id.toString()];
                       
                       return (
                         <div
@@ -655,7 +603,7 @@ export const ContestBrowser: React.FC = () => {
                         >
                           {isDuel ? (
                             <DuelCard
-                              contest={{...contest, ...detailedData} as any}
+                              contest={contest}
                               onClick={() => navigate(`/contests/${contest.id}`)}
                             />
                           ) : (

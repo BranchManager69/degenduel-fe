@@ -13,6 +13,7 @@
 import React, { useState, useEffect } from 'react';
 import { DynamicComponentProps } from '../types';
 import { Button } from '../../ui/Button';
+import { config } from '../../../config/config';
 import { TokenSearch } from '../../common/TokenSearch';
 import { CopyToClipboard } from '../../common/CopyToClipboard';
 import { useIndividualToken } from '../../../hooks/websocket/topic-hooks/useIndividualToken';
@@ -25,7 +26,7 @@ const TokenDetails: React.FC<DynamicComponentProps> = ({
   const [selectedTokenAddress, setSelectedTokenAddress] = useState<string | null>(null);
   
   // Default to DUEL token if no data provided
-  const defaultTokenAddress = 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX';
+  const defaultTokenAddress = config.SOLANA.DEGEN_TOKEN_ADDRESS;
   const tokenAddress = selectedTokenAddress || defaultTokenAddress;
   
   // Use the shared WebSocket hook for real-time data

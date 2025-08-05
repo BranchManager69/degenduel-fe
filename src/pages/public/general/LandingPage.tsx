@@ -51,6 +51,12 @@ const SHOW_TEMPLATE_SECTION_1 = false;
 const SHOW_TEMPLATE_SECTION_2 = false;
 const SHOW_TEMPLATE_SECTION_3 = false;
 
+// Performance flags
+const ENABLE_VISUAL_EFFECTS = false; // Set to false to disable heavy animations
+
+// Feature flags
+const SHOW_TOKEN_CARDS = false; // Set to true to show DUEL and SOL token cards
+
 // Enhanced Floating Buttons
 import FloatingButtonStack from '../../../components/layout/FloatingButtonStack'; // Enhanced floating button stack
 
@@ -90,6 +96,10 @@ export const LandingPage: React.FC = () => {
   const [animationDone, setAnimationDone] = useState(false);
   const forceShowFabs = true; // Changed from useState to a const, always true
   
+  // Performance monitoring
+  const [fps, setFps] = useState(0);
+  const [showPerfMonitor] = useState(window.location.search.includes('debug=perf'));
+  
   const isMounted = useRef(true);
   const lastRestFetchRef = useRef<Date | null>(null);
 
@@ -97,21 +107,21 @@ export const LandingPage: React.FC = () => {
   const [isCountdownComplete, setIsCountdownComplete] = useState(false);
 
   // Use individual token subscriptions for precise data
-  const DUEL_ADDRESS = 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX';
+  const DUEL_ADDRESS = config.SOLANA.DEGEN_TOKEN_ADDRESS;
   const SOL_ADDRESS = 'So11111111111111111111111111111111111111112';
   
-  // Subscribe to individual tokens for guaranteed data
+  // Subscribe to individual tokens for guaranteed data (only if enabled)
   const { 
     token: duelToken, 
     isLoading: duelLoading,
     error: duelError 
-  } = useIndividualToken(DUEL_ADDRESS);
+  } = useIndividualToken(SHOW_TOKEN_CARDS ? DUEL_ADDRESS : '');
   
   const { 
     token: solTokenRaw, 
     isLoading: solLoading,
     error: solError 
-  } = useIndividualToken(SOL_ADDRESS);
+  } = useIndividualToken(SHOW_TOKEN_CARDS ? SOL_ADDRESS : '');
   
   // Add custom header image to SOL
   const solToken = solTokenRaw ? {
@@ -120,8 +130,8 @@ export const LandingPage: React.FC = () => {
   } : null;
   
   // Combined loading and error states
-  const tokensLoading = duelLoading || solLoading;
-  const tokensError = duelError || solError;
+  const tokensLoading = SHOW_TOKEN_CARDS ? (duelLoading || solLoading) : false;
+  const tokensError = SHOW_TOKEN_CARDS ? (duelError || solError) : null;
   
   // Modal state for create contest
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -450,6 +460,32 @@ export const LandingPage: React.FC = () => {
     }
   }, [wsConnected]);
 
+  // FPS Monitor
+  useEffect(() => {
+    if (!showPerfMonitor) return;
+    
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let animationId: number;
+    
+    const measureFPS = () => {
+      frameCount++;
+      const currentTime = performance.now();
+      
+      if (currentTime >= lastTime + 1000) {
+        setFps(Math.round((frameCount * 1000) / (currentTime - lastTime)));
+        frameCount = 0;
+        lastTime = currentTime;
+      }
+      
+      animationId = requestAnimationFrame(measureFPS);
+    };
+    
+    animationId = requestAnimationFrame(measureFPS);
+    
+    return () => cancelAnimationFrame(animationId);
+  }, [showPerfMonitor]);
+
   // Enhanced contest data loading strategy - FIXED: No more 10-second delays!
   useEffect(() => {
     // First, try to use cached contests from store
@@ -556,6 +592,14 @@ export const LandingPage: React.FC = () => {
   return (
     <>
       {/* <ScrollToTop /> */}
+      {/* Performance Monitor */}
+      {showPerfMonitor && (
+        <div className="fixed top-4 right-4 z-50 bg-black/80 text-white p-3 rounded-lg font-mono text-sm">
+          <div>FPS: <span className={fps < 30 ? 'text-red-400' : fps < 50 ? 'text-yellow-400' : 'text-green-400'}>{fps}</span></div>
+          <div>Visual Effects: <span className={ENABLE_VISUAL_EFFECTS ? 'text-red-400' : 'text-green-400'}>{ENABLE_VISUAL_EFFECTS ? 'ON (~12 animations)' : 'OFF'}</span></div>
+          <div>Blur effects: {ENABLE_VISUAL_EFFECTS ? '2 active' : '0 active'}</div>
+        </div>
+      )}
       <div className="flex flex-col min-h-screen relative overflow-x-hidden">
 
 
@@ -577,6 +621,7 @@ export const LandingPage: React.FC = () => {
                 <div className="relative w-full my-2 md:my-6">
                   
                   {/* Visual effects layer - positioned behind content */}
+                  {ENABLE_VISUAL_EFFECTS && (
                   <div className="absolute inset-0 z-0 pointer-events-none">
                     
                     {/* Subtle grid overlay (also sucks...) */}
@@ -670,6 +715,7 @@ export const LandingPage: React.FC = () => {
                       ))}
                     </div>
                   </div>
+                  )}
 
                   {/* Enhanced IntroLogo with dramatic animations - Use 'standard' mode when animation already seen */}
                   <div className="relative z-10 flex justify-center items-center">
@@ -901,55 +947,57 @@ export const LandingPage: React.FC = () => {
                 </motion.div>
 
                 {/* DUEL Token & CTA Section - Side by side layout */}
-                <div className="mt-24 md:mt-32 mb-8">
-                  {/* Show ServerCrashDisplay if tokens error (server down) - but NOT if we're already showing the contest error */}
-                  {tokensError && !error && !tokensLoading ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6 }}
-                    >
-                      <ServerCrashDisplay 
-                        error={tokensError}
-                        onRetry={() => window.location.reload()}
-                      />
-                    </motion.div>
-                  ) : !tokensError ? (
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 max-w-4xl mx-auto items-center">
-                      {/* DUEL Token Card */}
-                      <motion.div 
-                        className="flex justify-center"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
+                {SHOW_TOKEN_CARDS && (
+                  <div className="mt-24 md:mt-32 mb-8">
+                    {/* Show ServerCrashDisplay if tokens error (server down) - but NOT if we're already showing the contest error */}
+                    {tokensError && !error && !tokensLoading ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
                       >
-                        {duelToken ? (
-                          <div className="w-full">
-                            <StandaloneTokenCard token={duelToken} />
-                          </div>
-                        ) : (
-                          <div className="w-full aspect-[7/3] sm:aspect-[7/3] aspect-[5/3] bg-dark-200/50 rounded-2xl animate-pulse" />
-                        )}
+                        <ServerCrashDisplay 
+                          error={tokensError}
+                          onRetry={() => window.location.reload()}
+                        />
                       </motion.div>
+                    ) : !tokensError ? (
+                      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 max-w-4xl mx-auto items-center">
+                        {/* DUEL Token Card */}
+                        <motion.div 
+                          className="flex justify-center"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.6, delay: 0.3 }}
+                        >
+                          {duelToken ? (
+                            <div className="w-full">
+                              <StandaloneTokenCard token={duelToken} />
+                            </div>
+                          ) : (
+                            <div className="w-full aspect-[7/3] sm:aspect-[7/3] aspect-[5/3] bg-dark-200/50 rounded-2xl animate-pulse" />
+                          )}
+                        </motion.div>
 
-                      {/* SOL Token Card */}
-                      <motion.div 
-                        className="flex justify-center"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.4 }}
-                      >
-                        {solToken ? (
-                          <div className="w-full">
-                            <StandaloneTokenCard token={solToken} />
-                          </div>
-                        ) : (
-                          <div className="w-full aspect-[7/3] sm:aspect-[7/3] aspect-[5/3] bg-dark-200/50 rounded-2xl animate-pulse" />
-                        )}
-                      </motion.div>
-                    </div>
-                  ) : null}
-                </div>
+                        {/* SOL Token Card */}
+                        <motion.div 
+                          className="flex justify-center"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.6, delay: 0.4 }}
+                        >
+                          {solToken ? (
+                            <div className="w-full">
+                              <StandaloneTokenCard token={solToken} />
+                            </div>
+                          ) : (
+                            <div className="w-full aspect-[7/3] sm:aspect-[7/3] aspect-[5/3] bg-dark-200/50 rounded-2xl animate-pulse" />
+                          )}
+                        </motion.div>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
 
                 {/* Enhanced Features section - shown to all users */}
                 {FEATURE_FLAGS.SHOW_FEATURES_SECTION && (

@@ -33,6 +33,9 @@ import { useStore } from '../../store/useStore';
 import { COMPONENT_METADATA } from '../dynamic/ComponentRegistry';
 import DynamicUIManager, { setGlobalUIHandler } from '../dynamic/DynamicUIManager';
 
+// Import config
+import { config as globalConfig } from '../../config/config';
+
 // Import optimized Didi Avatar
 import './DidiAvatar.css';
 
@@ -342,7 +345,7 @@ export const Terminal = ({
     if (pathname === '/my-contests') return 'my_contests';
     if (pathname === '/my-portfolios') return 'my_portfolios';
     if (pathname === '/wallet') return 'wallet';
-    if (pathname === '/relaunch') return 'relaunch';
+    if (pathname === '/launch') return 'launch';
     if (pathname.includes('/profile')) return 'other_profile';
     return null; // No proactive message for unrecognized pages
   };
@@ -376,8 +379,8 @@ export const Terminal = ({
       return "I can help you analyze your portfolio performance and understand what made certain picks successful or unsuccessful.";
     } else if (pathname === '/wallet') {
       return "I can walk you through the Degen Dividends calculation and explain how the daily revenue sharing works.";
-    } else if (pathname === '/relaunch') {
-      return "I can explain the DegenDuel relaunch and what it means for the platform and your tokens.";
+    } else if (pathname === '/launch') {
+      return "I can explain the DegenDuel launch and what it means for the platform and your tokens.";
     } else if (pathname.includes('/profile')) {
       return "I can explain what you're seeing on this user's profile - their stats, achievements, and performance history.";
     }
@@ -1160,6 +1163,16 @@ Examples:
     
     // Handle different modes
     if (currentMode === 'chat-room') {
+      // Check if user is authenticated before allowing chat
+      if (!user?.wallet_address) {
+        // Add error message to conversation history
+        setConversationHistory(prev => [...prev, 
+          { role: 'user', content: command },
+          { role: 'system', content: 'Please connect your wallet to participate in chat.', tool_calls: undefined }
+        ]);
+        return;
+      }
+      
       // In chat mode, send message directly to chat room
       const success = sendChatMessage(command);
       if (!success) {
@@ -1207,7 +1220,7 @@ Examples:
         title: 'Test Token Watchlist',
         data: {
           tokens: [
-            { symbol: 'DUEL', address: 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', price: 0.0025, change_24h: 12.5, volume_24h: 89123456 },
+            { symbol: 'DUEL', address: globalConfig.SOLANA.DEGEN_TOKEN_ADDRESS, price: 0.0025, change_24h: 12.5, volume_24h: 89123456 },
             { symbol: 'SOL', address: 'So11111111111111111111111111111111111111112', price: 23.45, change_24h: 5.2, volume_24h: 1234567890 },
             { symbol: 'ETH', address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', price: 1650.30, change_24h: -2.1, volume_24h: 987654321 },
             { symbol: 'BTC', address: '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh', price: 43250.0, change_24h: 3.8, volume_24h: 567890123 }
@@ -1669,27 +1682,6 @@ Examples:
             textAlign: "left",
             ...dynamicStyle
           }}
-          onWheel={(e) => {
-            // Better scroll event handling - only prevent propagation if we can actually scroll
-            const target = e.currentTarget;
-            const { scrollTop, scrollHeight, clientHeight } = target;
-            const isScrollable = scrollHeight > clientHeight;
-            const deltaY = e.deltaY;
-            
-            if (isScrollable) {
-              // Check if we're at scroll boundaries
-              const isAtTop = scrollTop === 0 && deltaY < 0;
-              const isAtBottom = scrollTop + clientHeight >= scrollHeight && deltaY > 0;
-              
-              // Only prevent propagation if we're not at a boundary, or if we're scrolling within bounds
-              if (!isAtTop && !isAtBottom) {
-                e.stopPropagation();
-              }
-            } else {
-              // If not scrollable, just stop propagation - avoid preventDefault() on passive listeners
-              e.stopPropagation();
-            }
-          }}
           initial={{ 
             opacity: 0, 
             scale: 0.6, 
@@ -1835,7 +1827,7 @@ Examples:
                       data: {
                         // Generic test data that works for most components
                         tokens: [
-                          { symbol: 'DUEL', address: 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', price: 0.0025, change_24h: 12.5, volume_24h: 89123456 },
+                          { symbol: 'DUEL', address: globalConfig.SOLANA.DEGEN_TOKEN_ADDRESS, price: 0.0025, change_24h: 12.5, volume_24h: 89123456 },
                           { symbol: 'SOL', address: 'So11111111111111111111111111111111111111112', price: 23.45, change_24h: 5.2, volume_24h: 1234567890 },
                           { symbol: 'ETH', address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', price: 1650.30, change_24h: -2.1, volume_24h: 987654321 },
                           { symbol: 'BTC', address: '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh', price: 43250.0, change_24h: 3.8, volume_24h: 567890123 }
@@ -2085,6 +2077,8 @@ Examples:
               easterEggActivated={easterEggActivated}
               glitchActive={glitchActive}
               isDragging={isDragging}
+              lastMessage={conversationHistory.filter(msg => msg.role === 'assistant').slice(-1)[0]?.content || undefined}
+              onDismissMessage={() => setHasUnreadMessages(false)}
               onClick={() => {
                 console.log(`[Terminal] Didi avatar clicked (${currentMode} mode)`);
                 if (!isDragging) {

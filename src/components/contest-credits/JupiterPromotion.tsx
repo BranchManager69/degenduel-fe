@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { config } from '../../config/config';
 
 export const JupiterPromotion: React.FC = () => {
   const [showSteps, setShowSteps] = useState(false);
@@ -143,7 +144,7 @@ export const JupiterPromotion: React.FC = () => {
             </div>
             
             <button
-              onClick={() => window.open('https://jup.ag/tokens/F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', '_blank')}
+              onClick={() => window.open(`https://jup.ag/tokens/${config.SOLANA.DEGEN_TOKEN_ADDRESS}`, '_blank')}
               className="group mt-3 w-full bg-gradient-to-r from-emerald-500 via-emerald-600 to-green-600 hover:from-emerald-400 hover:via-emerald-500 hover:to-green-500 text-white px-6 py-3 rounded-xl transition-all duration-300 font-semibold text-sm shadow-xl hover:shadow-emerald-500/30 hover:shadow-2xl flex items-center justify-center gap-3 border border-emerald-400/20 hover:border-emerald-300/40 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
             >
               <div className="w-5 h-5 bg-white/10 rounded-full p-1 group-hover:bg-white/20 transition-colors">

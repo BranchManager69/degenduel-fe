@@ -29,6 +29,7 @@ import { useStore } from "../../store/useStore";
 import { useIndividualToken } from "../../hooks/websocket/topic-hooks/useIndividualToken";
 import { TokenSearch } from "../common/TokenSearch";
 import type { SearchToken } from "../../types";
+import { useMigratedAuth } from "../../hooks/auth/useMigratedAuth";
 
 // TODO: move to types/index.ts
 // Removed: type ContestDifficulty =
@@ -71,7 +72,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
   React.useEffect(() => {
     const loadDuelToken = async () => {
       try {
-        const response = await fetch(`/api/tokens/search?search=F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX&limit=1`);
+        const response = await fetch(`/api/tokens/search?search=${config.SOLANA.DEGEN_TOKEN_ADDRESS}&limit=1`);
         if (response.ok) {
           const data = await response.json();
           if (data.tokens && data.tokens.length > 0) {
@@ -86,8 +87,9 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     loadDuelToken();
   }, []);
   
-  // Get user data and DUEL token balance
+  // Get user data and authentication status
   const user = useStore(state => state.user);
+  const { isAuthenticated } = useMigratedAuth();
   const { tokenData: duelTokenData } = useSolanaTokenData(
     config.SOLANA.DEGEN_TOKEN_ADDRESS,
     user?.wallet_address
@@ -239,7 +241,23 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    // Credit Check for regular users
+    // Authentication Check first
+    if (!isAuthenticated) {
+      const authError = "Please log in to create a contest.";
+      setError(authError);
+      toast.error(authError, {
+        duration: 4000,
+        position: "bottom-right",
+        style: {
+          background: "#1a1a1a",
+          color: "#fff",
+          border: "1px solid #262626",
+        },
+      });
+      return;
+    }
+
+    // Credit Check for regular users (only after authentication check)
     if (userRole === 'user') {
       if (availableCredits === undefined || availableCredits < 1) {
         const creditError = "You do not have enough credits to create a contest.";
@@ -803,7 +821,28 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
           <div className="overflow-y-auto p-4 sm:p-5 flex-1 scrollbar-thin scrollbar-thumb-dark-400 scrollbar-track-dark-300 relative z-10" style={{ WebkitOverflowScrolling: 'touch' }}>
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 pb-4">
-              {userRole === 'user' && (!availableCredits || availableCredits === 0) && (
+              {/* Authentication Warning for logged-out users */}
+              {!isAuthenticated && (
+                <div className="p-3 rounded-lg border bg-yellow-900/20 border-yellow-600/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center text-yellow-400 text-sm font-medium">
+                        <span className="mr-2">🔒</span>
+                        Login Required
+                      </div>
+                    </div>
+                    <a 
+                      href="/auth/login" 
+                      className="text-xs px-2 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded transition-colors"
+                    >
+                      Log In
+                    </a>
+                  </div>
+                </div>
+              )}
+              
+              {/* Credit Warning for authenticated users with no credits */}
+              {isAuthenticated && userRole === 'user' && (!availableCredits || availableCredits === 0) && (
                 <div className="p-3 rounded-lg border bg-red-900/20 border-red-600/30">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -1089,7 +1128,8 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
                 {/* Right Column - Schedule & Financials */}
                 <div className="space-y-4">
-                  {userRole === 'user' && availableCredits !== undefined && availableCredits > 0 && (
+                  {/* Credit Status Display - only for authenticated users */}
+                  {isAuthenticated && userRole === 'user' && availableCredits !== undefined && availableCredits > 0 && (
                     <div className="p-3 rounded-lg border bg-green-900/20 border-green-600/30">
                       <div className="flex items-center text-green-400 text-sm font-medium">
                         <span className="mr-2">✓</span>
@@ -1543,8 +1583,8 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                       </div>
                     )}
                     
-                    {/* Personal Degen Dividend Estimate */}
-                    {user && duelTokenData?.userBalance !== undefined && duelTokenData.userBalance > 0 && calculatedPrizePool.max > 0 && (
+                    {/* Personal Degen Dividend Estimate - only for authenticated users */}
+                    {isAuthenticated && user && duelTokenData?.userBalance !== undefined && duelTokenData.userBalance > 0 && calculatedPrizePool.max > 0 && (
                       <div className="mt-3 pt-3 border-t border-purple-500/20">
                         <div className="flex items-center justify-between">
                           <div>
@@ -1635,14 +1675,20 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={loading}
-                className="flex-1 px-6 py-3 text-base font-semibold text-green-300 bg-green-900/15 border border-green-500/60 rounded-lg hover:bg-green-900/25 hover:border-green-400 transition-all disabled:opacity-50"
+                disabled={loading || !isAuthenticated}
+                className={`flex-1 px-6 py-3 text-base font-semibold rounded-lg transition-all disabled:opacity-50 ${
+                  !isAuthenticated 
+                    ? 'text-gray-400 bg-gray-900/15 border border-gray-600/60 cursor-not-allowed'
+                    : 'text-green-300 bg-green-900/15 border border-green-500/60 hover:bg-green-900/25 hover:border-green-400'
+                }`}
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     Creating Contest...
                   </span>
+                ) : !isAuthenticated ? (
+                  "Login Required"
                 ) : (
                   "Create Contest"
                 )}

@@ -141,7 +141,8 @@ const NotificationsPage = lazy(() => import('./pages/authenticated/Notifications
 const TokenSelection = lazy(() => import('./pages/public/contests/PortfolioTokenSelectionPage').then(module => ({ default: module.PortfolioTokenSelectionPage })));
 const PrivateProfilePage = lazy(() => import('./pages/authenticated/PrivateProfilePage').then(module => ({ default: module.PrivateProfilePage })));
 const WalletPage = lazy(() => import('./pages/authenticated/WalletPage'));
-const RelaunchPage = lazy(() => import('./pages/authenticated/RelaunchPage'));
+const UserWalletAnalysis = lazy(() => import('./pages/authenticated/UserWalletAnalysis'));
+const LaunchPage = lazy(() => import('./pages/authenticated/LaunchPage'));
 const LPPage = lazy(() => import('./pages/authenticated/LPPage'));
 
 // Example routes lazy loaded
@@ -219,8 +220,19 @@ const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <ConnectionProvider endpoint={rpcEndpoint}> {/* Use your dynamic endpoint here */}
-      {/* Use the explicit list of wallets and set autoConnect to false */}
-      <WalletProvider wallets={wallets} autoConnect={false}>
+      {/* Use the explicit list of wallets and set autoConnect to true for persistence */}
+      <WalletProvider 
+        wallets={wallets} 
+        autoConnect={true}
+        onError={(error) => {
+          // Silently ignore auto-connect errors - user can manually connect if needed
+          if (error.name === 'WalletDisconnectedError') {
+            console.log('Wallet auto-connect failed - manual connection required');
+          } else {
+            console.error('Wallet error:', error);
+          }
+        }}
+      >
         <WalletModalProvider>
           {children}
         </WalletModalProvider>
@@ -235,6 +247,122 @@ export const App: React.FC = () => {
   
   // Enable background cycling with 'B' key
   useBackgroundCycler();
+  
+  // Add session cookie display with 'S' key and console helper
+  React.useEffect(() => {
+    // Create a global function for immediate use
+    const showSession = () => {
+      const cookies = document.cookie.split(';');
+      const sessionCookie = cookies.find(c => c.trim().startsWith('session='));
+      
+      if (sessionCookie) {
+        const sessionValue = sessionCookie.split('=')[1];
+        console.log('Session cookie:', sessionValue);
+        
+        // Create a temporary overlay to display the session
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0, 0, 0, 0.95);
+          color: #00ff00;
+          padding: 20px 30px;
+          border-radius: 8px;
+          font-family: monospace;
+          font-size: 14px;
+          z-index: 999999;
+          max-width: 80vw;
+          word-break: break-all;
+          box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+          border: 1px solid #00ff00;
+        `;
+        
+        overlay.innerHTML = `
+          <div style="margin-bottom: 10px; font-weight: bold;">Session Cookie:</div>
+          <div style="background: rgba(0, 255, 0, 0.1); padding: 10px; border-radius: 4px; user-select: all;">${sessionValue}</div>
+          <div style="margin-top: 10px; font-size: 12px; opacity: 0.7;">Click anywhere or press ESC to close</div>
+        `;
+        
+        document.body.appendChild(overlay);
+        
+        // Copy to clipboard
+        navigator.clipboard.writeText(sessionValue).then(() => {
+          overlay.innerHTML += `<div style="margin-top: 10px; color: #00ff00;">✓ Copied to clipboard!</div>`;
+        }).catch(() => {
+          // Fallback if clipboard fails
+          const range = document.createRange();
+          const selection = window.getSelection();
+          range.selectNodeContents(overlay.querySelector('div:nth-child(2)') as Node);
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+        });
+        
+        // Remove on click or ESC
+        const removeOverlay = () => {
+          overlay.remove();
+          document.removeEventListener('click', removeOverlay);
+          document.removeEventListener('keydown', escHandler);
+        };
+        
+        const escHandler = (e: KeyboardEvent) => {
+          if (e.key === 'Escape') removeOverlay();
+        };
+        
+        setTimeout(() => {
+          document.addEventListener('click', removeOverlay);
+          document.addEventListener('keydown', escHandler);
+        }, 100);
+        
+        return sessionValue;
+      } else {
+        console.log('No session cookie found!');
+        // Show no session message
+        const noSession = document.createElement('div');
+        noSession.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: rgba(255, 0, 0, 0.9);
+          color: white;
+          padding: 15px 20px;
+          border-radius: 8px;
+          font-family: monospace;
+          font-size: 14px;
+          z-index: 999999;
+        `;
+        noSession.textContent = 'No session cookie found!';
+        document.body.appendChild(noSession);
+        setTimeout(() => noSession.remove(), 3000);
+        return null;
+      }
+    };
+    
+    // Add to window for console access
+    (window as any).showSession = showSession;
+    
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Only trigger if 'S' is pressed with no modifiers and not in an input field
+      if (e.key === 's' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+          return;
+        }
+        
+        e.preventDefault();
+        showSession();
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyPress);
+    console.log('Session helper installed! Press "s" or run showSession() in console');
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+      delete (window as any).showSession;
+    };
+  }, []);
   
   // Memoize searchParams to prevent infinite re-renders caused by creating new URLSearchParams on every render
   const searchParams = React.useMemo(() => new URLSearchParams(window.location.search), []);
@@ -484,8 +612,12 @@ const AppContent: React.FC = () => {
             element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><WalletPage /></Suspense></MaintenanceGuard>}
           />
           <Route
-            path="/relaunch"
-            element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><RelaunchPage /></Suspense></MaintenanceGuard>}
+            path="/user-wallet-analysis"
+            element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><UserWalletAnalysis /></Suspense></MaintenanceGuard>}
+          />
+          <Route
+            path="/launch"
+            element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><LaunchPage /></Suspense></MaintenanceGuard>}
           />
           <Route
             path="/lp"

@@ -184,11 +184,11 @@ export const EdgeToEdgeTicker: React.FC<EdgeToEdgeTickerProps> = (props) => {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
-      className={`sticky ${topPosition} z-40 w-full overflow-hidden transition-[top] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}
+      className={`sticky ${topPosition} z-40 w-full overflow-hidden transition-[top] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[top]`}
     >
       {/* Content container - ultra minimal, no background */}
       <div
-        className={`relative transition-[height] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${       
+        className={`relative transition-[height] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[height] ${       
           finalIsCompact ? 'h-10' : 'h-12 sm:h-12'
         }`}
       >

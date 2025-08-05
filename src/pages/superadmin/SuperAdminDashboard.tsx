@@ -297,6 +297,15 @@ export const SuperAdminDashboard: React.FC = () => {
       category: "Tools"
     },
     {
+      id: "user-wallet-analysis",
+      title: "User Wallet Analysis",
+      icon: "🔍",
+      description: "Analyze any user's wallet holdings and portfolio",
+      link: "/user-wallet-analysis",
+      color: "cyan",
+      category: "Tools"
+    },
+    {
       id: "api-playground",
       title: "API Playground",
       icon: "🧪",

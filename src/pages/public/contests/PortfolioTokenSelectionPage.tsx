@@ -3,6 +3,7 @@
 import { Buffer } from "buffer";
 
 import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import {
   Connection,
   PublicKey,
@@ -22,6 +23,7 @@ import { PortfolioTokenCardBack } from "../../../components/portfolio-selection/
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Skeleton } from "../../../components/ui/Skeleton";
+import { config } from "../../../config/config";
 import { useBatchTokens } from "../../../hooks/websocket/topic-hooks/useBatchTokens";
 import { useVisibleTokenSubscriptions } from "../../../hooks/websocket/topic-hooks/useVisibleTokenSubscriptions";
 import { useScrollFooter } from "../../../hooks/ui/useScrollFooter";
@@ -54,7 +56,7 @@ interface PortfolioToken {
 // Special tokens that should always be available - defined outside component to prevent re-creation
 const SPECIAL_TOKEN_ADDRESSES = [
   'So11111111111111111111111111111111111111112',   // SOL  
-  'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', // DUEL
+  config.SOLANA.DEGEN_TOKEN_ADDRESS, // DUEL
   '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh', // WBTC
   'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'  // USDC
 ];
@@ -142,7 +144,8 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   
   const { id: contestId } = useParams();
   const navigate = useNavigate();
-  const { isSuperAdmin } = useMigratedAuth();
+  const auth = useMigratedAuth();
+  const { isSuperAdmin } = auth;
   const { referralCode } = useReferral();
   
   // Use batch tokens hook for special tokens
@@ -509,7 +512,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const { isCompact } = useScrollFooter(50);
   
   // Modern wallet adapter for transactions
-  const { publicKey, signTransaction, connected, connect } = useWallet();
+  const { publicKey, signTransaction, connected, connect, signMessage } = useWallet();
   const [loadingEntryStatus, setLoadingEntryStatus] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -2271,15 +2274,34 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
               </div>
             )}
             {!user?.wallet_address && (
-              <button
-                onClick={() => {
-                  const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-                  navigate(`/login?returnUrl=${returnUrl}`);
-                }}
-                className="px-3 py-1 bg-brand-500/20 rounded text-xs hover:bg-brand-500/30 transition-colors font-mono"
-              >
-                LOGIN
-              </button>
+              <div className="wallet-button-header">
+                <WalletMultiButton />
+                {connected && publicKey && !user?.wallet_address && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const walletAddress = publicKey.toBase58();
+                        const signMessageWrapper = async (messageToSign: Uint8Array) => {
+                          if (!signMessage) {
+                            throw new Error('Wallet signing function not available.');
+                          }
+                          const signature = await signMessage(messageToSign);
+                          return { signature }; 
+                        };
+                        
+                        await auth.loginWithWallet(walletAddress, signMessageWrapper);
+                        toast.success('Successfully logged in!');
+                      } catch (error) {
+                        console.error('Login error:', error);
+                        toast.error('Login failed. Please try again.');
+                      }
+                    }}
+                    className="px-3 py-1 bg-brand-500/20 rounded text-xs hover:bg-brand-500/30 transition-colors font-mono ml-2"
+                  >
+                    SIGN TO LOGIN
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -2380,13 +2402,11 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                       </>
                     )}
                     
-                    {/* Enhanced wallet mismatch warning */}
-                    {(publicKey && publicKey.toBase58() !== user.wallet_address) || 
-                     (!publicKey && typeof window !== 'undefined' && (window as any).solana?.isPhantom && 
-                      (window as any).solana.publicKey?.toBase58() !== user.wallet_address) ? (
+                    {/* Enhanced wallet mismatch warning - only show if actually connected with wrong wallet */}
+                    {(connected && publicKey && publicKey.toBase58() !== user.wallet_address) ? (
                       <div className="flex items-center gap-2 ml-2 px-2 py-1 bg-red-600/20 rounded animate-pulse">
                         <span className="text-red-400 text-xs font-medium">
-                          ⚠️ Wrong wallet! Switch Phantom to: {user.wallet_address.slice(0, 6)}...{user.wallet_address.slice(-4)}
+                          ⚠️ Wrong wallet connected! Expected: {user.wallet_address.slice(0, 6)}...{user.wallet_address.slice(-4)}
                         </span>
                       </div>
                     ) : null}

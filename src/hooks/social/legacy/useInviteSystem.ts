@@ -168,7 +168,7 @@ export const InviteSystemProvider = ({
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          inviteCode
+          referral_code: inviteCode
         }),
       });
 

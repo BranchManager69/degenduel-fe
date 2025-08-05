@@ -33,6 +33,8 @@ import { useSolanaTokenData } from "../../hooks/data/useSolanaTokenData";
 export const Header: React.FC = () => {
   const { isCompact } = useScrollHeader(50);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const prevIsCompactRef = useRef(isCompact);
   
   // (why?) Get the store error message and clear the error
   const storeErrorMessage = useStore(state => state.error?.message || null);
@@ -77,6 +79,29 @@ export const Header: React.FC = () => {
     }
   }, [storeErrorMessage, clearStoreError]); // Depends on the message string and clear function
 
+  // Effect to handle blur toggle during compact transitions
+  useEffect(() => {
+    if (prevIsCompactRef.current !== isCompact) {
+      // Clear any existing timeout
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+
+      // Re-enable blur after animation completes
+      animationTimeoutRef.current = setTimeout(() => {
+        // Animation complete
+      }, 600); // Much longer delay to ensure completely smooth animation
+
+      prevIsCompactRef.current = isCompact;
+    }
+
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+    };
+  }, [isCompact]);
+
   // Other effects (maintenance sync, header height) remain commented out for now
 
   //console.log("[Header STEP 4 - Error Banners Relocated] Rendering. User:", user ? user.id : null, "IsAuth:", isAuthenticated, "IsAdmin:", isAdministrator, "Compact:", isCompact, "StoreError:", storeErrorMessage ? "Yes" : "No", "UnreadNotifs:", unreadCount);
@@ -89,11 +114,20 @@ export const Header: React.FC = () => {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
       className={`sticky top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${headerHeight}
-      ${isCompact ? 'bg-dark-200/30 backdrop-blur-lg' : 'bg-dark-200/30 backdrop-blur-lg'}
-      ${isMobileMenuOpen ? 'backdrop-blur-[8px] bg-dark-200/60' : ''}
+      bg-gradient-to-b from-dark-200/95 to-dark-200/80 
+      border-b border-white/5
+      shadow-2xl shadow-black/20
+      will-change-[height]
+      ${isMobileMenuOpen ? 'bg-dark-200/95' : ''}
       `}
       onClick={(e) => e.stopPropagation()}
     >
+      {/* Animated gradient overlay for visual interest */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/0 via-purple-500/5 to-purple-600/0 
+          translate-x-[-100%] animate-[shimmer_8s_ease-in-out_infinite]" />
+      </div>
+      
       {/* Error Banners Container REMOVED from here */}
       
       {/* Banned User Banner (unsure if this needs to be removed also?)) */}
@@ -191,10 +225,10 @@ export const Header: React.FC = () => {
               transition={{ duration: 0.4, delay: 0.3 }}
             >
               <Link 
-                to="/tokens" 
+                to="/launch" 
                 className="text-gray-400 hover:text-white transition-colors text-xs sm:text-sm font-medium"
               >
-                Tokens
+                Launch
               </Link>
             </motion.div>
           </nav>
@@ -232,7 +266,7 @@ export const Header: React.FC = () => {
                       <div className={`relative flex items-center gap-1 pl-2 pr-3 
                         ${isCompact ? "h-7" : "h-8"}
                         bg-gradient-to-r from-purple-900/40 via-purple-800/30 to-purple-900/40 
-                        backdrop-blur-sm rounded-full 
+                        rounded-full 
                         border border-purple-500/15 group-hover:border-purple-400/30 
                         transition-all duration-300 transform group-hover:scale-105
                         shadow-lg shadow-purple-900/10 group-hover:shadow-purple-500/20`}>

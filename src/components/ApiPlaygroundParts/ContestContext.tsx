@@ -23,7 +23,7 @@ export function ContestProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch("https://degenduel.me/api/contests?limit=1000");
+      const response = await fetch("https://degenduel.me/api/contests?days=30&limit=100");
 
       if (response.status === 503) {
         // Handle maintenance mode
