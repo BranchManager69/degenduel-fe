@@ -198,6 +198,17 @@ export const AdminDashboard: React.FC = () => {
 
   // Define admin sections with category grouping
   const adminSections = [
+    // User Wallet Analysis - TOP PRIORITY
+    {
+      id: "user-wallet-analysis",
+      title: "User Wallet Analysis",
+      icon: "🔍",
+      description: "Analyze any user's wallet holdings and portfolio",
+      link: "/user-wallet-analysis",
+      color: "cyan",
+      category: "Top-Priority"
+    },
+    
     // User section
     {
       id: "users",
@@ -1273,6 +1284,7 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                     </Link>
                   </motion.div>
+
 
                   {/* Liquidity Simulator Button */}
                   <motion.div

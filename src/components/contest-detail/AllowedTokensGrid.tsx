@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Token, TokenHelpers } from "../../types";
 import { MiniTokenCard } from "./MiniTokenCard";
+import { config } from "../../config/config";
 
 interface AllowedTokensGridProps {
   className?: string;
@@ -57,7 +58,7 @@ export const AllowedTokensGrid: React.FC<AllowedTokensGridProps> = ({
         setIsLoading(true);
         
         // First, fetch the specific injected token
-        const injectedTokenAddress = 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX';
+        const injectedTokenAddress = config.SOLANA.DEGEN_TOKEN_ADDRESS;
         let injectedTokens: any[] = [];
         
         try {

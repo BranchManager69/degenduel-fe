@@ -6,7 +6,7 @@ import WebSocket from 'ws';
 const ws = new WebSocket('wss://degenduel.me/api/v69/ws');
 
 // Test tokens
-const DUEL_ADDRESS = 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX';
+const DUEL_ADDRESS = process.env.VITE_CONTRACT_ADDRESS_REAL || 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX';
 const BULLY_ADDRESS = '79yTpy8uwmAkrdgZdq6ZSBTvxKsgPrNqTLvYQBh1pump';
 
 ws.on('open', () => {

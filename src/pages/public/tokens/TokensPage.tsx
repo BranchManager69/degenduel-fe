@@ -16,6 +16,7 @@ import { useVisibleTokenSubscriptions } from "../../../hooks/websocket/topic-hoo
 import { useStore } from "../../../store/useStore";
 import { SearchToken, Token, TokenHelpers } from "../../../types";
 import { resetToDefaultMeta } from "../../../utils/ogImageUtils";
+import { config } from "../../../config/config";
 
 
 /**
@@ -108,7 +109,7 @@ export const TokensPage: React.FC = () => {
 
   // Special tokens addresses
   const SPECIAL_TOKEN_ADDRESSES = [
-    'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', // DUEL
+    config.SOLANA.DEGEN_TOKEN_ADDRESS, // DUEL
     'So11111111111111111111111111111111111111112',     // SOL
     'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',   // USDC
     '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh'    // WBTC

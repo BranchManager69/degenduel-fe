@@ -9,6 +9,8 @@ interface DidiAvatarProps {
   onDragStart: () => void;
   onDragEnd: () => void;
   isDragging: boolean;
+  lastMessage?: string;
+  onDismissMessage?: () => void;
 }
 
 export const DidiAvatar = ({
@@ -18,7 +20,9 @@ export const DidiAvatar = ({
   onClick,
   onDragStart,
   onDragEnd,
-  isDragging
+  isDragging,
+  lastMessage,
+  onDismissMessage
 }: DidiAvatarProps) => {
   // Optimized blink timing - less frequent, more natural
   const [leftEyeBlink, setLeftEyeBlink] = useState(false);
@@ -388,7 +392,7 @@ export const DidiAvatar = ({
       {/* Message notification bubble */}
       {hasUnreadMessages && !isDragging && (
         <motion.div
-          className="absolute -top-12 right-full mr-2 pointer-events-none z-50"
+          className="absolute -top-12 right-full mr-2 z-50"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ 
             opacity: 1, 
@@ -403,23 +407,38 @@ export const DidiAvatar = ({
             }
           }}
         >
-          <div 
-            className={`relative bg-white px-3 py-1.5 rounded-xl shadow-lg border-2 ${
-              colorScheme === 'green' 
-                ? 'border-green-400/30' 
-                : 'border-purple-400/30'
-            }`}
-          >
-            <span className="text-base font-semibold text-gray-800 whitespace-nowrap tracking-tight">
-              {easterEggActivated ? "DIDI IS FREE!" : "Hey! DIDI needs you!"}
-            </span>
+          <div className="relative">
+            {/* Close button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDismissMessage?.();
+              }}
+              className="absolute -top-2 -left-2 z-10 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center pointer-events-auto"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
             
-            {/* Speech bubble tail coming from right side of bubble */}
-            <div className={`absolute bottom-2 -right-2 w-4 h-4 rotate-45 bg-white border-r-2 border-b-2 ${
-              colorScheme === 'green' 
-                ? 'border-green-400/30' 
-                : 'border-purple-400/30'
-            }`} />
+            <div 
+              className={`relative bg-white px-3 py-1.5 rounded-xl shadow-lg border-2 pointer-events-none ${
+                colorScheme === 'green' 
+                  ? 'border-green-400/30' 
+                  : 'border-purple-400/30'
+              }`}
+            >
+              <span className="text-sm font-semibold text-gray-800 whitespace-nowrap">
+                {easterEggActivated ? "DIDI IS FREE!" : (lastMessage || "Hey! DIDI needs you!")}
+              </span>
+              
+              {/* Speech bubble tail coming from right side of bubble */}
+              <div className={`absolute bottom-2 -right-2 w-4 h-4 rotate-45 bg-white border-r-2 border-b-2 ${
+                colorScheme === 'green' 
+                  ? 'border-green-400/30' 
+                  : 'border-purple-400/30'
+              }`} />
+            </div>
           </div>
         </motion.div>
       )}

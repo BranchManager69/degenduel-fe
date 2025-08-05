@@ -1026,7 +1026,7 @@ export const ddApi = {
 
     // Get contests
     getContests: async (): Promise<{ contests: Contest[] }> => {
-      const response = await fetch(`${API_URL}/contests?limit=1000`);
+      const response = await fetch(`${API_URL}/contests?days=30&limit=100`);
       if (!response.ok) throw new Error("Failed to fetch contests");
       return response.json();
     },
@@ -1288,7 +1288,7 @@ export const ddApi = {
     getActive: async (): Promise<Contest[]> => {
       const user = useStore.getState().user;
       const api = createApiClient();
-      const response = await api.fetch("/contests?limit=1000", {
+      const response = await api.fetch("/contests?days=7&status=active&limit=100", {
         headers: {
           "Cache-Control": "no-cache",
         },
@@ -1376,7 +1376,11 @@ export const ddApi = {
 
       try {
         const api = createApiClient();
-        const response = await api.fetch("/contests?limit=1000");
+        // Include wallet_address to get is_participating flag from backend
+        const url = user?.wallet_address 
+          ? `/contests?days=30&limit=100&wallet_address=${encodeURIComponent(user.wallet_address)}`
+          : "/contests?days=30&limit=100";
+        const response = await api.fetch(url);
         const data = await response.json();
         let contests: Contest[] = Array.isArray(data)
           ? data
@@ -1439,9 +1443,10 @@ export const ddApi = {
           is_participating: false,
         }));
 
-        // If user is logged in, check participation either using:
-        // 1. The is_participating flag already present in the response (if using Method 1 on backend)
-        // 2. Batch checking with the dedicated endpoint (if no flags are present)
+        // The backend now includes is_participating flag when wallet_address is provided
+        // No need for additional API calls to check participation
+        // This commented code was making 30+ API calls unnecessarily:
+        /*
         if (user?.wallet_address) {
           const needsParticipationCheck = contests.some(
             (contest) =>
@@ -1472,6 +1477,7 @@ export const ddApi = {
             }
           }
         }
+        */
 
         return contests;
       } catch (error: any) {

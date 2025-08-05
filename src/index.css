@@ -4,6 +4,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Header shimmer animation */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 /* Override Solana wallet adapter button styles for ALL buttons - high specificity */
 .wallet-adapter-button.wallet-adapter-button {
   background: linear-gradient(135deg, #06B6D4 0%, #3B82F6 50%, #8B5CF6 100%) !important;

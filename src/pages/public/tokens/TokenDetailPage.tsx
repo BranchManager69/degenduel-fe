@@ -277,21 +277,6 @@ export const TokenDetailPage: React.FC = () => {
                           })
                         }}
                       >
-                        <p className="text-gray-400 text-sm">24h Volume</p>
-                        <p className="text-xl font-semibold text-white">
-                          ${formatNumber(TokenHelpers.getVolume(token), "short")}
-                        </p>
-                      </div>
-                      
-                      <div 
-                        className="rounded-lg p-4 border border-white/5"
-                        style={{
-                          ...(token.color && {
-                            borderColor: `${token.color}40`,
-                            background: `linear-gradient(135deg, ${token.color}10, transparent)`
-                          })
-                        }}
-                      >
                         <p className="text-gray-400 text-sm">FDV</p>
                         <p className="text-xl font-semibold text-white">
                           ${formatNumber(token.fdv || "0", "short")}
@@ -393,33 +378,6 @@ export const TokenDetailPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Volume Analytics */}
-                    {token.volumes && (
-                      <div className="mt-6">
-                        <h3 className="text-lg font-semibold text-white mb-3">Volume Analytics</h3>
-                        <div className="grid grid-cols-4 gap-2">
-                          {['5m', '1h', '6h', '24h'].map((period) => {
-                            // Handle both formats: m5/h1/h6/h24 and 5m/1h/6h/24h
-                            const volumes = token.volumes || {};
-                            const periodKey = period === '5m' ? 'm5' : 
-                                           period === '1h' ? 'h1' : 
-                                           period === '6h' ? 'h6' : 
-                                           period === '24h' ? 'h24' : period;
-                            const volume = volumes[period as keyof typeof volumes] || 
-                                         volumes[periodKey as keyof typeof volumes] || 
-                                         0;
-                            return (
-                              <div key={period} className="text-center rounded p-2 border border-dark-400/30">
-                                <p className="text-gray-400 text-xs uppercase">{period}</p>
-                                <p className="text-sm font-semibold text-white">
-                                  ${formatNumber(volume, "short")}
-                                </p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </Card>
               </motion.div>

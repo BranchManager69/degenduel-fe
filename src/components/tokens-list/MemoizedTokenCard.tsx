@@ -304,16 +304,6 @@ export const MemoizedTokenCard = React.memo(({
                     </div>
                   </div>
                   <div className="bg-dark-300/60 rounded p-1">
-                    <div className="text-[10px] text-gray-400" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>24h Volume</div>
-                    <div className="text-xs font-bold text-white" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>
-                      {!token.price || token.price === 0 || !token.volume_24h ? (
-                        <div className="w-12 h-4 bg-gray-600/30 rounded animate-pulse" />
-                      ) : (
-                        `$${formatNumber(TokenHelpers.getVolume(token), 'short')}`
-                      )}
-                    </div>
-                  </div>
-                  <div className="bg-dark-300/60 rounded p-1">
                     <div className="text-[10px] text-gray-400" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>Price</div>
                     <div className="text-xs font-bold text-white" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.9)' }}>
                       {!token.price || token.price === 0 ? (
@@ -349,7 +339,7 @@ export const MemoizedTokenCard = React.memo(({
                       className="relative flex-1 group"
                       title="View Details"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 blur-xl group-hover:blur-2xl transition-all duration-300 rounded-lg" />
+                      <div className="absolute inset-0 rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.3)] group-hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transition-shadow duration-300" />
                       <div className="relative bg-gradient-to-br from-cyan-900/40 to-blue-900/40 border border-cyan-500/30 group-hover:border-cyan-400/60 rounded-lg p-2 transform transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5">
                         <Info className="w-4 h-4 text-cyan-400 group-hover:text-cyan-300 mx-auto drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
                       </div>
@@ -364,7 +354,9 @@ export const MemoizedTokenCard = React.memo(({
                       className="relative flex-1 group"
                       title="View on DexScreener"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 blur-xl group-hover:blur-2xl transition-all duration-300 rounded-lg animate-pulse" />
+                      <div className="absolute inset-0 rounded-lg shadow-[0_0_20px_rgba(34,197,94,0.3)] group-hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] transition-shadow duration-300">
+                        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-green-500/10 to-emerald-500/10 animate-pulse" />
+                      </div>
                       <div className="relative bg-gradient-to-br from-green-900/40 to-emerald-900/40 border border-green-500/30 group-hover:border-green-400/60 rounded-lg p-2 transform transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5">
                         <ExternalLink className="w-4 h-4 text-green-400 group-hover:text-green-300 mx-auto drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
                       </div>

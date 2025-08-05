@@ -16,10 +16,11 @@ import { Button } from '../../ui/Button';
 import { useIndividualToken } from '../../../hooks/websocket/topic-hooks/useIndividualToken';
 import { TokenSearch } from '../../common/TokenSearch';
 import { SearchToken } from '../../../types';
+import { config } from '../../../config/config';
 
 // Default token addresses for the watchlist
 const DEFAULT_TOKENS = [
-  { address: 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX', symbol: 'DUEL' },
+  { address: config.SOLANA.DEGEN_TOKEN_ADDRESS, symbol: 'DUEL' },
   { address: 'So11111111111111111111111111111111111111112', symbol: 'SOL' },
   { address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', symbol: 'ETH' },
   { address: '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh', symbol: 'BTC' },

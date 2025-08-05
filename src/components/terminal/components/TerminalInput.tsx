@@ -24,9 +24,12 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   const { user } = useAuth();
   const hasVoiceAccess = user?.is_admin || user?.is_superadmin;
   const isContracted = size === 'contracted';
+  const isAuthenticated = !!user?.wallet_address;
+  const isChatMode = mode === 'chat-room';
+  const shouldDisableInput = isChatMode && !isAuthenticated;
 
   const handleSendCommand = () => {
-    if (!userInput.trim()) return;
+    if (!userInput.trim() || shouldDisableInput) return;
     const command = userInput.trim();
     onEnter(command);
     // Clear input after calling onEnter to ensure proper state update
@@ -72,8 +75,13 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
               handleSendCommand();
             }
           }}
-          placeholder={mode === 'ai' ? "Ask Didi anything..." : "Type a message..."}
-          className="w-full resize-none bg-transparent text-white/90 placeholder-mauve-dark/50 outline-none focus:ring-0"
+          placeholder={shouldDisableInput ? "Connect wallet to chat..." : (mode === 'ai' ? "Ask Didi anything..." : "Type a message...")}
+          className={`w-full resize-none bg-transparent outline-none focus:ring-0 ${
+            shouldDisableInput 
+              ? 'text-gray-500 placeholder-gray-600 cursor-not-allowed' 
+              : 'text-white/90 placeholder-mauve-dark/50'
+          }`}
+          disabled={shouldDisableInput}
           rows={1}
           style={{
             lineHeight: isContracted ? '20px' : '24px',
@@ -92,11 +100,11 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
             {/* Send Button */}
             <button
                 onClick={handleSendCommand}
-                disabled={!hasInput}
+                disabled={!hasInput || shouldDisableInput}
                 className={`
                   flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all duration-200 transform hover:scale-105 active:scale-95
                   ${isContracted ? 'h-8 w-8 ml-2' : 'h-10 w-10 ml-3'}
-                  ${hasInput ? 'bg-mauve border-mauve-dark text-white' : 'bg-darkGrey border-darkGrey-light text-grey-light'}
+                  ${hasInput && !shouldDisableInput ? 'bg-mauve border-mauve-dark text-white' : 'bg-darkGrey border-darkGrey-light text-grey-light'}
                 `}
                 title="Send message"
             >

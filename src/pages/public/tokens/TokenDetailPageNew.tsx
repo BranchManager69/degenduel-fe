@@ -356,10 +356,10 @@ export const TokenDetailPageNew: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 p-6 bg-dark-200/50 backdrop-blur-sm border border-dark-300 rounded-lg"
+            className="mb-8 p-6"
           >
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <span className="text-blue-400">📅</span> Token Lifecycle Timeline
+              <span className="text-blue-400">📅</span> Token Timeline
             </h3>
               
               {/* Timeline */}
@@ -506,7 +506,16 @@ export const TokenDetailPageNew: React.FC = () => {
                       {token.total_supply && (
                         <div className="flex justify-between py-1">
                           <span className="text-gray-400 text-sm">Total Supply</span>
-                          <span className="text-white text-sm">{formatNumber(parseFloat(String(token.total_supply)), "short")}</span>
+                          <span className="text-white text-sm">{
+                            (() => {
+                              const formatted = formatNumber(parseFloat(String(token.total_supply)), "short");
+                              // If formatNumber returns "1000M" or "1000.0M", convert to "1B"
+                              if (formatted === "1000M" || formatted === "1000.0M") {
+                                return "1B";
+                              }
+                              return formatted;
+                            })()
+                          }</span>
                         </div>
                       )}
                       {token.discovery_count !== undefined && (user?.role === 'admin' || user?.role === 'superadmin') && (
@@ -563,20 +572,6 @@ export const TokenDetailPageNew: React.FC = () => {
                         <div className="text-center text-gray-400 font-medium">24 hours</div>
                       </div>
 
-                      {/* Volume Row */}
-                      {token.refresh_metadata?.enhanced_market_data?.volumes && (
-                        <div className="grid grid-cols-5 gap-2 items-center">
-                          <div className="text-xs text-gray-400">Volume</div>
-                          {(['m5', 'h1', 'h6', 'h24'] as const).map((period) => {
-                            const volume = token.refresh_metadata?.enhanced_market_data?.volumes?.[period];
-                            return (
-                              <div key={period} className="bg-dark-300/50 rounded px-2 py-1.5 text-center">
-                                <p className="text-xs font-medium text-white">${formatNumber(volume || 0, "short")}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
 
                       {/* Price Change Row */}
                       {token.refresh_metadata?.enhanced_market_data?.priceChanges && (
