@@ -872,14 +872,7 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                                       
                                       <div className="text-right ml-4 flex-shrink-0">
                                         <div className="font-semibold text-gray-100 whitespace-nowrap">
-                                          {(() => {
-                                            // Calculate the value based on participant's portfolio value and allocation
-                                            const participantData = sortedParticipants.find(p => p.wallet_address === expandedParticipant);
-                                            const portfolioValue = parseFloat(participantData?.portfolio_value || '0');
-                                            const allocation = holding.weight / 100; // Convert percentage to decimal
-                                            const calculatedValue = portfolioValue * allocation;
-                                            return formatCurrency(calculatedValue.toString());
-                                          })()}
+                                          {formatCurrency(holding.current_value_sol || '0')}
                                         </div>
                                         <div className={`text-xs font-medium whitespace-nowrap ${
                                           holding.pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'
