@@ -1038,7 +1038,13 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
             return;
           } catch (error: any) {
             console.error("Wallet connection failed:", error);
-            throw new Error("Please connect a Solana wallet to continue");
+            // Don't throw an error, just set the state and return
+            setTransactionState({
+              status: "idle",
+              message: "",
+            });
+            toast.error("Please connect your Solana wallet and try again", { duration: 4000 });
+            return;
           }
         }
 

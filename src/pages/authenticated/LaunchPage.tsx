@@ -409,7 +409,7 @@ const LaunchPage: React.FC = () => {
       );
       
       // Get latest blockhash
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
       
@@ -435,12 +435,41 @@ const LaunchPage: React.FC = () => {
         </div>
       );
       
-      // Wait for confirmation
-      await connection.confirmTransaction({
-        signature,
-        blockhash,
-        lastValidBlockHeight
-      });
+      // Wait for confirmation using signature status polling instead of blockhash
+      let confirmed = false;
+      let attempts = 0;
+      const maxAttempts = 30; // 30 seconds timeout
+      
+      while (!confirmed && attempts < maxAttempts) {
+        try {
+          const status = await connection.getSignatureStatus(signature);
+          
+          if (status.value?.err) {
+            throw new Error(`Transaction failed: ${JSON.stringify(status.value.err)}`);
+          }
+          
+          if (status.value?.confirmationStatus === 'confirmed' || 
+              status.value?.confirmationStatus === 'finalized') {
+            confirmed = true;
+            break;
+          }
+          
+          // Wait 1 second before checking again
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          attempts++;
+          
+        } catch (statusError: any) {
+          if (attempts >= maxAttempts - 1) {
+            throw new Error('Transaction confirmation timeout. Please check the transaction on Solscan.');
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          attempts++;
+        }
+      }
+      
+      if (!confirmed) {
+        throw new Error('Transaction confirmation timeout. Please check the transaction on Solscan.');
+      }
       
       setExchangeComplete(true);
       setShowConfirmModal(false);
@@ -565,8 +594,8 @@ const LaunchPage: React.FC = () => {
         <div className="mt-8">
           <button
             onClick={() => {
-              navigator.clipboard.writeText('TBA');
-              toast.success('Copied to clipboard!');
+              navigator.clipboard.writeText(config.CONTRACT_ADDRESS.REAL);
+              toast.success('Contract address copied!');
             }}
             className="group relative inline-flex items-center gap-3 px-6 py-3 rounded-xl
               bg-dark-300/50 hover:bg-dark-300/70 
@@ -575,7 +604,7 @@ const LaunchPage: React.FC = () => {
           >
             <span className="text-white font-bold text-lg">DUEL</span>
             <span className="text-gray-400">Contract Address:</span>
-            <span className="text-white font-mono text-lg">TBA</span>
+            <span className="text-white font-mono text-sm">{config.CONTRACT_ADDRESS.REAL}</span>
             <svg className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
@@ -840,11 +869,26 @@ const LaunchPage: React.FC = () => {
               {/* Exchange Button */}
               {hasAirdrop && paymentStatus === 'pending' && (
                 <motion.div 
-                  className="flex justify-center mb-6"
+                  className="flex flex-col items-center mb-6"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 12, duration: 1 }}
                 >
+                  <div className="text-gray-400 text-sm mb-2 text-center">
+                    <p>If the button doesn't work, just send it to:</p>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText('DEGENhyoeYsnbMmAqzjfXvuupZhdkqosVBS6GmWMGjKK');
+                        toast.success('Exchange address copied!');
+                      }}
+                      className="inline-flex items-center gap-1 mt-1 px-2 py-1 rounded bg-dark-300/50 hover:bg-dark-300/70 transition-colors group"
+                    >
+                      <span className="text-white font-mono text-xs">degenduel.sol</span>
+                      <svg className="w-3 h-3 text-gray-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
                   <button
                     disabled={walletLoading || Math.max(oldAmount - oldDuelSent, 0) === 0}
                     onClick={() => {
@@ -1421,6 +1465,140 @@ const LaunchPage: React.FC = () => {
                   The migration ratio ensures proper value alignment while creating a more sustainable 
                   token economy for long-term growth. Snapshot taken midnight August 4th.
                 </p>
+              </div>
+            </section>
+            
+            {/* Locked Tokens & Transparency */}
+            <section className="mb-8">
+              <h4 className="text-xl font-semibold text-white mb-4">🔒 Locked Tokens & Transparency</h4>
+              <div className="bg-dark-200/40 rounded-lg p-6">
+                <p className="text-gray-300 mb-6">
+                  In the spirit of transparency and community trust, all locked token allocations are publicly verifiable on-chain. 
+                  Below are the links to view each locked allocation:
+                </p>
+                
+                {/* Dev Locks */}
+                <div className="mb-6">
+                  <h5 className="font-semibold text-purple-400 mb-3">Developer Locks (5% Total)</h5>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-dark-300/30 rounded-lg p-3">
+                      <div>
+                        <span className="text-white font-medium">Dev Lock 1</span>
+                        <span className="text-gray-400 text-sm ml-2">(2.5% - vests over 100 days)</span>
+                      </div>
+                      <a 
+                        href="https://solscan.io/account/7ymsUs7F54E4MJMvjhcWwzdB9shtpbNsgPsXsjHSAd6c" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-brand-400 hover:text-brand-300 text-sm flex items-center gap-1"
+                      >
+                        View on Solscan
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                    <div className="flex items-center justify-between bg-dark-300/30 rounded-lg p-3">
+                      <div>
+                        <span className="text-white font-medium">Dev Lock 2</span>
+                        <span className="text-gray-400 text-sm ml-2">(2.5% - vests over 10 weeks)</span>
+                      </div>
+                      <a 
+                        href="https://solscan.io/account/9nbUZ6aSzykyHmNEVFyGPmyeGrzEdRxiBg54r6xLwHvA" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-brand-400 hover:text-brand-300 text-sm flex items-center gap-1"
+                      >
+                        View on Solscan
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Multisig Wallets */}
+                <div>
+                  <h5 className="font-semibold text-purple-400 mb-3">Multisig Wallets (70% Total - 3 of 4 signatures required)</h5>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-dark-300/30 rounded-lg p-3">
+                      <div>
+                        <span className="text-white font-medium">DUEL DAO Treasury</span>
+                        <span className="text-gray-400 text-sm ml-2">(20%)</span>
+                      </div>
+                      <a 
+                        href="https://solscan.io/account/7QSzJPxw4hXzcsW92c5FvwviJzfm5838JjcowM7Wd29V" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-brand-400 hover:text-brand-300 text-sm flex items-center gap-1"
+                      >
+                        View on Solscan
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                    <div className="flex items-center justify-between bg-dark-300/30 rounded-lg p-3">
+                      <div>
+                        <span className="text-white font-medium">Ecosystem Funds & Partnerships</span>
+                        <span className="text-gray-400 text-sm ml-2">(17.5%)</span>
+                      </div>
+                      <a 
+                        href="https://solscan.io/account/8Rvg8TfebRqeqkMXHb9faJrReWPFYUTQ39VGKMqa44kp" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-brand-400 hover:text-brand-300 text-sm flex items-center gap-1"
+                      >
+                        View on Solscan
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                    <div className="flex items-center justify-between bg-dark-300/30 rounded-lg p-3">
+                      <div>
+                        <span className="text-white font-medium">Exchange Listings & Strategic</span>
+                        <span className="text-gray-400 text-sm ml-2">(15%)</span>
+                      </div>
+                      <a 
+                        href="https://solscan.io/account/GyX5iLiLRUX6oRabqTesnNfcsBknMcLRD9XZ57W8oDeN" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-brand-400 hover:text-brand-300 text-sm flex items-center gap-1"
+                      >
+                        View on Solscan
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                    <div className="flex items-center justify-between bg-dark-300/30 rounded-lg p-3">
+                      <div>
+                        <span className="text-white font-medium">Contest Prize Pool & Yield</span>
+                        <span className="text-gray-400 text-sm ml-2">(17.5%)</span>
+                      </div>
+                      <a 
+                        href="https://solscan.io/account/8fXqeUinui3haTof1YHgHfcMK7H7e2Qqd3w896gdU2ng" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-brand-400 hover:text-brand-300 text-sm flex items-center gap-1"
+                      >
+                        View on Solscan
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 p-4 bg-purple-900/20 border border-purple-700/30 rounded-lg">
+                  <p className="text-purple-400 text-sm">
+                    <strong>Security Note:</strong> All multisig wallets require 3 out of 4 signatures for any transaction. 
+                    This ensures no single party can access these funds without consensus from the majority of key holders.
+                  </p>
+                </div>
               </div>
             </section>
             
