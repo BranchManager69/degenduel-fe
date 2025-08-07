@@ -158,3 +158,146 @@ DegenDuel is a competitive portfolio game where players build token portfolios a
 - Min SOL to Raise: ~102.2 SOL
 - If 5% → LP at $17.5K: $350K Market Cap
 - Formula Check: 2,047 SOL @ grad
+
+---
+
+# AI Analysis Summary API Guide
+
+## Overview
+
+The AI Analysis Summary endpoint provides a comprehensive view of all AI analysis activities in DegenDuel. It supports both basic summaries and detailed views with full analysis content.
+
+## Endpoint
+
+```
+GET /api/admin/ai-analysis/summary
+```
+
+## Query Parameters
+
+- `detailed` (boolean): Include full recent analyses for each type (default: false)
+- `recent` (number): Number of recent analyses to include when detailed=true (default: 3)
+
+## Examples
+
+### Basic Summary
+```bash
+GET /api/admin/ai-analysis/summary
+```
+
+Returns overview with counts, latest analysis previews, and cost breakdown.
+
+### Detailed Summary with 5 Recent Analyses
+```bash
+GET /api/admin/ai-analysis/summary?detailed=true&recent=5
+```
+
+Returns everything from basic summary PLUS full content of the 5 most recent analyses for each type.
+
+## Cost Calculation Explained
+
+The estimated costs are based on typical token usage patterns:
+
+| Analysis Type | Avg Tokens | Cost per Analysis | Calculation |
+|--------------|------------|-------------------|-------------|
+| Error Analyses | ~2,000 | $0.08 | Input: error logs, Output: summary |
+| Admin Action Analyses | ~3,000 | $0.12 | Input: action logs, Output: patterns |
+| General Log Analyses | ~4,000 | $0.16 | Input: 1000 lines, Output: analysis |
+| Service Log Analyses | ~3,500 | $0.14 | Input: service logs, Output: health status |
+
+### Cost Breakdown Example
+- 941 error analyses × $0.08 = $75.28
+- 72 admin analyses × $0.12 = $8.64
+- 295 log analyses × $0.16 = $47.20
+- 716 service analyses × $0.14 = $100.24
+- **Total: $231.36**
+
+## Response Structure
+
+### Basic Response
+```json
+{
+  "success": true,
+  "summary": {
+    "overview": {
+      "total_analyses": 2024,
+      "estimated_total_cost": "$231.36",
+      "cost_breakdown": {
+        "error_analyses": "$75.28",
+        "admin_action_analyses": "$8.64",
+        "log_analyses": "$47.20",
+        "service_log_analyses": "$100.24"
+      },
+      "types": {
+        "client_errors": {
+          "count": 941,
+          "latest": {
+            "analyzed_at": "2025-08-05T15:13:30.831Z",
+            "error_count": 50,
+            "summary_preview": "..."
+          }
+        },
+        // Similar for admin_actions, general_logs, service_logs
+      }
+    }
+  }
+}
+```
+
+### Detailed Response (with detailed=true)
+Includes everything above PLUS:
+
+```json
+{
+  "detailed": {
+    "client_errors": {
+      "recent": [
+        {
+          "id": 123,
+          "analyzed_at": "2025-08-05T15:13:30.831Z",
+          "error_count": 50,
+          "time_window_minutes": 60,
+          "summary": "Full AI analysis text...",
+          "severity_distribution": {...},
+          "browser_distribution": {...},
+          "os_distribution": {...},
+          "top_errors": [...]
+        }
+      ]
+    },
+    // Similar for admin_actions, general_logs, service_logs
+  }
+}
+```
+
+## Use Cases
+
+1. **Dashboard Overview**: Use basic summary for high-level metrics
+2. **Detailed Reporting**: Use detailed=true for comprehensive reports
+3. **Recent Activity**: Use detailed=true&recent=10 for last 10 of each type
+4. **Cost Tracking**: Monitor AI usage costs with the cost_breakdown
+
+## Integration Example
+
+```javascript
+// Frontend integration
+async function getAIAnalysisDashboard() {
+  // Basic overview for dashboard
+  const overview = await fetch('/api/admin/ai-analysis/summary');
+  
+  // Detailed view for reports
+  const detailed = await fetch('/api/admin/ai-analysis/summary?detailed=true&recent=5');
+  
+  return { overview, detailed };
+}
+```
+
+## Benefits of Single Endpoint
+
+1. **Reduced API Calls**: Get all analysis data in one request
+2. **Flexible Detail Level**: Choose between overview and full details
+3. **Performance**: Optimized queries with parallel data fetching
+4. **Cost Visibility**: Transparent AI usage costs with breakdown
+5. **Service Insights**: See which services generate most AI analyses
+
+This single endpoint replaces the need to call 4+ separate endpoints for a complete view of AI analysis activity.

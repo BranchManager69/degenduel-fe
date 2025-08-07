@@ -389,8 +389,8 @@ export const DidiAvatar = ({
 
       </motion.div>
 
-      {/* Message notification bubble */}
-      {hasUnreadMessages && !isDragging && (
+      {/* Message notification bubble - DISABLED */}
+      {false && hasUnreadMessages && !isDragging && (
         <motion.div
           className="absolute -top-12 right-full mr-2 z-50"
           initial={{ opacity: 0, scale: 0.8 }}

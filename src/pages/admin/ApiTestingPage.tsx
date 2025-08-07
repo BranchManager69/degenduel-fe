@@ -57,7 +57,7 @@ const ApiTestingPage: React.FC = () => {
 
   const [selectedOutputToken, setSelectedOutputToken] = useState<SearchToken | null>({
     id: 2,
-    address: 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX',
+    address: '7p4FoJ8rCDirhkfeo3FgEsGgRc7EQcWVEaiSk5HDjupx',
     symbol: 'TARGET',
     name: 'Target Token',
     image_url: null,
@@ -91,7 +91,7 @@ const ApiTestingPage: React.FC = () => {
     },
     {
       id: 2,
-      address: 'F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX',
+      address: '7p4FoJ8rCDirhkfeo3FgEsGgRc7EQcWVEaiSk5HDjupx',
       symbol: 'TARGET',
       name: 'Target Token',
       image_url: null,
@@ -310,7 +310,7 @@ const ApiTestingPage: React.FC = () => {
                 <h3 className="font-semibold text-white">Admin Swap Trading APIs</h3>
               </div>
               <p className="text-yellow-300 text-sm mb-2">⚠️ Testing Enabled</p>
-              <p className="text-gray-400 text-xs">Pre-configured for SOL → F4e7axJDGLk5WpNGEL2ZpxTP9STdk7L9iSoJX7utHHHX swap testing.</p>
+              <p className="text-gray-400 text-xs">Pre-configured for SOL → 7p4FoJ8rCDirhkfeo3FgEsGgRc7EQcWVEaiSk5HDjupx swap testing.</p>
               <div className="mt-2 text-xs text-gray-500">
                 8 endpoints: status, quote, ultra/order, ultra/execute, swap/execute, batch/quotes, prices, balances
               </div>
