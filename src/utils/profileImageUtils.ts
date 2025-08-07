@@ -20,8 +20,16 @@ export function getFullImageUrl(imageUrl: string | null | undefined): string {
     return imageUrl;
   }
 
-  // Profile images are served directly from frontend without /api prefix
-  // Frontend proxy serves images directly at the root level
+  // For production, we need to prepend /api to the path since nginx doesn't proxy /uploads
+  // Check if we're in production (not localhost)
+  const isProduction = !window.location.hostname.includes('localhost') && !window.location.hostname.startsWith('127.0.0.1');
+  
+  if (isProduction) {
+    // In production, images are served through /api/uploads instead of /uploads
+    return `/api${imageUrl}`;
+  }
+  
+  // In development with Vite proxy, use relative URLs
   return imageUrl;
 }
 
