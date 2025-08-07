@@ -184,6 +184,12 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
 
   // Payout structure calculation
   const payoutStructure = React.useMemo(() => {
+    // Don't generate payout structure for free contests
+    const entryFee = parseFloat(formData.entry_fee || '0');
+    if (entryFee === 0) {
+      return undefined;
+    }
+    
     if (formData.payout_mode === "double_up") {
       // Double up: top 50% get ~1.9x entry fee (accounting for platform fee)
       const payingPositions = Math.floor(formData.max_participants * 0.5);
@@ -235,7 +241,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
       
       return payout;
     }
-  }, [formData.payout_mode, formData.max_participants, formData.payout_percentage, formData.payout_steepness]);
+  }, [formData.entry_fee, formData.payout_mode, formData.max_participants, formData.payout_percentage, formData.payout_steepness]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -334,7 +340,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
             difficulty: "guppy", // Hard-coded value
             tokenTypesAllowed: formData.settings.tokenTypesAllowed || [],
             startingPortfolioValue: formData.settings.startingPortfolioValue || "100",
-            payout_structure: payoutStructure, // Add calculated payout structure
+            ...(payoutStructure && { payout_structure: payoutStructure }), // Only add payout structure if it exists
           } as ContestSettings,
           image_prompt: formData.ai_image_prompt || "",
           image_headliner_token_ca: formData.featured_token_addresses.length === 1 
@@ -351,7 +357,9 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
         }
 
         // Validate payout structure before sending (safety check)
-        if (contestDataPayload.settings?.payout_structure) {
+        // Skip validation for free contests (entry_fee = 0)
+        const entryFee = parseFloat(contestDataPayload.entry_fee || '0');
+        if (entryFee > 0 && contestDataPayload.settings?.payout_structure) {
           const sum = Object.values(contestDataPayload.settings.payout_structure).reduce((a, b) => a + b, 0);
           if (Math.abs(sum - 1.0) > 0.01) { // 1% tolerance for rounding
             throw new Error(`Payout calculation error: percentages sum to ${sum.toFixed(3)} instead of 1.0`);
@@ -1368,12 +1376,13 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                         )}
                         
                         {/* Payout Preview - Visual Chart */}
-                        <div className="p-3 bg-dark-300/30 rounded-lg">
-                          <h4 className="text-xs text-gray-400 mb-3">Payout Distribution ({formData.max_participants} participants)</h4>
-                          <div className="h-32 flex items-end gap-1">
-                            {(() => {
-                              const totalPositions = formData.max_participants;
-                              const maxPercent = Math.round((Object.values(payoutStructure)[0] as number) * 100);
+                        {payoutStructure ? (
+                          <div className="p-3 bg-dark-300/30 rounded-lg">
+                            <h4 className="text-xs text-gray-400 mb-3">Payout Distribution ({formData.max_participants} participants)</h4>
+                            <div className="h-32 flex items-end gap-1">
+                              {(() => {
+                                const totalPositions = formData.max_participants;
+                                const maxPercent = Math.round((Object.values(payoutStructure)[0] as number) * 100);
                               
                               // Create array for all positions
                               const positions = [];
@@ -1487,8 +1496,9 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                             </div>
                           </div>
                         </div>
-                      </div>
+                    ) : null}
                     </div>
+                  </div>
                   )}
 
                   {/* Prize Pool Calculation */}
@@ -1698,7 +1708,7 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
         </div>
       </div>
     </div>,
-    document.body,
+    document.body
   )}
   
   {/* Tooltip Portal */}

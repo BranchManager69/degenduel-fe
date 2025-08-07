@@ -233,14 +233,14 @@ const UserWalletAnalysis: React.FC = () => {
                       {/* Balance info */}
                       <div className="text-center space-y-0.5">
                         <p className="text-[10px] text-white font-semibold">
-                          {Math.floor(user.balance).toLocaleString()}
+                          {(user.balance * 1000).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </p>
                         <p className="text-[9px] text-gray-400">
                           {user.percentage_formatted}
                         </p>
                         {user.db_balance !== user.balance && (
                           <p className="text-[8px] text-red-400">
-                            DB: {Math.floor(user.db_balance).toLocaleString()}
+                            DB: {(user.db_balance * 1000).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                           </p>
                         )}
                       </div>

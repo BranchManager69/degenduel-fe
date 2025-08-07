@@ -1,23 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import axiosInstance from '../../lib/axiosInstance';
 import { formatCurrency } from "../../lib/utils";
 import { getFullImageUrl } from "../../utils/profileImageUtils";
 import { getFlairLabel, getRoleBadgeClasses, getUserNameColorWithFlair, getUserRoleLabel } from "../../utils/roleColors";
 import { PublicUserSearch } from "../common/PublicUserSearch";
-import { useWebSocket } from "../../contexts/UnifiedWebSocketContext";
 import { useIndividualToken } from "../../hooks/websocket/topic-hooks/useIndividualToken";
 
-// Token price data from WebSocket
-interface TokenPriceData {
-  address: string;
-  price: string;
-  market_cap: string;
-  change_24h: string;
-  volume_24h: string;
-  last_updated: number;
-}
 
 // New unified participant structure from backend API
 interface Participant {
@@ -127,9 +117,6 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
   const [expandedParticipant, setExpandedParticipant] = useState<string | null>(null);
   const [portfolioData, setPortfolioData] = useState<Record<string, any>>({});
   const [loadingPortfolio, setLoadingPortfolio] = useState<Record<string, boolean>>({});
-  const [tokenPrices, setTokenPrices] = useState<Map<string, TokenPriceData>>(new Map());
-  const subscribedTokensRef = useRef<Set<string>>(new Set());
-  const ws = useWebSocket();
   
   // Track previous ranks for animation
   const [previousRanks, setPreviousRanks] = useState<Map<string, number>>(new Map());
@@ -432,8 +419,6 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
     try {
       const response = await axiosInstance.get(`/contests/${contestId}/portfolio/${walletAddress}`);
       setPortfolioData(prev => ({ ...prev, [walletAddress]: response.data }));
-      // Subscribe to token prices after portfolio data is loaded
-      subscribeToTokenPrices(response.data);
     } catch (error) {
       console.error('Failed to fetch portfolio data:', error);
       setPortfolioData(prev => ({ ...prev, [walletAddress]: null }));
@@ -442,99 +427,12 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
     }
   };
 
-  // Handle WebSocket token price updates
-  const handleTokenPriceUpdate = useCallback((data: any) => {
-    if (data.address && data.price !== undefined) {
-      setTokenPrices(prev => {
-        const newMap = new Map(prev);
-        newMap.set(data.address, {
-          address: data.address,
-          price: String(data.price),
-          market_cap: String(data.market_cap || 0),
-          change_24h: String(data.change_24h || 0),
-          volume_24h: String(data.volume_24h || 0),
-          last_updated: Date.now()
-        });
-        return newMap;
-      });
-    }
-  }, []);
-
-  // Subscribe to token prices when portfolio is expanded
-  const subscribeToTokenPrices = useCallback((portfolio: any) => {
-    if (!portfolio?.portfolio || !ws) return;
-
-    const tokenAddresses = portfolio.portfolio
-      .map((holding: any) => holding.token?.address || holding.token_address)
-      .filter(Boolean);
-
-    const newSubscriptions = tokenAddresses.filter((addr: string) => !subscribedTokensRef.current.has(addr));
-    
-    if (newSubscriptions.length > 0) {
-      const topics = newSubscriptions.map((addr: string) => `token:price:${addr}`);
-      console.log('[ParticipantsList] Subscribing to token prices:', topics);
-      ws.subscribe(topics);
-      newSubscriptions.forEach((addr: string) => subscribedTokensRef.current.add(addr));
-    }
-  }, [ws]);
-
-  // Unsubscribe from token prices when portfolio is collapsed
-  const unsubscribeFromTokenPrices = useCallback((portfolio: any) => {
-    if (!portfolio?.portfolio || !ws) return;
-
-    const tokenAddresses = portfolio.portfolio
-      .map((holding: any) => holding.token?.address || holding.token_address)
-      .filter(Boolean);
-
-    const topicsToUnsubscribe = tokenAddresses
-      .filter((addr: string) => subscribedTokensRef.current.has(addr))
-      .map((addr: string) => `token:price:${addr}`);
-
-    if (topicsToUnsubscribe.length > 0) {
-      console.log('[ParticipantsList] Unsubscribing from token prices:', topicsToUnsubscribe);
-      ws.unsubscribe(topicsToUnsubscribe);
-      tokenAddresses.forEach((addr: string) => subscribedTokensRef.current.delete(addr));
-    }
-  }, [ws]);
-
-  // Listen for WebSocket token price updates
-  useEffect(() => {
-    if (!ws) return;
-
-    const cleanup = ws.registerListener(
-      'participant-token-prices',
-      ['DATA'] as any[],
-      (message: any) => {
-        if (message.topic && message.topic.startsWith('token:price:')) {
-          handleTokenPriceUpdate(message.data);
-        }
-      }
-    );
-
-    return cleanup;
-  }, [ws, handleTokenPriceUpdate]);
-
-  // Cleanup subscriptions on unmount
-  useEffect(() => {
-    return () => {
-      if (subscribedTokensRef.current.size > 0 && ws) {
-        const topics = Array.from(subscribedTokensRef.current).map(addr => `token:price:${addr}`);
-        console.log('[ParticipantsList] Cleanup: Unsubscribing from all token prices');
-        ws.unsubscribe(topics);
-        subscribedTokensRef.current.clear();
-      }
-    };
-  }, [ws]);
 
   const handleParticipantClick = (walletAddress: string) => {
     const wasExpanded = expandedParticipant === walletAddress;
     
     if (wasExpanded) {
-      // Collapsing - unsubscribe from token prices
-      const portfolio = portfolioData[walletAddress];
-      if (portfolio) {
-        unsubscribeFromTokenPrices(portfolio);
-      }
+      // Collapsing
       setExpandedParticipant(null);
     } else {
       // Expanding - fetch portfolio and subscribe to prices
@@ -722,42 +620,47 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                     {/* User info - positioned after the image fade */}
                     <div className="ml-20 flex-1 flex items-center justify-between">
                       <div className="flex flex-col">
-                        <div
-                          className={`font-bold transition-colors ${
-                            getUserNameColorWithFlair(participant)
-                          }`}
-                          style={{
-                            fontSize: (participant.role === "superadmin" || participant.is_superadmin) ? "1.375rem" : "1.125rem",
-                            textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000',
-                            WebkitTextStroke: (participant.role === "superadmin" || participant.is_superadmin) ? '0.5px rgba(0,0,0,0.8)' : '0.3px rgba(0,0,0,0.6)'
-                          }}
-                        >
-                          {participant.nickname}
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`font-bold transition-colors ${
+                              getUserNameColorWithFlair(participant)
+                            }`}
+                            style={{
+                              fontSize: (participant.role === "superadmin" || participant.is_superadmin) ? "1.375rem" : "1.125rem",
+                              textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000',
+                              WebkitTextStroke: (participant.role === "superadmin" || participant.is_superadmin) ? '0.5px rgba(0,0,0,0.8)' : '0.3px rgba(0,0,0,0.6)'
+                            }}
+                          >
+                            {participant.nickname}
+                          </span>
                           {/* Level display - simple and clean */}
                           {participant.user_level && (
-                            <span className="ml-2 text-sm text-brand-400/80 font-mono">
+                            <span className="text-sm text-brand-400/80 font-mono">
                               Lv{participant.user_level.level_number}
                             </span>
                           )}
-                          {/* Status badges */}
-                          {getUserRoleLabel(participant) && (
-                            <span className={`ml-2 ${getRoleBadgeClasses(participant)}`}>
-                              {getUserRoleLabel(participant)}
-                            </span>
-                          )}
-                          {participant.flair && getFlairLabel(participant.flair) && (
-                            <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-800/60 text-gray-300 border border-gray-600/50">
-                              {getFlairLabel(participant.flair)}
-                            </span>
-                          )}
-                          {participant.is_current_user && (
-                            <span className="ml-2 text-xs bg-brand-500 text-white px-2 py-1 rounded-md font-black tracking-wide">YOU</span>
-                          )}
-                          {participant.is_ai_agent && (
-                            <span className="ml-2 text-xs bg-cyan-500 text-white px-2 py-1 rounded-md font-black tracking-wide">AI</span>
-                          )}
                         </div>
-
+                        {/* Badges on second line */}
+                        {(getUserRoleLabel(participant) || participant.flair || participant.is_current_user || participant.is_ai_agent) && (
+                          <div className="flex items-center gap-2 mt-1">
+                            {getUserRoleLabel(participant) && (
+                              <span className={getRoleBadgeClasses(participant)}>
+                                {getUserRoleLabel(participant)}
+                              </span>
+                            )}
+                            {participant.flair && getFlairLabel(participant.flair) && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-800/60 text-gray-300 border border-gray-600/50">
+                                {getFlairLabel(participant.flair)}
+                              </span>
+                            )}
+                            {participant.is_current_user && (
+                              <span className="text-xs bg-brand-500 text-white px-2 py-1 rounded-md font-black tracking-wide">YOU</span>
+                            )}
+                            {participant.is_ai_agent && (
+                              <span className="text-xs bg-cyan-500 text-white px-2 py-1 rounded-md font-black tracking-wide">AI</span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Score display */}
@@ -906,19 +809,19 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                               {/* Portfolio Summary */}
                               <div className="mb-4 p-3 bg-dark-400/30 rounded-lg">
                                 <div className="grid grid-cols-2 gap-4 text-sm">
-                                  <div>
+                                  <div className="whitespace-nowrap">
                                     <span className="text-gray-400">Initial:</span>
                                     <span className="ml-2 font-semibold text-gray-100">
                                       {formatCurrency(participant.initial_portfolio_value || '100')}
                                     </span>
                                   </div>
-                                  <div>
+                                  <div className="whitespace-nowrap">
                                     <span className="text-gray-400">Value:</span>
                                     <span className="ml-2 font-semibold text-gray-100">
                                       {formatCurrency(participant.portfolio_value || '0')}
                                     </span>
                                   </div>
-                                  <div>
+                                  <div className="whitespace-nowrap">
                                     <span className="text-gray-400">P&L:</span>
                                     <span className={`ml-2 font-semibold ${
                                       parseFloat(participant.performance_percentage || '0') >= 0 ? 'text-green-400' : 'text-red-400'
@@ -927,11 +830,11 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                                         const initial = parseFloat(participant.initial_portfolio_value || '100');
                                         const current = parseFloat(participant.portfolio_value || '0');
                                         const pnl = current - initial;
-                                        return (pnl >= 0 ? '+' : '') + formatCurrency(pnl.toString());
+                                        return (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' SOL';
                                       })()}
                                     </span>
                                   </div>
-                                  <div>
+                                  <div className="whitespace-nowrap">
                                     <span className="text-gray-400">Return:</span>
                                     <span className={`ml-2 font-semibold ${
                                       parseFloat(participant.performance_percentage || '0') >= 0 ? 'text-green-400' : 'text-red-400'
@@ -947,51 +850,28 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                               <div className="space-y-2">
                                 <h4 className="font-semibold text-gray-100 mb-2">Token Holdings</h4>
                                 {portfolio.portfolio.map((holding: any) => {
-                                  const tokenAddress = holding.token?.address || holding.token_address;
-                                  const priceData = tokenPrices.get(tokenAddress);
-                                  const change24h = priceData ? parseFloat(priceData.change_24h) : 0;
-                                  
                                   return (
                                     <div key={holding.token_id} className="flex items-center justify-between p-3 bg-dark-400/30 rounded-lg">
-                                      <div className="flex items-center gap-3 flex-1">
+                                      <div className="flex items-center gap-3 min-w-0">
                                         <img 
                                           src={holding.token.image_url} 
                                           alt={holding.token.symbol}
-                                          className="w-8 h-8 rounded-full"
+                                          className="w-8 h-8 rounded-full flex-shrink-0"
                                         />
-                                        <div className="flex-1">
+                                        <div className="min-w-0">
                                           <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-gray-100">
+                                            <span className="font-semibold text-gray-100 truncate">
                                               {holding.token.symbol}
                                             </span>
-                                            {priceData && (
-                                              <span className={`text-xs font-medium ${
-                                                change24h >= 0 ? 'text-green-400' : 'text-red-400'
-                                              }`}>
-                                                {change24h >= 0 ? '+' : ''}{change24h.toFixed(2)}%
-                                              </span>
-                                            )}
                                           </div>
                                           <div className="flex items-center gap-3 text-xs text-gray-400">
-                                            <span>{holding.weight.toFixed(1)}% allocation</span>
-                                            {priceData && (
-                                              <>
-                                                <span className="text-gray-500">•</span>
-                                                <span>${parseFloat(priceData.price) < 0.01 ? parseFloat(priceData.price).toFixed(6) : parseFloat(priceData.price).toFixed(4)}</span>
-                                                {priceData.market_cap && parseFloat(priceData.market_cap) > 0 && (
-                                                  <>
-                                                    <span className="text-gray-500">•</span>
-                                                    <span>MCap: ${parseFloat(priceData.market_cap).toLocaleString()}</span>
-                                                  </>
-                                                )}
-                                              </>
-                                            )}
+                                            <span className="whitespace-nowrap">{holding.weight.toFixed(1)}%</span>
                                           </div>
                                         </div>
                                       </div>
                                       
-                                      <div className="text-right ml-4">
-                                        <div className="font-semibold text-gray-100">
+                                      <div className="text-right ml-4 flex-shrink-0">
+                                        <div className="font-semibold text-gray-100 whitespace-nowrap">
                                           {(() => {
                                             // Calculate the value based on participant's portfolio value and allocation
                                             const participantData = sortedParticipants.find(p => p.wallet_address === expandedParticipant);
@@ -1001,7 +881,7 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                                             return formatCurrency(calculatedValue.toString());
                                           })()}
                                         </div>
-                                        <div className={`text-xs font-medium ${
+                                        <div className={`text-xs font-medium whitespace-nowrap ${
                                           holding.pnl_percentage >= 0 ? 'text-green-400' : 'text-red-400'
                                         }`}>
                                           {holding.pnl_percentage >= 0 ? '+' : ''}{holding.pnl_percentage.toFixed(2)}% P&L
@@ -1012,13 +892,6 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({
                                 })}
                               </div>
                               
-                              {/* Real-time update indicator */}
-                              {subscribedTokensRef.current.size > 0 && (
-                                <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-                                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                                  <span>Prices updating in real-time</span>
-                                </div>
-                              )}
                             </div>
                           ) : (
                             <div className="text-center py-4 text-gray-400">

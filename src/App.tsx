@@ -223,7 +223,7 @@ const WalletAdapterProviders: React.FC<{ children: React.ReactNode }> = ({ child
       {/* Use the explicit list of wallets and set autoConnect to true for persistence */}
       <WalletProvider 
         wallets={wallets} 
-        autoConnect={true}
+        autoConnect={false}
         onError={(error) => {
           // Silently ignore auto-connect errors - user can manually connect if needed
           if (error.name === 'WalletDisconnectedError') {
