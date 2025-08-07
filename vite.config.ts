@@ -316,6 +316,16 @@ export default defineConfig(({ command, mode }): UserConfig => {
         protocol: "ws",
       },
       proxy: {
+        "/uploads": {
+          target: isDev ? "https://dev.degenduel.me" : "https://degenduel.me",
+          changeOrigin: true,
+          secure: true,
+        },
+        "/images": {
+          target: isDev ? "https://dev.degenduel.me" : "https://degenduel.me",
+          changeOrigin: true,
+          secure: true,
+        },
         "/api": {
           target: isDev
             ? "https://dev.degenduel.me/api"

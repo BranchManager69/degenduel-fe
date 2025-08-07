@@ -780,6 +780,12 @@ export const ContestDetails: React.FC = () => {
                     <span className="text-gray-500">Payout Structure:</span>
                     <span className="text-gray-300 font-medium">
                       {(() => {
+                        // For free contests, don't show payout structure (no real payouts)
+                        const entryFee = getNumericValue(contest?.entry_fee || 0);
+                        if (entryFee === 0) {
+                          return "N/A (Free Contest)";
+                        }
+                        
                         const payoutStructure = contest?.settings?.payout_structure;
                         if (!payoutStructure || Object.keys(payoutStructure).length === 0) {
                           return "TBD";

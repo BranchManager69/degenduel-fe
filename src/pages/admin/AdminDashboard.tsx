@@ -9,6 +9,7 @@ import AdminLogsPanel from "../../components/admin/AdminLogsPanel";
 import { BalanceManager } from "../../components/admin/BalanceManager";
 import WalletReclaimFunds from "../../components/admin/WalletReclaimFunds";
 import { SystemNoticesManager } from "../../components/admin/SystemNoticesManager";
+import { TokenActivationManager } from "../../components/admin/TokenActivationManager";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
@@ -608,6 +609,11 @@ export const AdminDashboard: React.FC = () => {
             </LazyLoad>
           )}
         </AnimatePresence>
+
+        {/* Critical Token Management Section - PROMINENT FEATURE */}
+        <div className="mb-6">
+          <TokenActivationManager />
+        </div>
 
         {/* Dashboard Layout - main content and admin logs panel */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
