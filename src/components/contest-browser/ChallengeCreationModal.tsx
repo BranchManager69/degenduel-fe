@@ -15,6 +15,8 @@ import { PublicUserSearch } from "../common/PublicUserSearch";
 // import { Button } from "../ui/Button"; // Removed - using custom buttons now
 import { Input } from "../ui/Input";
 import { Textarea } from "../ui/Textarea";
+import { Select } from "../ui/Select";
+import { INFLUENCER_PRESETS, toSelectOptions } from "../../constants/influencers";
 
 interface ChallengeCreationModalProps {
   isOpen: boolean;
@@ -52,6 +54,37 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
   const [isSelecting, setIsSelecting] = React.useState(false);
   const modalRef = React.useRef<HTMLDivElement>(null);
 
+  // Admin-only: Influencer challenge helper mode
+  const [mode, setMode] = React.useState<'standard' | 'influencer'>('standard');
+  const [influencerAHandle, setInfluencerAHandle] = React.useState<string>('');
+  const [influencerBHandle, setInfluencerBHandle] = React.useState<string>('');
+
+  const [selectedPresetA, setSelectedPresetA] = React.useState<string>("");
+  const [selectedPresetB, setSelectedPresetB] = React.useState<string>("");
+
+  const getCleanHandle = (handle: string): string => handle.replace(/^@+/, '').trim();
+  const getAvatarUrl = (cleanHandle: string): string =>
+    cleanHandle ? `https://unavatar.io/twitter/${cleanHandle}` : '';
+
+  // Prefill challenger handle from linked Twitter when available
+  React.useEffect(() => {
+    if (!influencerAHandle) {
+      // Prefer unified auth user.twitter_handle if present
+      try {
+        // Lazy import to avoid circular deps; window fallback for stories
+        const maybeCtx = (window as any).useAuth?.() || null;
+        const authUser = maybeCtx?.user as { twitter_handle?: string } | undefined;
+        const handleFromContext = authUser?.twitter_handle;
+        if (handleFromContext) {
+          setInfluencerAHandle(handleFromContext.startsWith('@') ? handleFromContext : `@${handleFromContext}`);
+          return;
+        }
+      } catch (_) {
+        // ignore
+      }
+    }
+  }, [influencerAHandle]);
+
   const getSmartStartTime = () => {
     const now = new Date();
     const minutesUntilNextHour = 60 - now.getMinutes();
@@ -77,7 +110,7 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
   const [formData, setFormData] = React.useState<ChallengeFormData>({
     opponent_wallet: "",
     name: `Duel Challenge ${Math.floor(Math.random() * 1000)}`,
-    description: "May the best trader win this 1v1 duel!",
+    description: "1v1 trading duel.",
     entry_fee: "0.01",
     start_time: getSmartStartTime(),
     end_time: "", // Will be calculated based on duration
@@ -101,6 +134,81 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  // Admin helpers: quick set utilities
+  const setQuickStartInMinutes = (minutesFromNow: number) => {
+    const now = new Date();
+    const start = new Date(now.getTime() + minutesFromNow * 60 * 1000);
+    const year = start.getFullYear();
+    const month = String(start.getMonth() + 1).padStart(2, '0');
+    const day = String(start.getDate()).padStart(2, '0');
+    const hours = String(start.getHours()).padStart(2, '0');
+    const minutes = String(start.getMinutes()).padStart(2, '0');
+    setFormData(prev => ({ ...prev, start_time: `${year}-${month}-${day}T${hours}:${minutes}` }));
+  };
+  const setPresetEntryFee = (fee: string) => setFormData(prev => ({ ...prev, entry_fee: fee }));
+
+  // If in influencer mode and both handles present, suggest a name (no @) and concise description
+  React.useEffect(() => {
+    if (mode === 'influencer' && influencerAHandle && influencerBHandle) {
+      const cleanA = influencerAHandle.replace(/^@+/, '');
+      const cleanB = influencerBHandle.replace(/^@+/, '');
+      setFormData(prev => ({
+        ...prev,
+        name: `${cleanA} vs ${cleanB}`,
+        description: `Head-to-head trading duel. Winner takes all.`
+      }));
+    }
+  }, [mode, influencerAHandle, influencerBHandle]);
+
+  const buildInviteTweet = (): string => {
+    const cleanA = influencerAHandle?.replace(/^@+/, '') || 'TraderA';
+    const cleanB = influencerBHandle?.replace(/^@+/, '') || 'TraderB';
+    const fee = parseFloat(formData.entry_fee) || 0;
+
+    const formatSol = (n: number): string => {
+      if (!isFinite(n)) return '0';
+      const fixed = n.toFixed(3); // max 3 decimals
+      return fixed.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1'); // trim trailing zeros
+    };
+
+    const prize = formatSol(fee * 2);
+
+    const hours = parseFloat(duration) || 1;
+    let durationText: string;
+    if (Math.abs(hours - 1 / 12) < 1e-6) {
+      durationText = '5m';
+    } else if (hours < 1) {
+      durationText = `${Math.round(hours * 60)}m`;
+    } else if (Number.isInteger(hours)) {
+      durationText = `${hours}h`;
+    } else {
+      // Map common fractional hours to minutes (e.g., 0.75 -> 45m)
+      durationText = `${Math.round(hours * 60)}m`;
+    }
+
+    const startTime = formData.start_time ? new Date(formData.start_time) : null;
+    const startText = startTime ? startTime.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' }) : 'soon';
+    const url = 'https://degenduel.me';
+    const lines = [
+      `@${cleanA} vs @${cleanB} — Trading Duel on @DegenDuel`,
+      fee > 0 ? `Stake: ${formatSol(fee)} SOL each (Pot: ${prize} SOL)` : `Free duel — bragging rights on the line`,
+      `Duration: ${durationText} • Starts: ${startText}`,
+      `Join/Watch: ${url}`
+    ];
+    return lines.filter(Boolean).join('\n');
+  };
+
+  const openTweetComposer = async () => {
+    const text = buildInviteTweet();
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      // ignore clipboard errors
+    }
+    const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(intentUrl, '_blank');
   };
 
   // Enhanced SOL input handler with better decimal support
@@ -439,7 +547,344 @@ export const ChallengeCreationModal: React.FC<ChallengeCreationModalProps> = ({
             </button>
           </div>
 
+          {/* Admin mode toggle */}
+          {userRole === 'admin' && (
+            <div className="px-4 pt-4 sm:px-5 sm:pt-5 bg-dark-200/40 border-b border-dark-300/40">
+              <div className="inline-flex rounded-lg overflow-hidden border border-dark-300/60">
+                <button
+                  type="button"
+                  className={`px-3 py-1.5 text-xs font-medium ${mode === 'standard' ? 'bg-brand-500/20 text-brand-300' : 'text-gray-400 hover:text-gray-200'}`}
+                  onClick={() => setMode('standard')}
+                >
+                  Standard
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1.5 text-xs font-medium ${mode === 'influencer' ? 'bg-brand-500/20 text-brand-300' : 'text-gray-400 hover:text-gray-200'}`}
+                  onClick={() => setMode('influencer')}
+                >
+                  Influencer
+                </button>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="overflow-y-auto p-4 sm:p-5 space-y-4 flex-1 relative z-10">
+            {/* Influencer helper panel (admin-only) */}
+            {userRole === 'admin' && mode === 'influencer' && (
+              <div className="rounded-lg bg-dark-300/50 border border-dark-400/60 p-3 sm:p-4">
+                <div className="mb-2">
+                  <div className="text-sm font-semibold text-brand-300">Influencer Duel Helper</div>
+                  <div className="text-xs text-gray-400">Plan and promote a head-to-head quickly. You still need to select the opponent below to create the in-app challenge.</div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Challenger (Twitter)</label>
+                    <Input
+                      placeholder="@trader_one"
+                      value={influencerAHandle}
+                      onChange={(e) => setInfluencerAHandle(e.target.value)}
+                      className="h-9 bg-dark-300/70 border-dark-400 text-gray-100 placeholder-gray-500"
+                    />
+                    <div className="mt-2 flex items-center gap-2">
+                      <Select
+                        value={selectedPresetA}
+                        onChange={(val) => {
+                          if (val) {
+                            setInfluencerAHandle(`@${val}`);
+                          }
+                          // Always reset back to placeholder after selection
+                          setSelectedPresetA("");
+                        }}
+                        options={[{ value: "", label: "Choose preset…" }, ...toSelectOptions(INFLUENCER_PRESETS)]}
+                        className="h-9 text-xs"
+                      />
+                      {selectedPresetA && (
+                        <button
+                          type="button"
+                          className="text-xs text-gray-400 hover:text-gray-200"
+                          onClick={() => setSelectedPresetA("")}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    {getCleanHandle(influencerAHandle) && (
+                      <div className="mt-2 flex items-center gap-2 text-xs">
+                        <img
+                          src={`https://unavatar.io/twitter/${getCleanHandle(influencerAHandle)}`}
+                          alt="profile"
+                          className="w-5 h-5 rounded-full border border-dark-400"
+                          loading="lazy"
+                        />
+                        <a
+                          href={`https://x.com/${getCleanHandle(influencerAHandle)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-brand-300 hover:text-brand-200 underline"
+                        >
+                          x.com/{getCleanHandle(influencerAHandle)}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Opponent (Twitter)</label>
+                    <Input
+                      placeholder="@trader_two"
+                      value={influencerBHandle}
+                      onChange={(e) => setInfluencerBHandle(e.target.value)}
+                      className="h-9 bg-dark-300/70 border-dark-400 text-gray-100 placeholder-gray-500"
+                    />
+                    <div className="mt-2 flex items-center gap-2">
+                      <Select
+                        value={selectedPresetB}
+                        onChange={(val) => {
+                          if (val) {
+                            setInfluencerBHandle(`@${val}`);
+                          }
+                          // Always reset back to placeholder after selection
+                          setSelectedPresetB("");
+                        }}
+                        options={[{ value: "", label: "Choose preset…" }, ...toSelectOptions(INFLUENCER_PRESETS)]}
+                        className="h-9 text-xs"
+                      />
+                      {selectedPresetB && (
+                        <button
+                          type="button"
+                          className="text-xs text-gray-400 hover:text-gray-200"
+                          onClick={() => setSelectedPresetB("")}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    {getCleanHandle(influencerBHandle) && (
+                      <div className="mt-2 flex items-center gap-2 text-xs">
+                        <img
+                          src={`https://unavatar.io/twitter/${getCleanHandle(influencerBHandle)}`}
+                          alt="profile"
+                          className="w-5 h-5 rounded-full border border-dark-400"
+                          loading="lazy"
+                        />
+                        <a
+                          href={`https://x.com/${getCleanHandle(influencerBHandle)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-brand-300 hover:text-brand-200 underline"
+                        >
+                          x.com/{getCleanHandle(influencerBHandle)}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <div className="text-xs text-gray-400 mb-1">Quick Duration</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        className="px-2 py-1 text-xs bg-dark-300/70 text-gray-200 rounded border border-dark-400 hover:border-brand-500/50 hover:text-white"
+                        onClick={() => setDuration('0.25')}
+                      >
+                        15m
+                      </button>
+                      <button
+                        type="button"
+                        className="px-2 py-1 text-xs bg-dark-300/70 text-gray-200 rounded border border-dark-400 hover:border-brand-500/50 hover:text-white"
+                        onClick={() => setDuration('0.5')}
+                      >
+                        30m
+                      </button>
+                      <button
+                        type="button"
+                        className="px-2 py-1 text-xs bg-dark-300/70 text-gray-200 rounded border border-dark-400 hover:border-brand-500/50 hover:text-white"
+                        onClick={() => setDuration('0.75')}
+                      >
+                        45m
+                      </button>
+                      <button
+                        type="button"
+                        className="px-2 py-1 text-xs bg-dark-300/70 text-gray-200 rounded border border-dark-400 hover:border-brand-500/50 hover:text-white"
+                        onClick={() => setDuration('1')}
+                      >
+                        1h
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400 mb-1">Start In</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button type="button" className="px-2 py-1 text-xs bg-dark-300/70 text-gray-200 rounded border border-dark-400 hover:border-brand-500/50 hover:text-white" onClick={() => setQuickStartInMinutes(15)}>15m</button>
+                      <button type="button" className="px-2 py-1 text-xs bg-dark-300/70 text-gray-200 rounded border border-dark-400 hover:border-brand-500/50 hover:text-white" onClick={() => setQuickStartInMinutes(30)}>30m</button>
+                      <button type="button" className="px-2 py-1 text-xs bg-dark-300/70 text-gray-200 rounded border border-dark-400 hover:border-brand-500/50 hover:text-white" onClick={() => setQuickStartInMinutes(60)}>1h</button>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400 mb-1">Entry Fee Presets</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button type="button" className="px-2 py-1 text-xs bg-dark-300/70 text-gray-200 rounded border border-dark-400 hover:border-brand-500/50 hover:text-white" onClick={() => setPresetEntryFee('0')}>Free</button>
+                      <button type="button" className="px-2 py-1 text-xs bg-dark-300/70 text-gray-200 rounded border border-dark-400 hover:border-brand-500/50 hover:text-white" onClick={() => setPresetEntryFee('0.01')}>0.01</button>
+                      <button type="button" className="px-2 py-1 text-xs bg-dark-300/70 text-gray-200 rounded border border-dark-400 hover:border-brand-500/50 hover:text-white" onClick={() => setPresetEntryFee('0.1')}>0.1</button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Duel Preview */}
+                <div className="mt-4 rounded-lg border border-dark-400/60 bg-dark-300/40 p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-xs font-semibold text-gray-300">Duel Preview</div>
+                    <button
+                      type="button"
+                      className="text-xs px-2 py-1 rounded border border-dark-400 text-gray-300 hover:text-white hover:border-gray-500"
+                      onClick={() => {
+                        const a = influencerAHandle;
+                        const b = influencerBHandle;
+                        setInfluencerAHandle(b);
+                        setInfluencerBHandle(a);
+                      }}
+                      title="Swap Challenger and Opponent"
+                    >
+                      Swap ↔
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+                    {/* Challenger Card */}
+                    <div className="flex-1 flex items-center gap-3 rounded-md border border-dark-400/60 bg-dark-200/40 p-2">
+                      <div className="relative">
+                        <img
+                          src={
+                            getAvatarUrl(getCleanHandle(influencerAHandle)) ||
+                            `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(getCleanHandle(influencerAHandle) || 'traderA')}`
+                          }
+                          alt="avatar"
+                          className="w-10 h-10 rounded-full border border-dark-400 object-cover bg-dark-500"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(getCleanHandle(influencerAHandle) || 'traderA')}`;
+                          }}
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-gray-200 truncate">
+                          {getCleanHandle(influencerAHandle) ? `@${getCleanHandle(influencerAHandle)}` : '—'}
+                        </div>
+                        {getCleanHandle(influencerAHandle) && (
+                          <div className="text-xs text-brand-300 truncate">
+                            <a
+                              href={`https://x.com/${getCleanHandle(influencerAHandle)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                            >
+                              x.com/{getCleanHandle(influencerAHandle)}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                      {getCleanHandle(influencerAHandle) && (
+                        <div className="ml-auto flex items-center gap-2">
+                          <button
+                            type="button"
+                            className="text-[11px] px-2 py-1 rounded bg-dark-300/70 border border-dark-400 text-gray-300 hover:text-white hover:border-gray-500"
+                            onClick={async () => {
+                              try { await navigator.clipboard.writeText(`https://x.com/${getCleanHandle(influencerAHandle)}`); } catch(_) {}
+                            }}
+                          >
+                            Copy link
+                          </button>
+                          <a
+                            href={`https://x.com/${getCleanHandle(influencerAHandle)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] px-2 py-1 rounded border border-dark-400 text-gray-300 hover:text-white hover:border-gray-500"
+                          >
+                            Open
+                          </a>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* VS marker */}
+                    <div className="self-center text-gray-400 text-xs font-semibold">VS</div>
+
+                    {/* Opponent Card */}
+                    <div className="flex-1 flex items-center gap-3 rounded-md border border-dark-400/60 bg-dark-200/40 p-2">
+                      <div className="relative">
+                        <img
+                          src={
+                            getAvatarUrl(getCleanHandle(influencerBHandle)) ||
+                            `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(getCleanHandle(influencerBHandle) || 'traderB')}`
+                          }
+                          alt="avatar"
+                          className="w-10 h-10 rounded-full border border-dark-400 object-cover bg-dark-500"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(getCleanHandle(influencerBHandle) || 'traderB')}`;
+                          }}
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-gray-200 truncate">
+                          {getCleanHandle(influencerBHandle) ? `@${getCleanHandle(influencerBHandle)}` : '—'}
+                        </div>
+                        {getCleanHandle(influencerBHandle) && (
+                          <div className="text-xs text-brand-300 truncate">
+                            <a
+                              href={`https://x.com/${getCleanHandle(influencerBHandle)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                            >
+                              x.com/{getCleanHandle(influencerBHandle)}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                      {getCleanHandle(influencerBHandle) && (
+                        <div className="ml-auto flex items-center gap-2">
+                          <button
+                            type="button"
+                            className="text-[11px] px-2 py-1 rounded bg-dark-300/70 border border-dark-400 text-gray-300 hover:text-white hover:border-gray-500"
+                            onClick={async () => {
+                              try { await navigator.clipboard.writeText(`https://x.com/${getCleanHandle(influencerBHandle)}`); } catch(_) {}
+                            }}
+                          >
+                            Copy link
+                          </button>
+                          <a
+                            href={`https://x.com/${getCleanHandle(influencerBHandle)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] px-2 py-1 rounded border border-dark-400 text-gray-300 hover:text-white hover:border-gray-500"
+                          >
+                            Open
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={openTweetComposer}
+                    className="px-3 py-2 text-xs sm:text-sm bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white rounded-md"
+                  >
+                    Generate & Share Tweet (copies text)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => { try { await navigator.clipboard.writeText(buildInviteTweet()); } catch(_){} }}
+                    className="px-3 py-2 text-xs sm:text-sm bg-dark-300/70 text-gray-200 border border-dark-400 rounded-md hover:border-gray-500"
+                  >
+                    Copy Tweet Text
+                  </button>
+                </div>
+              </div>
+            )}
             {userRole === 'user' && (!availableCredits || availableCredits === 0) && (
               <div className="p-3 rounded-lg border bg-red-900/20 border-red-600/30">
                 <div className="flex items-center justify-between">
