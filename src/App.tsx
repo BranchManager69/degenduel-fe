@@ -174,6 +174,7 @@ const WebSocketAuthTest = lazy(() => import('./pages/public/general/WebSocketAut
 const ImportantUpdate = lazy(() => import('./pages/public/general/ImportantUpdate').then(module => ({ default: module.ImportantUpdate })));
 const DeveloperUpdates = lazy(() => import('./pages/public/general/DeveloperUpdates').then(module => ({ default: module.DeveloperUpdates })));
 const LogoAnimationShowcase = lazy(() => import('./pages/public/general/LogoAnimationShowcase').then(module => ({ default: module.LogoAnimationShowcase })));
+const GraphicsAnimationShowcase = lazy(() => import('./pages/public/general/GraphicsAnimationShowcase').then(module => ({ default: module.GraphicsAnimationShowcase })));
 const VirtualAgentPage = lazy(() => import('./pages/public/game/VirtualAgent').then(module => ({ default: module.VirtualAgentPage })));
 const ContestPerformance = lazy(() => import('./pages/public/leaderboards/ContestPerformanceRankings').then(module => ({ default: module.ContestPerformance })));
 const DegenLevelPage = lazy(() => import('./pages/public/leaderboards/DegenLevelPage').then(module => ({ default: module.DegenLevelPage })));
@@ -573,6 +574,7 @@ const AppContent: React.FC = () => {
           <Route path="/solana-demo" element={<Suspense fallback={<LoadingFallback />}><SolanaBlockchainDemo /></Suspense>} />
           <Route path="/websocket-auth-test" element={<Suspense fallback={<LoadingFallback />}><WebSocketAuthTest /></Suspense>} />
           <Route path="/logo-showcase" element={<Suspense fallback={<LoadingFallback />}><LogoAnimationShowcase /></Suspense>} />
+          <Route path="/graphics-showcase" element={<Suspense fallback={<LoadingFallback />}><GraphicsAnimationShowcase /></Suspense>} />
           
           {/* Leaderboard Routes */}
           <Route path="/leaderboards" element={<Suspense fallback={<LoadingFallback />}><LeaderboardLanding /></Suspense>} />

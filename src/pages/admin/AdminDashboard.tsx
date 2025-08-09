@@ -10,6 +10,7 @@ import { BalanceManager } from "../../components/admin/BalanceManager";
 import WalletReclaimFunds from "../../components/admin/WalletReclaimFunds";
 import { SystemNoticesManager } from "../../components/admin/SystemNoticesManager";
 import { TokenActivationManager } from "../../components/admin/TokenActivationManager";
+import { LaunchpadManager } from "../../components/admin/LaunchpadManager";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
@@ -424,7 +425,7 @@ export const AdminDashboard: React.FC = () => {
       color: "pink",
       category: "Contest"
     },
-
+    
     // Wallet section
     {
       id: "wallet-monitoring",
@@ -613,6 +614,11 @@ export const AdminDashboard: React.FC = () => {
         {/* Critical Token Management Section - PROMINENT FEATURE */}
         <div className="mb-6">
           <TokenActivationManager />
+        </div>
+
+        {/* Launchpad Management Section - PROMINENT FEATURE */}
+        <div className="mb-6">
+          <LaunchpadManager />
         </div>
 
         {/* Dashboard Layout - main content and admin logs panel */}

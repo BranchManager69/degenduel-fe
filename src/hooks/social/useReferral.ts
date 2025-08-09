@@ -29,13 +29,14 @@ export const ReferralProvider = ({
   // Load referral state from localStorage on mount
   useEffect(() => {
     const savedReferral = localStorage.getItem("referral_code");
-    const hasSeenWelcome = localStorage.getItem("has_seen_welcome");
+    // const hasSeenWelcome = localStorage.getItem("has_seen_welcome"); // intentionally unused; welcome modal disabled
 
     if (savedReferral) {
       setReferralCode(savedReferral);
-      if (!hasSeenWelcome) {
-        setShowWelcomeModal(true);
-      }
+      // Disabled: Don't show welcome modal
+      // if (!hasSeenWelcome) {
+      //   setShowWelcomeModal(true);
+      // }
     }
   }, []);
 
@@ -77,11 +78,11 @@ export const ReferralProvider = ({
     // Fetch referrer details
     fetchReferrerDetails(ref);
 
-    // Show welcome modal if user hasn't seen it
-    const hasSeenWelcome = localStorage.getItem("has_seen_welcome");
-    if (!hasSeenWelcome) {
-      setShowWelcomeModal(true);
-    }
+    // Disabled: Don't show welcome modal
+    // const hasSeenWelcome = localStorage.getItem("has_seen_welcome");
+    // if (!hasSeenWelcome) {
+    //   setShowWelcomeModal(true);
+    // }
 
     // Clean URL
     params.delete("ref");
