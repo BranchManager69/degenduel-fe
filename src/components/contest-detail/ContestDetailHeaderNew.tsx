@@ -141,7 +141,7 @@ export const ContestDetailHeaderNew: React.FC<ContestDetailHeaderNewProps> = ({
         )}
         
         {/* Banner Content */}
-        <div className="relative z-10 p-4 sm:p-6 md:p-8 min-h-[380px] flex flex-col justify-between">
+        <div className={`relative z-10 p-4 sm:p-6 md:p-8 ${showActionButton ? 'min-h-[380px]' : 'min-h-[320px]'} flex flex-col justify-between`}>
           {/* Status Badge - Top Right */}
           <div className="absolute top-4 right-4">
             {/* Different badge styles based on contest status */}

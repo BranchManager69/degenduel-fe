@@ -74,24 +74,57 @@ export const ShareContestButton: React.FC<ShareContestButtonProps> = ({
   return (
     <motion.button
       onClick={handleShare}
-      className={`flex items-center gap-2 px-4 py-2 rounded-md border transition-all duration-300 ${
+      className={`relative flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all duration-300 font-medium overflow-hidden group ${
         isShared 
-          ? 'bg-purple-600/20 text-purple-300 border-purple-500/50' 
-          : 'bg-dark-300 hover:bg-dark-200 text-white border-purple-500/30 hover:border-purple-500/50'
+          ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-400/60 shadow-lg shadow-green-500/20' 
+          : 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-200 border-purple-400/60 hover:border-purple-300/80 shadow-lg hover:shadow-purple-500/20'
       } ${className}`}
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.97 }}
+      whileHover={{ scale: 1.05, y: -1 }}
+      whileTap={{ scale: 0.98 }}
     >
-      <span className="text-sm font-medium">
-        {isShared ? 'Copied!' : getShareLabel()}
-      </span>
-      <svg 
-        className="w-4 h-4 text-purple-400" 
-        fill="currentColor" 
-        viewBox="0 0 20 20"
-      >
-        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-      </svg>
+      {/* Animated background gradient */}
+      <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+        !isShared ? 'bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-purple-600/10' : ''
+      }`} />
+      
+      {/* Content */}
+      <div className="relative flex items-center gap-2">
+        <span className="text-sm font-semibold">
+          {isShared ? '✓ Copied!' : getShareLabel()}
+        </span>
+        
+        {isShared ? (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="w-4 h-4"
+          >
+            <svg 
+              className="w-4 h-4 text-green-400" 
+              fill="currentColor" 
+              viewBox="0 0 20 20"
+            >
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </motion.div>
+        ) : (
+          <motion.div
+            whileHover={{ rotate: 15 }}
+            className="w-4 h-4"
+          >
+            <svg 
+              className="w-4 h-4 text-purple-300 group-hover:text-purple-200" 
+              fill="currentColor" 
+              viewBox="0 0 20 20"
+            >
+              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+            </svg>
+          </motion.div>
+        )}
+      </div>
+      
+      {/* Subtle shine effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
     </motion.button>
   );
 };

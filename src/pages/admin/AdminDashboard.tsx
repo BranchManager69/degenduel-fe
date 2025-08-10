@@ -7,10 +7,9 @@ import { Link } from "react-router-dom";
 import { ActivityMonitor } from "../../components/admin/ActivityMonitor";
 import AdminLogsPanel from "../../components/admin/AdminLogsPanel";
 import { BalanceManager } from "../../components/admin/BalanceManager";
-import WalletReclaimFunds from "../../components/admin/WalletReclaimFunds";
 import { SystemNoticesManager } from "../../components/admin/SystemNoticesManager";
 import { TokenActivationManager } from "../../components/admin/TokenActivationManager";
-import { LaunchpadManager } from "../../components/admin/LaunchpadManager";
+import WalletReclaimFunds from "../../components/admin/WalletReclaimFunds";
 import { ContestProvider } from "../../components/ApiPlaygroundParts/ContestContext";
 import { ContestsList } from "../../components/ApiPlaygroundParts/ContestsList";
 import { EndContest } from "../../components/ApiPlaygroundParts/EndContest";
@@ -38,6 +37,25 @@ export const AdminDashboard: React.FC = () => {
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  
+  // Collapsible section states - all collapsed by default
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    tokenActivation: false,
+    launchpad: false,
+    mediaMaker: false,
+    maintenance: false,
+    systemNotices: false,
+    systemReports: false,
+    adminTools: false
+  });
+
+  // Toggle section expansion
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  };
 
   // Constants for retry logic
   const MAX_RETRIES = 3;
@@ -425,6 +443,15 @@ export const AdminDashboard: React.FC = () => {
       color: "pink",
       category: "Contest"
     },
+    {
+      id: "media-maker",
+      title: "Media Maker",
+      icon: "🎨",
+      description: "Create marketing graphics and social media content",
+      link: "/media-maker",
+      color: "purple",
+      category: "Contest"
+    },
     
     // Wallet section
     {
@@ -613,12 +640,147 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Critical Token Management Section - PROMINENT FEATURE */}
         <div className="mb-6">
-          <TokenActivationManager />
+          <div className="bg-dark-200/50 backdrop-blur-lg rounded-lg border border-dark-300/50 overflow-hidden">
+            <button
+              onClick={() => toggleSection('tokenActivation')}
+              className="w-full px-6 py-4 bg-dark-300/30 hover:bg-dark-300/50 transition-all duration-300 flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">🎯</div>
+                <div className="text-left">
+                  <h3 className="text-lg font-bold text-brand-200 font-heading">
+                    Token Activation Manager
+                  </h3>
+                  <p className="text-sm text-brand-300/80">
+                    Control which tokens appear in the game
+                  </p>
+                </div>
+              </div>
+              <div className={`text-brand-300 text-xl transform transition-transform duration-300 ${
+                expandedSections.tokenActivation ? 'rotate-180' : ''
+              }`}>
+                ↓
+              </div>
+            </button>
+            
+            <AnimatePresence>
+              {expandedSections.tokenActivation && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-6 border-t border-dark-300/30">
+                    <TokenActivationManager />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
-        {/* Launchpad Management Section - PROMINENT FEATURE */}
+        {/* WIN TO LAUNCH Section - PROMINENT FEATURE */}
         <div className="mb-6">
-          <LaunchpadManager />
+          <div className="bg-dark-200/50 backdrop-blur-lg rounded-lg border border-dark-300/50 overflow-hidden">
+            <Link
+              to="/launchpad"
+              className="w-full px-6 py-4 bg-dark-300/30 hover:bg-cyan-500/20 transition-all duration-300 flex items-center gap-3 group"
+            >
+              <div className="text-2xl">🚀</div>
+              <div className="text-left">
+                <h3 className="text-lg font-bold text-cyan-200 font-heading">
+                  WIN TO LAUNCH
+                </h3>
+                <p className="text-sm text-cyan-300/80">
+                  Launch your token on Solana with Jupiter's Dynamic Bonding Curves
+                </p>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        {/* Media Maker Section - PROMINENT FEATURE */}
+        <div className="mb-6">
+          <div className="bg-dark-200/50 backdrop-blur-lg rounded-lg border border-dark-300/50 overflow-hidden">
+            <div className="flex">
+              <Link
+                to="/media-maker"
+                className="flex-1 px-6 py-4 bg-dark-300/30 hover:bg-purple-500/20 transition-all duration-300 flex items-center gap-3 group"
+              >
+                <div className="text-2xl">🎨</div>
+                <div className="text-left">
+                  <h3 className="text-lg font-bold text-purple-200 font-heading">
+                    Media Maker
+                  </h3>
+                  <p className="text-sm text-purple-300/80">
+                    Create marketing graphics and social media content
+                  </p>
+                </div>
+              </Link>
+              <button
+                onClick={() => toggleSection('mediaMaker')}
+                className="px-4 py-4 bg-dark-300/30 hover:bg-dark-300/50 transition-all duration-300 border-l border-dark-300/50"
+              >
+                <div className={`text-purple-300 text-xl transform transition-transform duration-300 ${
+                  expandedSections.mediaMaker ? 'rotate-180' : ''
+                }`}>
+                  ↓
+                </div>
+              </button>
+            </div>
+            
+            <AnimatePresence>
+              {expandedSections.mediaMaker && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-6 border-t border-dark-300/30">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+                        <div className="text-xs text-purple-300/70 mb-1">
+                          Text Overlays
+                        </div>
+                        <div className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+                          <span className="text-green-300 text-sm">Ready</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+                        <div className="text-xs text-purple-300/70 mb-1">Logo Positioning</div>
+                        <div className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+                          <span className="text-blue-300 text-sm">Active</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+                        <div className="text-xs text-purple-300/70 mb-1">Screenshot</div>
+                        <div className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-amber-500 mr-2"></div>
+                          <span className="text-amber-300 text-sm">Capture</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+                        <div className="text-xs text-purple-300/70 mb-1">Custom Upload</div>
+                        <div className="flex items-center">
+                          <div className="h-2 w-2 rounded-full bg-cyan-500 mr-2"></div>
+                          <span className="text-cyan-300 text-sm">Enabled</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Dashboard Layout - main content and admin logs panel */}
@@ -626,1221 +788,450 @@ export const AdminDashboard: React.FC = () => {
           {/* Main content - 75% width on desktop */}
           <div className="lg:col-span-3 space-y-4 lg:space-y-6">
             {/* Maintenance Mode Control */}
-            <div className="bg-dark-200/50 backdrop-blur-lg p-4 sm:p-6 rounded-lg border border-dark-300/50 relative overflow-hidden">
-              <div className="relative">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex-1 min-w-0">
-                    <h2 className="font-cyber tracking-wider text-lg sm:text-xl lg:text-2xl bg-gradient-to-r from-red-400 to-red-500 bg-clip-text text-transparent whitespace-nowrap">
+            <div className="bg-dark-200/50 backdrop-blur-lg rounded-lg border border-dark-300/50 overflow-hidden">
+              <button
+                onClick={() => toggleSection('maintenance')}
+                className="w-full px-6 py-4 bg-dark-300/30 hover:bg-dark-300/50 transition-all duration-300 flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-6 h-6 rounded-full flex-shrink-0 ${
+                    maintenanceMode ? "bg-red-500 animate-pulse" : "bg-green-500"
+                  }`} />
+                  <div className="text-left">
+                    <h3 className="text-lg font-bold text-red-200 font-cyber tracking-wider">
                       MAINTENANCE MODE
-                    </h2>
-                    <p className="text-xs sm:text-sm text-gray-400 font-mono mt-1 truncate">
-                      SYSTEM_MAINTENANCE_CONTROL_INTERFACE
-                    </p>
-                  </div>
-                  <div
-                    className={`h-3 w-3 rounded-full flex-shrink-0 ml-4 ${
-                      maintenanceMode ? "bg-red-500 animate-pulse" : "bg-green-500"
-                    }`}
-                  />
-                </div>
-
-                {/* Error Display */}
-                <AnimatePresence>
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="mb-4"
-                    >
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                        <p className="text-red-400 text-sm">{error}</p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Duration Setting (only shown when system is live) */}
-                <AnimatePresence>
-                  {!maintenanceMode && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden mb-4"
-                    >
-                      <label className="text-sm text-gray-400 block mb-2 font-mono">
-                        ESTIMATED DURATION (MIN)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={maintenanceDuration}
-                        onChange={(e) =>
-                          setMaintenanceDuration(
-                            Math.max(1, parseInt(e.target.value) || 1),
-                          )
-                        }
-                        className="w-full bg-dark-200/50 border border-dark-300/50 rounded px-3 py-2 text-gray-300 font-mono text-center"
-                      />
-                      <div className="text-xs text-gray-500 mt-1 font-mono">
-                        ({Math.floor(maintenanceDuration / 60)}h{" "}
-                        {maintenanceDuration % 60}m)
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <button
-                  onClick={toggleMaintenanceMode}
-                  disabled={isTogglingMaintenance}
-                  className="w-full group relative"
-                >
-                  <motion.div
-                    className={`
-                      relative overflow-hidden rounded-lg border-2 
-                      ${
-                        maintenanceMode
-                          ? "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
-                          : "border-green-500/50 bg-green-500/10 hover:bg-green-500/20"
-                      }
-                      ${isTogglingMaintenance ? "opacity-75" : ""}
-                      transition-all duration-300
-                    `}
-                  >
-                    {/* Key Lock Effect */}
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                      <div
-                        className={`
-                        w-6 h-6 rounded-full border-2 
-                        ${maintenanceMode ? "border-red-500" : "border-green-500"}
-                        transition-colors duration-300
-                      `}
-                      >
-                        <div
-                          className={`
-                          w-1 h-3 
-                          ${maintenanceMode ? "bg-red-500" : "bg-green-500"}
-                          transition-colors duration-300
-                          absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
-                        `}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Button Content */}
-                    <div className="px-6 py-4 pl-12">
-                      <div className="font-cyber tracking-wider text-lg">
-                        {isTogglingMaintenance ? (
-                          <span className="text-brand-400 animate-pulse">
-                            {maintenanceMode ? "DEACTIVATING..." : "INITIATING..."}
-                          </span>
-                        ) : maintenanceMode ? (
-                          <span className="text-red-400 group-hover:text-red-300">
-                            DEACTIVATE MAINTENANCE
-                          </span>
-                        ) : (
-                          <span className="text-green-400 group-hover:text-green-300">
-                            INITIATE MAINTENANCE
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Scan Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  </motion.div>
-
-                  {/* Power Indicator */}
-                  <div className="absolute -right-3 top-1/2 -translate-y-1/2">
-                    <div
-                      className={`
-                      w-6 h-6 rounded-full 
-                      ${
-                        maintenanceMode
-                          ? "bg-red-500 animate-pulse shadow-lg shadow-red-500/50"
-                          : "bg-green-500 shadow-lg shadow-green-500/50"
-                      }
-                      transition-colors duration-300
-                    `}
-                    />
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* System Notices Management */}
-            <SystemNoticesManager />
-
-            {/* System Reports Button */}
-            <Link
-              to="/admin/system-reports"
-              className="block bg-dark-200/70 backdrop-blur-lg p-4 rounded-lg border-2 border-purple-500/30 hover:border-purple-500/50 transition-all duration-300 relative overflow-hidden group shadow-lg hover:shadow-purple-500/20 transform hover:-translate-y-1"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.15)_0%,transparent_60%)]" />
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="text-4xl text-purple-400 group-hover:scale-110 transition-transform duration-300">
-                    📊
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-purple-200 mb-1 font-heading">
-                      System Reports
                     </h3>
-                    <p className="text-purple-300/80">
-                      View service health and database metrics
+                    <p className="text-sm text-red-300/80 font-mono">
+                      {maintenanceMode ? 'SYSTEM OFFLINE' : 'SYSTEM ONLINE'}
                     </p>
                   </div>
                 </div>
-
-                <div className="bg-purple-500/20 p-3 rounded-full group-hover:bg-purple-500/30 transition-colors">
-                  <svg
-                    className="w-6 h-6 text-purple-300 transform group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14 5l7 7m0 0l-7 7m7-7H3"
-                    />
-                  </svg>
+                <div className={`text-red-300 text-xl transform transition-transform duration-300 ${
+                  expandedSections.maintenance ? 'rotate-180' : ''
+                }`}>
+                  ↓
                 </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-3 gap-3">
-                <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
-                  <div className="text-xs text-purple-300/70 mb-1">
-                    Service Health
-                  </div>
-                  <div className="flex items-center">
-                    <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
-                    <span className="text-green-300 text-sm">Monitoring</span>
-                  </div>
-                </div>
-
-                <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
-                  <div className="text-xs text-purple-300/70 mb-1">Database</div>
-                  <div className="flex items-center">
-                    <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
-                    <span className="text-blue-300 text-sm">Metrics</span>
-                  </div>
-                </div>
-
-                <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
-                  <div className="text-xs text-purple-300/70 mb-1">AI Analysis</div>
-                  <div className="flex items-center">
-                    <div className="h-2 w-2 rounded-full bg-amber-500 mr-2"></div>
-                    <span className="text-amber-300 text-sm">Available</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            {/* All Admin Tools - Unified Container */}
-            <div className="bg-dark-200/50 backdrop-blur-lg p-4 rounded-lg border border-dark-300/50">
-              <h2 className="text-xl font-display mb-4 text-gray-100">Admin Tools</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                {adminSections.map((section) => (
+              </button>
+              
+              <AnimatePresence>
+                {expandedSections.maintenance && (
                   <motion.div
-                    key={section.id}
-                    className={`
-                      bg-dark-200/75 backdrop-blur-lg border-2
-                      ${
-                        selectedSection === section.id
-                          ? `border-dark-300/70 shadow-lg shadow-${section.color}-500/20`
-                          : `border-dark-300/50 hover:border-dark-300/70`
-                      }
-                      p-3 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
-                    `}
-                    whileHover={{ scale: 1.02, y: -2 }}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
                   >
-                    <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
-                    
-                    {section.isNew && (
-                      <div className="absolute -top-2 -right-2 z-10">
-                        <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
-                          NEW
-                        </div>
-                      </div>
-                    )}
-                    
-                    {section.link ? (
-                      <Link to={section.link} className="block h-full">
-                        <div className="flex items-center mb-2">
-                          <div className={`text-xl text-${section.color}-300 mr-2 group-hover:scale-110 transition-transform duration-300`}>
-                            {section.icon}
-                          </div>
-                          <h3 className={`text-sm font-bold text-${section.color}-300 font-display tracking-wide`}>
-                            {section.title}
-                          </h3>
-                        </div>
-                        
-                        <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-2`}></div>
-                        
-                        <p className="text-gray-300 text-xs font-mono">
-                          <span className={`text-${section.color}-200`}>→</span> {section.description}
-                        </p>
-                        
-                        <div className="absolute -bottom-0 -right-0 w-6 h-6">
-                          <div className={`absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                        </div>
-                      </Link>
-                    ) : (
+                    <div className="p-4 sm:p-6 border-t border-dark-300/30">
+                      {/* Error Display */}
+                      <AnimatePresence>
+                        {error && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="mb-4"
+                          >
+                            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                              <p className="text-red-400 text-sm">{error}</p>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Duration Setting (only shown when system is live) */}
+                      <AnimatePresence>
+                        {!maintenanceMode && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden mb-4"
+                          >
+                            <label className="text-sm text-gray-400 block mb-2 font-mono">
+                              ESTIMATED DURATION (MIN)
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={maintenanceDuration}
+                              onChange={(e) =>
+                                setMaintenanceDuration(
+                                  Math.max(1, parseInt(e.target.value) || 1),
+                                )
+                              }
+                              className="w-full bg-dark-200/50 border border-dark-300/50 rounded px-3 py-2 text-gray-300 font-mono text-center"
+                            />
+                            <div className="text-xs text-gray-500 mt-1 font-mono">
+                              ({Math.floor(maintenanceDuration / 60)}h{" "}
+                              {maintenanceDuration % 60}m)
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
                       <button
-                        onClick={() =>
-                          setSelectedSection(
-                            selectedSection === section.id ? null : section.id,
-                          )
-                        }
-                        data-section-id={section.id}
-                        className="block w-full text-left"
+                        onClick={toggleMaintenanceMode}
+                        disabled={isTogglingMaintenance}
+                        className="w-full group relative"
                       >
-                        <div className="flex items-center mb-2">
-                          <div className={`text-xl text-${section.color}-300 mr-2 group-hover:scale-110 transition-transform duration-300`}>
-                            {section.icon}
+                        <motion.div
+                          className={`
+                            relative overflow-hidden rounded-lg border-2 
+                            ${
+                              maintenanceMode
+                                ? "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
+                                : "border-green-500/50 bg-green-500/10 hover:bg-green-500/20"
+                            }
+                            ${isTogglingMaintenance ? "opacity-75" : ""}
+                            transition-all duration-300
+                          `}
+                        >
+                          {/* Key Lock Effect */}
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                            <div
+                              className={`
+                              w-6 h-6 rounded-full border-2 
+                              ${maintenanceMode ? "border-red-500" : "border-green-500"}
+                              transition-colors duration-300
+                            `}
+                            >
+                              <div
+                                className={`
+                                w-1 h-3 
+                                ${maintenanceMode ? "bg-red-500" : "bg-green-500"}
+                                transition-colors duration-300
+                                absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2
+                              `}
+                              />
+                            </div>
                           </div>
-                          <h3 className={`text-sm font-bold text-${section.color}-300 font-display tracking-wide`}>
-                            {section.title}
-                          </h3>
-                        </div>
-                        
-                        <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-2`}></div>
-                        
-                        <p className="text-gray-300 text-xs font-mono">
-                          <span className={`text-${section.color}-200`}>→</span> {section.description}
-                        </p>
-                        
-                        <div className={`absolute top-3 right-3 text-${section.color}-300 text-sm transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
-                          ↓
-                        </div>
-                        
-                        <div className="absolute -bottom-0 -right-0 w-6 h-6">
-                          <div className={`absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+
+                          {/* Button Content */}
+                          <div className="px-6 py-4 pl-12">
+                            <div className="font-cyber tracking-wider text-lg">
+                              {isTogglingMaintenance ? (
+                                <span className="text-brand-400 animate-pulse">
+                                  {maintenanceMode ? "DEACTIVATING..." : "INITIATING..."}
+                                </span>
+                              ) : maintenanceMode ? (
+                                <span className="text-red-400 group-hover:text-red-300">
+                                  DEACTIVATE MAINTENANCE
+                                </span>
+                              ) : (
+                                <span className="text-green-400 group-hover:text-green-300">
+                                  INITIATE MAINTENANCE
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Scan Effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                        </motion.div>
+
+                        {/* Power Indicator */}
+                        <div className="absolute -right-3 top-1/2 -translate-y-1/2">
+                          <div
+                            className={`
+                            w-6 h-6 rounded-full 
+                            ${
+                              maintenanceMode
+                                ? "bg-red-500 animate-pulse shadow-lg shadow-red-500/50"
+                                : "bg-green-500 shadow-lg shadow-green-500/50"
+                            }
+                            transition-colors duration-300
+                          `}
+                          />
                         </div>
                       </button>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-              
-              {/* Expandable Content for selected items */}
-              <AnimatePresence>
-                {selectedSection && adminSections.find(s => s.id === selectedSection)?.component && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mt-4"
-                  >
-                    <div className="pt-4 border-t border-dark-300">
-                      {adminSections.find(s => s.id === selectedSection)?.component}
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* REMOVE ALL OLD SECTIONS - keeping this comment as a marker */}
-            <div style={{ display: 'none' }}>
-            <LazyLoad 
-              placeholder={
-                <div className="mb-4">
-                  <div className="animate-pulse bg-dark-300/30 h-6 w-48 rounded mb-3"></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="animate-pulse bg-dark-200/40 h-24 rounded-lg border border-purple-500/10"></div>
-                    ))}
+            {/* System Notices Management */}
+            <div className="bg-dark-200/50 backdrop-blur-lg rounded-lg border border-dark-300/50 overflow-hidden">
+              <button
+                onClick={() => toggleSection('systemNotices')}
+                className="w-full px-6 py-4 bg-dark-300/30 hover:bg-dark-300/50 transition-all duration-300 flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">📢</div>
+                  <div className="text-left">
+                    <h3 className="text-lg font-bold text-amber-200 font-heading">
+                      System Notices Manager
+                    </h3>
+                    <p className="text-sm text-amber-300/80">
+                      Manage system-wide notices and announcements
+                    </p>
                   </div>
                 </div>
-              }
-              rootMargin="50px"
-            >
-              <div className="mb-4">
-                <h2 className="text-xl font-display mb-3 relative group">
-                  <span className="bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent animate-gradientX">
-                    User Management
-                  </span>
-                  <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-purple-400 to-purple-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                </h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {adminSections
-                    .filter(section => section.category === "User")
-                    .map((section) => (
-                      <motion.div
-                        key={section.id}
-                        className={`
-                          bg-dark-200/75 backdrop-blur-lg border-2
-                          ${
-                            selectedSection === section.id
-                              ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
-                              : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
-                          }
-                          p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
-                        `}
-                        whileHover={{ scale: 1.02, y: -4 }}
-                      >
-                        {/* Scanner line effect */}
-                        <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
-                        
-                        {section.isNew && (
-                          <div className="absolute -top-2 -right-2 z-10">
-                            <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
-                              NEW
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Card content rendering */}
-                        {section.link ? (
-                          <Link to={section.link} className="block h-full">
-                            <div className="flex items-center mb-3">
-                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                                {section.icon}
-                              </div>
-                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                                {section.title}
-                              </h3>
-                            </div>
-                            
-                            {/* Divider that matches the card's color theme */}
-                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                            
-                            {/* Enhanced description with better formatting */}
-                            <p className="text-gray-300 text-sm font-mono">
-                              <span className={`text-${section.color}-200`}>→</span> {section.description}
-                            </p>
-                            
-                            {/* Corner accent - sharper edge */}
-                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                            </div>
-                          </Link>
-                        ) : (
-                          <button
-                            onClick={() =>
-                              setSelectedSection(
-                                selectedSection === section.id ? null : section.id,
-                              )
-                            }
-                            data-section-id={section.id}
-                            className="block w-full text-left"
-                          >
-                            <div className="flex items-center mb-3">
-                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                                {section.icon}
-                              </div>
-                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                                {section.title}
-                              </h3>
-                            </div>
-                            
-                            {/* Divider that matches the card's color theme */}
-                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                            
-                            {/* Enhanced description with better formatting */}
-                            <p className="text-gray-300 text-sm font-mono">
-                              <span className={`text-${section.color}-200`}>→</span> {section.description}
-                            </p>
-                            
-                            {/* Toggle indicator */}
-                            <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
-                              ↓
-                            </div>
-                            
-                            {/* Corner accent - sharper edge */}
-                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                            </div>
-                          </button>
-                        )}
-                        
-                        {/* Expandable Content */}
-                        {selectedSection === section.id && section.component && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="mt-4"
-                          >
-                            <div className="pt-4 border-t border-dark-300">
-                              <LazyLoad
-                                placeholder={<div className="animate-pulse bg-dark-300/20 h-20 w-full rounded"></div>}
-                              >
-                                {section.component}
-                              </LazyLoad>
-                            </div>
-                          </motion.div>
-                        )}
-                      </motion.div>
-                    ))}
+                <div className={`text-amber-300 text-xl transform transition-transform duration-300 ${
+                  expandedSections.systemNotices ? 'rotate-180' : ''
+                }`}>
+                  ↓
                 </div>
-              </div>
-            </LazyLoad>
-
-            {/* Contest Management Section */}
-            <LazyLoad 
-              placeholder={
-                <div className="mb-4">
-                  <div className="animate-pulse bg-dark-300/30 h-6 w-48 rounded mb-3"></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="animate-pulse bg-dark-200/40 h-24 rounded-lg border border-yellow-500/10"></div>
-                    ))}
-                  </div>
-                </div>
-              }
-              rootMargin="50px"
-            >
-              <div className="mb-4">
-                <h2 className="text-xl font-display mb-3 relative group">
-                  <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent animate-gradientX">
-                    Contest Management
-                  </span>
-                  <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-yellow-400 to-yellow-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                </h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {adminSections
-                    .filter(section => section.category === "Contest")
-                    .map((section) => (
-                      <motion.div
-                        key={section.id}
-                        className={`
-                          bg-dark-200/75 backdrop-blur-lg border-2
-                          ${
-                            selectedSection === section.id
-                              ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
-                              : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
-                          }
-                          p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
-                        `}
-                        whileHover={{ scale: 1.02, y: -4 }}
-                      >
-                        {/* Scanner line effect */}
-                        <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
-                        
-                        {section.isNew && (
-                          <div className="absolute -top-2 -right-2 z-10">
-                            <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
-                              NEW
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Card content rendering */}
-                        {section.link ? (
-                          <Link to={section.link} className="block h-full">
-                            <div className="flex items-center mb-3">
-                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                                {section.icon}
-                              </div>
-                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                                {section.title}
-                              </h3>
-                            </div>
-                            
-                            {/* Divider that matches the card's color theme */}
-                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                            
-                            {/* Enhanced description with better formatting */}
-                            <p className="text-gray-300 text-sm font-mono">
-                              <span className={`text-${section.color}-200`}>→</span> {section.description}
-                            </p>
-                            
-                            {/* Corner accent - sharper edge */}
-                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                            </div>
-                          </Link>
-                        ) : (
-                          <button
-                            onClick={() =>
-                              setSelectedSection(
-                                selectedSection === section.id ? null : section.id,
-                              )
-                            }
-                            data-section-id={section.id}
-                            className="block w-full text-left"
-                          >
-                            <div className="flex items-center mb-3">
-                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                                {section.icon}
-                              </div>
-                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                                {section.title}
-                              </h3>
-                            </div>
-                            
-                            {/* Divider that matches the card's color theme */}
-                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                            
-                            {/* Enhanced description with better formatting */}
-                            <p className="text-gray-300 text-sm font-mono">
-                              <span className={`text-${section.color}-200`}>→</span> {section.description}
-                            </p>
-                            
-                            {/* Toggle indicator */}
-                            <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
-                              ↓
-                            </div>
-                            
-                            {/* Corner accent - sharper edge */}
-                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                            </div>
-                          </button>
-                        )}
-                        
-                        {/* Expandable Content */}
-                        {selectedSection === section.id && section.component && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="mt-4"
-                          >
-                            <div className="pt-4 border-t border-dark-300">
-                              <LazyLoad
-                                placeholder={<div className="animate-pulse bg-dark-300/20 h-20 w-full rounded"></div>}
-                              >
-                                {section.component}
-                              </LazyLoad>
-                            </div>
-                          </motion.div>
-                        )}
-                      </motion.div>
-                    ))}
-                </div>
-              </div>
-            </LazyLoad>
-
-            {/* Financial Operations Section */}
-            <LazyLoad 
-              placeholder={
-                <div className="mb-4">
-                  <div className="animate-pulse bg-dark-300/30 h-6 w-48 rounded mb-3"></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="animate-pulse bg-dark-200/40 h-24 rounded-lg border border-green-500/10"></div>
-                    ))}
-                  </div>
-                </div>
-              }
-              rootMargin="50px"
-            >
-              <div className="mb-4">
-                <h2 className="text-xl font-display mb-3 relative group">
-                  <span className="bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent animate-gradientX">
-                    Financial Operations
-                  </span>
-                  <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-green-400 to-green-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                </h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Wallet Monitoring Button */}
+              </button>
+              
+              <AnimatePresence>
+                {expandedSections.systemNotices && (
                   <motion.div
-                    className="bg-dark-200/75 backdrop-blur-lg border-2 border-brand-500/40 hover:border-brand-500/60 p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-brand-500/20"
-                    whileHover={{ scale: 1.02, y: -4 }}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
                   >
-                    <Link to="/admin/wallet-monitoring" className="block h-full">
-                      <div className="flex items-center mb-3">
-                        <div className="text-2xl text-brand-300 mr-3 group-hover:scale-110 transition-transform duration-300">
-                          💰
-                        </div>
-                        <h3 className="text-lg font-bold text-brand-300 font-display tracking-wide">
-                          Wallet Monitoring
-                        </h3>
-                      </div>
-                      
-                      <div className="w-1/3 h-px bg-gradient-to-r from-brand-500/70 to-transparent mb-3"></div>
-                      
-                      <p className="text-gray-300 text-sm font-mono">
-                        <span className="text-brand-200">→</span> Track wallet balances and transactions
-                      </p>
-                      
-                      <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                        <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-brand-500/70"></div>
-                      </div>
-                    </Link>
-                  </motion.div>
-
-                  {/* Admin Wallet Dashboard Button */}
-                  <motion.div
-                    className="bg-dark-200/75 backdrop-blur-lg border-2 border-purple-500/40 hover:border-purple-500/60 p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/20"
-                    whileHover={{ scale: 1.02, y: -4 }}
-                  >
-                    <Link to="/admin/wallet-dashboard" className="block h-full">
-                      <div className="flex items-center mb-3">
-                        <div className="text-2xl text-purple-300 mr-3 group-hover:scale-110 transition-transform duration-300">
-                          🏦
-                        </div>
-                        <h3 className="text-lg font-bold text-purple-300 font-display tracking-wide">
-                          Admin Wallet Dashboard
-                        </h3>
-                      </div>
-                      
-                      <div className="w-1/3 h-px bg-gradient-to-r from-purple-500/70 to-transparent mb-3"></div>
-                      
-                      <p className="text-gray-300 text-sm font-mono">
-                        <span className="text-purple-200">→</span> Manage custodial wallets with bulk operations
-                      </p>
-                      
-                      <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                        <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-purple-500/70"></div>
-                      </div>
-                    </Link>
-                  </motion.div>
-
-
-                  {/* Liquidity Simulator Button */}
-                  <motion.div
-                    className="bg-dark-200/75 backdrop-blur-lg border-2 border-green-500/40 hover:border-green-500/60 p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-green-500/20"
-                    whileHover={{ scale: 1.02, y: -4 }}
-                  >
-                    <Link to="/admin/liq-sim" className="block h-full">
-                      <div className="flex items-center mb-3">
-                        <div className="text-2xl text-green-300 mr-3 group-hover:scale-110 transition-transform duration-300">
-                          💰
-                        </div>
-                        <h3 className="text-lg font-bold text-green-300 font-display tracking-wide">
-                          Liquidity Simulator
-                        </h3>
-                      </div>
-                      
-                      <div className="w-1/3 h-px bg-gradient-to-r from-green-500/70 to-transparent mb-3"></div>
-                      
-                      <p className="text-gray-300 text-sm font-mono">
-                        <span className="text-green-200">→</span> Simulate token liquidation strategies
-                      </p>
-                      
-                      <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                        <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-green-500/70"></div>
-                      </div>
-                    </Link>
-                  </motion.div>
-
-                  {adminSections
-                    .filter(section => section.category === "Financial")
-                    .map((section) => (
-                      <motion.div
-                        key={section.id}
-                        className={`
-                          bg-dark-200/75 backdrop-blur-lg border-2
-                          ${
-                            selectedSection === section.id
-                              ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
-                              : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
-                          }
-                          p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
-                        `}
-                        whileHover={{ scale: 1.02, y: -4 }}
-                      >
-                        {/* Scanner line effect */}
-                        <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
-                        
-                        {section.isNew && (
-                          <div className="absolute -top-2 -right-2 z-10">
-                            <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
-                              NEW
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Card content rendering */}
-                        {section.link ? (
-                          <Link to={section.link} className="block h-full">
-                            <div className="flex items-center mb-3">
-                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                                {section.icon}
-                              </div>
-                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                                {section.title}
-                              </h3>
-                            </div>
-                            
-                            {/* Divider that matches the card's color theme */}
-                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                            
-                            {/* Enhanced description with better formatting */}
-                            <p className="text-gray-300 text-sm font-mono">
-                              <span className={`text-${section.color}-200`}>→</span> {section.description}
-                            </p>
-                            
-                            {/* Corner accent - sharper edge */}
-                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                            </div>
-                          </Link>
-                        ) : (
-                          <button
-                            onClick={() =>
-                              setSelectedSection(
-                                selectedSection === section.id ? null : section.id,
-                              )
-                            }
-                            data-section-id={section.id}
-                            className="block w-full text-left"
-                          >
-                            <div className="flex items-center mb-3">
-                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                                {section.icon}
-                              </div>
-                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                                {section.title}
-                              </h3>
-                            </div>
-                            
-                            {/* Divider that matches the card's color theme */}
-                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                            
-                            {/* Enhanced description with better formatting */}
-                            <p className="text-gray-300 text-sm font-mono">
-                              <span className={`text-${section.color}-200`}>→</span> {section.description}
-                            </p>
-                            
-                            {/* Toggle indicator */}
-                            <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
-                              ↓
-                            </div>
-                            
-                            {/* Corner accent - sharper edge */}
-                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                            </div>
-                          </button>
-                        )}
-                        
-                        {/* Expandable Content */}
-                        {selectedSection === section.id && section.component && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="mt-4"
-                          >
-                            <div className="pt-4 border-t border-dark-300">
-                              <LazyLoad
-                                placeholder={<div className="animate-pulse bg-dark-300/20 h-20 w-full rounded"></div>}
-                              >
-                                {section.component}
-                              </LazyLoad>
-                            </div>
-                          </motion.div>
-                        )}
-                      </motion.div>
-                    ))}
-                </div>
-              </div>
-            </LazyLoad>
-
-            {/* System Section */}
-            <LazyLoad 
-              placeholder={
-                <div className="mb-4">
-                  <div className="animate-pulse bg-dark-300/30 h-6 w-48 rounded mb-3"></div>
-                  <div className="bg-dark-200/30 p-4 rounded-lg">
-                    <div className="animate-pulse bg-dark-300/30 h-6 w-36 rounded mb-4"></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className="animate-pulse bg-dark-200/40 h-24 rounded-lg border border-blue-500/10"></div>
-                      ))}
+                    <div className="p-6 border-t border-dark-300/30">
+                      <SystemNoticesManager />
                     </div>
-                  </div>
-                </div>
-              }
-              rootMargin="50px"
-            >
-              <div className="mb-4">
-                <h2 className="text-xl font-display mb-3 relative group">
-                  <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent animate-gradientX">
-                    System
-                  </span>
-                  <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-blue-400 to-blue-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                </h2>
-                
-                {/* Core System */}
-                <h3 className="font-medium text-gray-300 mb-3 ml-1 font-mono text-sm">
-                  <span className="text-blue-400">☰</span> CORE SYSTEM
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                  {adminSections
-                    .filter(section => section.category === "System-Core")
-                    .map((section) => (
-                      <motion.div
-                        key={section.id}
-                        className={`
-                          bg-dark-200/75 backdrop-blur-lg border-2
-                          ${
-                            selectedSection === section.id
-                              ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
-                              : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
-                          }
-                          p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
-                        `}
-                        whileHover={{ scale: 1.02, y: -4 }}
-                      >
-                        {/* Scanner line effect */}
-                        <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
-                        
-                        {section.isNew && (
-                          <div className="absolute -top-2 -right-2 z-10">
-                            <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
-                              NEW
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Card content rendering */}
-                        {section.link ? (
-                          <Link to={section.link} className="block h-full">
-                            <div className="flex items-center mb-3">
-                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                                {section.icon}
-                              </div>
-                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                                {section.title}
-                              </h3>
-                            </div>
-                            
-                            {/* Divider that matches the card's color theme */}
-                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                            
-                            {/* Enhanced description with better formatting */}
-                            <p className="text-gray-300 text-sm font-mono">
-                              <span className={`text-${section.color}-200`}>→</span> {section.description}
-                            </p>
-                            
-                            {/* Corner accent - sharper edge */}
-                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                            </div>
-                          </Link>
-                        ) : (
-                          <button
-                            onClick={() =>
-                              setSelectedSection(
-                                selectedSection === section.id ? null : section.id,
-                              )
-                            }
-                            data-section-id={section.id}
-                            className="block w-full text-left"
-                          >
-                            <div className="flex items-center mb-3">
-                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                                {section.icon}
-                              </div>
-                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                                {section.title}
-                              </h3>
-                            </div>
-                            
-                            {/* Divider that matches the card's color theme */}
-                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                            
-                            {/* Enhanced description with better formatting */}
-                            <p className="text-gray-300 text-sm font-mono">
-                              <span className={`text-${section.color}-200`}>→</span> {section.description}
-                            </p>
-                            
-                            {/* Toggle indicator */}
-                            <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
-                              ↓
-                            </div>
-                            
-                            {/* Corner accent - sharper edge */}
-                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                            </div>
-                          </button>
-                        )}
-                        
-                        {/* Expandable Content */}
-                        {selectedSection === section.id && section.component && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="mt-4"
-                          >
-                            <div className="pt-4 border-t border-dark-300">
-                              <LazyLoad
-                                placeholder={<div className="animate-pulse bg-dark-300/20 h-20 w-full rounded"></div>}
-                              >
-                                {section.component}
-                              </LazyLoad>
-                            </div>
-                          </motion.div>
-                        )}
-                      </motion.div>
-                    ))}
-                </div>
-                
-                {/* Testing & Playground */}
-                <LazyLoad
-                  placeholder={
-                    <div>
-                      <div className="animate-pulse bg-dark-300/30 h-6 w-48 rounded mb-4"></div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {[1, 2, 3].map(i => (
-                          <div key={i} className="animate-pulse bg-dark-200/40 h-24 rounded-lg border border-blue-500/10"></div>
-                        ))}
-                      </div>
-                    </div>
-                  }
-                  rootMargin="75px"
-                >
-                  <h3 className="font-medium text-gray-300 mb-3 ml-1 font-mono text-sm">
-                    <span className="text-blue-400">⚡</span> TESTING & PLAYGROUND
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {adminSections
-                      .filter(section => section.category === "System-Testing")
-                      .map((section) => (
-                        <motion.div
-                          key={section.id}
-                          className={`
-                            bg-dark-200/75 backdrop-blur-lg border-2
-                            ${
-                              selectedSection === section.id
-                                ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
-                                : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
-                            }
-                            p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
-                          `}
-                          whileHover={{ scale: 1.02, y: -4 }}
-                        >
-                          {/* Scanner line effect */}
-                          <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
-                          
-                          {section.isNew && (
-                            <div className="absolute -top-2 -right-2 z-10">
-                              <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
-                                NEW
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Card content rendering */}
-                          {section.link ? (
-                            <Link to={section.link} className="block h-full">
-                              <div className="flex items-center mb-3">
-                                <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                                  {section.icon}
-                                </div>
-                                <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                                  {section.title}
-                                </h3>
-                              </div>
-                              
-                              {/* Divider that matches the card's color theme */}
-                              <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                              
-                              {/* Enhanced description with better formatting */}
-                              <p className="text-gray-300 text-sm font-mono">
-                                <span className={`text-${section.color}-200`}>→</span> {section.description}
-                              </p>
-                              
-                              {/* Corner accent - sharper edge */}
-                              <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                                <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                              </div>
-                            </Link>
-                          ) : (
-                            <button
-                              onClick={() =>
-                                setSelectedSection(
-                                  selectedSection === section.id ? null : section.id,
-                                )
-                              }
-                              data-section-id={section.id}
-                              className="block w-full text-left"
-                            >
-                              <div className="flex items-center mb-3">
-                                <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                                  {section.icon}
-                                </div>
-                                <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                                  {section.title}
-                                </h3>
-                              </div>
-                              
-                              {/* Divider that matches the card's color theme */}
-                              <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                              
-                              {/* Enhanced description with better formatting */}
-                              <p className="text-gray-300 text-sm font-mono">
-                                <span className={`text-${section.color}-200`}>→</span> {section.description}
-                              </p>
-                              
-                              {/* Toggle indicator */}
-                              <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
-                                ↓
-                              </div>
-                              
-                              {/* Corner accent - sharper edge */}
-                              <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                                <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                              </div>
-                            </button>
-                          )}
-                          
-                          {/* Expandable Content */}
-                          {selectedSection === section.id && section.component && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="mt-4"
-                            >
-                              <div className="pt-4 border-t border-dark-300">
-                                <LazyLoad
-                                  placeholder={<div className="animate-pulse bg-dark-300/20 h-20 w-full rounded"></div>}
-                                >
-                                  {section.component}
-                                </LazyLoad>
-                              </div>
-                            </motion.div>
-                          )}
-                        </motion.div>
-                      ))}
-                  </div>
-                </LazyLoad>
-              </div>
-            </LazyLoad>
-
-            {/* Wallet Management Section */}
-            <LazyLoad 
-              placeholder={
-                <div className="mb-4">
-                  <div className="animate-pulse bg-dark-300/30 h-6 w-48 rounded mb-3"></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="animate-pulse bg-dark-200/40 h-40 rounded-lg border border-indigo-500/10"></div>
-                  </div>
-                </div>
-              }
-              rootMargin="50px"
-            >
-              <div className="mb-4">
-                <h2 className="text-xl font-display mb-3 relative group">
-                  <span className="bg-gradient-to-r from-indigo-400 to-indigo-600 bg-clip-text text-transparent animate-gradientX">
-                    Wallet Management
-                  </span>
-                  <span className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-indigo-400 to-indigo-600 transform opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                </h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {adminSections
-                    .filter(section => section.category === "Wallet")
-                    .map((section) => (
-                      <motion.div
-                        key={section.id}
-                        className={`
-                          bg-dark-200/75 backdrop-blur-lg border-2
-                          ${
-                            selectedSection === section.id
-                              ? `border-${section.color}-500/60 shadow-lg shadow-${section.color}-500/20`
-                              : `border-${section.color}-500/40 hover:border-${section.color}-500/60`
-                          }
-                          p-4 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
-                        `}
-                        whileHover={{ scale: 1.02, y: -4 }}
-                      >
-                        {/* Scanner line effect */}
-                        <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
-                        
-                        {/* Card content rendering */}
-                        {section.link ? (
-                          <Link to={section.link} className="block h-full">
-                            <div className="flex items-center mb-3">
-                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                                {section.icon}
-                              </div>
-                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                                {section.title}
-                              </h3>
-                            </div>
-                            
-                            {/* Divider that matches the card's color theme */}
-                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                            
-                            {/* Enhanced description with better formatting */}
-                            <p className="text-gray-300 text-sm font-mono">
-                              <span className={`text-${section.color}-200`}>→</span> {section.description}
-                            </p>
-                            
-                            {/* Corner accent - sharper edge */}
-                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                            </div>
-                          </Link>
-                        ) : (
-                          <button
-                            onClick={() =>
-                              setSelectedSection(
-                                selectedSection === section.id ? null : section.id,
-                              )
-                            }
-                            data-section-id={section.id}
-                            className="block w-full text-left"
-                          >
-                            <div className="flex items-center mb-3">
-                              <div className={`text-2xl text-${section.color}-300 mr-3 group-hover:scale-110 transition-transform duration-300`}>
-                                {section.icon}
-                              </div>
-                              <h3 className={`text-lg font-bold text-${section.color}-300 font-display tracking-wide`}>
-                                {section.title}
-                              </h3>
-                            </div>
-                            
-                            {/* Divider that matches the card's color theme */}
-                            <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-3`}></div>
-                            
-                            {/* Enhanced description with better formatting */}
-                            <p className="text-gray-300 text-sm font-mono">
-                              <span className={`text-${section.color}-200`}>→</span> {section.description}
-                            </p>
-                            
-                            {/* Toggle indicator */}
-                            <div className={`absolute top-4 right-4 text-${section.color}-300 text-lg transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
-                              ↓
-                            </div>
-                            
-                            {/* Corner accent - sharper edge */}
-                            <div className="absolute -bottom-0 -right-0 w-8 h-8">
-                              <div className={`absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
-                            </div>
-                          </button>
-                        )}
-                        
-                        {/* Expandable Content */}
-                        {selectedSection === section.id && section.component && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="mt-4"
-                          >
-                            <div className="pt-4 border-t border-dark-300">
-                              <LazyLoad
-                                placeholder={<div className="animate-pulse bg-dark-300/20 h-20 w-full rounded"></div>}
-                              >
-                                {section.component}
-                              </LazyLoad>
-                            </div>
-                          </motion.div>
-                        )}
-                      </motion.div>
-                    ))}
-                </div>
-              </div>
-            </LazyLoad>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
+
+            {/* System Reports Section */}
+            <div className="bg-dark-200/50 backdrop-blur-lg rounded-lg border border-dark-300/50 overflow-hidden">
+              <div className="flex">
+                <Link
+                  to="/admin/system-reports"
+                  className="flex-1 px-6 py-4 bg-dark-300/30 hover:bg-purple-500/20 transition-all duration-300 flex items-center gap-3 group"
+                >
+                  <div className="text-2xl">📊</div>
+                  <div className="text-left">
+                    <h3 className="text-lg font-bold text-purple-200 font-heading">
+                      System Reports
+                    </h3>
+                    <p className="text-sm text-purple-300/80">
+                      View service health and database metrics
+                    </p>
+                  </div>
+                </Link>
+                <button
+                  onClick={() => toggleSection('systemReports')}
+                  className="px-4 py-4 bg-dark-300/30 hover:bg-dark-300/50 transition-all duration-300 border-l border-dark-300/50"
+                >
+                  <div className={`text-purple-300 text-xl transform transition-transform duration-300 ${
+                    expandedSections.systemReports ? 'rotate-180' : ''
+                  }`}>
+                    ↓
+                  </div>
+                </button>
+              </div>
+              
+              <AnimatePresence>
+                {expandedSections.systemReports && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-6 border-t border-dark-300/30">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+                          <div className="text-xs text-purple-300/70 mb-1">
+                            Service Health
+                          </div>
+                          <div className="flex items-center">
+                            <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+                            <span className="text-green-300 text-sm">Monitoring</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+                          <div className="text-xs text-purple-300/70 mb-1">Database</div>
+                          <div className="flex items-center">
+                            <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+                            <span className="text-blue-300 text-sm">Metrics</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-dark-300/50 rounded-lg p-3 border border-purple-500/20">
+                          <div className="text-xs text-purple-300/70 mb-1">AI Analysis</div>
+                          <div className="flex items-center">
+                            <div className="h-2 w-2 rounded-full bg-amber-500 mr-2"></div>
+                            <span className="text-amber-300 text-sm">Available</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* All Admin Tools - Collapsible Container */}
+            <div className="bg-dark-200/50 backdrop-blur-lg rounded-lg border border-dark-300/50 overflow-hidden">
+              <button
+                onClick={() => toggleSection('adminTools')}
+                className="w-full px-6 py-4 bg-dark-300/30 hover:bg-dark-300/50 transition-all duration-300 flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">🛠️</div>
+                  <div className="text-left">
+                    <h3 className="text-lg font-bold text-gray-200 font-heading">
+                      Admin Tools
+                    </h3>
+                    <p className="text-sm text-gray-300/80">
+                      {adminSections.length} tools across {Array.from(new Set(adminSections.map(s => s.category))).length} categories
+                    </p>
+                  </div>
+                </div>
+                <div className={`text-gray-300 text-xl transform transition-transform duration-300 ${
+                  expandedSections.adminTools ? 'rotate-180' : ''
+                }`}>
+                  ↓
+                </div>
+              </button>
+              
+              <AnimatePresence>
+                {expandedSections.adminTools && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-6 border-t border-dark-300/30">
+                      {/* Group tools by category */}
+                      {['Top-Priority', 'User', 'Contest', 'Financial', 'System-Core', 'System-Testing', 'Wallet'].map((category) => {
+                        const categoryTools = adminSections.filter(section => section.category === category);
+                        if (categoryTools.length === 0) return null;
+                        
+                        const getCategoryInfo = (cat: string) => {
+                          switch (cat) {
+                            case 'Top-Priority': return { icon: '⭐', color: 'cyan', name: 'Top Priority' };
+                            case 'User': return { icon: '👥', color: 'purple', name: 'User Management' };
+                            case 'Contest': return { icon: '🏆', color: 'yellow', name: 'Contest Management' };
+                            case 'Financial': return { icon: '💰', color: 'green', name: 'Financial Operations' };
+                            case 'System-Core': return { icon: '⚙️', color: 'blue', name: 'System Core' };
+                            case 'System-Testing': return { icon: '🧪', color: 'pink', name: 'Testing & Playground' };
+                            case 'Wallet': return { icon: '💳', color: 'indigo', name: 'Wallet Management' };
+                            default: return { icon: '🔧', color: 'gray', name: cat };
+                          }
+                        };
+                        
+                        const categoryInfo = getCategoryInfo(category);
+                        
+                        return (
+                          <div key={category} className="mb-6 last:mb-0">
+                            <h4 className={`text-sm font-bold text-${categoryInfo.color}-300 mb-3 flex items-center gap-2`}>
+                              <span>{categoryInfo.icon}</span>
+                              {categoryInfo.name} ({categoryTools.length})
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                              {categoryTools.map((section) => (
+                                <motion.div
+                                  key={section.id}
+                                  className={`
+                                    bg-dark-200/75 backdrop-blur-lg border-2
+                                    ${
+                                      selectedSection === section.id
+                                        ? `border-dark-300/70 shadow-lg shadow-${section.color}-500/20`
+                                        : `border-dark-300/50 hover:border-dark-300/70`
+                                    }
+                                    p-3 relative group overflow-hidden transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-${section.color}-500/20
+                                  `}
+                                  whileHover={{ scale: 1.02, y: -2 }}
+                                >
+                                  <div className={`absolute inset-0 h-px w-full bg-${section.color}-500/30 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out`}></div>
+                                  
+                                  {section.isNew && (
+                                    <div className="absolute -top-2 -right-2 z-10">
+                                      <div className="px-2 py-0.5 text-xs font-bold rounded-md bg-brand-500/30 text-brand-100 font-mono">
+                                        NEW
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {section.link ? (
+                                    <Link to={section.link} className="block h-full">
+                                      <div className="flex items-center mb-2">
+                                        <div className={`text-xl text-${section.color}-300 mr-2 group-hover:scale-110 transition-transform duration-300`}>
+                                          {section.icon}
+                                        </div>
+                                        <h3 className={`text-sm font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                          {section.title}
+                                        </h3>
+                                      </div>
+                                      
+                                      <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-2`}></div>
+                                      
+                                      <p className="text-gray-300 text-xs font-mono">
+                                        <span className={`text-${section.color}-200`}>→</span> {section.description}
+                                      </p>
+                                      
+                                      <div className="absolute -bottom-0 -right-0 w-6 h-6">
+                                        <div className={`absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                                      </div>
+                                    </Link>
+                                  ) : (
+                                    <button
+                                      onClick={() =>
+                                        setSelectedSection(
+                                          selectedSection === section.id ? null : section.id,
+                                        )
+                                      }
+                                      data-section-id={section.id}
+                                      className="block w-full text-left"
+                                    >
+                                      <div className="flex items-center mb-2">
+                                        <div className={`text-xl text-${section.color}-300 mr-2 group-hover:scale-110 transition-transform duration-300`}>
+                                          {section.icon}
+                                        </div>
+                                        <h3 className={`text-sm font-bold text-${section.color}-300 font-display tracking-wide`}>
+                                          {section.title}
+                                        </h3>
+                                      </div>
+                                      
+                                      <div className={`w-1/3 h-px bg-gradient-to-r from-${section.color}-500/70 to-transparent mb-2`}></div>
+                                      
+                                      <p className="text-gray-300 text-xs font-mono">
+                                        <span className={`text-${section.color}-200`}>→</span> {section.description}
+                                      </p>
+                                      
+                                      <div className={`absolute top-3 right-3 text-${section.color}-300 text-sm transform transition-all ${selectedSection === section.id ? "rotate-180" : ""}`}>
+                                        ↓
+                                      </div>
+                                      
+                                      <div className="absolute -bottom-0 -right-0 w-6 h-6">
+                                        <div className={`absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2 border-${section.color}-500/70`}></div>
+                                      </div>
+                                    </button>
+                                  )}
+                                </motion.div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      {/* Expandable Content for selected items */}
+                      <AnimatePresence>
+                        {selectedSection && adminSections.find(s => s.id === selectedSection)?.component && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-4"
+                          >
+                            <div className="pt-4 border-t border-dark-300">
+                              {adminSections.find(s => s.id === selectedSection)?.component}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
           </div>
 
           {/* Admin Logs Panel & Token Discovery - 25% width on desktop, full width on mobile */}
@@ -1857,11 +1248,10 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                 }
-                rootMargin="50px" // Smaller margin as this is typically visible at page load
+                rootMargin="50px"
               >
                 <AdminLogsPanel />
               </LazyLoad>
-
             </div>
           </div>
         </div>

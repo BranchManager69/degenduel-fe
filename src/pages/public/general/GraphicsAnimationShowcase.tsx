@@ -37,16 +37,14 @@ export const GraphicsAnimationShowcase: React.FC = () => {
   const [textStyle, setTextStyle] = useState<TextStyle>('shadow');
   const [textStroke, setTextStroke] = useState(true);
   const [textStrokeWidth, setTextStrokeWidth] = useState(2);
-  const [textStrokeColor, setTextStrokeColor] = useState('#000000');
+  const [textStrokeColor] = useState('#000000');
   
   // Subtitle states
   const [subtitleContent, setSubtitleContent] = useState('Compete. Conquer. Collect.');
   const [subtitleSize, setSubtitleSize] = useState(26);
   const [subtitleColor, setSubtitleColor] = useState('#FFFFFF');
   const [subtitleOpacity, setSubtitleOpacity] = useState(90);
-  const [subtitleStroke, setSubtitleStroke] = useState(true);
-  const [subtitleStrokeWidth, setSubtitleStrokeWidth] = useState(1);
-  const [subtitleStrokeColor, setSubtitleStrokeColor] = useState('#000000');
+  const [subtitleStroke] = useState(true);
   
   // Logo states
   const [showLogo, setShowLogo] = useState(true);
@@ -126,6 +124,125 @@ export const GraphicsAnimationShowcase: React.FC = () => {
     }
   };
 
+  // Share to Twitter - optimized for Twitter image dimensions
+  const shareToTwitter = async () => {
+    if (!captureRef.current) return;
+    
+    setIsCapturing(true);
+    
+    // Hide controls temporarily
+    const wasShowingControls = showControls;
+    setShowControls(false);
+    
+    // Wait a moment for the UI to update
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    try {
+      // Capture at Twitter-optimized size (1200x675 - 16:9 aspect ratio)
+      const canvas = await html2canvas(captureRef.current, {
+        backgroundColor: null,
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        width: 1200,
+        height: 675,
+        windowWidth: 1200,
+        windowHeight: 675
+      });
+      
+      // Resize canvas to exactly 1200x675 if needed
+      const twitterCanvas = document.createElement('canvas');
+      twitterCanvas.width = 1200;
+      twitterCanvas.height = 675;
+      const ctx = twitterCanvas.getContext('2d');
+      
+      if (ctx) {
+        // Fill with transparent background
+        ctx.clearRect(0, 0, 1200, 675);
+        
+        // Draw the captured image, scaling to fit Twitter dimensions
+        const aspectRatio = canvas.width / canvas.height;
+        const targetAspectRatio = 1200 / 675;
+        
+        let drawWidth = 1200;
+        let drawHeight = 675;
+        let drawX = 0;
+        let drawY = 0;
+        
+        if (aspectRatio > targetAspectRatio) {
+          // Image is wider, fit to height
+          drawHeight = 675;
+          drawWidth = 675 * aspectRatio;
+          drawX = (1200 - drawWidth) / 2;
+        } else {
+          // Image is taller, fit to width  
+          drawWidth = 1200;
+          drawHeight = 1200 / aspectRatio;
+          drawY = (675 - drawHeight) / 2;
+        }
+        
+        ctx.drawImage(canvas, drawX, drawY, drawWidth, drawHeight);
+        
+        // Convert to blob and copy to clipboard
+        twitterCanvas.toBlob(async (blob) => {
+          if (blob) {
+            try {
+              // Copy image to clipboard
+              await navigator.clipboard.write([
+                new ClipboardItem({
+                  'image/png': blob
+                })
+              ]);
+              
+              // Open Twitter with pre-filled text
+              const tweetText = encodeURIComponent(
+                `Check out our latest DegenDuel features! 🎯 #DegenDuel #Crypto #Trading #DeFi`
+              );
+              window.open(
+                `https://twitter.com/intent/tweet?text=${tweetText}`,
+                '_blank'
+              );
+              
+              // Show success feedback
+              alert('Image copied to clipboard! Paste it in the Twitter window that just opened.');
+              
+            } catch (clipboardError) {
+              console.error('Failed to copy to clipboard:', clipboardError);
+              
+              // Fallback: download the Twitter-sized image
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.download = `degenduel-twitter-${Date.now()}.png`;
+              link.href = url;
+              link.click();
+              URL.revokeObjectURL(url);
+              
+              // Still open Twitter
+              const tweetText = encodeURIComponent(
+                `Check out our latest DegenDuel features! 🎯 #DegenDuel #Crypto #Trading #DeFi`
+              );
+              window.open(
+                `https://twitter.com/intent/tweet?text=${tweetText}`,
+                '_blank'
+              );
+              
+              alert('Image downloaded! Upload it to the Twitter window that just opened.');
+            }
+          }
+        }, 'image/png');
+      }
+    } catch (error) {
+      console.error('Failed to share to Twitter:', error);
+    } finally {
+      // Restore controls if they were visible
+      if (wasShowingControls) {
+        setShowControls(true);
+      }
+      setIsCapturing(false);
+    }
+  };
+
   // Add keyboard shortcuts
   React.useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -143,6 +260,11 @@ export const GraphicsAnimationShowcase: React.FC = () => {
         case 'c':
           if (!isCapturing) {
             captureScreenshot();
+          }
+          break;
+        case 't':
+          if (!isCapturing) {
+            shareToTwitter();
           }
           break;
         case '1':
@@ -439,8 +561,7 @@ export const GraphicsAnimationShowcase: React.FC = () => {
                   fontFamily: getTextFont(),
                   fontWeight: textStyle === 'brand-orbitron' ? 900 : undefined,
                   letterSpacing: textStyle === 'brand-orbitron' ? '-0.05em' : undefined,
-                  WebkitTextStroke: textStroke ? `${textStrokeWidth}px ${textStrokeColor}` : undefined,
-                  textStroke: textStroke ? `${textStrokeWidth}px ${textStrokeColor}` : undefined
+                  WebkitTextStroke: textStroke ? `${textStrokeWidth}px ${textStrokeColor}` : undefined
                 }}
               >
                 {textContent}
@@ -491,7 +612,7 @@ export const GraphicsAnimationShowcase: React.FC = () => {
           
           {/* Quick Tip */}
           <div className="bg-purple-600/20 border border-purple-500/30 rounded p-2 text-[10px] text-purple-200">
-            💡 Tip: Press C to capture • H to hide controls
+            💡 Tip: Press C to capture • T for Twitter • H to hide controls
           </div>
           
           {/* Graphic Type Selection */}
@@ -958,6 +1079,22 @@ export const GraphicsAnimationShowcase: React.FC = () => {
               ) : (
                 <>
                   📸 Capture Screenshot
+                </>
+              )}
+            </button>
+            <button
+              onClick={shareToTwitter}
+              disabled={isCapturing}
+              className={`w-full px-4 py-2 ${isCapturing ? 'bg-gray-600' : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'} text-white rounded text-sm font-semibold flex items-center justify-center gap-2`}
+            >
+              {isCapturing ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  Preparing...
+                </>
+              ) : (
+                <>
+                  🐦 Share to Twitter
                 </>
               )}
             </button>

@@ -947,7 +947,6 @@ export const CreateContestModal: React.FC<CreateContestModalProps> = ({
                               onDropdownOpen={() => {}}
                               onDropdownClose={() => {}}
                               clearOnSelect={true}
-                              useAbsolutePositioning={true}
                             />
                           </div>
                         )}

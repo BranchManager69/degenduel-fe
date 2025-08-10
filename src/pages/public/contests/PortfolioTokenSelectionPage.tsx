@@ -14,19 +14,19 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ErrorBoundary } from "react-error-boundary";
 import { toast } from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
+import { useScrollFooter } from "../../../hooks/ui/useScrollFooter";
 import PortfolioPreviewModal from "../../../components/portfolio-selection/PortfolioPreviewModal";
 import { PortfolioSummary } from "../../../components/portfolio-selection/PortfolioSummary";
+import { ContestDetailHeaderNew } from "../../../components/contest-detail/ContestDetailHeaderNew";
 import { TokenFilters } from "../../../components/portfolio-selection/TokenFilters";
 import { CreativeTokensGrid } from "../../../components/tokens-list/CreativeTokensGrid";
 import { TokenSelectionList } from "../../../components/portfolio-selection/TokenSelectionList";
+import { CompactTokenGrid } from "../../../components/tokens-list/CompactTokenGrid";
 import { PortfolioTokenCardBack } from "../../../components/portfolio-selection/PortfolioTokenCardBack";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Skeleton } from "../../../components/ui/Skeleton";
-import { config } from "../../../config/config";
-import { useBatchTokens } from "../../../hooks/websocket/topic-hooks/useBatchTokens";
 import { useVisibleTokenSubscriptions } from "../../../hooks/websocket/topic-hooks/useVisibleTokenSubscriptions";
-import { useScrollFooter } from "../../../hooks/ui/useScrollFooter";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useWalletAnalysis } from "../../../hooks/data/useWalletAnalysis";
 import { useReferral } from "../../../hooks/social/useReferral";
@@ -53,13 +53,6 @@ interface PortfolioToken {
   weight: number;
 }
 
-// Special tokens that should always be available - defined outside component to prevent re-creation
-const SPECIAL_TOKEN_ADDRESSES = [
-  'So11111111111111111111111111111111111111112',   // SOL  
-  config.SOLANA.DEGEN_TOKEN_ADDRESS, // DUEL
-  '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh', // WBTC
-  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'  // USDC
-];
 
 // Token Card Skeleton Component
 function TokenCardSkeleton() {
@@ -148,41 +141,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   const { isSuperAdmin } = auth;
   const { referralCode } = useReferral();
   
-  // Use batch tokens hook for special tokens
-  const { 
-    tokens: specialTokensMap, 
-    isLoading: specialTokensLoading
-  } = useBatchTokens(SPECIAL_TOKEN_ADDRESSES);
-  
-  // Convert map to array and maintain order
-  const specialTokens = useMemo(() => {
-    const tokens: Token[] = [];
-    for (const address of SPECIAL_TOKEN_ADDRESSES) {
-      const token = specialTokensMap.get(address);
-      if (token) {
-        // Add special banners
-        if (address === 'So11111111111111111111111111111111111111112') {
-          tokens.push({
-            ...token,
-            header_image_url: '/assets/media/sol_banner.png'
-          });
-        } else if (address === '3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh') {
-          tokens.push({
-            ...token,
-            header_image_url: '/assets/media/btc_banner.webp'
-          });
-        } else if (address === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v') {
-          tokens.push({
-            ...token,
-            header_image_url: '/assets/media/dollar.jpg'
-          });
-        } else {
-          tokens.push(token);
-        }
-      }
-    }
-    return tokens;
-  }, [specialTokensMap]);
   
   // State for paginated token loading (like TokensPage) - declare before using
   const [mainTokens, setMainTokens] = useState<Token[]>([]);
@@ -241,22 +199,21 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     loadInitialTokens();
   }, []); // Only run once on mount
   
-  // All tokens including special ones and search results
+  // All tokens including search results
   const allTokens = useMemo(() => {
-    const specialAddresses = specialTokens.map(t => t.contractAddress?.toLowerCase());
     const searchTokensArray = Array.from(searchAddedTokens.values());
     const searchAddresses = searchTokensArray.map(t => (t.address || t.contractAddress)?.toLowerCase());
     
-    // Filter main tokens to exclude both special tokens and existing portfolio tokens
+    // Filter main tokens to exclude existing portfolio tokens from search
     const filteredMainTokens = mainTokens.filter(t => {
       const address = t.contractAddress?.toLowerCase();
-      return !specialAddresses.includes(address) && !searchAddresses.includes(address);
+      return !searchAddresses.includes(address);
     });
     
-    // Merge in correct order: existing portfolio tokens FIRST, then special tokens, then main tokens
-    const mergedTokens = [...searchTokensArray, ...specialTokens, ...filteredMainTokens];
+    // Merge in correct order: existing portfolio tokens FIRST, then main tokens
+    const mergedTokens = [...searchTokensArray, ...filteredMainTokens];
     
-    // Deduplicate by address (though filtering above should prevent most duplicates)
+    // Deduplicate by address
     const seen = new Set<string>();
     return mergedTokens.filter(token => {
       const address = (token.address || token.contractAddress)?.toLowerCase();
@@ -264,7 +221,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
       seen.add(address);
       return true;
     });
-  }, [specialTokens, mainTokens, searchAddedTokens]);
+  }, [mainTokens, searchAddedTokens]);
   
   // Visible tokens - only show up to displayCount
   const tokens = useMemo(() => {
@@ -331,7 +288,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   }, []);
   
   // Combined loading state
-  const tokenListLoading = isInitialLoading || specialTokensLoading;
+  const tokenListLoading = isInitialLoading;
   const isTokenDataConnected = true; // Always true with new approach
   const tokensError: string | null = null;
   const lastUpdate = new Date();
@@ -468,10 +425,13 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     return new Map();
   });
   // View mode for token display
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'compact'>(() => {
     const saved = localStorage.getItem('portfolioViewMode');
-    return (saved as 'grid' | 'list') || 'list';
+    return (saved as 'grid' | 'list' | 'compact') || 'compact'; // Default to compact grid
   });
+  
+  // Use scroll footer hook to match footer's compact state
+  const { isCompact: isFooterCompact } = useScrollFooter(50);
   const [contest, setContest] = useState<Contest | null>(null);
   const [contestLoading, setContestLoading] = useState(true);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -508,8 +468,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
     error: walletAnalysisError 
   } = useWalletAnalysis(user?.wallet_address);
   
-  // Get footer state for dynamic positioning
-  const { isCompact } = useScrollFooter(50);
   
   // Modern wallet adapter for transactions
   const { publicKey, signTransaction, connected, connect, signMessage } = useWallet();
@@ -2072,40 +2030,9 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
         {/* Content */}
         <div className="relative z-10">
           <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 relative">
-            {/* Header */}
-            <div className="mb-4 sm:mb-8 text-center">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-100 mb-2 font-mono">
-                BUILD PORTFOLIO
-              </h1>
-              <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto font-mono">
-                LOADING.TOKENS → PREPARING.SELECTION
-              </p>
-              
-              {/* Enhanced loading indicator with retry */}
-              <div className="mt-4 flex flex-col items-center gap-3">
-                <div className="flex items-center gap-2 text-xs">
-                  <div className={`w-2 h-2 rounded-full ${isTokenDataConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-                  <span className={`font-mono ${isTokenDataConnected ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {isTokenDataConnected ? 
-                      `LOADING.WEBSOCKET.DATA (${tokens.length}/1000)` : 
-                      'CONNECTION.LOST'
-                    }
-                  </span>
-                </div>
-                
-                {/* Manual retry button during loading */}
-                <button
-                  onClick={() => {
-                    console.log("🔄 PortfolioTokenSelectionPage: Manual refresh triggered during loading");
-                    refreshTokens();
-                  }}
-                  className="px-4 py-2 bg-emerald-600/20 border border-emerald-500/30 rounded text-emerald-400 text-sm font-mono hover:bg-emerald-600/30 transition-colors"
-                >
-                  [RETRY.CONNECTION]
-                </button>
-                
-                {/* Show last update time if available */}
-              </div>
+            {/* Simple loading spinner */}
+            <div className="flex justify-center items-center min-h-[400px]">
+              <div className="w-12 h-12 border-4 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin"></div>
             </div>
 
             {/* Skeleton Grid */}
@@ -2236,8 +2163,8 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="flex flex-col min-h-screen">
-        {/* User Info Banner */}
-        <div className="bg-brand-500/10 border-b border-brand-500/30 px-4 py-3">
+        {/* User Info Banner - Hidden */}
+        <div className="bg-brand-500/10 border-b border-brand-500/30 px-4 py-3 hidden">
           <div className="flex items-center justify-between">
             {user?.wallet_address ? (
               <div className="flex items-center gap-3 text-sm">
@@ -2345,44 +2272,33 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
           </div>
         )}
         
-        {/* Loading indicator when refreshing data */}
-        {tokenListLoading && memoizedTokens.length > 0 && (
-          <div className="bg-emerald-500/10 border-b border-emerald-500/30 px-4 py-2">
-            <div className="flex items-center justify-center gap-2 text-emerald-400 text-sm">
-              <div className="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin"></div>
-              <span className="font-mono">Updating token data...</span>
-            </div>
-          </div>
-        )}
         
         {/* Content Section */}
         <div className="relative z-10">
-          <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 relative">
-            {/* Header Section - Different styling */}
-            <div className="mb-4 sm:mb-8 text-center relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/0 via-emerald-400/5 to-emerald-400/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-100 mb-2 font-mono">
-                BUILD PORTFOLIO
-              </h1>
-              <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto font-mono">
-                SELECT TOKENS → ALLOCATE WEIGHTS → DEPLOY STRATEGY
-              </p>
-              
-              {/* Connection status indicator */}
-              <div className="mt-2 flex justify-center items-center gap-4 text-xs">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${isTokenDataConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-                  <span className={`font-mono ${isTokenDataConnected ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {isTokenDataConnected ? 'LIVE DATA STREAM' : 'CONNECTION LOST'}
-                  </span>
-                </div>
-                
-              </div>
+          {/* Contest Header Component */}
+          {contest && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+              <ContestDetailHeaderNew
+                contest={contest}
+                displayStatus={contest.status || 'upcoming'}
+                isAuthenticated={!!user?.wallet_address}
+                hasPortfolio={hasExistingPortfolio}
+                isParticipating={hasExistingPortfolio}
+                portfolioTransactions={null}
+                onActionButtonClick={() => {}}
+                getActionButtonLabel={() => ''}
+                handleCountdownComplete={() => {}}
+                error={null}
+                showActionButton={false}
+              />
             </div>
+          )}
+          
+          <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 relative">
 
-            {/* Wallet Status Indicator */}
+            {/* Wallet Status Indicator - Hidden */}
             {user?.wallet_address && (
-              <div className="mb-4 p-3 bg-dark-600/50 border border-brand-500/20 rounded-lg max-w-2xl mx-auto">
+              <div className="mb-4 p-3 bg-dark-600/50 border border-brand-500/20 rounded-lg max-w-2xl mx-auto hidden">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-center gap-4 text-sm">
                     <div className="flex items-center gap-2">
@@ -2422,16 +2338,13 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
               </div>
             )}
 
-            {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-8 pb-24 lg:pb-0">
-              {/* Token Selection Area - Different card styling */}
-              <div className="lg:col-span-3">
-                <Card className="bg-dark-200/30 backdrop-blur-sm border-emerald-500/20 hover:border-emerald-400/30 transition-colors group relative overflow-hidden">
-                  {/* Different gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/5 via-transparent to-emerald-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-dark-300/0 via-emerald-500/5 to-dark-300/0 opacity-0 group-hover:opacity-100" />
+            {/* Main Content - Better responsive layout */}
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 pb-64 xl:pb-0">
+              {/* Token Selection Area - Takes more space */}
+              <div className="xl:col-span-3">
+                <div className="relative">{/* Removed Card wrapper and backgrounds */}
                   
-                  <div className="p-3 sm:p-6 relative">
+                  <div className="p-2 sm:p-3 relative">
                     {/* Header with token count */}
                     <div className="mb-4 flex justify-between items-center">
                       <h2 className="text-lg font-bold text-emerald-400 font-mono">
@@ -2538,49 +2451,18 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                       </div>
                     )}
                     
-                    {/* Simplified Filters - Only search and view mode */}
-                    <div className="mb-4 sm:mb-6 space-y-4">
+                    {/* Simplified Filters - All controls in one component */}
+                    <div className="mb-4 sm:mb-6">
                       <TokenFilters
                         onTokenSearchSelect={handleTokenSearchSelect}
                         sortBy={sortBy}
                         onSortChange={handleSortChange}
+                        viewMode={viewMode}
+                        onViewModeChange={(mode) => {
+                          setViewMode(mode);
+                          localStorage.setItem('portfolioViewMode', mode);
+                        }}
                       />
-                      
-                      {/* View Mode Toggle */}
-                      <div className="inline-flex bg-dark-300/50 rounded-lg p-1">
-                        <button
-                          onClick={() => {
-                            setViewMode('list');
-                            localStorage.setItem('portfolioViewMode', 'list');
-                          }}
-                          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                            viewMode === 'list'
-                              ? 'bg-brand-500 text-white shadow-sm'
-                              : 'text-gray-400 hover:text-gray-300'
-                          }`}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                              d="M4 6h16M4 12h16M4 18h16" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setViewMode('grid');
-                            localStorage.setItem('portfolioViewMode', 'grid');
-                          }}
-                          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                            viewMode === 'grid'
-                              ? 'bg-brand-500 text-white shadow-sm'
-                              : 'text-gray-400 hover:text-gray-300'
-                          }`}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                          </svg>
-                        </button>
-                      </div>
                     </div>
 
                     {/* DEBUG PANEL - Contest Data (Super Admin + Development Only) */}
@@ -2735,9 +2617,6 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                             <div className="text-gray-400">Main Tokens:</div>
                             <div className="text-white">{mainTokens.length}</div>
                             
-                            <div className="text-gray-400">Special Tokens:</div>
-                            <div className="text-white">{specialTokens.length}</div>
-                            
                             <div className="text-gray-400">Search Added Tokens:</div>
                             <div className="text-white">{searchAddedTokens.size}</div>
                             
@@ -2766,7 +2645,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Token Display - Grid or List based on view mode */}
+                    {/* Token Display - Grid, List, or Compact based on view mode */}
                     <div className="relative">
                       {viewMode === 'grid' ? (
                         <CreativeTokensGrid
@@ -2775,7 +2654,7 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                           selectedTokens={selectedTokens}
                           renderBackContent={renderBackContent}
                         />
-                      ) : (
+                      ) : viewMode === 'list' ? (
                         <TokenSelectionList
                           tokens={visibleTokens}
                           selectedTokens={selectedTokens}
@@ -2792,6 +2671,23 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                             });
                           }}
                           remainingWeight={portfolioMetrics.remainingWeight}
+                        />
+                      ) : (
+                        <CompactTokenGrid
+                          tokens={visibleTokens}
+                          selectedTokens={selectedTokens}
+                          onTokenSelect={(token) => handleTokenSelect(TokenHelpers.getAddress(token))}
+                          onWeightChange={(contractAddress, newWeight) => {
+                            setSelectedTokens(prev => {
+                              const newMap = new Map(prev);
+                              if (newWeight === 0) {
+                                newMap.delete(contractAddress);
+                              } else {
+                                newMap.set(contractAddress, newWeight);
+                              }
+                              return newMap;
+                            });
+                          }}
                         />
                       )}
                       
@@ -2821,45 +2717,29 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                       )}
                     </div>
                   </div>
-                </Card>
+                </div>
               </div>
 
-              {/* Portfolio Summary - Different styling */}
-              <div className="hidden lg:block lg:col-span-2">
-                <div className="sticky top-4">
-                  <Card className="bg-dark-200/30 backdrop-blur-sm border-emerald-500/20 hover:border-emerald-400/30 transition-colors group relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/5 via-transparent to-emerald-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              {/* Portfolio Summary - Fixed position on mobile, sticky on desktop */}
+              <div className={`fixed left-0 right-0 xl:relative xl:bottom-auto xl:col-span-1 z-30 xl:z-auto ${isFooterCompact ? 'bottom-10' : 'bottom-14'}`}>
+                <div className="xl:sticky xl:top-4 bg-gray-900/80 backdrop-blur-lg xl:bg-transparent border-t xl:border-0 border-emerald-500/30 shadow-2xl shadow-emerald-500/10">
+                  <div className="relative">{/* Removed Card wrapper and all backgrounds */}
                     
-                    <div className="p-4 sm:p-6 relative">
-                      <h2 className="text-lg sm:text-xl font-bold text-emerald-400 mb-4 font-mono">
-                        PORTFOLIO DEPLOY
-                      </h2>
-                      
-                      {/* Contest Type Indicator - Moved here */}
-                      {contest && (() => {
-                        const entryFeeValue = parseDecimalValue(contest.entry_fee);
-                        const isFree = entryFeeValue === 0;
-                        
-                        return (
-                          <div className={`mb-4 p-3 rounded-lg border ${isFree ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-brand-500/10 border-brand-500/30'}`}>
-                            <div className="flex items-center gap-3 text-sm">
-                              <div className={`flex items-center justify-center w-5 h-5 rounded-full ${isFree ? 'bg-emerald-500/20' : 'bg-brand-500/20'}`}>
-                                <span className={`text-xs ${isFree ? 'text-emerald-400' : 'text-brand-400'}`}>
-                                  {isFree ? '✓' : '$'}
-                                </span>
-                              </div>
-                              <div className="flex-1">
-                                <span className={`font-medium ${isFree ? 'text-emerald-300' : 'text-brand-300'}`}>
-                                  {isFree ? 'Free Contest' : 'Paid Contest'}
-                                </span>
-                                <span className="text-gray-400 ml-2">
-                                  {isFree ? 'No entry fee required' : `${entryFeeValue} SOL entry fee`}
-                                </span>
-                              </div>
+                    <div className="p-2 xl:p-4 relative">
+                      <div className="flex items-center justify-between mb-2 xl:mb-4">
+                        <h2 className="text-base xl:text-xl font-bold text-emerald-400 font-mono">
+                          PORTFOLIO DEPLOY
+                        </h2>
+                        {contest && (() => {
+                          const entryFeeValue = parseDecimalValue(contest.entry_fee);
+                          const isFree = entryFeeValue === 0;
+                          return (
+                            <div className={`text-xs ${isFree ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                              {isFree ? 'FREE' : `${entryFeeValue} SOL`}
                             </div>
-                          </div>
-                        );
-                      })()}
+                          );
+                        })()}
+                      </div>
                       
                       <PortfolioSummary
                         selectedTokens={selectedTokens}
@@ -3045,89 +2925,9 @@ export const PortfolioTokenSelectionPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Floating Submit Button for Mobile - Different styling */}
-            <div 
-              className="lg:hidden fixed left-0 right-0 px-4 bg-gradient-to-t from-dark-100 to-transparent z-50 transition-all duration-300 max-w-md mx-auto"
-              style={{ bottom: isCompact ? '48px' : '88px' }}
-            >
-                {transactionState.status === "success" ? (
-                  <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
-                    <div className="flex items-center justify-center mb-2">
-                      <div className="text-3xl">🎉</div>
-                    </div>
-                    <h3 className="text-base font-bold text-emerald-400 text-center mb-2">
-                      {hasExistingPortfolio ? "Updated!" : "Entry Successful!"}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        onClick={() => navigate(`/contests/${contestId}`)}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs py-2"
-                      >
-                        VIEW
-                      </Button>
-                      <Button
-                        onClick={() => navigate('/contests')}
-                        className="bg-dark-400 hover:bg-dark-300 text-white font-mono text-xs py-2"
-                      >
-                        MORE
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <Button
-                      onClick={handlePreviewPortfolio}
-                      disabled={
-                        contestLoading ||
-                        loadingEntryStatus ||
-                        portfolioValidation !== null ||
-                        isLoading ||
-                        transactionState.status !== "idle"
-                      }
-                      className={`w-full relative group overflow-hidden text-sm py-4 shadow-lg transition-all duration-300 ${
-                        totalWeight > 100
-                          ? "shadow-red-500/20 bg-red-600 hover:bg-red-500 border-red-500"
-                          : "shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-500 border-emerald-500"
-                      }`}
-                    >
-                      <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
-                        totalWeight > 100
-                          ? "bg-gradient-to-r from-red-400/20 via-red-500/20 to-red-600/20"
-                          : "bg-gradient-to-r from-emerald-400/20 via-emerald-500/20 to-emerald-600/20"
-                      }`} />
-                      <span className="relative flex items-center justify-center gap-2 font-mono">
-                        {isLoading ? (
-                          <div>DEPLOYING...</div>
-                        ) : user?.wallet_address ? (
-                          <>
-                            <span className="font-medium">PREVIEW</span>
-                            <span className={totalWeight > 100 ? "text-red-200 font-bold" : "text-emerald-400"}>{totalWeight}%</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="font-medium">BUILD</span>
-                            <span className={totalWeight > 100 ? "text-red-200 font-bold" : "text-emerald-400"}>{totalWeight}%</span>
-                          </>
-                        )}
-                      </span>
-                    </Button>
-                    <div className="mt-2 h-8">
-                      {portfolioValidation && (
-                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg py-2 px-3">
-                          <div className="flex items-center justify-center gap-2 text-xs text-orange-300">
-                            <span className="text-orange-400">⚡</span>
-                            <span className="font-medium">{portfolioValidation}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
             </div>
           </div>
         </div>
