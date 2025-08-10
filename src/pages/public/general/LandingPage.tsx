@@ -60,6 +60,9 @@ const SHOW_TOKEN_CARDS = false; // Set to true to show DUEL and SOL token cards
 // Enhanced Floating Buttons
 import FloatingButtonStack from '../../../components/layout/FloatingButtonStack'; // Enhanced floating button stack
 
+// Import UpcomingContestsWidget
+import { UpcomingContestsWidget } from '../../../components/landing/UpcomingContestsWidget';
+
 
 // Contract Address
 const FALLBACK_CA_FOR_BUTTONS = config.CONTRACT_ADDRESS.REAL;
@@ -789,6 +792,17 @@ export const LandingPage: React.FC = () => {
                   variants={secondaryVariants}
                 >
                   <PlatformStats />
+                </motion.div>
+
+                {/* Upcoming Contests Widget - Shows contests starting within 3 hours */}
+                <motion.div
+                  className="relative w-full mt-6 md:mt-8"
+                  variants={secondaryVariants}
+                >
+                  <UpcomingContestsWidget 
+                    contests={[...activeContests, ...openContests]}
+                    loading={loading && activeContests.length === 0 && openContests.length === 0}
+                  />
                 </motion.div>
 
                 {/* Crown Contest Section - Extracted from contests */}

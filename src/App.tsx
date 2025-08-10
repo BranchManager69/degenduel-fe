@@ -182,6 +182,7 @@ const GlobalRankings = lazy(() => import('./pages/public/leaderboards/GlobalRank
 const LeaderboardLanding = lazy(() => import('./pages/public/leaderboards/LeaderboardLanding').then(module => ({ default: module.LeaderboardLanding })));
 const TokensPage = lazy(() => import('./pages/public/tokens/TokensPage').then(module => ({ default: module.TokensPage })));
 const TokenDetailPage = lazy(() => import('./pages/public/tokens/TokenDetailPageNew'));
+const LaunchpadPage = lazy(() => import('./pages/public/launchpad/LaunchpadPage').then(module => ({ default: module.LaunchpadPage })));
 const WebSocketAPIPage = lazy(() => import('./pages/public/WebSocketAPIPage'));
 const WhaleRoomPage = lazy(() => import('./pages/public/whaleroom/WhaleRoomPage').then(module => ({ default: module.default })));
 
@@ -545,6 +546,9 @@ const AppContent: React.FC = () => {
           <Route path="/tokens" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><TokensPage /></Suspense></MaintenanceGuard>} />
           <Route path="/tokens/:address" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><TokenDetailPage /></Suspense></MaintenanceGuard>} />
           
+          {/* Launchpad Route */}
+          <Route path="/launchpad" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><LaunchpadPage /></Suspense></MaintenanceGuard>} />
+          
           {/* Whale Room - Institutional Analytics Dashboard */}
           <Route path="/whale-room" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><WhaleRoomPage /></Suspense></MaintenanceGuard>} />
           
@@ -574,7 +578,7 @@ const AppContent: React.FC = () => {
           <Route path="/solana-demo" element={<Suspense fallback={<LoadingFallback />}><SolanaBlockchainDemo /></Suspense>} />
           <Route path="/websocket-auth-test" element={<Suspense fallback={<LoadingFallback />}><WebSocketAuthTest /></Suspense>} />
           <Route path="/logo-showcase" element={<Suspense fallback={<LoadingFallback />}><LogoAnimationShowcase /></Suspense>} />
-          <Route path="/graphics-showcase" element={<Suspense fallback={<LoadingFallback />}><GraphicsAnimationShowcase /></Suspense>} />
+          <Route path="/media-maker" element={<Suspense fallback={<LoadingFallback />}><GraphicsAnimationShowcase /></Suspense>} />
           
           {/* Leaderboard Routes */}
           <Route path="/leaderboards" element={<Suspense fallback={<LoadingFallback />}><LeaderboardLanding /></Suspense>} />

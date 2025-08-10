@@ -211,8 +211,8 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
         {trendingTokens.length > 0 && (
           <div className="mb-16">
             
-            {/* PREMIUM GRID LAYOUT - 2 cols on mobile for better space usage */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+            {/* PREMIUM GRID LAYOUT - Much more efficient responsive grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-2 sm:gap-3">
               {trendingTokens.map((token, index) => {
                 const contractAddress = TokenHelpers.getAddress(token);
                 const isFlipped = flipStates.get(contractAddress) || false;
@@ -266,8 +266,8 @@ export const CreativeTokensGrid: React.FC<CreativeTokensGridProps> = React.memo(
               </div>
             </div>
             
-            {/* Optimized grid layout for mobile - 3 columns on small screens for space efficiency */}
-            <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1 xs:gap-2 sm:gap-3">
+            {/* Ultra-efficient grid - fits maximum tokens while maintaining readability */}
+            <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-2">
               {restTokens.map(token => {
                 const isSelected = token.symbol.toLowerCase() === selectedTokenSymbol?.toLowerCase();
                 

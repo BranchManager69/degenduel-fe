@@ -10,22 +10,30 @@ import greenSpriteSheet from './guys/white_buy_guy.png';
 // import whiteSellSpriteSheet from './guys/white_sell_guy.png';
 
 interface SpriteAnimationProps {
-  type: 'green' | 'red'; // Add new types here when you add sprite sheets
+  type?: 'green' | 'red'; // Add new types here when you add sprite sheets
+  imageType?: 'green' | 'red'; // Alternative prop name
   width?: number;
   height?: number;
   fps?: number;
+  isPaused?: boolean;
+  animationDuration?: number;
   className?: string;
   style?: React.CSSProperties;
 }
 
 const SpriteAnimation: React.FC<SpriteAnimationProps> = ({
   type,
+  imageType,
   width = 192,
   height = 256,
   fps = 10,
+  isPaused = false,
+  animationDuration = 1,
   className = '',
   style = {},
 }) => {
+  // Use imageType if provided, otherwise fall back to type
+  const spriteType = imageType || type || 'green';
   const [frameIndex, setFrameIndex] = useState(0);
   const [processedSpriteSheet, setProcessedSpriteSheet] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null); // Ref for offscreen canvas
@@ -34,7 +42,7 @@ const SpriteAnimation: React.FC<SpriteAnimationProps> = ({
   const COLS = 4;
   const TOTAL_FRAMES = ROWS * COLS;
   
-  const sourceSpriteSheet = type === 'green' ? greenSpriteSheet : redSpriteSheet;
+  const sourceSpriteSheet = spriteType === 'green' ? greenSpriteSheet : redSpriteSheet;
 
   // Process the sprite sheet to remove background
   useEffect(() => {
@@ -86,12 +94,14 @@ const SpriteAnimation: React.FC<SpriteAnimationProps> = ({
 
   // Animation logic
   useEffect(() => {
+    if (isPaused) return;
+    
     const interval = setInterval(() => {
       setFrameIndex(prev => (prev + 1) % TOTAL_FRAMES);
-    }, 1000 / fps);
+    }, (1000 / fps) * animationDuration);
     
     return () => clearInterval(interval);
-  }, [fps]);
+  }, [fps, isPaused, animationDuration]);
   
   // Calculate position in sprite sheet
   const row = Math.floor(frameIndex / COLS);
