@@ -383,11 +383,7 @@ export const TokenGodView: React.FC = () => {
         });
 
         // Also update filter defaults based on percentiles (10th to 90th percentile)
-        const candidatesBounds = calculateBoundsFromPercentiles(candidatesPercentiles);
-        const managedBounds = calculateBoundsFromPercentiles(managedPercentiles);
-        
         // Update default filter values to reasonable ranges
-        const defaultDates = getDefaultDates();
         setFilters(prev => ({
           ...prev,
           minMarketCap: formatNumberInput((candidatesPercentiles.market_cap?.[10] || 50000).toString()),
