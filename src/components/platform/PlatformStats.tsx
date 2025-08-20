@@ -144,59 +144,19 @@ const PlatformStats: React.FC = () => {
   return (
     <section className="py-4 bg-gradient-to-b from-transparent via-dark-200/10 to-transparent">
       <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12">
-        {/* Total Revenue - First */}
-        <div className="mb-4">
-          <div className="max-w-sm mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="lg:scale-110 relative z-10"
-            >
-              <div className="group relative bg-gradient-to-br from-purple-950/90 via-violet-950/80 to-purple-900/90 border-2 border-purple-700/60 hover:border-purple-500/80 transition-all duration-300 overflow-hidden backdrop-blur-sm shadow-[0_0_30px_rgba(147,51,234,0.3)]"
-                style={{
-                  clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))'
-                }}
-              >
-                <div className="absolute inset-0 opacity-15 group-hover:opacity-25 transition-opacity duration-500">
-                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <path d="M10 10 L90 10 L90 90 L10 90 Z" stroke="#a855f7" strokeWidth="0.3" fill="none" strokeDasharray="1,2" />
-                    <circle cx="50" cy="50" r="30" stroke="#a855f7" strokeWidth="0.2" fill="none" strokeDasharray="2,2" />
-                  </svg>
-                </div>
-                
-                <div className="absolute top-0 right-0 w-4 h-4 bg-gradient-to-br from-purple-400/60 to-transparent"></div>
-                <div className="absolute bottom-0 left-0 w-4 h-4 bg-gradient-to-tr from-purple-400/60 to-transparent"></div>
-                
-                <div className="relative p-6">
-                  <div className="flex items-center justify-center gap-8">
-                    {/* Left - Winners */}
-                    <div className="text-center">
-                      <div className="text-purple-200/80 font-bold text-sm">{formatSOL(winnerPayouts)}</div>
-                      <div className="text-purple-400/70 text-xs">Winners</div>
-                    </div>
-                    
-                    {/* Center - Total Revenue */}
-                    <div className="text-center">
-                      <h3 className="text-3xl font-bold text-white mb-2 font-mono tracking-wider group-hover:text-purple-200 transition-colors">{formatSOL(stats.total_revenue)}</h3>
-                      <p className="text-purple-300/90 font-bold text-sm uppercase tracking-widest">Activity</p>
-                    </div>
-                    
-                    {/* Right - Holders */}
-                    <div className="text-center">
-                      <div className="text-purple-200/80 font-bold text-sm">{formatSOL(stats.estimated_dividends_distributed)}</div>
-                      <div className="text-purple-400/70 text-xs">Holders</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="absolute inset-0 bg-gradient-to-tr from-purple-600/0 via-purple-500/0 to-purple-400/0 group-hover:from-purple-600/10 group-hover:via-purple-500/5 group-hover:to-purple-400/10 mix-blend-screen transition-all duration-500" />
-              </div>
-            </motion.div>
+        {/* Winner Cards - Now at the top */}
+        <div className="mb-4 w-full flex flex-col lg:flex-row gap-4">
+          {/* Latest Winner */}
+          <div className="flex-1">
+            <RecentContestWinner data={stats.recent_contest_winner} delay={0.1} />
+          </div>
+          {/* All Time Best */}
+          <div className="flex-1">
+            <GlobalHighScore data={stats.global_high_score} delay={0.2} />
           </div>
         </div>
 
-        {/* Platform Activity Section - Three side by side stats */}
+        {/* Platform Activity Section - Three side by side stats (middle) */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-3xl mx-auto mb-4">
           {/* Contest Breakdown - Modified StatItem */}
           <motion.div
@@ -292,15 +252,55 @@ const PlatformStats: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Winner Cards - Side by side on desktop, stacked on mobile */}
-        <div className="mt-4 mb-6 w-full flex flex-col lg:flex-row gap-4">
-          {/* Latest Winner */}
-          <div className="flex-1">
-            <RecentContestWinner data={stats.recent_contest_winner} delay={0.4} />
-          </div>
-          {/* All Time Best */}
-          <div className="flex-1">
-            <GlobalHighScore data={stats.global_high_score} delay={0.5} />
+        {/* Total Revenue/Activity - Now at the bottom */}
+        <div className="mt-4">
+          <div className="max-w-sm mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="lg:scale-110 relative z-10"
+            >
+              <div className="group relative bg-gradient-to-br from-purple-950/90 via-violet-950/80 to-purple-900/90 border-2 border-purple-700/60 hover:border-purple-500/80 transition-all duration-300 overflow-hidden backdrop-blur-sm shadow-[0_0_30px_rgba(147,51,234,0.3)]"
+                style={{
+                  clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))'
+                }}
+              >
+                <div className="absolute inset-0 opacity-15 group-hover:opacity-25 transition-opacity duration-500">
+                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path d="M10 10 L90 10 L90 90 L10 90 Z" stroke="#a855f7" strokeWidth="0.3" fill="none" strokeDasharray="1,2" />
+                    <circle cx="50" cy="50" r="30" stroke="#a855f7" strokeWidth="0.2" fill="none" strokeDasharray="2,2" />
+                  </svg>
+                </div>
+                
+                <div className="absolute top-0 right-0 w-4 h-4 bg-gradient-to-br from-purple-400/60 to-transparent"></div>
+                <div className="absolute bottom-0 left-0 w-4 h-4 bg-gradient-to-tr from-purple-400/60 to-transparent"></div>
+                
+                <div className="relative p-6">
+                  <div className="flex items-center justify-center gap-8">
+                    {/* Left - Winners */}
+                    <div className="text-center">
+                      <div className="text-purple-200/80 font-bold text-sm">{formatSOL(winnerPayouts)}</div>
+                      <div className="text-purple-400/70 text-xs">Winners</div>
+                    </div>
+                    
+                    {/* Center - Total Revenue */}
+                    <div className="text-center">
+                      <h3 className="text-3xl font-bold text-white mb-2 font-mono tracking-wider group-hover:text-purple-200 transition-colors">{formatSOL(stats.total_revenue)}</h3>
+                      <p className="text-purple-300/90 font-bold text-sm uppercase tracking-widest">Activity</p>
+                    </div>
+                    
+                    {/* Right - Holders */}
+                    <div className="text-center">
+                      <div className="text-purple-200/80 font-bold text-sm">{formatSOL(stats.estimated_dividends_distributed)}</div>
+                      <div className="text-purple-400/70 text-xs">Holders</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="absolute inset-0 bg-gradient-to-tr from-purple-600/0 via-purple-500/0 to-purple-400/0 group-hover:from-purple-600/10 group-hover:via-purple-500/5 group-hover:to-purple-400/10 mix-blend-screen transition-all duration-500" />
+              </div>
+            </motion.div>
           </div>
         </div>
 
