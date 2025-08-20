@@ -183,6 +183,7 @@ const LeaderboardLanding = lazy(() => import('./pages/public/leaderboards/Leader
 const TokensPage = lazy(() => import('./pages/public/tokens/TokensPage').then(module => ({ default: module.TokensPage })));
 const TokenDetailPage = lazy(() => import('./pages/public/tokens/TokenDetailPageNew'));
 const LaunchpadPage = lazy(() => import('./pages/public/launchpad/LaunchpadPage').then(module => ({ default: module.LaunchpadPage })));
+const TokenGodViewPage = lazy(() => import('./pages/TokenGodViewPage'));
 const WebSocketAPIPage = lazy(() => import('./pages/public/WebSocketAPIPage'));
 const WhaleRoomPage = lazy(() => import('./pages/public/whaleroom/WhaleRoomPage').then(module => ({ default: module.default })));
 
@@ -548,6 +549,9 @@ const AppContent: React.FC = () => {
           
           {/* Launchpad Route */}
           <Route path="/launchpad" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><LaunchpadPage /></Suspense></MaintenanceGuard>} />
+          
+          {/* Token God View - Comprehensive Token Analytics */}
+          <Route path="/token-god-view" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><TokenGodViewPage /></Suspense></MaintenanceGuard>} />
           
           {/* Whale Room - Institutional Analytics Dashboard */}
           <Route path="/whale-room" element={<MaintenanceGuard><Suspense fallback={<LoadingFallback />}><WhaleRoomPage /></Suspense></MaintenanceGuard>} />

@@ -59,7 +59,7 @@ export const TokenActivationManager: React.FC = () => {
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<'symbol' | 'name' | 'first_seen'>('first_seen');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [candidateSortBy, setCandidateSortBy] = useState<'market_cap' | 'volume_24h' | 'first_seen' | 'pair_created_at'>('pair_created_at');
+  const [candidateSortBy, setCandidateSortBy] = useState<'market_cap' | 'volume_24h' | 'first_seen' | 'pair_created_at'>('first_seen');
   const [candidateSortOrder, setCandidateSortOrder] = useState<'asc' | 'desc'>('desc');
   const [managedTokensTotal, setManagedTokensTotal] = useState(0);
   const [candidatesTotal, setCandidatesTotal] = useState(0);
@@ -631,14 +631,14 @@ export const TokenActivationManager: React.FC = () => {
             }}
             className="px-3 py-1 bg-dark-300/50 border border-dark-300/50 rounded text-sm text-white"
           >
+            <option value="first_seen-desc">Newest Tokens First</option>
+            <option value="first_seen-asc">Oldest Tokens First</option>
             <option value="pair_created_at-desc">Newest Pairs First</option>
             <option value="pair_created_at-asc">Oldest Pairs First</option>
             <option value="market_cap-desc">Highest Market Cap</option>
             <option value="market_cap-asc">Lowest Market Cap</option>
             <option value="volume_24h-desc">Highest Volume</option>
             <option value="volume_24h-asc">Lowest Volume</option>
-            <option value="first_seen-desc">Newest Tokens First</option>
-            <option value="first_seen-asc">Oldest Tokens First</option>
           </select>
           <button
             onClick={fetchCandidateTokens}

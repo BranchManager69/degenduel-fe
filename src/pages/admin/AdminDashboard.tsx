@@ -638,6 +638,33 @@ export const AdminDashboard: React.FC = () => {
           )}
         </AnimatePresence>
 
+        {/* Token God View Link - NEW PROMINENT FEATURE */}
+        <div className="mb-6">
+          <Link
+            to="/token-god-view"
+            className="block bg-gradient-to-r from-brand-500/20 to-cyber-500/20 backdrop-blur-lg rounded-lg border border-brand-500/40 hover:border-brand-500/60 overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-brand-500/20"
+          >
+            <div className="px-6 py-4 flex items-center justify-between group">
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">🚀</div>
+                <div className="text-left">
+                  <h3 className="text-lg font-bold bg-gradient-to-r from-brand-400 to-cyber-400 bg-clip-text text-transparent font-heading">
+                    Token God View
+                  </h3>
+                  <p className="text-sm text-brand-300/80">
+                    Comprehensive token analytics and discovery platform
+                  </p>
+                </div>
+              </div>
+              <div className="text-brand-400 group-hover:translate-x-1 transition-transform">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </Link>
+        </div>
+
         {/* Critical Token Management Section - PROMINENT FEATURE */}
         <div className="mb-6">
           <div className="bg-dark-200/50 backdrop-blur-lg rounded-lg border border-dark-300/50 overflow-hidden">
