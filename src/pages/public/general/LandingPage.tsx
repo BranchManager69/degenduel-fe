@@ -786,17 +786,9 @@ export const LandingPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Platform Statistics Section */}
-                <motion.div
-                  className="relative w-full mt-8 md:mt-12"
-                  variants={secondaryVariants}
-                >
-                  <PlatformStats />
-                </motion.div>
-
                 {/* Upcoming Contests Widget - Shows contests starting within 3 hours */}
                 <motion.div
-                  className="relative w-full mt-6 md:mt-8"
+                  className="relative w-full mt-8 md:mt-12"
                   variants={secondaryVariants}
                 >
                   <UpcomingContestsWidget 
@@ -958,6 +950,14 @@ export const LandingPage: React.FC = () => {
                       </div>
                     </div>
                   )}
+                </motion.div>
+
+                {/* Platform Statistics Section */}
+                <motion.div
+                  className="relative w-full mt-8 md:mt-12"
+                  variants={secondaryVariants}
+                >
+                  <PlatformStats />
                 </motion.div>
 
                 {/* DUEL Token & CTA Section - Side by side layout */}
