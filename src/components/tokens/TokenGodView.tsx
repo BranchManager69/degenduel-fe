@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as Slider from '@radix-ui/react-slider';
 import { ddApi } from '../../services/dd-api';
 import { Scatter, Bar } from 'react-chartjs-2';
@@ -158,6 +158,130 @@ const activeBoundsPlugin = {
 
 ChartJS.register(activeBoundsPlugin as any);
 
+// Plugin to draw short motion trails from current point to past buckets (m5/h1) for market_cap
+const trailsPlugin = {
+  id: 'trailsPlugin',
+  afterDatasetsDraw(chart: any, _args: any, opts: any) {
+    const { enabled, seriesMap, windows, axisX, axisY } = opts || {};
+    if (!enabled || !seriesMap) return;
+    const ds = chart?.data?.datasets?.[0];
+    const data = ds?.data;
+    if (!Array.isArray(data) || data.length === 0) return;
+    const xScale = chart.scales?.x;
+    const yScale = chart.scales?.y;
+    if (!xScale || !yScale) return;
+
+    const ctx = chart.ctx;
+    const drawTrail = (nowX: number, nowY: number, pastX: number, pastY: number, color: string) => {
+      if (!Number.isFinite(nowX) || !Number.isFinite(nowY) || !Number.isFinite(pastX) || !Number.isFinite(pastY)) return;
+      const x1 = xScale.getPixelForValue(nowX);
+      const y1 = yScale.getPixelForValue(nowY);
+      const x2 = xScale.getPixelForValue(pastX);
+      const y2 = yScale.getPixelForValue(pastY);
+      if (![x1,y1,x2,y2].every(Number.isFinite)) return;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    for (const point of data) {
+      const token = point?.token || point?.parsed?.token;
+      if (!token) continue;
+      // Only draw for green tokens to reduce clutter
+      const cls = classifyTokenForDot(token);
+      if (cls !== 'green') continue;
+
+      const nowXVal = point.x ?? point?.parsed?.x;
+      const nowYVal = point.y ?? point?.parsed?.y;
+      const address = token.address;
+      const entry = seriesMap[address];
+      if (!entry) continue;
+
+      // m5 trail
+      if (windows?.m5 && entry.series?.m5?.market_cap) {
+        const mc5 = entry.series.m5.market_cap;
+        const pastX = axisX === 'market_cap' ? mc5 : nowXVal;
+        const pastY = axisY === 'market_cap' ? mc5 : nowYVal;
+        if (typeof pastX === 'number' && typeof pastY === 'number') {
+          drawTrail(nowXVal, nowYVal, pastX, pastY, 'rgba(20, 184, 166, 0.9)'); // teal
+        }
+      }
+      // h1 trail
+      if (windows?.h1 && entry.series?.h1?.market_cap) {
+        const mc1 = entry.series.h1.market_cap;
+        const pastX = axisX === 'market_cap' ? mc1 : nowXVal;
+        const pastY = axisY === 'market_cap' ? mc1 : nowYVal;
+        if (typeof pastX === 'number' && typeof pastY === 'number') {
+          drawTrail(nowXVal, nowYVal, pastX, pastY, 'rgba(249, 115, 22, 0.9)'); // orange
+        }
+      }
+    }
+  }
+};
+
+ChartJS.register(trailsPlugin as any);
+
+// Token logo cache (module scope) for plugin access
+const __logoCache = new Map<string, HTMLImageElement>();
+const normalizeUrl = (u?: string | null) => {
+  if (!u) return '';
+  // Prefer https
+  if (u.startsWith('http:')) return 'https:' + u.slice(5);
+  return u;
+};
+const getLogoForChart = (urlRaw: string, chart: any): HTMLImageElement | null => {
+  const url = normalizeUrl(urlRaw);
+  if (!url) return null;
+  let img = __logoCache.get(url);
+  if (!img) {
+    img = new Image();
+    img.src = url;
+    img.onload = () => { try { chart?.draw?.(); } catch {} };
+    __logoCache.set(url, img);
+  }
+  return img.complete && img.naturalWidth > 0 ? img : null;
+};
+
+// Plugin to draw token logos for green points (overlay above circles)
+const logoPointsPlugin = {
+  id: 'logoPoints',
+  afterDatasetsDraw(chart: any, _args: any, opts: any) {
+    if (!opts || !opts.enabled) return;
+    const ds = chart?.data?.datasets?.[0];
+    const meta = chart.getDatasetMeta(0);
+    if (!ds || !meta || !Array.isArray(ds.data) || !Array.isArray(meta.data)) return;
+    const ctx = chart.ctx;
+    for (let i = 0; i < ds.data.length; i++) {
+      const point = ds.data[i];
+      const elem = meta.data[i];
+      const token = point?.token || point?.parsed?.token;
+      if (!token) continue;
+      if (classifyTokenForDot(token) !== 'green') continue;
+      const url = (token.image_url || (token as any).open_graph_image_url || (token as any).header_image_url) as any;
+      if (!url) continue;
+      const img = getLogoForChart(url, chart);
+      if (!img) continue; // fallback: underlying circle remains visible
+      const size = 16; // logo size
+      const x = elem.x - size / 2;
+      const y = elem.y - size / 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(elem.x, elem.y, size/2 + 2, 0, Math.PI*2);
+      ctx.clip();
+      ctx.drawImage(img, x, y, size, size);
+      ctx.restore();
+    }
+  }
+};
+
+ChartJS.register(logoPointsPlugin as any);
+
 // Token interface based on the API response
 interface Token {
   id: number;
@@ -276,6 +400,12 @@ export const TokenGodView: React.FC = () => {
   const [xAxisScale, setXAxisScale] = useState<'linear' | 'logarithmic'>('linear');
   const [yAxisScale, setYAxisScale] = useState<'linear' | 'logarithmic'>('linear');
   const [showActiveBounds, setShowActiveBounds] = useState(true);
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const chartRef = useRef<any>(null);
+  const [showTrailM5, setShowTrailM5] = useState(true);
+  const [showTrailH1, setShowTrailH1] = useState(true);
+  const [trailSeriesMap, setTrailSeriesMap] = useState<Record<string, any>>({});
   
   // Distribution visualization state
   const [distributionExpanded, setDistributionExpanded] = useState<{
@@ -507,13 +637,65 @@ export const TokenGodView: React.FC = () => {
             if (cls === 'green') return 'rgba(16, 255, 0, 1)';
             return 'rgba(255, 193, 7, 1)';
           },
-          borderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
+          borderWidth: (ctx: any) => {
+            const token = ctx.raw?.token;
+            return classifyTokenForDot(token || {}) === 'green' ? 0 : 2;
+          },
+          pointRadius: (ctx: any) => {
+            const token = ctx.raw?.token;
+            return classifyTokenForDot(token || {}) === 'green' ? 6 : 4; // keep small base so something shows pre-load
+          },
+          pointHoverRadius: (ctx: any) => {
+            const token = ctx.raw?.token;
+            return classifyTokenForDot(token || {}) === 'green' ? 8 : 6;
+          },
+          // pointStyle left as default; logos drawn via plugin
         }
       ]
     };
   };
+
+  // Fetch mini-series for green tokens to draw trails
+  const fetchTrailsForVisibleGreens = useCallback(async () => {
+    if (!(showTrailM5 || showTrailH1)) return;
+    try {
+      const currentTokens = activeTab === 'candidates' ? candidateTokens : managedTokens;
+      const filteredTokens = activeTab === 'candidates' 
+        ? sortTokensClientSide(currentTokens, filters.useFilters, clientSortBy)
+        : sortTokensClientSide(currentTokens, managedFilters.useFilters, managedClientSortBy);
+
+      // Build list of green token addresses currently plotted
+      const plotted = filteredTokens
+        .map(t => ({ t, x: getMetricValue(t, chartXAxis), y: getMetricValue(t, chartYAxis) }))
+        .filter(p => p.x > 0 && p.y > 0);
+      const greens = plotted.filter(p => classifyTokenForDot(p.t) === 'green').map(p => p.t);
+      if (greens.length === 0) { setTrailSeriesMap({}); return; }
+      const addresses = Array.from(new Set(greens.map(g => g.address))).slice(0, 100);
+
+      const body = {
+        addresses,
+        windows: [ ...(showTrailM5 ? ['m5'] : []), ...(showTrailH1 ? ['h1'] : []) ],
+        metrics: ['price','market_cap']
+      };
+      const res = await ddApi.fetch('/admin/analytics/tokens/mini-series/bulk', {
+        method: 'POST',
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const map: Record<string, any> = {};
+      for (const item of data.tokens || []) {
+        map[item.address] = item;
+      }
+      setTrailSeriesMap(map);
+    } catch (e) {
+      console.error('Failed to fetch trails mini-series', e);
+    }
+  }, [showTrailM5, showTrailH1, activeTab, candidateTokens, managedTokens, filters, managedFilters, clientSortBy, managedClientSortBy, chartXAxis, chartYAxis]);
+
+  useEffect(() => {
+    fetchTrailsForVisibleGreens();
+  }, [fetchTrailsForVisibleGreens]);
 
   // Chart options
   const getChartOptions = () => {
@@ -568,6 +750,16 @@ export const TokenGodView: React.FC = () => {
           axisX: chartXAxis,
           axisY: chartYAxis,
         },
+        trailsPlugin: {
+          enabled: showTrailM5 || showTrailH1,
+          windows: { m5: showTrailM5, h1: showTrailH1 },
+          axisX: chartXAxis,
+          axisY: chartYAxis,
+          seriesMap: trailSeriesMap,
+        },
+        logoPoints: {
+          enabled: true
+        },
         legend: {
           display: true,
           labels: {
@@ -590,16 +782,12 @@ export const TokenGodView: React.FC = () => {
               return `${token.symbol} (${token.name})`;
             },
             label: (context: any) => {
-              const point = context;
-              const token = point.raw.token;
-              const xLabel = chartMetricOptions.find(m => m.value === chartXAxis)?.label || chartXAxis;
-              const yLabel = chartMetricOptions.find(m => m.value === chartYAxis)?.label || chartYAxis;
-              
+              const token = context.raw.token;
+              const mc = typeof token.market_cap === 'number' ? `$${formatNumber(token.market_cap)}` : 'N/A';
+              const vol = typeof token.volume_24h === 'number' ? `$${formatNumber(token.volume_24h)}` : 'N/A';
               return [
-                `${xLabel}: ${formatMetricLabel(point.parsed.x, chartXAxis)}`,
-                `${yLabel}: ${formatMetricLabel(point.parsed.y, chartYAxis)}`,
-                `Price: $${token.price?.toFixed(6) || 'N/A'}`,
-                `Status: ${token.is_active ? 'Active' : 'Candidate'}`
+                `MC: ${mc}`,
+                `Vol 24h: ${vol}`
               ];
             }
           }
@@ -1015,6 +1203,128 @@ export const TokenGodView: React.FC = () => {
     return `${sign}${num.toFixed(1)}%`;
   };
 
+  // Debug panel renderer
+  const DebugPanel: React.FC<{ token: Token | null; onClose: () => void }> = ({ token, onClose }) => {
+    if (!token) return null;
+    const pretty = (obj: any) => JSON.stringify(obj, null, 2);
+    const copy = async () => {
+      try { await navigator.clipboard.writeText(pretty(token)); } catch {}
+    };
+
+    // Compact money with no decimals: 1234 -> 1K, 1_250_000 -> 1M
+    const compactInt = (n: number) => {
+      if (n >= 1e9) return `${Math.round(n / 1e9)}B`;
+      if (n >= 1e6) return `${Math.round(n / 1e6)}M`;
+      if (n >= 1e3) return `${Math.round(n / 1e3)}K`;
+      return `${Math.round(n)}`;
+    };
+    const fmtMoney = (n?: number | null) => (typeof n === 'number' ? `$${compactInt(n)}` : 'N/A');
+    const fmtPct0 = (n?: number | null) => (typeof n === 'number' ? `${n >= 0 ? '+' : ''}${Math.round(n)}%` : 'N/A');
+
+    const pc = token.priceChanges || (token as any).price_changes || {};
+    const vols = (token as any).volumes || {};
+    const tx = (token as any).transactions || {};
+    const socials = token.socials || {} as any;
+    const websites = token.websites || [];
+
+    return (
+      <div className="fixed bottom-4 right-4 w-[420px] max-h-[70vh] overflow-auto bg-black/80 border border-brand-500/40 rounded-lg shadow-xl backdrop-blur p-3 z-50">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs text-brand-300 font-semibold">Debug: {token.symbol} ({token.address.slice(0,6)}…)</div>
+          <div className="flex items-center gap-2">
+            <button onClick={copy} className="text-xs px-2 py-0.5 bg-brand-500/20 text-brand-300 rounded">Copy JSON</button>
+            <button onClick={onClose} className="text-xs px-2 py-0.5 bg-dark-400/50 text-gray-300 rounded">Close</button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          {/* Overview */}
+          <div className="bg-dark-400/30 rounded p-2 col-span-2">
+            <div className="text-gray-400 mb-1">Overview</div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+              <div className="text-gray-500">Name</div><div className="text-gray-200 truncate">{token.name}</div>
+              <div className="text-gray-500">Symbol</div><div className="text-gray-200">{token.symbol}</div>
+              <div className="text-gray-500">Price</div><div className="text-gray-200">{token.price ? `$${token.price}` : 'N/A'}</div>
+              <div className="text-gray-500">Market Cap</div><div className="text-gray-200">{fmtMoney(token.market_cap)}</div>
+              <div className="text-gray-500">24h Volume</div><div className="text-gray-200">{fmtMoney(token.volume_24h)}</div>
+              <div className="text-gray-500">Liquidity</div><div className="text-gray-200">{fmtMoney(token.liquidity)}</div>
+              <div className="text-gray-500">FDV</div><div className="text-gray-200">{fmtMoney((token as any).fdv)}</div>
+              <div className="text-gray-500">24h Change</div><div className={`text-gray-200 ${token.change_24h && token.change_24h >= 0 ? 'text-green-300' : 'text-red-300'}`}>{fmtPct0(token.change_24h)}</div>
+              <div className="text-gray-500">First Seen</div><div className="text-gray-200">{(token as any).first_seen_on_jupiter_at || token.created_at ? formatTimeAgo((token as any).first_seen_on_jupiter_at || token.created_at as string) : 'N/A'}</div>
+              <div className="text-gray-500">Updated</div><div className="text-gray-200">{(token as any).price_updated_at ? formatTimeAgo((token as any).price_updated_at) : 'N/A'}</div>
+            </div>
+          </div>
+
+          {/* Price Changes */}
+          <div className="bg-dark-400/30 rounded p-2">
+            <div className="text-gray-400 mb-1">Price Changes</div>
+            <div className="grid grid-cols-4 gap-1">
+              {['m5','h1','h6','h24'].map((k) => (
+                <div key={`pc-${k}`} className="col-span-1 text-center">
+                  <div className="text-[10px] text-gray-500">{k}</div>
+                  <div className={`text-[11px] ${pc[k as keyof typeof pc] && (pc[k as keyof typeof pc] as number) >= 0 ? 'text-green-300' : 'text-red-300'}`}>{fmtPct0(pc[k as keyof typeof pc] as number | undefined)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Volumes */}
+          <div className="bg-dark-400/30 rounded p-2">
+            <div className="text-gray-400 mb-1">Volumes</div>
+            <div className="grid grid-cols-4 gap-1">
+              {['m5','h1','h6','h24'].map((k) => (
+                <div key={`vol-${k}`} className="col-span-1 text-center">
+                  <div className="text-[10px] text-gray-500">{k}</div>
+                  <div className="text-[11px] text-gray-200">{fmtMoney(vols[k as keyof typeof vols] as number | undefined)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Transactions */}
+          <div className="bg-dark-400/30 rounded p-2 col-span-2">
+            <div className="text-gray-400 mb-1">Transactions (buys/sells)</div>
+            <div className="grid grid-cols-4 gap-1">
+              {['m5','h1','h6','h24'].map((k) => {
+                const t: any = (tx as any)[k] || {};
+                return (
+                  <div key={`tx-${k}`} className="col-span-1 text-center">
+                    <div className="text-[10px] text-gray-500">{k}</div>
+                    <div className="text-[11px] text-gray-200">{(t.buys ?? '–')}/{(t.sells ?? '–')}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Socials & Links */}
+          <div className="bg-dark-400/30 rounded p-2 col-span-2">
+            <div className="text-gray-400 mb-1">Socials & Links</div>
+            <div className="flex flex-wrap gap-3 text-[11px]">
+              {socials.twitter && <a className="px-2 py-0.5 rounded border border-dark-300/50 bg-dark-300/30 text-blue-300 hover:underline" href={socials.twitter} target="_blank" rel="noreferrer">Twitter</a>}
+              {socials.telegram && <a className="px-2 py-0.5 rounded border border-dark-300/50 bg-dark-300/30 text-sky-300 hover:underline" href={socials.telegram} target="_blank" rel="noreferrer">Telegram</a>}
+              {socials.discord && <a className="px-2 py-0.5 rounded border border-dark-300/50 bg-dark-300/30 text-indigo-300 hover:underline" href={socials.discord} target="_blank" rel="noreferrer">Discord</a>}
+              {socials.website && <a className="px-2 py-0.5 rounded border border-dark-300/50 bg-dark-300/30 text-gray-300 hover:underline" href={socials.website} target="_blank" rel="noreferrer">Website</a>}
+              {(!socials.twitter && !socials.telegram && !socials.discord && !socials.website && websites.length === 0) && (
+                <span className="text-gray-500">No socials/links</span>
+              )}
+              {websites.map((w, i) => (
+                <a key={`ws-${i}`} className="px-2 py-0.5 rounded border border-dark-300/50 bg-dark-300/30 text-gray-300 hover:underline" href={w.url} target="_blank" rel="noreferrer">{w.label || 'Website'}</a>
+              ))}
+            </div>
+          </div>
+
+          {/* Keys present (compact) */}
+          <div className="bg-dark-400/30 rounded p-2 col-span-2">
+            <div className="text-gray-400 mb-1">All Keys Present</div>
+            <div className="font-mono text-[10px] text-gray-500 whitespace-pre-wrap break-words">
+              {Object.keys(token).sort().join(', ')}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Helper function to format time ago
   const formatTimeAgo = (dateString: string): string => {
     const now = new Date();
@@ -1071,7 +1381,10 @@ export const TokenGodView: React.FC = () => {
         layout
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative bg-dark-300/50 border border-dark-300/50 hover:border-dark-300/70 rounded-lg p-3 transition-all duration-300 overflow-hidden"
+        onClick={() => { setSelectedToken(token); setShowDebugPanel(true); }}
+        className={`relative bg-dark-300/50 border rounded-lg p-3 transition-all duration-300 overflow-hidden cursor-pointer ${
+          selectedToken?.address === token.address ? 'border-brand-500/60' : 'border-dark-300/50 hover:border-dark-300/70'
+        }`}
       >
         {/* Header image background */}
         {token.header_image_url && (
@@ -1688,6 +2001,17 @@ export const TokenGodView: React.FC = () => {
                 />
                 Green cluster bounds
               </label>
+            <div className="flex items-center gap-2 text-xs text-gray-400 ml-4">
+              <span>Trails:</span>
+              <label className="flex items-center gap-1">
+                <input type="checkbox" checked={showTrailM5} onChange={(e) => setShowTrailM5(e.target.checked)} />
+                5m
+              </label>
+              <label className="flex items-center gap-1">
+                <input type="checkbox" checked={showTrailH1} onChange={(e) => setShowTrailH1(e.target.checked)} />
+                1h
+              </label>
+            </div>
                   <div className="text-xs text-gray-400 ml-auto">
                     {activeTab === 'candidates' ? candidateTokens.length : managedTokens.length} tokens plotted
                   </div>
@@ -1697,7 +2021,32 @@ export const TokenGodView: React.FC = () => {
                 <div className="h-[600px]">
                   {((activeTab === 'candidates' && candidateTokens.length > 0) || 
                     (activeTab === 'managed' && managedTokens.length > 0)) ? (
-                    <Scatter data={getChartData()} options={getChartOptions() as any} />
+                    <Scatter 
+                      ref={chartRef}
+                      data={getChartData()} 
+                      options={getChartOptions() as any}
+                      onClick={(event) => {
+                        const chart = chartRef.current;
+                        if (!chart) return;
+                        const e: any = (event as any).nativeEvent || event;
+                        const elements = chart.getElementsAtEventForMode(
+                          e,
+                          'nearest',
+                          { intersect: true },
+                          false
+                        );
+                        if (elements && elements.length > 0) {
+                          const idx = elements[0].index;
+                          const ds = chart.data?.datasets?.[0];
+                          const point = ds?.data?.[idx];
+                          const tok = point?.token || point?.parsed?.token;
+                          if (tok) {
+                            setSelectedToken(tok);
+                            setShowDebugPanel(true);
+                          }
+                        }
+                      }}
+                    />
                   ) : (
                     <div className="h-full flex items-center justify-center text-gray-400">
                       <div className="text-center">
@@ -1766,6 +2115,14 @@ export const TokenGodView: React.FC = () => {
             {isLoadingManaged ? '⏳' : '🔄'} Refresh
           </button>
         </div>
+      </div>
+
+      {/* Debug panel toggle */}
+      <div className="flex items-center justify-end -mt-2">
+        <label className="flex items-center gap-2 text-xs text-gray-400">
+          <input type="checkbox" checked={showDebugPanel} onChange={(e) => setShowDebugPanel(e.target.checked)} />
+          Show Debug Panel {selectedToken ? `(${selectedToken.symbol})` : '(select a token)'}
+        </label>
       </div>
 
       {/* Tokens grid */}
@@ -2297,7 +2654,32 @@ export const TokenGodView: React.FC = () => {
             <div className="h-[600px] bg-dark-400/20 rounded-lg p-4">
               {((activeTab === 'candidates' && candidateTokens.length > 0) || 
                 (activeTab === 'managed' && managedTokens.length > 0)) ? (
-                <Scatter data={getChartData()} options={getChartOptions() as any} />
+                <Scatter 
+                  ref={chartRef}
+                  data={getChartData()} 
+                  options={getChartOptions() as any}
+                  onClick={(event) => {
+                    const chart = chartRef.current;
+                    if (!chart) return;
+                    const e: any = (event as any).nativeEvent || event;
+                    const elements = chart.getElementsAtEventForMode(
+                      e,
+                      'nearest',
+                      { intersect: true },
+                      false
+                    );
+                    if (elements && elements.length > 0) {
+                      const idx = elements[0].index;
+                      const ds = chart.data?.datasets?.[0];
+                      const point = ds?.data?.[idx];
+                      const tok = point?.token || point?.parsed?.token;
+                      if (tok) {
+                        setSelectedToken(tok);
+                        setShowDebugPanel(true);
+                      }
+                    }
+                  }}
+                />
               ) : (
                 <div className="h-full flex items-center justify-center text-gray-400">
                   <div className="text-center">
@@ -2313,6 +2695,11 @@ export const TokenGodView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Debug Panel Instance */}
+      {showDebugPanel && (
+        <DebugPanel token={selectedToken} onClose={() => setShowDebugPanel(false)} />
+      )}
 
       {/* Distribution Analysis for Discovery Zone */}
       {percentileData.candidates && (
