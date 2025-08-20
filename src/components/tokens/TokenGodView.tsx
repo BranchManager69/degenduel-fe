@@ -27,6 +27,137 @@ ChartJS.register(
   Legend
 );
 
+// Unified dot classification used by both coloring and bounding box
+// Types kept broad here so this helper is available to the chart plugin as well.
+const classifyTokenForDot = (token: any): 'red' | 'amber' | 'green' => {
+  const volume = token?.volume_24h || 0;
+  const marketCap = token?.market_cap || 0;
+  if (volume < 100000 || marketCap < 100000) return 'red';
+  if (volume > 500000 && marketCap > 500000) return 'green';
+  return 'amber';
+};
+
+const activeBoundsPlugin = {
+  id: 'activeBounds',
+  afterDatasetsDraw(chart: any, _args: any, opts: any) {
+    if (!opts || !opts.enabled) return;
+    const ds = chart?.data?.datasets?.[0];
+    if (!ds || !Array.isArray(ds.data) || ds.data.length === 0) return;
+    const xScale = chart.scales?.x;
+    const yScale = chart.scales?.y;
+    const area = chart.chartArea;
+    if (!xScale || !yScale || !area) return;
+
+    // Collect green points with pixel positions, tokens, and axis data values
+    type GP = { px: number; py: number; token: any; xv: number; yv: number };
+    const greens: GP[] = [];
+    const xIsLog = xScale.type === 'logarithmic';
+    const yIsLog = yScale.type === 'logarithmic';
+
+    for (let i = 0; i < ds.data.length; i++) {
+      const p = ds.data[i];
+      const token = p?.token || p?.parsed?.token;
+      if (!token) continue;
+      const cls = classifyTokenForDot(token);
+      if (cls !== 'green') continue;
+      const xv = p.x ?? p?.parsed?.x;
+      const yv = p.y ?? p?.parsed?.y;
+      if (typeof xv !== 'number' || typeof yv !== 'number') continue;
+      if ((xIsLog && xv <= 0) || (yIsLog && yv <= 0)) continue;
+      const px = xScale.getPixelForValue(xv);
+      const py = yScale.getPixelForValue(yv);
+      if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
+      greens.push({ px, py, token, xv, yv });
+    }
+
+    if (greens.length === 0) return;
+
+    // Find extremes
+    let left = greens[0], right = greens[0], top = greens[0], bottom = greens[0];
+    for (const g of greens) {
+      if (g.px < left.px) left = g;
+      if (g.px > right.px) right = g;
+      if (g.py < top.py) top = g;      // smaller y is higher
+      if (g.py > bottom.py) bottom = g; // larger y is lower
+    }
+
+    // Rectangle bounds in pixels
+    let minX = left.px, maxX = right.px, minY = top.py, maxY = bottom.py;
+    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+    const pad = 2;
+    minX = clamp(minX, area.left + pad, area.right - pad);
+    maxX = clamp(maxX, area.left + pad, area.right - pad);
+    minY = clamp(minY, area.top + pad, area.bottom - pad);
+    maxY = clamp(maxY, area.top + pad, area.bottom - pad);
+
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.strokeStyle = opts.color || 'rgba(34, 197, 94, 0.9)';
+    ctx.lineWidth = opts.lineWidth || 1;
+    ctx.strokeRect(minX - pad, minY - pad, (maxX - minX) + pad * 2, (maxY - minY) + pad * 2);
+
+    // Labels: on edges (deduplicated). X-edges show X extreme, Y-edges show Y extreme.
+    const fmt = (n: number) => {
+      if (!n || !isFinite(n)) return '0';
+      if (n >= 1e9) return (n/1e9).toFixed(1)+'B';
+      if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+      if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+      return n.toFixed(0);
+    };
+    // Compute axis extremes directly from green points' data values
+    const axisX = opts.axisX;
+    const axisY = opts.axisY;
+    const xMinVal = Math.min(...greens.map(g => g.xv));
+    const xMaxVal = Math.max(...greens.map(g => g.xv));
+    const yMinVal = Math.min(...greens.map(g => g.yv));
+    const yMaxVal = Math.max(...greens.map(g => g.yv));
+    // Map labels (prefer MC/Vol naming when applicable)
+    const xLabel = axisX === 'volume_24h' ? 'Vol $' : axisX === 'market_cap' ? 'MC $' : `${axisX}: `;
+    const yLabel = axisY === 'volume_24h' ? 'Vol $' : axisY === 'market_cap' ? 'MC $' : `${axisY}: `;
+    ctx.fillStyle = opts.color || 'rgba(34, 197, 94, 0.9)';
+    ctx.font = '8px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+
+    // Top edge label (Y max)
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`${yLabel}${fmt(yMaxVal)}`, (minX + maxX) / 2, minY - 3);
+    // Bottom edge label (Y min)
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`${yLabel}${fmt(yMinVal)}`, (minX + maxX) / 2, maxY + 3);
+    // Left edge label (X min) - vertical
+    ctx.save();
+    ctx.translate(minX - 3, (minY + maxY) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`${xLabel}${fmt(xMinVal)}`, 0, 0);
+    ctx.restore();
+    // Right edge label (X max) - vertical
+    ctx.save();
+    ctx.translate(maxX + 3, (minY + maxY) / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`${xLabel}${fmt(xMaxVal)}`, 0, 0);
+    ctx.restore();
+
+    // Per-green-dot symbol label above each green point
+    ctx.fillStyle = 'rgba(229, 231, 235, 0.9)'; // light gray for visibility
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    for (const g of greens) {
+      const sym = g.token?.symbol || '';
+      if (!sym) continue;
+      ctx.fillText(String(sym), g.px, g.py - 4);
+    }
+
+    ctx.restore();
+  }
+};
+
+ChartJS.register(activeBoundsPlugin as any);
+
 // Token interface based on the API response
 interface Token {
   id: number;
@@ -47,6 +178,8 @@ interface Token {
   change_24h?: number;
   market_cap?: number;
   volume_24h?: number;
+  // Real liquidity from API (total pool liquidity across relevant pools)
+  liquidity?: number;
   priceChanges?: {
     h1?: number;
     h6?: number;
@@ -113,7 +246,7 @@ export const TokenGodView: React.FC = () => {
       useFilters: true
     };
   });
-  const [managedFiltersExpanded, setManagedFiltersExpanded] = useState(false);
+  const [managedFiltersExpanded, setManagedFiltersExpanded] = useState(true);
 
   // Candidates filter states
   const [filters, setFilters] = useState(() => {
@@ -130,18 +263,19 @@ export const TokenGodView: React.FC = () => {
       useFilters: true
     };
   });
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
   
   // Client-side sorting for filtered results
   const [clientSortBy, setClientSortBy] = useState<'volume' | 'market_cap' | 'newest'>('volume');
   const [managedClientSortBy, setManagedClientSortBy] = useState<'volume' | 'market_cap' | 'newest'>('volume');
   
   // Chart state
-  const [chartXAxis, setChartXAxis] = useState<'market_cap' | 'volume_24h' | 'liquidity' | 'recency'>('volume_24h');
-  const [chartYAxis, setChartYAxis] = useState<'market_cap' | 'volume_24h' | 'liquidity' | 'recency'>('market_cap');
+  const [chartXAxis, setChartXAxis] = useState<'market_cap' | 'volume_24h' | 'liquidity' | 'recency'>('market_cap');
+  const [chartYAxis, setChartYAxis] = useState<'market_cap' | 'volume_24h' | 'liquidity' | 'recency'>('volume_24h');
   const [chartExpanded, setChartExpanded] = useState(true);
   const [xAxisScale, setXAxisScale] = useState<'linear' | 'logarithmic'>('linear');
   const [yAxisScale, setYAxisScale] = useState<'linear' | 'logarithmic'>('linear');
+  const [showActiveBounds, setShowActiveBounds] = useState(true);
   
   // Distribution visualization state
   const [distributionExpanded, setDistributionExpanded] = useState<{
@@ -302,6 +436,8 @@ export const TokenGodView: React.FC = () => {
     { value: 'recency', label: 'Recency (Hours)' }
   ] as const;
 
+  // classification moved to module scope for plugin access
+
   // Helper function to get metric value from token
   const getMetricValue = (token: Token, metric: 'market_cap' | 'volume_24h' | 'liquidity' | 'recency'): number => {
     switch (metric) {
@@ -310,8 +446,8 @@ export const TokenGodView: React.FC = () => {
       case 'volume_24h':
         return token.volume_24h || 0;
       case 'liquidity':
-        // For now, use volume as proxy for liquidity - this could be enhanced with actual liquidity data
-        return (token.volume_24h || 0) * 0.1;
+        // Use real liquidity from API only
+        return token.liquidity || 0;
       case 'recency':
         if (!token.created_at) return 0;
         const hoursSinceCreation = Math.floor((Date.now() - new Date(token.created_at).getTime()) / (1000 * 60 * 60));
@@ -362,19 +498,18 @@ export const TokenGodView: React.FC = () => {
           backgroundColor: (context: any) => {
             const token = context.parsed?.token || chartData[context.dataIndex]?.token;
             if (!token) return 'rgba(99, 102, 241, 0.6)';
-            
-            // Color based on token status
-            if (token.is_active) return 'rgba(34, 197, 94, 0.7)'; // Green for active
-            if (token.manually_activated) return 'rgba(168, 85, 247, 0.7)'; // Purple for manually activated
-            return 'rgba(99, 102, 241, 0.6)'; // Blue for candidates
+            const cls = classifyTokenForDot(token);
+            if (cls === 'red') return 'rgba(239, 68, 68, 0.8)';
+            if (cls === 'green') return 'rgba(16, 255, 0, 0.8)';
+            return 'rgba(255, 193, 7, 0.8)';
           },
           borderColor: (context: any) => {
             const token = context.parsed?.token || chartData[context.dataIndex]?.token;
             if (!token) return 'rgba(99, 102, 241, 1)';
-            
-            if (token.is_active) return 'rgba(34, 197, 94, 1)';
-            if (token.manually_activated) return 'rgba(168, 85, 247, 1)';
-            return 'rgba(99, 102, 241, 1)';
+            const cls = classifyTokenForDot(token);
+            if (cls === 'red') return 'rgba(239, 68, 68, 1)';
+            if (cls === 'green') return 'rgba(16, 255, 0, 1)';
+            return 'rgba(255, 193, 7, 1)';
           },
           borderWidth: 2,
           pointRadius: 4,
@@ -430,6 +565,13 @@ export const TokenGodView: React.FC = () => {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
+        activeBounds: {
+          enabled: showActiveBounds,
+          color: 'rgba(34, 197, 94, 0.9)',
+          lineWidth: 1,
+          axisX: chartXAxis,
+          axisY: chartYAxis,
+        },
         legend: {
           display: true,
           labels: {
@@ -576,12 +718,14 @@ export const TokenGodView: React.FC = () => {
     if (!percentiles || !percentiles[metric]) return null;
 
     const metricPercentiles = percentiles[metric];
-    
-    // Create 100 bars representing each percentile
     const labels = Array.from({ length: 100 }, (_, i) => `${i + 1}%`);
     const values = Array.from({ length: 100 }, (_, i) => {
-      const value = metricPercentiles[i];
-      return value || 0;
+      const idx1 = String(i + 1);
+      const idx0 = String(i);
+      let v: any = undefined;
+      if (Array.isArray(metricPercentiles)) v = metricPercentiles[i];
+      else if (metricPercentiles && typeof metricPercentiles === 'object') v = metricPercentiles[idx1] ?? metricPercentiles[i] ?? metricPercentiles[idx0];
+      return typeof v === 'number' ? v : 0;
     });
 
     // Use actual percentile values directly
@@ -672,7 +816,7 @@ export const TokenGodView: React.FC = () => {
     const metricLabel = chartMetricOptions.find(m => m.value === metric)?.label || metric;
     const chartData = getDistributionChartData(metric, dataSource);
     const toggleKey = `${metric}_${dataSource}`;
-    const isExpanded = distributionExpanded[toggleKey] || false;
+    const isExpanded = distributionExpanded[toggleKey] !== false; // Default to true (expanded)
     
     if (!chartData) return null;
 
@@ -684,15 +828,15 @@ export const TokenGodView: React.FC = () => {
     };
 
     return (
-      <div className="bg-gradient-to-r from-dark-300/20 to-dark-200/20 rounded-lg border border-dark-300/30 overflow-hidden mb-3">
+      <div className="bg-gradient-to-r from-dark-300/20 to-dark-200/20 rounded-lg border border-dark-300/30 overflow-hidden">
         <button
           onClick={toggleDistribution}
-          className="w-full p-3 flex items-center justify-between hover:bg-dark-300/10 transition-colors"
+          className="w-full p-2 flex items-center justify-between hover:bg-dark-300/10 transition-colors"
         >
-          <div className="flex items-center gap-3">
-            <h4 className="text-sm font-semibold text-white">{metricLabel} Distribution</h4>
-            <div className="px-2 py-1 rounded text-xs font-medium bg-purple-500/20 text-purple-300">
-              100 Bars
+          <div className="flex items-center gap-2">
+            <h4 className="text-xs font-semibold text-white">{metricLabel}</h4>
+            <div className="px-1.5 py-0.5 rounded text-xs font-medium bg-purple-500/20 text-purple-300">
+              Dist
             </div>
           </div>
           <div className={`text-gray-400 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
@@ -701,12 +845,9 @@ export const TokenGodView: React.FC = () => {
         </button>
         
         {isExpanded && (
-          <div className="p-4 border-t border-dark-300/30">
-            <div className="h-64 bg-dark-400/20 rounded-lg p-3">
+          <div className="p-3 border-t border-dark-300/30">
+            <div className="h-48">
               <Bar data={chartData} options={getDistributionChartOptions(metric) as any} />
-            </div>
-            <div className="text-xs text-gray-400 mt-2">
-              Bell curve showing how {metricLabel.toLowerCase()} values are distributed across all {dataSource === 'candidates' ? 'candidate' : 'active'} tokens
             </div>
           </div>
         )}
@@ -1016,6 +1157,10 @@ export const TokenGodView: React.FC = () => {
                 <span className="text-gray-500">Vol: </span>
                 <span className="text-gray-300">${formatNumber(token.volume_24h)}</span>
               </div>
+              <div>
+                <span className="text-gray-500">Liq: </span>
+                <span className="text-gray-300">${formatNumber(token.liquidity || 0)}</span>
+              </div>
               {token.created_at && (
                 <div>
                   <span className="text-gray-500">Seen: </span>
@@ -1111,7 +1256,7 @@ export const TokenGodView: React.FC = () => {
           onClick={() => setActiveTab(tab.id as any)}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
             activeTab === tab.id
-              ? 'bg-gradient-to-r from-brand-500/20 to-cyber-500/20 border border-brand-500/50 text-brand-300'
+              ? 'bg-gradient-to-r from-brand-500/20 to-cyber-500/20 text-brand-300'
               : 'bg-dark-300/30 border border-dark-300/30 text-gray-400 hover:border-brand-500/30'
           }`}
         >
@@ -1143,6 +1288,449 @@ export const TokenGodView: React.FC = () => {
             }
           </p>
         </div>
+      </div>
+
+      {/* Side-by-side layout: Filters on left, Chart on right */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Smart Filters - Left Side */}
+        <div className="lg:col-span-1">
+          <div className="bg-gradient-to-r from-dark-300/20 to-dark-200/20 rounded-lg border border-dark-300/30 overflow-hidden h-fit">
+            <button
+              onClick={() => setManagedFiltersExpanded(!managedFiltersExpanded)}
+              className="w-full p-4 flex items-center justify-between hover:bg-dark-300/10 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <h4 className="text-sm font-semibold text-white">Smart Filters</h4>
+                <div className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                  managedFilters.useFilters 
+                    ? 'bg-brand-500/20 text-brand-300' 
+                    : 'bg-dark-400/50 text-gray-400'
+                }`}>
+                  {managedFilters.useFilters ? 'Active' : 'Disabled'}
+                </div>
+              </div>
+              <div className={`text-gray-400 transform transition-transform ${managedFiltersExpanded ? 'rotate-180' : ''}`}>
+                ↓
+              </div>
+            </button>
+            
+            {managedFiltersExpanded && (
+              <div className="p-4 border-t border-dark-300/30">
+                {/* Filter content goes here - this should be the filter controls not chart */}
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs text-gray-400">Configure filter parameters</span>
+                  <button
+                    onClick={() => {
+                      setManagedFilters(prev => ({ ...prev, useFilters: !prev.useFilters }));
+                      setManagedPage(0);
+                    }}
+                    className={`px-3 py-1 rounded text-sm font-medium transition-all ${
+                      managedFilters.useFilters 
+                        ? 'bg-brand-500/20 text-brand-300' 
+                        : 'bg-dark-400/50 text-gray-400 hover:bg-dark-400/70'
+                    }`}
+                  >
+                    {managedFilters.useFilters ? 'Disable Filtering' : 'Enable Filtering'}
+                  </button>
+                </div>
+                
+                <div className="space-y-3 mb-4">
+                  {/* Market Cap Range */}
+                  <div className="space-y-2">
+                    <label className="block text-xs text-gray-400">Market Cap Range ($)</label>
+                    <div className="px-3 py-2 bg-dark-400/30 rounded">
+                      <Slider.Root
+                        value={[
+                          toLogScale(parseInt(getNumericValue(managedFilters.minMarketCap)), sliderBounds.managed.marketCap.min, sliderBounds.managed.marketCap.max),
+                          toLogScale(parseInt(getNumericValue(managedFilters.maxMarketCap)), sliderBounds.managed.marketCap.min, sliderBounds.managed.marketCap.max)
+                        ]}
+                        onValueChange={(values) => {
+                          const [minVal, maxVal] = values;
+                          const minMarketCap = fromLogScale(minVal, sliderBounds.managed.marketCap.min, sliderBounds.managed.marketCap.max);
+                          const maxMarketCap = fromLogScale(maxVal, sliderBounds.managed.marketCap.min, sliderBounds.managed.marketCap.max);
+                          setManagedFilters(prev => ({
+                            ...prev,
+                            minMarketCap: formatNumberInput(minMarketCap.toString()),
+                            maxMarketCap: formatNumberInput(maxMarketCap.toString())
+                          }));
+                        }}
+                        min={0}
+                        max={100}
+                        step={1}
+                        className="relative flex items-center select-none touch-none w-full h-5"
+                      >
+                        <Slider.Track className="bg-dark-500/50 relative grow rounded-full h-1">
+                          <Slider.Range className="absolute bg-gradient-to-r from-brand-400 to-cyber-400 rounded-full h-full" />
+                        </Slider.Track>
+                        <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
+                        <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
+                      </Slider.Root>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Min Market Cap ($)</label>
+                        <input
+                          type="text"
+                          value={managedFilters.minMarketCap}
+                          onChange={(e) => setManagedFilters(prev => ({ ...prev, minMarketCap: formatNumberInput(e.target.value) }))}
+                          className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
+                            managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
+                          } focus:ring-1 focus:ring-brand-500/70`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Max Market Cap ($)</label>
+                        <input
+                          type="text"
+                          value={managedFilters.maxMarketCap}
+                          onChange={(e) => setManagedFilters(prev => ({ ...prev, maxMarketCap: formatNumberInput(e.target.value) }))}
+                          className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
+                            managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
+                          } focus:ring-1 focus:ring-brand-500/70`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Volume Range */}
+                  <div className="space-y-2">
+                    <label className="block text-xs text-gray-400">Volume Range ($)</label>
+                    <div className="px-3 py-2 bg-dark-400/30 rounded">
+                      <Slider.Root
+                        value={[
+                          toLogScale(parseInt(getNumericValue(managedFilters.minVolume)), sliderBounds.managed.volume.min, sliderBounds.managed.volume.max),
+                          toLogScale(parseInt(getNumericValue(managedFilters.maxVolume)), sliderBounds.managed.volume.min, sliderBounds.managed.volume.max)
+                        ]}
+                        onValueChange={(values) => {
+                          const [minVal, maxVal] = values;
+                          const minVolume = fromLogScale(minVal, sliderBounds.managed.volume.min, sliderBounds.managed.volume.max);
+                          const maxVolume = fromLogScale(maxVal, sliderBounds.managed.volume.min, sliderBounds.managed.volume.max);
+                          setManagedFilters(prev => ({
+                            ...prev,
+                            minVolume: formatNumberInput(minVolume.toString()),
+                            maxVolume: formatNumberInput(maxVolume.toString())
+                          }));
+                        }}
+                        min={0}
+                        max={100}
+                        step={1}
+                        className="relative flex items-center select-none touch-none w-full h-5"
+                      >
+                        <Slider.Track className="bg-dark-500/50 relative grow rounded-full h-1">
+                          <Slider.Range className="absolute bg-gradient-to-r from-brand-400 to-cyber-400 rounded-full h-full" />
+                        </Slider.Track>
+                        <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
+                        <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
+                      </Slider.Root>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Min Volume ($)</label>
+                        <input
+                          type="text"
+                          value={managedFilters.minVolume}
+                          onChange={(e) => setManagedFilters(prev => ({ ...prev, minVolume: formatNumberInput(e.target.value) }))}
+                          className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
+                            managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
+                          } focus:ring-1 focus:ring-brand-500/70`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Max Volume ($)</label>
+                        <input
+                          type="text"
+                          value={managedFilters.maxVolume}
+                          onChange={(e) => setManagedFilters(prev => ({ ...prev, maxVolume: formatNumberInput(e.target.value) }))}
+                          className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
+                            managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
+                          } focus:ring-1 focus:ring-brand-500/70`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Liquidity Range */}
+                  <div className="space-y-2">
+                    <label className="block text-xs text-gray-400">Liquidity Range ($)</label>
+                    <div className="px-3 py-2 bg-dark-400/30 rounded">
+                      <Slider.Root
+                        value={[
+                          toLogScale(parseInt(getNumericValue(managedFilters.minLiquidity)), sliderBounds.managed.liquidity.min, sliderBounds.managed.liquidity.max),
+                          toLogScale(parseInt(getNumericValue(managedFilters.maxLiquidity)), sliderBounds.managed.liquidity.min, sliderBounds.managed.liquidity.max)
+                        ]}
+                        onValueChange={(values) => {
+                          const [minVal, maxVal] = values;
+                          const currentBounds = sliderBounds.managed.liquidity;
+                          const minLiquidity = fromLogScale(minVal, currentBounds.min, currentBounds.max);
+                          const maxLiquidity = fromLogScale(maxVal, currentBounds.min, currentBounds.max);
+                          setManagedFilters(prev => ({
+                            ...prev,
+                            minLiquidity: formatNumberInput(minLiquidity.toString()),
+                            maxLiquidity: formatNumberInput(maxLiquidity.toString())
+                          }));
+                        }}
+                        min={0}
+                        max={100}
+                        step={1}
+                        className="relative flex items-center select-none touch-none w-full h-5"
+                      >
+                        <Slider.Track className="bg-dark-500/50 relative grow rounded-full h-1">
+                          <Slider.Range className="absolute bg-gradient-to-r from-brand-400 to-cyber-400 rounded-full h-full" />
+                        </Slider.Track>
+                        <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
+                        <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
+                      </Slider.Root>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Min Liquidity ($)</label>
+                        <input
+                          type="text"
+                          value={managedFilters.minLiquidity}
+                          onChange={(e) => setManagedFilters(prev => ({ ...prev, minLiquidity: formatNumberInput(e.target.value) }))}
+                          className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
+                            managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
+                          } focus:ring-1 focus:ring-brand-500/70`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Max Liquidity ($)</label>
+                        <input
+                          type="text"
+                          value={managedFilters.maxLiquidity}
+                          onChange={(e) => setManagedFilters(prev => ({ ...prev, maxLiquidity: formatNumberInput(e.target.value) }))}
+                          className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
+                            managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
+                          } focus:ring-1 focus:ring-brand-500/70`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Date Range */}
+                  <div className="space-y-2">
+                    <label className="block text-xs text-gray-400">Date Range (First Seen)</label>
+                    <div className="px-3 py-2 bg-dark-400/30 rounded">
+                      <Slider.Root
+                        value={[
+                          Math.max(0, (new Date(managedFilters.dateFrom).getTime() - new Date(sliderBounds.managed.dates.min).getTime()) / (new Date(sliderBounds.managed.dates.max).getTime() - new Date(sliderBounds.managed.dates.min).getTime()) * 100),
+                          Math.min(100, (new Date(managedFilters.dateTo).getTime() - new Date(sliderBounds.managed.dates.min).getTime()) / (new Date(sliderBounds.managed.dates.max).getTime() - new Date(sliderBounds.managed.dates.min).getTime()) * 100)
+                        ]}
+                        onValueChange={(values) => {
+                          const [minVal, maxVal] = values;
+                          const minTime = new Date(sliderBounds.managed.dates.min).getTime();
+                          const maxTime = new Date(sliderBounds.managed.dates.max).getTime();
+                          const timeRange = maxTime - minTime;
+                          
+                          const fromDate = new Date(minTime + (minVal / 100) * timeRange).toISOString().split('T')[0];
+                          const toDate = new Date(minTime + (maxVal / 100) * timeRange).toISOString().split('T')[0];
+                          
+                          setManagedFilters(prev => ({
+                            ...prev,
+                            dateFrom: fromDate,
+                            dateTo: toDate
+                          }));
+                        }}
+                        min={0}
+                        max={100}
+                        step={1}
+                        className="relative flex items-center select-none touch-none w-full h-5"
+                      >
+                        <Slider.Track className="bg-dark-500/50 relative grow rounded-full h-1">
+                          <Slider.Range className="absolute bg-gradient-to-r from-brand-400 to-cyber-400 rounded-full h-full" />
+                        </Slider.Track>
+                        <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
+                        <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
+                      </Slider.Root>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">From Date (First Seen)</label>
+                        <input
+                          type="date"
+                          value={managedFilters.dateFrom}
+                          onChange={(e) => setManagedFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                          className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
+                            managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
+                          } focus:ring-1 focus:ring-brand-500/70`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">To Date (First Seen)</label>
+                        <input
+                          type="date"
+                          value={managedFilters.dateTo}
+                          onChange={(e) => setManagedFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                          className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
+                            managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
+                          } focus:ring-1 focus:ring-brand-500/70`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      fetchManagedTokens();
+                    }}
+                    disabled={!managedFilters.useFilters}
+                    className={`px-4 py-2 rounded text-sm font-medium transition-all ${
+                      managedFilters.useFilters
+                        ? 'bg-brand-500/20 text-brand-300 hover:bg-brand-500/30'
+                        : 'bg-gray-500/20 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    Apply Filters
+                  </button>
+                  <button
+                    onClick={() => {
+                      const defaultDates = getDefaultDates();
+                      setManagedFilters({
+                        minMarketCap: '50,000',
+                        maxMarketCap: '100,000,000',
+                        minVolume: '100,000',
+                        maxVolume: '1,000,000,000',
+                        minLiquidity: '10,000',
+                        maxLiquidity: '10,000,000',
+                        dateFrom: defaultDates.fromDate,
+                        dateTo: defaultDates.toDate,
+                        useFilters: true
+                      });
+                      setManagedPage(0);
+                    }}
+                    className="px-4 py-2 bg-gray-500/20 text-gray-300 rounded text-sm font-medium hover:bg-gray-500/30 transition-colors"
+                  >
+                    Reset to Defaults
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Chart - Right Side */}
+        <div className="lg:col-span-2">
+          <div className="bg-gradient-to-r from-dark-300/20 to-dark-200/20 rounded-lg border border-dark-300/30 overflow-hidden">
+            <button
+              onClick={() => setChartExpanded(!chartExpanded)}
+              className="w-full p-4 flex items-center justify-between hover:bg-dark-300/10 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <h4 className="text-sm font-semibold text-white">Token Analytics Chart</h4>
+                <div className="px-2 py-1 rounded text-xs font-medium bg-brand-500/20 text-brand-300">
+                  Interactive
+                </div>
+              </div>
+              <div className={`text-gray-400 transform transition-transform ${chartExpanded ? 'rotate-180' : ''}`}>
+                ↓
+              </div>
+            </button>
+            
+            {chartExpanded && (
+              <div className="p-4 border-t border-dark-300/30">
+                {/* Chart Controls */}
+                <div className="flex flex-wrap items-center gap-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-400">X-Axis:</label>
+                    <select
+                      value={chartXAxis}
+                      onChange={(e) => setChartXAxis(e.target.value as any)}
+                      className="px-2 py-1 bg-dark-400/50 border-0 rounded text-sm text-white"
+                    >
+                      {chartMetricOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-400">Y-Axis:</label>
+                    <select
+                      value={chartYAxis}
+                      onChange={(e) => setChartYAxis(e.target.value as any)}
+                      className="px-2 py-1 bg-dark-400/50 border-0 rounded text-sm text-white"
+                    >
+                      {chartMetricOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-400">X-Scale:</label>
+                    <select
+                      value={xAxisScale}
+                      onChange={(e) => setXAxisScale(e.target.value as any)}
+                      className="px-2 py-1 bg-dark-400/50 border-0 rounded text-sm text-white"
+                      disabled={chartXAxis === 'recency'}
+                    >
+                      <option value="linear">Linear</option>
+                      <option value="logarithmic">Log</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-400">Y-Scale:</label>
+                    <select
+                      value={yAxisScale}
+                      onChange={(e) => setYAxisScale(e.target.value as any)}
+                      className="px-2 py-1 bg-dark-400/50 border-0 rounded text-sm text-white"
+                      disabled={chartYAxis === 'recency'}
+                    >
+                      <option value="linear">Linear</option>
+                      <option value="logarithmic">Log</option>
+                    </select>
+                  </div>
+              <label className="flex items-center gap-2 text-xs text-gray-400 ml-2">
+                <input
+                  type="checkbox"
+                  checked={showActiveBounds}
+                  onChange={(e) => setShowActiveBounds(e.target.checked)}
+                />
+                Green cluster bounds
+              </label>
+                  <div className="text-xs text-gray-400 ml-auto">
+                    {activeTab === 'candidates' ? candidateTokens.length : managedTokens.length} tokens plotted
+                  </div>
+                </div>
+                
+                {/* Chart */}
+                <div className="h-[600px]">
+                  {((activeTab === 'candidates' && candidateTokens.length > 0) || 
+                    (activeTab === 'managed' && managedTokens.length > 0)) ? (
+                    <Scatter data={getChartData()} options={getChartOptions() as any} />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-gray-400">
+                      <div className="text-center">
+                        <div className="text-4xl mb-2">📊</div>
+                        <p>No data to display</p>
+                        <p className="text-xs text-gray-500">Load tokens to see the chart</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Distribution Analysis for Active Tokens */}
+      {percentileData.managed && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          {renderMetricDistribution('market_cap', 'managed')}
+          {renderMetricDistribution('volume_24h', 'managed')}
+          {renderMetricDistribution('liquidity', 'managed')}
+          {renderMetricDistribution('recency', 'managed')}
+        </div>
+      )}
+
+      {/* DUPLICATE FILTER SECTION REMOVED - Filters are now in the side-by-side layout above */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-gray-400">Active Tokens</h3>
         <div className="flex items-center gap-2">
           {managedFilters.useFilters && (
             <select
@@ -1182,448 +1770,6 @@ export const TokenGodView: React.FC = () => {
             {isLoadingManaged ? '⏳' : '🔄'} Refresh
           </button>
         </div>
-      </div>
-
-      {/* Token Analytics Chart */}
-      <div className="bg-gradient-to-r from-dark-300/20 to-dark-200/20 rounded-lg border border-dark-300/30 overflow-hidden mb-4">
-        <button
-          onClick={() => setChartExpanded(!chartExpanded)}
-          className="w-full p-4 flex items-center justify-between hover:bg-dark-300/10 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <h4 className="text-sm font-semibold text-white">Token Analytics Chart</h4>
-            <div className="px-2 py-1 rounded text-xs font-medium bg-brand-500/20 text-brand-300">
-              Interactive
-            </div>
-          </div>
-          <div className={`text-gray-400 transform transition-transform ${chartExpanded ? 'rotate-180' : ''}`}>
-            ↓
-          </div>
-        </button>
-        
-        {chartExpanded && (
-          <div className="p-4 border-t border-dark-300/30">
-            {/* Chart Controls */}
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-gray-400">X-Axis:</label>
-                <select
-                  value={chartXAxis}
-                  onChange={(e) => setChartXAxis(e.target.value as any)}
-                  className="px-2 py-1 bg-dark-400/50 border-0 rounded text-sm text-white"
-                >
-                  {chartMetricOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-gray-400">Y-Axis:</label>
-                <select
-                  value={chartYAxis}
-                  onChange={(e) => setChartYAxis(e.target.value as any)}
-                  className="px-2 py-1 bg-dark-400/50 border-0 rounded text-sm text-white"
-                >
-                  {chartMetricOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-gray-400">X-Scale:</label>
-                <select
-                  value={xAxisScale}
-                  onChange={(e) => setXAxisScale(e.target.value as any)}
-                  className="px-2 py-1 bg-dark-400/50 border-0 rounded text-sm text-white"
-                  disabled={chartXAxis === 'recency'}
-                >
-                  <option value="linear">Linear</option>
-                  <option value="logarithmic">Log</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-gray-400">Y-Scale:</label>
-                <select
-                  value={yAxisScale}
-                  onChange={(e) => setYAxisScale(e.target.value as any)}
-                  className="px-2 py-1 bg-dark-400/50 border-0 rounded text-sm text-white"
-                  disabled={chartYAxis === 'recency'}
-                >
-                  <option value="linear">Linear</option>
-                  <option value="logarithmic">Log</option>
-                </select>
-              </div>
-              <div className="text-xs text-gray-400 ml-auto">
-                {activeTab === 'candidates' ? candidateTokens.length : managedTokens.length} tokens plotted
-              </div>
-            </div>
-            
-            {/* Chart */}
-            <div className="h-[600px] bg-dark-400/20 rounded-lg p-4">
-              {((activeTab === 'candidates' && candidateTokens.length > 0) || 
-                (activeTab === 'managed' && managedTokens.length > 0)) ? (
-                <Scatter data={getChartData()} options={getChartOptions() as any} />
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-400">
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">📊</div>
-                    <p>No data to display</p>
-                    <p className="text-xs text-gray-500">Load tokens to see the chart</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Distribution Analysis for Active Tokens */}
-      {percentileData.managed && (
-        <div className="space-y-3 mb-4">
-          {renderMetricDistribution('market_cap', 'managed')}
-          {renderMetricDistribution('volume_24h', 'managed')}
-          {renderMetricDistribution('liquidity', 'managed')}
-          {renderMetricDistribution('recency', 'managed')}
-        </div>
-      )}
-
-      {/* Filter Controls */}
-      <div className="bg-gradient-to-r from-dark-300/20 to-dark-200/20 rounded-lg border border-dark-300/30 overflow-hidden">
-        <button
-          onClick={() => setManagedFiltersExpanded(!managedFiltersExpanded)}
-          className="w-full p-4 flex items-center justify-between hover:bg-dark-300/10 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <h4 className="text-sm font-semibold text-white">Smart Filters</h4>
-            <div className={`px-2 py-1 rounded text-xs font-medium transition-all ${
-              managedFilters.useFilters 
-                ? 'bg-brand-500/20 text-brand-300' 
-                : 'bg-dark-400/50 text-gray-400'
-            }`}>
-              {managedFilters.useFilters ? 'Active (Top 100)' : 'Disabled'}
-            </div>
-          </div>
-          <div className={`text-gray-400 transform transition-transform ${managedFiltersExpanded ? 'rotate-180' : ''}`}>
-            ↓
-          </div>
-        </button>
-        
-        {managedFiltersExpanded && (
-          <div className="p-4 border-t border-dark-300/30">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs text-gray-400">Configure filter parameters</span>
-              <button
-                onClick={() => {
-                  setManagedFilters(prev => ({ ...prev, useFilters: !prev.useFilters }));
-                  setManagedPage(0);
-                }}
-                className={`px-3 py-1 rounded text-sm font-medium transition-all ${
-                  managedFilters.useFilters 
-                    ? 'bg-brand-500/20 text-brand-300' 
-                    : 'bg-dark-400/50 text-gray-400 hover:bg-dark-400/70'
-                }`}
-              >
-                {managedFilters.useFilters ? 'Disable Filtering' : 'Enable Filtering'}
-              </button>
-            </div>
-            
-            <div className="space-y-3 mb-4">
-              {/* Market Cap Range */}
-              <div className="space-y-2">
-                <label className="block text-xs text-gray-400">Market Cap Range ($)</label>
-                <div className="px-3 py-2 bg-dark-400/30 rounded">
-                  <Slider.Root
-                    value={[
-                      toLogScale(parseInt(getNumericValue(managedFilters.minMarketCap)), sliderBounds.managed.marketCap.min, sliderBounds.managed.marketCap.max),
-                      toLogScale(parseInt(getNumericValue(managedFilters.maxMarketCap)), sliderBounds.managed.marketCap.min, sliderBounds.managed.marketCap.max)
-                    ]}
-                    onValueChange={(values) => {
-                      const [minVal, maxVal] = values;
-                      const minMarketCap = fromLogScale(minVal, sliderBounds.managed.marketCap.min, sliderBounds.managed.marketCap.max);
-                      const maxMarketCap = fromLogScale(maxVal, sliderBounds.managed.marketCap.min, sliderBounds.managed.marketCap.max);
-                      setManagedFilters(prev => ({
-                        ...prev,
-                        minMarketCap: formatNumberInput(minMarketCap.toString()),
-                        maxMarketCap: formatNumberInput(maxMarketCap.toString())
-                      }));
-                    }}
-                    min={0}
-                    max={100}
-                    step={1}
-                    className="relative flex items-center select-none touch-none w-full h-5"
-                  >
-                    <Slider.Track className="bg-dark-500/50 relative grow rounded-full h-1">
-                      <Slider.Range className="absolute bg-gradient-to-r from-brand-400 to-cyber-400 rounded-full h-full" />
-                    </Slider.Track>
-                    <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
-                    <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
-                  </Slider.Root>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Min Market Cap ($)</label>
-                    <input
-                      type="text"
-                      value={managedFilters.minMarketCap}
-                      onChange={(e) => setManagedFilters(prev => ({ ...prev, minMarketCap: formatNumberInput(e.target.value) }))}
-                      className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
-                        managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
-                      } focus:ring-1 focus:ring-brand-500/70`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Max Market Cap ($)</label>
-                    <input
-                      type="text"
-                      value={managedFilters.maxMarketCap}
-                      onChange={(e) => setManagedFilters(prev => ({ ...prev, maxMarketCap: formatNumberInput(e.target.value) }))}
-                      className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
-                        managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
-                      } focus:ring-1 focus:ring-brand-500/70`}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Volume Range */}
-              <div className="space-y-2">
-                <label className="block text-xs text-gray-400">Volume Range ($)</label>
-                <div className="px-3 py-2 bg-dark-400/30 rounded">
-                  <Slider.Root
-                    value={[
-                      toLogScale(parseInt(getNumericValue(managedFilters.minVolume)), sliderBounds.managed.volume.min, sliderBounds.managed.volume.max),
-                      toLogScale(parseInt(getNumericValue(managedFilters.maxVolume)), sliderBounds.managed.volume.min, sliderBounds.managed.volume.max)
-                    ]}
-                    onValueChange={(values) => {
-                      const [minVal, maxVal] = values;
-                      const minVolume = fromLogScale(minVal, sliderBounds.managed.volume.min, sliderBounds.managed.volume.max);
-                      const maxVolume = fromLogScale(maxVal, sliderBounds.managed.volume.min, sliderBounds.managed.volume.max);
-                      setManagedFilters(prev => ({
-                        ...prev,
-                        minVolume: formatNumberInput(minVolume.toString()),
-                        maxVolume: formatNumberInput(maxVolume.toString())
-                      }));
-                    }}
-                    min={0}
-                    max={100}
-                    step={1}
-                    className="relative flex items-center select-none touch-none w-full h-5"
-                  >
-                    <Slider.Track className="bg-dark-500/50 relative grow rounded-full h-1">
-                      <Slider.Range className="absolute bg-gradient-to-r from-brand-400 to-cyber-400 rounded-full h-full" />
-                    </Slider.Track>
-                    <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
-                    <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
-                  </Slider.Root>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Min Volume ($)</label>
-                    <input
-                      type="text"
-                      value={managedFilters.minVolume}
-                      onChange={(e) => setManagedFilters(prev => ({ ...prev, minVolume: formatNumberInput(e.target.value) }))}
-                      className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
-                        managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
-                      } focus:ring-1 focus:ring-brand-500/70`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Max Volume ($)</label>
-                    <input
-                      type="text"
-                      value={managedFilters.maxVolume}
-                      onChange={(e) => setManagedFilters(prev => ({ ...prev, maxVolume: formatNumberInput(e.target.value) }))}
-                      className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
-                        managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
-                      } focus:ring-1 focus:ring-brand-500/70`}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Liquidity Range */}
-              <div className="space-y-2">
-                <label className="block text-xs text-gray-400">Liquidity Range ($)</label>
-                <div className="px-3 py-2 bg-dark-400/30 rounded">
-                  <Slider.Root
-                    value={[
-                      toLogScale(parseInt(getNumericValue(activeTab === 'candidates' ? filters.minLiquidity : managedFilters.minLiquidity)), sliderBounds[activeTab === 'candidates' ? 'candidates' : 'managed'].liquidity.min, sliderBounds[activeTab === 'candidates' ? 'candidates' : 'managed'].liquidity.max),
-                      toLogScale(parseInt(getNumericValue(activeTab === 'candidates' ? filters.maxLiquidity : managedFilters.maxLiquidity)), sliderBounds[activeTab === 'candidates' ? 'candidates' : 'managed'].liquidity.min, sliderBounds[activeTab === 'candidates' ? 'candidates' : 'managed'].liquidity.max)
-                    ]}
-                    onValueChange={(values) => {
-                      const [minVal, maxVal] = values;
-                      const currentBounds = sliderBounds[activeTab === 'candidates' ? 'candidates' : 'managed'].liquidity;
-                      const minLiquidity = fromLogScale(minVal, currentBounds.min, currentBounds.max);
-                      const maxLiquidity = fromLogScale(maxVal, currentBounds.min, currentBounds.max);
-                      if (activeTab === 'candidates') {
-                        setFilters(prev => ({
-                          ...prev,
-                          minLiquidity: formatNumberInput(minLiquidity.toString()),
-                          maxLiquidity: formatNumberInput(maxLiquidity.toString())
-                        }));
-                      } else {
-                        setManagedFilters(prev => ({
-                          ...prev,
-                          minLiquidity: formatNumberInput(minLiquidity.toString()),
-                          maxLiquidity: formatNumberInput(maxLiquidity.toString())
-                        }));
-                      }
-                    }}
-                    min={0}
-                    max={100}
-                    step={1}
-                    className="relative flex items-center select-none touch-none w-full h-5"
-                  >
-                    <Slider.Track className="bg-dark-500/50 relative grow rounded-full h-1">
-                      <Slider.Range className="absolute bg-gradient-to-r from-brand-400 to-cyber-400 rounded-full h-full" />
-                    </Slider.Track>
-                    <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
-                    <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
-                  </Slider.Root>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Min Liquidity ($)</label>
-                    <input
-                      type="text"
-                      value={activeTab === 'candidates' ? filters.minLiquidity : managedFilters.minLiquidity}
-                      onChange={(e) => {
-                        if (activeTab === 'candidates') {
-                          setFilters(prev => ({ ...prev, minLiquidity: formatNumberInput(e.target.value) }));
-                        } else {
-                          setManagedFilters(prev => ({ ...prev, minLiquidity: formatNumberInput(e.target.value) }));
-                        }
-                      }}
-                      className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
-                        (activeTab === 'candidates' ? filters.useFilters : managedFilters.useFilters) ? 'ring-1 ring-brand-500/50' : ''
-                      } focus:ring-1 focus:ring-brand-500/70`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Max Liquidity ($)</label>
-                    <input
-                      type="text"
-                      value={activeTab === 'candidates' ? filters.maxLiquidity : managedFilters.maxLiquidity}
-                      onChange={(e) => {
-                        if (activeTab === 'candidates') {
-                          setFilters(prev => ({ ...prev, maxLiquidity: formatNumberInput(e.target.value) }));
-                        } else {
-                          setManagedFilters(prev => ({ ...prev, maxLiquidity: formatNumberInput(e.target.value) }));
-                        }
-                      }}
-                      className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
-                        (activeTab === 'candidates' ? filters.useFilters : managedFilters.useFilters) ? 'ring-1 ring-brand-500/50' : ''
-                      } focus:ring-1 focus:ring-brand-500/70`}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Date Range */}
-              <div className="space-y-2">
-                <label className="block text-xs text-gray-400">Date Range (First Seen)</label>
-                <div className="px-3 py-2 bg-dark-400/30 rounded">
-                  <Slider.Root
-                    value={[
-                      Math.max(0, (new Date(managedFilters.dateFrom).getTime() - new Date(sliderBounds.managed.dates.min).getTime()) / (new Date(sliderBounds.managed.dates.max).getTime() - new Date(sliderBounds.managed.dates.min).getTime()) * 100),
-                      Math.min(100, (new Date(managedFilters.dateTo).getTime() - new Date(sliderBounds.managed.dates.min).getTime()) / (new Date(sliderBounds.managed.dates.max).getTime() - new Date(sliderBounds.managed.dates.min).getTime()) * 100)
-                    ]}
-                    onValueChange={(values) => {
-                      const [minVal, maxVal] = values;
-                      const minTime = new Date(sliderBounds.managed.dates.min).getTime();
-                      const maxTime = new Date(sliderBounds.managed.dates.max).getTime();
-                      const timeRange = maxTime - minTime;
-                      
-                      const fromDate = new Date(minTime + (minVal / 100) * timeRange).toISOString().split('T')[0];
-                      const toDate = new Date(minTime + (maxVal / 100) * timeRange).toISOString().split('T')[0];
-                      
-                      setManagedFilters(prev => ({
-                        ...prev,
-                        dateFrom: fromDate,
-                        dateTo: toDate
-                      }));
-                    }}
-                    min={0}
-                    max={100}
-                    step={1}
-                    className="relative flex items-center select-none touch-none w-full h-5"
-                  >
-                    <Slider.Track className="bg-dark-500/50 relative grow rounded-full h-1">
-                      <Slider.Range className="absolute bg-gradient-to-r from-brand-400 to-cyber-400 rounded-full h-full" />
-                    </Slider.Track>
-                    <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
-                    <Slider.Thumb className="block w-4 h-4 bg-white shadow-lg rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-400/50 cursor-pointer" />
-                  </Slider.Root>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">From Date (First Seen)</label>
-                    <input
-                      type="date"
-                      value={managedFilters.dateFrom}
-                      onChange={(e) => setManagedFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                      className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
-                        managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
-                      } focus:ring-1 focus:ring-brand-500/70`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">To Date (First Seen)</label>
-                    <input
-                      type="date"
-                      value={managedFilters.dateTo}
-                      onChange={(e) => setManagedFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                      className={`w-full px-2 py-1 bg-dark-400/50 rounded text-sm text-white transition-all border-0 outline-none ${
-                        managedFilters.useFilters ? 'ring-1 ring-brand-500/50' : ''
-                      } focus:ring-1 focus:ring-brand-500/70`}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  fetchManagedTokens();
-                }}
-                disabled={!managedFilters.useFilters}
-                className={`px-4 py-2 rounded text-sm font-medium transition-all ${
-                  managedFilters.useFilters
-                    ? 'bg-brand-500/20 text-brand-300 hover:bg-brand-500/30'
-                    : 'bg-gray-500/20 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                Apply Filters
-              </button>
-              <button
-                onClick={() => {
-                  const defaultDates = getDefaultDates();
-                  setManagedFilters({
-                    minMarketCap: '50,000',
-                    maxMarketCap: '100,000,000',
-                    minVolume: '100,000',
-                    maxVolume: '1,000,000,000',
-                    minLiquidity: '10,000',
-                    maxLiquidity: '10,000,000',
-                    dateFrom: defaultDates.fromDate,
-                    dateTo: defaultDates.toDate,
-                    useFilters: true
-                  });
-                  setManagedPage(0);
-                }}
-                className="px-4 py-2 bg-gray-500/20 text-gray-300 rounded text-sm font-medium hover:bg-gray-500/30 transition-colors"
-              >
-                Reset to Defaults
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Tokens grid */}
@@ -1723,55 +1869,17 @@ export const TokenGodView: React.FC = () => {
             }
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {filters.useFilters && (
-            <select
-              value={clientSortBy}
-              onChange={(e) => setClientSortBy(e.target.value as any)}
-              className="px-3 py-1 bg-brand-500/20 border-0 rounded text-sm text-brand-300"
-            >
-              <option value="volume">Highest Volume</option>
-              <option value="market_cap">Highest Market Cap</option>
-              <option value="newest">Newest First</option>
-            </select>
-          )}
-          {!filters.useFilters && (
-            <select
-              value={`${candidateSortBy}-${candidateSortOrder}`}
-              onChange={(e) => {
-                const [field, order] = e.target.value.split('-');
-                setCandidateSortBy(field as any);
-                setCandidateSortOrder(order as any);
-                setCandidatesPage(0);
-              }}
-              className="px-3 py-1 bg-dark-300/50 border border-dark-300/50 rounded text-sm text-white"
-            >
-              <option value="first_seen-desc">Newest Tokens First</option>
-              <option value="first_seen-asc">Oldest Tokens First</option>
-              <option value="pair_created_at-desc">Newest Pairs First</option>
-              <option value="pair_created_at-asc">Oldest Pairs First</option>
-              <option value="market_cap-desc">Highest Market Cap</option>
-              <option value="market_cap-asc">Lowest Market Cap</option>
-              <option value="volume_24h-desc">Highest Volume</option>
-              <option value="volume_24h-asc">Lowest Volume</option>
-            </select>
-          )}
-          <button
-            onClick={fetchCandidateTokens}
-            disabled={isLoadingCandidates}
-            className="px-3 py-1 bg-brand-500/20 text-brand-300 rounded text-sm hover:bg-brand-500/30 transition-colors disabled:opacity-50"
-          >
-            {isLoadingCandidates ? '⏳' : '🔄'} Refresh
-          </button>
-        </div>
       </div>
 
-      {/* Filter Controls */}
-      <div className="bg-gradient-to-r from-dark-300/20 to-dark-200/20 rounded-lg border border-dark-300/30 overflow-hidden mb-4">
-        <button
-          onClick={() => setFiltersExpanded(!filtersExpanded)}
-          className="w-full p-4 flex items-center justify-between hover:bg-dark-300/10 transition-colors"
-        >
+      {/* Side-by-side layout: Filters on left, Chart on right */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Smart Filters - Left Side */}
+        <div className="lg:col-span-1">
+          <div className="bg-gradient-to-r from-dark-300/20 to-dark-200/20 rounded-lg border border-dark-300/30 overflow-hidden h-fit">
+            <button
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              className="w-full p-4 flex items-center justify-between hover:bg-dark-300/10 transition-colors"
+            >
           <div className="flex items-center gap-3">
             <h4 className="text-sm font-semibold text-white">Smart Filters</h4>
             <div className={`px-2 py-1 rounded text-xs font-medium transition-all ${
@@ -2099,14 +2207,16 @@ export const TokenGodView: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Token Analytics Chart */}
-      <div className="bg-gradient-to-r from-dark-300/20 to-dark-200/20 rounded-lg border border-dark-300/30 overflow-hidden mb-4">
-        <button
-          onClick={() => setChartExpanded(!chartExpanded)}
-          className="w-full p-4 flex items-center justify-between hover:bg-dark-300/10 transition-colors"
-        >
+          </div>
+        </div>
+        
+        {/* Chart - Right Side */}
+        <div className="lg:col-span-2">
+          <div className="bg-gradient-to-r from-dark-300/20 to-dark-200/20 rounded-lg border border-dark-300/30 overflow-hidden">
+            <button
+              onClick={() => setChartExpanded(!chartExpanded)}
+              className="w-full p-4 flex items-center justify-between hover:bg-dark-300/10 transition-colors"
+            >
           <div className="flex items-center gap-3">
             <h4 className="text-sm font-semibold text-white">Token Analytics Chart</h4>
             <div className="px-2 py-1 rounded text-xs font-medium bg-brand-500/20 text-brand-300">
@@ -2174,6 +2284,14 @@ export const TokenGodView: React.FC = () => {
                   <option value="logarithmic">Log</option>
                 </select>
               </div>
+              <label className="flex items-center gap-2 text-xs text-gray-400 ml-2">
+                <input
+                  type="checkbox"
+                  checked={showActiveBounds}
+                  onChange={(e) => setShowActiveBounds(e.target.checked)}
+                />
+                Green cluster bounds
+              </label>
               <div className="text-xs text-gray-400 ml-auto">
                 {activeTab === 'candidates' ? candidateTokens.length : managedTokens.length} tokens plotted
               </div>
@@ -2196,11 +2314,13 @@ export const TokenGodView: React.FC = () => {
             </div>
           </div>
         )}
+          </div>
+        </div>
       </div>
 
       {/* Distribution Analysis for Discovery Zone */}
       {percentileData.candidates && (
-        <div className="space-y-3 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           {renderMetricDistribution('market_cap', 'candidates')}
           {renderMetricDistribution('volume_24h', 'candidates')}
           {renderMetricDistribution('liquidity', 'candidates')}
@@ -2208,6 +2328,52 @@ export const TokenGodView: React.FC = () => {
         </div>
       )}
 
+
+      {/* Tokens Section with Controls */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-gray-400">Discovery Zone Tokens</h3>
+        <div className="flex items-center gap-2">
+          {filters.useFilters && (
+            <select
+              value={clientSortBy}
+              onChange={(e) => setClientSortBy(e.target.value as any)}
+              className="px-3 py-1 bg-brand-500/20 border-0 rounded text-sm text-brand-300"
+            >
+              <option value="volume">Highest Volume</option>
+              <option value="market_cap">Highest Market Cap</option>
+              <option value="newest">Newest First</option>
+            </select>
+          )}
+          {!filters.useFilters && (
+            <select
+              value={`${candidateSortBy}-${candidateSortOrder}`}
+              onChange={(e) => {
+                const [field, order] = e.target.value.split('-');
+                setCandidateSortBy(field as any);
+                setCandidateSortOrder(order as any);
+                setCandidatesPage(0);
+              }}
+              className="px-3 py-1 bg-dark-300/50 border border-dark-300/50 rounded text-sm text-white"
+            >
+              <option value="first_seen-desc">Newest Tokens First</option>
+              <option value="first_seen-asc">Oldest Tokens First</option>
+              <option value="pair_created_at-desc">Newest Pairs First</option>
+              <option value="pair_created_at-asc">Oldest Pairs First</option>
+              <option value="market_cap-desc">Highest Market Cap</option>
+              <option value="market_cap-asc">Lowest Market Cap</option>
+              <option value="volume_24h-desc">Highest Volume</option>
+              <option value="volume_24h-asc">Lowest Volume</option>
+            </select>
+          )}
+          <button
+            onClick={fetchCandidateTokens}
+            disabled={isLoadingCandidates}
+            className="px-3 py-1 bg-brand-500/20 text-brand-300 rounded text-sm hover:bg-brand-500/30 transition-colors disabled:opacity-50"
+          >
+            {isLoadingCandidates ? '⏳' : '🔄'} Refresh
+          </button>
+        </div>
+      </div>
 
       {/* Tokens grid */}
       {isLoadingCandidates ? (
@@ -2363,7 +2529,7 @@ export const TokenGodView: React.FC = () => {
       {renderTabs()}
 
       {/* Tab Content */}
-      <div className="bg-dark-200/50 backdrop-blur-lg p-6 rounded-lg border border-dark-300/50">
+      <div>
         {activeTab === 'managed' && renderManagedTokens()}
         {activeTab === 'candidates' && renderCandidateTokens()}
         {activeTab === 'search' && renderSearchTokens()}
