@@ -48,6 +48,66 @@ const activeBoundsPlugin = {
     const area = chart.chartArea;
     if (!xScale || !yScale || !area) return;
 
+    // Use server-provided green window if available
+    if (opts.greenWindow) {
+      const gw = opts.greenWindow;
+      const axisX = opts.axisX;
+      const axisY = opts.axisY;
+      
+      // Map green window values to the current axes
+      let xMin, xMax, yMin, yMax;
+      if (axisX === 'market_cap') {
+        xMin = gw.x_min;
+        xMax = gw.x_max;
+      } else if (axisX === 'volume_24h') {
+        xMin = gw.y_min;
+        xMax = gw.y_max;
+      }
+      
+      if (axisY === 'market_cap') {
+        yMin = gw.x_min;
+        yMax = gw.x_max;
+      } else if (axisY === 'volume_24h') {
+        yMin = gw.y_min;
+        yMax = gw.y_max;
+      }
+      
+      if (xMin && xMax && yMin && yMax) {
+        // Draw rectangle using server bounds
+        const minX = xScale.getPixelForValue(xMin);
+        const maxX = xScale.getPixelForValue(xMax);
+        const minY = yScale.getPixelForValue(yMax); // Note: Y is inverted
+        const maxY = yScale.getPixelForValue(yMin);
+        
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.strokeStyle = opts.color || 'rgba(34, 197, 94, 0.9)';
+        ctx.lineWidth = opts.lineWidth || 1;
+        ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+        
+        // Add labels
+        const fmt = (n: number) => {
+          if (!n || !isFinite(n)) return '0';
+          if (n >= 1e9) return (n/1e9).toFixed(1)+'B';
+          if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+          if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+          return n.toFixed(0);
+        };
+        
+        ctx.fillStyle = opts.color || 'rgba(34, 197, 94, 0.9)';
+        ctx.font = '10px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        
+        // Labels on edges
+        ctx.fillText(`$${fmt(xMin)} - $${fmt(xMax)}`, (minX + maxX) / 2, maxY - 5);
+        ctx.fillText(`$${fmt(yMin)} - $${fmt(yMax)}`, minX - 5, (minY + maxY) / 2);
+        
+        ctx.restore();
+        return; // Exit early when using server bounds
+      }
+    }
+
+    // Fallback to client-side calculation
     // Collect green points with pixel positions, tokens, and axis data values
     type GP = { px: number; py: number; token: any; xv: number; yv: number };
     const greens: GP[] = [];
@@ -401,11 +461,21 @@ export const TokenGodView: React.FC = () => {
   const [yAxisScale, setYAxisScale] = useState<'linear' | 'logarithmic'>('linear');
   const [showActiveBounds, setShowActiveBounds] = useState(true);
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [selectedTokenSeries, setSelectedTokenSeries] = useState<any>(null);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const chartRef = useRef<any>(null);
   const [showTrailM5, setShowTrailM5] = useState(true);
   const [showTrailH1, setShowTrailH1] = useState(true);
   const [trailSeriesMap, setTrailSeriesMap] = useState<Record<string, any>>({});
+  
+  // Window snapshot and series state
+  const [windowSnapshot, setWindowSnapshot] = useState<any>(null);
+  const [windowSeries, setWindowSeries] = useState<any[]>([]);
+  const [isPlayingTimeSeries, setIsPlayingTimeSeries] = useState(false);
+  const [seriesIndex, setSeriesIndex] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1000); // ms between frames
+  const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [lastSnapshotUpdate, setLastSnapshotUpdate] = useState<Date | null>(null);
   
   // Distribution visualization state
   const [distributionExpanded, setDistributionExpanded] = useState<{
@@ -749,6 +819,7 @@ export const TokenGodView: React.FC = () => {
           lineWidth: 1,
           axisX: chartXAxis,
           axisY: chartYAxis,
+          greenWindow: windowSnapshot?.green_window || null,
         },
         trailsPlugin: {
           enabled: showTrailM5 || showTrailH1,
@@ -1139,6 +1210,125 @@ export const TokenGodView: React.FC = () => {
     }
   }, []);
 
+  // Fetch window snapshot data
+  const fetchWindowSnapshot = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({
+        tab: activeTab,
+        axes_x: chartXAxis,
+        axes_y: chartYAxis,
+        min_market_cap: '500000',
+        min_volume_24h: '500000'
+      });
+      
+      const response = await ddApi.fetch(`/admin/analytics/token-window/snapshot?${params.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setWindowSnapshot(data);
+        setLastSnapshotUpdate(new Date());
+        
+        // Update filter bounds based on green window if available
+        if (data.green_window && activeTab === 'candidates') {
+          const greenWindow = data.green_window;
+          setFilters(prev => ({
+            ...prev,
+            minMarketCap: Math.floor(greenWindow.x_min).toLocaleString(),
+            maxMarketCap: Math.ceil(greenWindow.x_max).toLocaleString(),
+            minVolume: Math.floor(greenWindow.y_min).toLocaleString(),
+            maxVolume: Math.ceil(greenWindow.y_max).toLocaleString()
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch window snapshot:', error);
+    }
+  }, [activeTab, chartXAxis, chartYAxis]);
+
+  // Fetch window series data  
+  const fetchWindowSeries = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({
+        tab: activeTab,
+        axes_x: chartXAxis, 
+        axes_y: chartYAxis,
+        limit: '50' // Get last 50 snapshots
+      });
+      
+      const response = await ddApi.fetch(`/admin/analytics/token-window/series?${params.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setWindowSeries(data.snapshots || []);
+        setSeriesIndex(0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch window series:', error);
+    }
+  }, [activeTab, chartXAxis, chartYAxis]);
+
+  // Playback control functions
+  const startPlayback = useCallback(() => {
+    if (windowSeries.length === 0) {
+      fetchWindowSeries();
+      return;
+    }
+    
+    setIsPlayingTimeSeries(true);
+    playbackIntervalRef.current = setInterval(() => {
+      setSeriesIndex(prev => {
+        const next = prev + 1;
+        if (next >= windowSeries.length) {
+          stopPlayback();
+          return 0;
+        }
+        return next;
+      });
+    }, playbackSpeed);
+  }, [windowSeries, playbackSpeed, fetchWindowSeries]);
+
+  const stopPlayback = useCallback(() => {
+    setIsPlayingTimeSeries(false);
+    if (playbackIntervalRef.current) {
+      clearInterval(playbackIntervalRef.current);
+      playbackIntervalRef.current = null;
+    }
+  }, []);
+
+  const resetPlayback = useCallback(() => {
+    stopPlayback();
+    setSeriesIndex(0);
+  }, [stopPlayback]);
+
+  // Update window snapshot when series index changes during playback
+  useEffect(() => {
+    if (windowSeries.length > 0 && seriesIndex < windowSeries.length) {
+      const snapshot = windowSeries[seriesIndex];
+      if (snapshot) {
+        setWindowSnapshot(snapshot);
+        setLastSnapshotUpdate(new Date(snapshot.ts));
+      }
+    }
+  }, [seriesIndex, windowSeries]);
+
+  // Fetch mini-series when token is selected
+  useEffect(() => {
+    if (selectedToken) {
+      const fetchTokenSeries = async () => {
+        try {
+          const response = await ddApi.fetch(`/admin/analytics/tokens/${selectedToken.address}/mini-series`);
+          if (response.ok) {
+            const data = await response.json();
+            setSelectedTokenSeries(data);
+          }
+        } catch (error) {
+          console.error('Failed to fetch token mini-series:', error);
+        }
+      };
+      fetchTokenSeries();
+    } else {
+      setSelectedTokenSeries(null);
+    }
+  }, [selectedToken]);
+
   // Load initial data on mount
   useEffect(() => {
     // Load candidates count for the tab badge
@@ -1167,7 +1357,14 @@ export const TokenGodView: React.FC = () => {
     fetchSmartBounds();
     // Load candidates by default since that's the default tab
     fetchCandidateTokens();
+    // Fetch initial window snapshot
+    fetchWindowSnapshot();
   }, [fetchSmartBounds]);
+  
+  // Fetch window snapshot when axes or tab changes
+  useEffect(() => {
+    fetchWindowSnapshot();
+  }, [chartXAxis, chartYAxis, activeTab]);
 
   // Load data when tabs change
   useEffect(() => {
@@ -1220,6 +1417,12 @@ export const TokenGodView: React.FC = () => {
     };
     const fmtMoney = (n?: number | null) => (typeof n === 'number' ? `$${compactInt(n)}` : 'N/A');
     const fmtPct0 = (n?: number | null) => (typeof n === 'number' ? `${n >= 0 ? '+' : ''}${Math.round(n)}%` : 'N/A');
+    
+    // Calculate percentage change between two values
+    const calcChange = (oldVal: number, newVal: number) => {
+      if (!oldVal || oldVal === 0) return 0;
+      return ((newVal - oldVal) / oldVal) * 100;
+    };
 
     const pc = token.priceChanges || (token as any).price_changes || {};
     const vols = (token as any).volumes || {};
@@ -1312,6 +1515,69 @@ export const TokenGodView: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {/* Mini-Series Timeline */}
+          {selectedTokenSeries && selectedTokenSeries.series && (
+            <div className="bg-dark-400/30 rounded p-2 col-span-2">
+              <div className="text-gray-400 mb-1">Historical Timeline</div>
+              <div className="grid grid-cols-5 gap-2 text-[11px]">
+                <div className="text-gray-500">Period</div>
+                <div className="text-gray-500 text-right">Price</div>
+                <div className="text-gray-500 text-right">Market Cap</div>
+                <div className="text-gray-500 text-right">Volume</div>
+                <div className="text-gray-500 text-right">Change</div>
+                
+                {['now', 'm5', 'h1', 'h6', 'h24'].map((period) => {
+                  const data = selectedTokenSeries.series[period];
+                  if (!data) return null;
+                  
+                  const priceChange = period === 'now' ? 0 : 
+                    calcChange(data.price, selectedTokenSeries.series.now?.price || 0);
+                  
+                  return (
+                    <React.Fragment key={period}>
+                      <div className="text-gray-300">{period.toUpperCase()}</div>
+                      <div className="text-gray-200 text-right">${data.price?.toFixed(6) || 'N/A'}</div>
+                      <div className="text-gray-200 text-right">{fmtMoney(data.market_cap)}</div>
+                      <div className="text-gray-200 text-right">{fmtMoney(data.volume_24h)}</div>
+                      <div className={`text-right ${priceChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {period === 'now' ? '—' : fmtPct0(priceChange)}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+              
+              {/* Mini sparkline visualization */}
+              <div className="mt-2 h-16 flex items-end gap-1">
+                {['h24', 'h6', 'h1', 'm5', 'now'].map((period) => {
+                  const data = selectedTokenSeries.series[period];
+                  if (!data?.market_cap) return null;
+                  
+                  const maxMc = Math.max(
+                    ...Object.values(selectedTokenSeries.series)
+                      .map((s: any) => s?.market_cap || 0)
+                  );
+                  const height = (data.market_cap / maxMc) * 100;
+                  
+                  return (
+                    <div
+                      key={period}
+                      className="flex-1 bg-brand-500/30 rounded-t relative group"
+                      style={{ height: `${height}%` }}
+                    >
+                      <div className="absolute bottom-0 left-0 right-0 text-center text-[9px] text-gray-500">
+                        {period}
+                      </div>
+                      <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-black/90 px-1 py-0.5 rounded text-[10px] text-gray-300 whitespace-nowrap">
+                        {fmtMoney(data.market_cap)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Keys present (compact) */}
           <div className="bg-dark-400/30 rounded p-2 col-span-2">
@@ -1993,6 +2259,47 @@ export const TokenGodView: React.FC = () => {
                       <option value="logarithmic">Log</option>
                     </select>
                   </div>
+                  
+                  {/* Time Series Playback Controls */}
+                  <div className="flex items-center gap-2 border-l border-gray-600 pl-4">
+                    <button
+                      onClick={isPlayingTimeSeries ? stopPlayback : startPlayback}
+                      className="px-3 py-1 bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 rounded text-sm transition-colors"
+                    >
+                      {isPlayingTimeSeries ? '⏸ Pause' : '▶ Play Timeline'}
+                    </button>
+                    <button
+                      onClick={resetPlayback}
+                      className="px-2 py-1 bg-gray-600/20 hover:bg-gray-600/30 text-gray-400 rounded text-sm transition-colors"
+                    >
+                      ⏮ Reset
+                    </button>
+                    {windowSeries.length > 0 && (
+                      <>
+                        <input
+                          type="range"
+                          min={0}
+                          max={windowSeries.length - 1}
+                          value={seriesIndex}
+                          onChange={(e) => setSeriesIndex(Number(e.target.value))}
+                          className="w-32"
+                        />
+                        <span className="text-xs text-gray-400">
+                          {seriesIndex + 1}/{windowSeries.length}
+                        </span>
+                      </>
+                    )}
+                    <select
+                      value={playbackSpeed}
+                      onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
+                      className="px-2 py-1 bg-dark-400/50 border-0 rounded text-sm text-white"
+                    >
+                      <option value={500}>2x Speed</option>
+                      <option value={1000}>1x Speed</option>
+                      <option value={2000}>0.5x Speed</option>
+                    </select>
+                  </div>
+                  
               <label className="flex items-center gap-2 text-xs text-gray-400 ml-2">
                 <input
                   type="checkbox"
@@ -2907,6 +3214,63 @@ export const TokenGodView: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Market Stats Bar */}
+      {windowSnapshot && (
+        <div className="bg-dark-400/50 rounded-lg p-4 border border-gray-700/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-8">
+              <div>
+                <span className="text-xs text-gray-400 uppercase">Total Tokens</span>
+                <div className="text-xl font-mono text-white">
+                  {windowSnapshot.totals?.token_count?.toLocaleString() || '0'}
+                </div>
+              </div>
+              <div>
+                <span className="text-xs text-gray-400 uppercase">Green Tokens</span>
+                <div className="text-xl font-mono text-green-400">
+                  {windowSnapshot.totals?.green_count?.toLocaleString() || '0'}
+                </div>
+              </div>
+              <div>
+                <span className="text-xs text-gray-400 uppercase">Green Ratio</span>
+                <div className="text-xl font-mono text-brand-400">
+                  {windowSnapshot.totals?.token_count > 0 
+                    ? `${((windowSnapshot.totals.green_count / windowSnapshot.totals.token_count) * 100).toFixed(1)}%`
+                    : '0%'}
+                </div>
+              </div>
+              {windowSnapshot.green_window && (
+                <>
+                  <div className="border-l border-gray-600 pl-8">
+                    <span className="text-xs text-gray-400 uppercase">Market Cap Range</span>
+                    <div className="text-sm font-mono text-gray-300">
+                      ${formatNumber(windowSnapshot.green_window.x_min)} - ${formatNumber(windowSnapshot.green_window.x_max)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400 uppercase">Volume Range</span>
+                    <div className="text-sm font-mono text-gray-300">
+                      ${formatNumber(windowSnapshot.green_window.y_min)} - ${formatNumber(windowSnapshot.green_window.y_max)}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-xs text-gray-500">
+                Updated: {lastSnapshotUpdate ? new Date(lastSnapshotUpdate).toLocaleTimeString() : 'Loading...'}
+              </div>
+              <button
+                onClick={() => fetchWindowSnapshot()}
+                className="px-3 py-1 bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 rounded text-sm transition-colors"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab Navigation */}
       {renderTabs()}
