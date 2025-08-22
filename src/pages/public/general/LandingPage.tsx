@@ -97,7 +97,7 @@ export const LandingPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [animationPhase, setAnimationPhase] = useState(0);
   const [animationDone, setAnimationDone] = useState(false);
-  const forceShowFabs = true; // Changed from useState to a const, always true
+  const forceShowFabs = false; // Set to false to hide floating buttons (change to true to re-enable)
   
   // Performance monitoring
   const [fps, setFps] = useState(0);
