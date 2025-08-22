@@ -290,7 +290,7 @@ export const TokenActivationManager: React.FC = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        await response.json();
         setResult({
           type: 'success',
           message: `Successfully ${action}d token: ${manualTokenAddress.slice(0, 8)}...${manualTokenAddress.slice(-6)}`

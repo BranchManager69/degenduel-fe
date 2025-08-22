@@ -2,26 +2,34 @@ import { motion } from 'framer-motion';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as Slider from '@radix-ui/react-slider';
 import { ddApi } from '../../services/dd-api';
-import { Scatter, Bar } from 'react-chartjs-2';
+import { Scatter, Bar, Line, Chart } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
+  LineElement,
   Title,
   Tooltip,
   Legend,
   LogarithmicScale,
   BarElement,
+  TimeScale,
 } from 'chart.js';
+import { CandlestickController, CandlestickElement } from 'chartjs-chart-financial';
+import 'chartjs-adapter-date-fns';
 
 // Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
   LogarithmicScale,
+  TimeScale,
   PointElement,
+  LineElement,
   BarElement,
+  CandlestickController,
+  CandlestickElement,
   Title,
   Tooltip,
   Legend
@@ -463,6 +471,7 @@ export const TokenGodView: React.FC = () => {
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [selectedTokenSeries, setSelectedTokenSeries] = useState<any>(null);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [showTokenDetail, setShowTokenDetail] = useState(false);
   const chartRef = useRef<any>(null);
   const [showTrailM5, setShowTrailM5] = useState(true);
   const [showTrailH1, setShowTrailH1] = useState(true);
@@ -1777,6 +1786,294 @@ export const TokenGodView: React.FC = () => {
     );
   };
 
+  // Token Detail Panel with Candlestick Chart
+  const TokenDetailPanel: React.FC<{ token: Token | null; series: any; onClose: () => void }> = ({ token, series, onClose }) => {
+    if (!token || !series) return null;
+
+    // Prepare candlestick data from OHLC history
+    const getCandlestickData = () => {
+      if (!series.history || !series.history.data) return { datasets: [] };
+      
+      const ohlcData = series.history.data.map((item: any) => ({
+        x: new Date(item.timestamp),
+        o: item.open,
+        h: item.high,
+        l: item.low,
+        c: item.close
+      }));
+
+      return {
+        datasets: [{
+          label: `${token.symbol} Price`,
+          data: ohlcData,
+          borderColor: (ctx: any) => {
+            const candle = ctx.raw;
+            return candle.c >= candle.o ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)';
+          },
+          backgroundColor: (ctx: any) => {
+            const candle = ctx.raw;
+            return candle.c >= candle.o ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)';
+          },
+        }]
+      };
+    };
+
+    // Prepare RSI data
+    const getRSIData = () => {
+      if (!series.history || !series.history.data) return { datasets: [] };
+      
+      const rsiData = series.history.data
+        .filter((item: any) => item.indicators?.rsi !== undefined)
+        .map((item: any) => ({
+          x: new Date(item.timestamp),
+          y: item.indicators.rsi
+        }));
+
+      return {
+        datasets: [
+          {
+            label: 'RSI',
+            data: rsiData,
+            borderColor: 'rgb(168, 85, 247)',
+            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+            fill: false,
+            tension: 0.1,
+            pointRadius: 0,
+            borderWidth: 2
+          },
+          {
+            label: 'Overbought',
+            data: rsiData.map((d: any) => ({ x: d.x, y: 70 })),
+            borderColor: 'rgba(239, 68, 68, 0.5)',
+            borderDash: [5, 5],
+            borderWidth: 1,
+            pointRadius: 0,
+            fill: false
+          },
+          {
+            label: 'Oversold',
+            data: rsiData.map((d: any) => ({ x: d.x, y: 30 })),
+            borderColor: 'rgba(34, 197, 94, 0.5)',
+            borderDash: [5, 5],
+            borderWidth: 1,
+            pointRadius: 0,
+            fill: false
+          }
+        ]
+      };
+    };
+
+    const candlestickOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: (context: any) => {
+              const candle = context.raw;
+              return [
+                `Open: $${candle.o.toFixed(8)}`,
+                `High: $${candle.h.toFixed(8)}`,
+                `Low: $${candle.l.toFixed(8)}`,
+                `Close: $${candle.c.toFixed(8)}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time' as const,
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)'
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.5)'
+          }
+        },
+        y: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)'
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.5)',
+            callback: (value: any) => `$${value.toFixed(8)}`
+          }
+        }
+      }
+    };
+
+    const rsiOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: (context: any) => `RSI: ${context.parsed.y.toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time' as const,
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)'
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.5)'
+          }
+        },
+        y: {
+          min: 0,
+          max: 100,
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)'
+          },
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.5)'
+          }
+        }
+      }
+    };
+
+    // Get current analysis data
+    const analysis = series.analysis || {};
+    const currentPrice = analysis.current?.price || token.price || 0;
+    const support = analysis.technical?.support_resistance?.support || 0;
+    const resistance = analysis.technical?.support_resistance?.resistance || 0;
+    const rsi = analysis.technical?.indicators?.rsi?.value || 0;
+    const macd = analysis.technical?.indicators?.macd || {};
+
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-dark-300/95 border border-brand-500/40 rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+          {/* Header */}
+          <div className="p-4 border-b border-dark-400/50 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {token.image_url && (
+                <img src={token.image_url} alt={token.symbol} className="w-10 h-10 rounded-full" />
+              )}
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  {token.symbol}
+                  <span className="text-sm text-gray-400 font-normal">{token.name}</span>
+                </h2>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-gray-400">
+                    Price: <span className="text-white">${currentPrice.toFixed(8)}</span>
+                  </span>
+                  <span className="text-gray-400">
+                    MCap: <span className="text-white">${(token.market_cap || 0).toLocaleString()}</span>
+                  </span>
+                  <span className="text-gray-400">
+                    24h Vol: <span className="text-white">${(token.volume_24h || 0).toLocaleString()}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white transition-colors p-2"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 100px)' }}>
+            {/* Technical Indicators Summary */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div className="bg-dark-400/30 rounded-lg p-3">
+                <div className="text-xs text-gray-400 mb-1">RSI (14)</div>
+                <div className={`text-lg font-bold ${
+                  rsi > 70 ? 'text-red-400' : rsi < 30 ? 'text-green-400' : 'text-white'
+                }`}>
+                  {rsi.toFixed(2)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {rsi > 70 ? 'Overbought' : rsi < 30 ? 'Oversold' : 'Neutral'}
+                </div>
+              </div>
+              
+              <div className="bg-dark-400/30 rounded-lg p-3">
+                <div className="text-xs text-gray-400 mb-1">Support</div>
+                <div className="text-lg font-bold text-green-400">
+                  ${support.toFixed(8)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {((currentPrice - support) / support * 100).toFixed(1)}% above
+                </div>
+              </div>
+              
+              <div className="bg-dark-400/30 rounded-lg p-3">
+                <div className="text-xs text-gray-400 mb-1">Resistance</div>
+                <div className="text-lg font-bold text-red-400">
+                  ${resistance.toFixed(8)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {((resistance - currentPrice) / currentPrice * 100).toFixed(1)}% above
+                </div>
+              </div>
+              
+              <div className="bg-dark-400/30 rounded-lg p-3">
+                <div className="text-xs text-gray-400 mb-1">MACD</div>
+                <div className={`text-lg font-bold ${
+                  (macd.histogram || 0) > 0 ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {(macd.histogram || 0).toFixed(8)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {(macd.histogram || 0) > 0 ? 'Bullish' : 'Bearish'}
+                </div>
+              </div>
+            </div>
+
+            {/* Candlestick Chart */}
+            <div className="bg-dark-400/30 rounded-lg p-4 mb-4">
+              <h3 className="text-sm font-semibold text-white mb-3">Price Chart (Candlestick)</h3>
+              <div className="h-80">
+                {series.history && series.history.data && series.history.data.length > 0 ? (
+                  <Chart
+                    type='candlestick'
+                    data={getCandlestickData()}
+                    options={candlestickOptions}
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-400">
+                    No OHLC data available
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* RSI Chart */}
+            <div className="bg-dark-400/30 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-white mb-3">RSI Indicator</h3>
+              <div className="h-40">
+                {series.history && series.history.data && series.history.data.length > 0 ? (
+                  <Line
+                    data={getRSIData()}
+                    options={rsiOptions}
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-400">
+                    No RSI data available
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Helper function to format time ago
   const formatTimeAgo = (dateString: string): string => {
     const now = new Date();
@@ -1833,7 +2130,7 @@ export const TokenGodView: React.FC = () => {
         layout
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        onClick={() => { setSelectedToken(token); setShowDebugPanel(true); }}
+        onClick={() => { setSelectedToken(token); setShowTokenDetail(true); }}
         className={`relative bg-dark-300/50 border rounded-lg p-3 transition-all duration-300 overflow-hidden cursor-pointer ${
           selectedToken?.address === token.address ? 'border-brand-500/60' : 'border-dark-300/50 hover:border-dark-300/70'
         }`}
@@ -1931,6 +2228,49 @@ export const TokenGodView: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Technical Indicator Badges */}
+            {selectedTokenSeries && selectedTokenSeries.analysis && selectedToken?.address === token.address && (
+              <div className="flex items-center gap-1.5 mb-1">
+                {/* RSI Badge */}
+                {selectedTokenSeries.analysis.technical?.indicators?.rsi && (
+                  <div className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                    selectedTokenSeries.analysis.technical.indicators.rsi.value > 70 
+                      ? 'bg-red-500/20 text-red-300' 
+                      : selectedTokenSeries.analysis.technical.indicators.rsi.value < 30 
+                      ? 'bg-green-500/20 text-green-300'
+                      : 'bg-gray-500/20 text-gray-300'
+                  }`}>
+                    RSI: {selectedTokenSeries.analysis.technical.indicators.rsi.value.toFixed(0)}
+                  </div>
+                )}
+                
+                {/* Momentum Badge */}
+                {selectedTokenSeries.analysis.momentum?.trend && (
+                  <div className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                    selectedTokenSeries.analysis.momentum.trend === 'bullish' 
+                      ? 'bg-green-500/20 text-green-300' 
+                      : selectedTokenSeries.analysis.momentum.trend === 'bearish'
+                      ? 'bg-red-500/20 text-red-300'
+                      : 'bg-gray-500/20 text-gray-300'
+                  }`}>
+                    {selectedTokenSeries.analysis.momentum.trend === 'bullish' ? '↑' : 
+                     selectedTokenSeries.analysis.momentum.trend === 'bearish' ? '↓' : '→'} Trend
+                  </div>
+                )}
+                
+                {/* MACD Signal */}
+                {selectedTokenSeries.analysis.technical?.indicators?.macd && (
+                  <div className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                    selectedTokenSeries.analysis.technical.indicators.macd.histogram > 0 
+                      ? 'bg-green-500/20 text-green-300' 
+                      : 'bg-red-500/20 text-red-300'
+                  }`}>
+                    MACD {selectedTokenSeries.analysis.technical.indicators.macd.histogram > 0 ? '+' : '-'}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Address and Social Links */}
             <div className="flex items-center justify-between">
@@ -2535,7 +2875,7 @@ export const TokenGodView: React.FC = () => {
                           const tok = point?.token || point?.parsed?.token;
                           if (tok) {
                             setSelectedToken(tok);
-                            setShowDebugPanel(true);
+                            setShowTokenDetail(true);
                           }
                         }
                       }}
@@ -3192,6 +3532,15 @@ export const TokenGodView: React.FC = () => {
       {/* Debug Panel Instance */}
       {showDebugPanel && (
         <DebugPanel token={selectedToken} onClose={() => setShowDebugPanel(false)} />
+      )}
+
+      {/* Token Detail Panel with Candlestick Chart */}
+      {showTokenDetail && (
+        <TokenDetailPanel 
+          token={selectedToken} 
+          series={selectedTokenSeries} 
+          onClose={() => setShowTokenDetail(false)} 
+        />
       )}
 
       {/* Distribution Analysis for Discovery Zone */}
