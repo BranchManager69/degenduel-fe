@@ -14,349 +14,34 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useParams } from "react-router-dom";
 import { SilentErrorBoundary } from "../../../components/common/ErrorBoundary";
 import { LoadingSpinner } from "../../../components/common/LoadingSpinner";
-import { TokenSearchFixed } from "../../../components/common/TokenSearchFixed";
-import { ContestChat } from "../../../components/contest-chat/ContestChat";
+// Removed unused import: TokenSearchFixed
+// Removed unused import: ContestChat
 import { FocusedParticipantsList } from "../../../components/contest-detail/FocusedParticipantsList";
 import { ParticipantsList } from "../../../components/contest-detail/ParticipantsList";
-import { EnhancedPortfolioDisplay } from "../../../components/contest-lobby/EnhancedPortfolioDisplay";
-import { LiveTradeActivity } from "../../../components/contest-lobby/LiveTradeActivity";
+// Removed unused imports: EnhancedPortfolioDisplay, LiveTradeActivity
 import { MultiParticipantChartV2 } from "../../../components/contest-lobby/MultiParticipantChartV2";
 
 import { ContestDetailHeaderNew } from "../../../components/contest-detail/ContestDetailHeaderNew";
-import { UserPerformanceCard } from "../../../components/contest-lobby/UserPerformanceCard";
+// Removed unused import: UserPerformanceCard
 import { Button } from "../../../components/ui/Button";
 import { useMigratedAuth } from "../../../hooks/auth/useMigratedAuth";
 import { useContestLobbyWebSocket } from "../../../hooks/websocket/topic-hooks/useContestLobbyWebSocket";
 import { useContestParticipants } from "../../../hooks/websocket/topic-hooks/useContestParticipants";
 import { useContestViewUpdates } from "../../../hooks/websocket/topic-hooks/useContestViewUpdates";
-// Removed usePortfolio - implementing manual portfolio fetching
-import { PrizeStructure } from "../../../components/contest-detail/PrizeStructure";
-import { useCustomToast } from "../../../components/toast";
-import { formatCurrency } from "../../../lib/utils";
-import { ContestViewData, SearchToken } from "../../../types";
+// Removed unused imports
+// Removed unused import: useCustomToast
+// Removed unused import: formatCurrency
+import { ContestViewData } from "../../../types";
 import { resetToDefaultMeta, setupContestOGMeta } from "../../../utils/ogImageUtils";
 
-// Under Construction Overlay Component
-const UnderConstructionOverlay: React.FC<{ children: React.ReactNode; isAdmin?: boolean }> = ({ children, isAdmin = false }) => {
-  // If admin, show content normally with a small indicator
-  if (isAdmin) {
-    return (
-      <div className="relative">
-        {/* Admin indicator */}
-        <div className="absolute top-2 right-2 z-10 bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded border border-yellow-500/30">
-          🚧 Under Construction (Admin View)
-        </div>
-        {/* Show content normally for admins */}
-        {children}
-      </div>
-    );
-  }
-  
-  // Normal users see the construction overlay
-  return (
-    <div className="relative">
-      {/* Content (dimmed) */}
-      <div className="opacity-30 pointer-events-none select-none">
-        {children}
-      </div>
-      
-      {/* Construction Overlay */}
-      <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-lg">
-        <div className="text-center p-8 max-w-md">
-          {/* Animated Construction Icon */}
-          <motion.div
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="text-8xl mb-6"
-          >
-            🚧
-          </motion.div>
-          
-          {/* Construction Banner */}
-          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-6 py-3 rounded-lg font-bold text-xl mb-4 shadow-2xl border-4 border-black transform -rotate-1">
-            <div className="flex items-center justify-center gap-2">
-              <span>⚠️</span>
-              <span>UNDER CONSTRUCTION</span>
-              <span>⚠️</span>
-            </div>
-          </div>
-          
-          {/* Striped Warning Pattern */}
-          <div className="bg-gradient-to-r from-yellow-400 via-black to-yellow-400 h-3 mb-4 rounded-full opacity-80"
-               style={{
-                 backgroundImage: `repeating-linear-gradient(
-                   45deg,
-                   #fbbf24 0px,
-                   #fbbf24 10px,
-                   #000000 10px,
-                   #000000 20px
-                 )`
-               }}>
-          </div>
-          
-          {/* Message */}
-          <div className="text-gray-300 text-sm">
-            In-contest trading is coming soon.
-            <br />
-            Enjoy DFS-style portfolio contests, live now.
-          </div>
-          
-          {/* Animated Dots */}
-          <div className="flex justify-center gap-2 mt-4">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                transition={{ 
-                  duration: 1.5, 
-                  repeat: Infinity, 
-                  delay: i * 0.2,
-                  ease: "easeInOut"
-                }}
-                className="w-2 h-2 bg-yellow-400 rounded-full"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+// Removed UnderConstructionOverlay component - no longer needed
 
-// Trading Panel Component
-const TradingPanel: React.FC<{
-  contestId: string;
-  portfolio: any;
-  onTradeComplete: () => void;
-}> = ({ contestId, portfolio, onTradeComplete }) => {
-  const { user } = useMigratedAuth();
-  const { addToast } = useCustomToast();
-  const [selectedToken, setSelectedToken] = useState<SearchToken | null>(null);
-  const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY');
-  const [weight, setWeight] = useState<number>(10);
-  const [isTrading, setIsTrading] = useState(false);
-  const [showPortfolio, setShowPortfolio] = useState(true);
-
-  // Debug logging
-  useEffect(() => {
-    console.log('[TradingPanel] Component mounted with:', {
-      user,
-      contestId,
-      portfolio,
-      authToken: localStorage.getItem('authToken'),
-      dd_token: localStorage.getItem('dd_token')
-    });
-  }, [user, contestId, portfolio]);
-
-  const executeTrade = async () => {
-    if (!selectedToken || !user) return;
-    
-    setIsTrading(true);
-    try {
-      // Use the portfolio trades endpoint with session cookie auth
-      const response = await fetch(`/api/portfolio/${contestId}/trades`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include', // Use session cookie like submitPortfolio
-        body: JSON.stringify({
-          wallet_address: user.wallet_address,
-          token_id: selectedToken.id,
-          type: tradeType.toUpperCase(),
-          new_weight: weight
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('[TradingPanel] Trade executed:', result);
-        
-        // Success feedback
-        addToast('success', `${tradeType} ${selectedToken.symbol} - ${weight}% of portfolio`);
-        
-        // Reset and refresh
-        onTradeComplete();
-        setSelectedToken(null);
-        setWeight(10);
-      } else {
-        const error = await response.text();
-        throw new Error(error || 'Trade execution failed');
-      }
-    } catch (error) {
-      console.error('[TradingPanel] Trade failed:', error);
-      addToast('error', error instanceof Error ? error.message : 'Trade failed');
-    } finally {
-      setIsTrading(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Current Portfolio */}
-      {portfolio ? (
-        portfolio.tokens && portfolio.tokens.length > 0 ? (
-        <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-100">Current Portfolio</h3>
-            <button
-              onClick={() => setShowPortfolio(!showPortfolio)}
-              className="text-sm text-gray-400 hover:text-gray-300"
-            >
-              {showPortfolio ? 'Hide' : 'Show'}
-            </button>
-          </div>
-          
-          {showPortfolio && (
-            <div className="space-y-3">
-              {portfolio.tokens.map((token: any, index: number) => (
-                <div key={token.token_id || token.address || token.symbol || index} className="flex items-center justify-between p-3 bg-dark-300/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {token.image_url && (
-                      <img src={token.image_url} alt={token.symbol} className="w-8 h-8 rounded-full" />
-                    )}
-                    <div>
-                      <div className="font-medium text-gray-100">{token.symbol}</div>
-                      <div className="text-xs text-gray-400">{token.name}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-medium text-gray-100">{token.weight || token.percentage}%</div>
-                    <div className="text-xs text-gray-400">
-                      Value: {formatCurrency(parseFloat(token.current_value || token.value || '0'))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              <div className="pt-3 border-t border-dark-300">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Total Portfolio Value</span>
-                  <span className="font-mono font-bold text-gray-100">
-                    {formatCurrency(parseFloat(portfolio.total_value || '0'))}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
-          <h3 className="text-lg font-semibold text-gray-100 mb-4">Current Portfolio</h3>
-          <div className="text-center py-8 text-gray-400">
-            <div className="text-5xl mb-3">📊</div>
-            <p className="text-lg">No portfolio yet</p>
-            <p className="text-sm mt-2">Start trading to build your portfolio!</p>
-          </div>
-        </div>
-      )
-    ) : (
-      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
-        <h3 className="text-lg font-semibold text-gray-100 mb-4">Current Portfolio</h3>
-        <div className="text-center py-8 text-gray-400">
-          <div className="animate-pulse">
-            <div className="h-8 bg-dark-300 rounded w-1/2 mx-auto mb-3"></div>
-            <div className="h-4 bg-dark-300 rounded w-3/4 mx-auto"></div>
-          </div>
-        </div>
-      </div>
-    )}
-      
-      {/* Trading Interface */}
-      <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
-        <h3 className="text-lg font-semibold text-gray-100 mb-4">Trade Tokens</h3>
-      
-      {/* Token Search */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-400 mb-2">
-          Select Token
-        </label>
-        <TokenSearchFixed
-          onSelectToken={(token) => {
-            console.log('[TradingPanel] Token selected:', token);
-            setSelectedToken(token);
-          }}
-          placeholder="Search tokens..."
-        />
-      </div>
-
-      {selectedToken && (
-        <>
-          {/* Trade Type */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-400 mb-2">
-              Action
-            </label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  console.log('[TradingPanel] BUY button clicked');
-                  setTradeType('BUY');
-                }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  tradeType === 'BUY'
-                    ? 'bg-green-500 text-white'
-                    : 'bg-dark-300 text-gray-300 hover:bg-dark-200'
-                }`}
-              >
-                BUY
-              </button>
-              <button
-                onClick={() => {
-                  console.log('[TradingPanel] SELL button clicked');
-                  setTradeType('SELL');
-                }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  tradeType === 'SELL'
-                    ? 'bg-red-500 text-white'
-                    : 'bg-dark-300 text-gray-300 hover:bg-dark-200'
-                }`}
-              >
-                SELL
-              </button>
-            </div>
-          </div>
-
-          {/* Weight Slider */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-400 mb-2">
-              Portfolio Weight: {weight}%
-            </label>
-            <input
-              type="range"
-              min="1"
-              max="100"
-              value={weight}
-              onChange={(e) => setWeight(parseInt(e.target.value))}
-              className="w-full h-2 bg-dark-300 rounded-lg appearance-none cursor-pointer"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>1%</span>
-              <span>50%</span>
-              <span>100%</span>
-            </div>
-          </div>
-
-          {/* Execute Button */}
-          <Button
-            onClick={executeTrade}
-            disabled={isTrading}
-            className="w-full"
-          >
-            {isTrading ? 'Executing...' : `${tradeType} ${selectedToken.symbol}`}
-          </Button>
-        </>
-      )}
-      </div>
-    </div>
-  );
-};
-
+// Removed Trading Panel Component - no longer needed
 
 // Main Contest Lobby V2 Component
 export const ContestLobbyV2: React.FC = () => {
   const { id: contestIdFromParams } = useParams<{ id: string }>();
-  const { user, isAdministrator, isSuperAdmin } = useMigratedAuth();
+  const { user } = useMigratedAuth();
   
   console.log('[ContestLobbyV2] Component mounted with contestId:', contestIdFromParams, 'user:', user);
 
@@ -364,19 +49,14 @@ export const ContestLobbyV2: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [activeTab, setActiveTab] = useState<'trade' | 'leaderboard' | 'activity'>('leaderboard');
+  // Removed activeTab state - no longer needed
   
   // Chart hover state - for coordinating between ParticipantsList and MultiParticipantChart
   const [hoveredParticipant, setHoveredParticipant] = useState<string | null>(null);
   
   // View mode state for leaderboard tab (removed - not used with new header)
   
-  // Switch away from Trade tab if user logs out
-  useEffect(() => {
-    if (!user && activeTab === 'trade') {
-      setActiveTab('leaderboard');
-    }
-  }, [user, activeTab]);
+  // Removed tab switching logic - no longer using tabs
   //const [unreadMessages] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   
@@ -741,24 +421,10 @@ export const ContestLobbyV2: React.FC = () => {
     return sorted;
   }, [participants, transformedParticipants]);
   
-  // Calculate user's current performance
-  const userPerformance = useMemo(() => {
-    if (!user || !effectiveParticipants.length) return null;
-    
-    const userParticipant = effectiveParticipants.find(p => p.wallet_address === user.wallet_address);
-    return userParticipant || null;
-  }, [user, effectiveParticipants]);
+  // Removed userPerformance calculation - not needed
 
 
-  // Tab definitions - hide Trade tab when logged out
-  const tabs = user ? [
-    { id: 'leaderboard', label: 'Leaderboard', count: effectiveParticipants.length },
-    { id: 'trade', label: 'Trade', count: null },
-    { id: 'activity', label: 'Activity', count: null }
-  ] : [
-    { id: 'leaderboard', label: 'Leaderboard', count: effectiveParticipants.length },
-    { id: 'activity', label: 'Activity', count: null }
-  ];
+  // Removed tab definitions - no longer using tabs
   
   // Debug effective participants
   useEffect(() => {
@@ -894,130 +560,13 @@ export const ContestLobbyV2: React.FC = () => {
               />
             )}
             
-            {/* Beautiful Tab Navigation with Premium Effects */}
-            <div className="mt-8 flex items-center gap-2 p-1 bg-dark-300/30 backdrop-blur-sm rounded-lg border border-dark-200">
-              {tabs.map(tab => (
-                <motion.button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`relative px-4 py-2.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 group ${
-                    activeTab === tab.id
-                      ? 'text-white'
-                      : 'text-gray-400 hover:text-gray-200'
-                  }`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {/* Active tab background with gradient */}
-                  {activeTab === tab.id && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 bg-gradient-to-br from-brand-500/30 to-brand-600/30 rounded-md border border-brand-500/40"
-                      initial={false}
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-brand-400/0 via-brand-400/10 to-brand-400/0 animate-data-stream-responsive" />
-                    </motion.div>
-                  )}
-                  
-                  {/* Hover gradient effect */}
-                  <div className="absolute inset-0 rounded-md bg-gradient-to-br from-brand-500/0 to-brand-600/0 group-hover:from-brand-500/10 group-hover:to-brand-600/10 transition-all duration-300" />
-                  
-                  <span className="relative z-10">{tab.label}</span>
-                  
-                  {tab.count && (
-                    <span className={`relative z-10 text-xs rounded-full w-5 h-5 flex items-center justify-center transition-all ${
-                      activeTab === tab.id 
-                        ? 'bg-brand-500 text-white' 
-                        : 'bg-dark-400/50 text-gray-400 group-hover:bg-brand-500/20 group-hover:text-brand-300'
-                    }`}>
-                      {tab.count > 99 ? '99+' : tab.count}
-                    </span>
-                  )}
-                </motion.button>
-              ))}
-            </div>
           </div>
         </div>
         
-        {/* Main Content */}
+        {/* Main Content - Leaderboard Only */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2 }}
-              ref={contentRef}
-            >
-              {/* Trade Tab */}
-              {activeTab === 'trade' && (
-                <div className="space-y-6">
-                  {user ? (
-                    <>
-                      {/* 1. Your Performance Card - PIZZAZZ! */}
-                      {userPerformance && (
-                        <UserPerformanceCard userPerformance={{
-                          rank: userPerformance.rank,
-                          portfolio_value: userPerformance.portfolio_value,
-                          performance_percentage: userPerformance.performance_percentage,
-                          prize_awarded: userPerformance.prize_awarded || undefined
-                        }} />
-                      )}
-                      
-                      {/* 2. Under Construction Trading Panel */}
-                      <UnderConstructionOverlay isAdmin={isAdministrator || isSuperAdmin}>
-                        <div className="space-y-6">
-                          <TradingPanel
-                            contestId={contestIdFromParams!}
-                            portfolio={portfolio}
-                            onTradeComplete={refreshPortfolio}
-                          />
-                          
-                          {/* Enhanced Portfolio Display */}
-                          <EnhancedPortfolioDisplay
-                            contestId={contestIdFromParams!}
-                            walletAddress={user.wallet_address}
-                            nickname={user.nickname || 'You'}
-                          />
-                        </div>
-                      </UnderConstructionOverlay>
-                      
-                      {/* 3. Prize Structure - WAY BETTER! */}
-                      <PrizeStructure
-                        prizePool={parseFloat(contest.prizePool || '0')}
-                        entryFee={parseFloat(contest.entryFee || '0')}
-                        maxParticipants={contest.settings?.maxParticipants || 0}
-                        currentParticipants={contest.participantCount || 0}
-                        contestType={contest.settings?.difficulty || ''}
-                      />
-                      
-                      {/* 4. Participants List with Live Prizes */}
-                      <ParticipantsList 
-                        participants={effectiveParticipants} 
-                        contestStatus="live"
-                        prizePool={parseFloat(contest.prizePool || '0')}
-                        contestId={contestIdFromParams!}
-                        onParticipantHover={setHoveredParticipant}
-                        hoveredParticipant={hoveredParticipant}
-                      />
-                    </>
-                  ) : (
-                    /* Spectator Mode - Show Participants List */
-                    <ParticipantsList 
-                      participants={effectiveParticipants} 
-                      contestStatus="live"
-                      contestId={contestIdFromParams!}
-                      onParticipantHover={setHoveredParticipant}
-                      hoveredParticipant={hoveredParticipant}
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* Leaderboard Tab */}
-              {activeTab === 'leaderboard' && (
+          <div ref={contentRef}>
+            {/* Leaderboard Content */}
                 <div className="space-y-6">
                   <AnimatePresence mode="wait">
                     {false ? ( // Default to list mode since toggle was removed
@@ -1063,8 +612,8 @@ export const ContestLobbyV2: React.FC = () => {
                         transition={{ duration: 0.3 }}
                       >
                         {/* Main Grid Layout - List Mode */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                          <div className="lg:col-span-2">
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                          <div className="lg:col-span-3">
                             <MultiParticipantChartV2 
                               contestId={contestIdFromParams!}
                               contestStatus={contest.status === 'active' ? 'active' : 
@@ -1091,47 +640,7 @@ export const ContestLobbyV2: React.FC = () => {
                     )}
                   </AnimatePresence>
                 </div>
-              )}
-
-              {/* Activity Tab */}
-              {activeTab === 'activity' && (
-                <div className="space-y-6">
-                  {/* Contest Chat - COMING SOON */}
-                  <div className="relative">
-                    <div className="opacity-30 pointer-events-none select-none">
-                      <ContestChat contestId={contestIdFromParams!} />
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-lg">
-                      <div className="text-center p-8">
-                        <div className="text-4xl mb-4">💬</div>
-                        <h3 className="text-2xl font-bold text-white mb-2">Contest Chat</h3>
-                        <p className="text-lg text-gray-300">COMING SOON</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Activity Content */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2">
-                      <LiveTradeActivity contestId={contestIdFromParams!} maxTrades={50} />
-                    </div>
-                    <div className="space-y-6">
-                      <ParticipantsList 
-                        participants={effectiveParticipants} 
-                        contestStatus="live"
-                        prizePool={parseFloat(contest.prizePool || '0')}
-                        contestId={contestIdFromParams!}
-                        onParticipantHover={setHoveredParticipant}
-                        hoveredParticipant={hoveredParticipant}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-
-            </motion.div>
-          </AnimatePresence>
+          </div>
         </div>
       </div>
     </SilentErrorBoundary>

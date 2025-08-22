@@ -736,54 +736,6 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
 
   return (
     <div className="space-y-4">
-      {/* Performance Summary */}
-      {performanceSummary && (
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-dark-300/50 rounded-lg p-4 border border-dark-200"
-        >
-          <p className="text-sm text-gray-300">
-            <span className="font-semibold text-yellow-400 inline-flex items-center gap-1">
-              <Crown className="w-4 h-4" />
-              {performanceSummary.leader?.nickname || 'Leader'}
-            </span>
-            {' '}is leading with{' '}
-            <span className="font-mono font-semibold text-white">
-              {formatCurrency(performanceSummary.leaderValue)}
-            </span>
-            {' '}
-            <span className={`text-sm ${performanceSummary.leaderChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              ({performanceSummary.leaderChange >= 0 ? '+' : ''}{performanceSummary.leaderChange.toFixed(2)}%)
-            </span>
-            {performanceSummary.userRank && (
-              <>
-                {'. '}You are currently in{' '}
-                <span className="font-semibold text-brand-400">
-                  {(() => {
-                    const rank = performanceSummary.userRank;
-                    const lastDigit = rank % 10;
-                    const lastTwoDigits = rank % 100;
-                    
-                    // Special cases for 11th, 12th, 13th
-                    if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
-                      return `${rank}th`;
-                    }
-                    
-                    // Regular cases
-                    switch (lastDigit) {
-                      case 1: return `${rank}st`;
-                      case 2: return `${rank}nd`;
-                      case 3: return `${rank}rd`;
-                      default: return `${rank}th`;
-                    }
-                  })()} place
-                </span>
-              </>
-            )}
-          </p>
-        </motion.div>
-      )}
 
       {/* Chart Title */}
       <div className="flex items-center gap-2">
@@ -1200,6 +1152,55 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
           </div>
         )}
       </div>
+
+      {/* Performance Summary - Now at the bottom */}
+      {performanceSummary && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-dark-300/50 rounded-lg p-4 border border-dark-200"
+        >
+          <p className="text-sm text-gray-300">
+            <span className="font-semibold text-yellow-400 inline-flex items-center gap-1">
+              <Crown className="w-4 h-4" />
+              {performanceSummary.leader?.nickname || 'Leader'}
+            </span>
+            {' '}is leading with{' '}
+            <span className="font-mono font-semibold text-white">
+              {formatCurrency(performanceSummary.leaderValue)}
+            </span>
+            {' '}
+            <span className={`text-sm ${performanceSummary.leaderChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              ({performanceSummary.leaderChange >= 0 ? '+' : ''}{performanceSummary.leaderChange.toFixed(2)}%)
+            </span>
+            {performanceSummary.userRank && (
+              <>
+                {'. '}You are currently in{' '}
+                <span className="font-semibold text-brand-400">
+                  {(() => {
+                    const rank = performanceSummary.userRank;
+                    const lastDigit = rank % 10;
+                    const lastTwoDigits = rank % 100;
+                    
+                    // Special cases for 11th, 12th, 13th
+                    if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
+                      return `${rank}th`;
+                    }
+                    
+                    // Regular cases
+                    switch (lastDigit) {
+                      case 1: return `${rank}st`;
+                      case 2: return `${rank}nd`;
+                      case 3: return `${rank}rd`;
+                      default: return `${rank}th`;
+                    }
+                  })()} place
+                </span>
+              </>
+            )}
+          </p>
+        </motion.div>
+      )}
 
     </div>
   );
