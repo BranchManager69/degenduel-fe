@@ -581,7 +581,7 @@ export const ContestLobbyV2: React.FC = () => {
                         <div className="bg-dark-200/50 backdrop-blur-sm rounded-lg p-6 border border-dark-300">
                           <FocusedParticipantsList 
                             participants={effectiveParticipants}
-                            contestStatus="live"
+                            contestStatus={contest.status === 'completed' ? 'completed' : contest.status === 'active' ? 'live' : 'upcoming'}
                             prizePool={parseFloat(contest.prizePool || '0')}
                             contestId={contestIdFromParams!}
                             onParticipantHover={setHoveredParticipant}
@@ -628,7 +628,7 @@ export const ContestLobbyV2: React.FC = () => {
                           <div className="lg:col-span-3 space-y-6">
                             <ParticipantsList 
                               participants={effectiveParticipants} 
-                              contestStatus="live"
+                              contestStatus={contest.status === 'completed' ? 'completed' : contest.status === 'active' ? 'live' : 'upcoming'}
                               prizePool={parseFloat(contest.prizePool || '0')}
                               contestId={contestIdFromParams!}
                               onParticipantHover={setHoveredParticipant}
