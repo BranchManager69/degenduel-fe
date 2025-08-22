@@ -65,6 +65,7 @@ export const TokenActivationManager: React.FC = () => {
   const [candidatesTotal, setCandidatesTotal] = useState(0);
   const [candidatesPage, setCandidatesPage] = useState(0);
   const [candidatesPerPage] = useState(20);
+  const [manualTokenAddress, setManualTokenAddress] = useState('');
 
   // Fetch active/managed tokens
   const fetchManagedTokens = useCallback(async () => {
@@ -266,6 +267,51 @@ export const TokenActivationManager: React.FC = () => {
       setResult({
         type: 'error',
         message: error instanceof Error ? error.message : `Failed to ${mode} tokens`,
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle manual token activation/deactivation
+  const handleManualTokenAction = async (action: 'activate' | 'deactivate') => {
+    if (!manualTokenAddress.trim()) return;
+    
+    setIsProcessing(true);
+    try {
+      const endpoint = action === 'activate' 
+        ? '/admin/token-activation/activate'
+        : '/admin/token-activation/deactivate';
+
+      const response = await ddApi.fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ addresses: [manualTokenAddress.trim()] }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setResult({
+          type: 'success',
+          message: `Successfully ${action}d token: ${manualTokenAddress.slice(0, 8)}...${manualTokenAddress.slice(-6)}`
+        });
+        setManualTokenAddress(''); // Clear input on success
+        
+        // Refresh the appropriate list
+        if (action === 'activate') {
+          await fetchManagedTokens();
+        } else {
+          await fetchCandidateTokens();
+        }
+      } else {
+        const error = await response.text();
+        throw new Error(error || `Failed to ${action} token`);
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} token:`, error);
+      setResult({
+        type: 'error',
+        message: error instanceof Error ? error.message : `Failed to ${action} token`
       });
     } finally {
       setIsProcessing(false);
@@ -977,6 +1023,39 @@ export const TokenActivationManager: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Manual Token Activation */}
+      <div className="bg-dark-200/50 backdrop-blur-lg p-4 rounded-lg border border-dark-300/50">
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Enter token address to activate/deactivate (e.g., EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v)"
+              value={manualTokenAddress}
+              onChange={(e) => setManualTokenAddress(e.target.value)}
+              className="w-full px-4 py-2 bg-dark-300/50 border border-dark-300 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-brand-400 transition-colors"
+              disabled={isProcessing}
+            />
+          </div>
+          <button
+            onClick={() => handleManualTokenAction('activate')}
+            disabled={!manualTokenAddress || isProcessing}
+            className="px-6 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            Activate
+          </button>
+          <button
+            onClick={() => handleManualTokenAction('deactivate')}
+            disabled={!manualTokenAddress || isProcessing}
+            className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            Deactivate
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Directly activate or deactivate a token by its address. This works even for tokens not yet in the system.
+        </p>
+      </div>
 
       {/* Tab Navigation */}
       {renderTabs()}

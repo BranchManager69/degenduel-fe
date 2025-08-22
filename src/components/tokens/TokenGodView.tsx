@@ -725,7 +725,7 @@ export const TokenGodView: React.FC = () => {
     };
   };
 
-  // Fetch mini-series for green tokens to draw trails
+  // Fetch historical OHLC data for green tokens to draw better trails
   const fetchTrailsForVisibleGreens = useCallback(async () => {
     if (!(showTrailM5 || showTrailH1)) return;
     try {
@@ -740,26 +740,31 @@ export const TokenGodView: React.FC = () => {
         .filter(p => p.x > 0 && p.y > 0);
       const greens = plotted.filter(p => classifyTokenForDot(p.t) === 'green').map(p => p.t);
       if (greens.length === 0) { setTrailSeriesMap({}); return; }
-      const addresses = Array.from(new Set(greens.map(g => g.address))).slice(0, 100);
+      const addresses = Array.from(new Set(greens.map(g => g.address))).slice(0, 20); // Limit for performance
 
-      const body = {
-        addresses,
-        windows: [ ...(showTrailM5 ? ['m5'] : []), ...(showTrailH1 ? ['h1'] : []) ],
-        metrics: ['price','market_cap']
-      };
-      const res = await ddApi.fetch('/admin/analytics/tokens/mini-series/bulk', {
-        method: 'POST',
-        body: JSON.stringify(body)
-      });
+      // Use new history endpoint for OHLC data
+      const interval = showTrailH1 ? '15m' : '5m';
+      const addressList = addresses.join(',');
+      
+      const res = await ddApi.fetch(`/admin/charts/tokens/history?addresses=${addressList}&interval=${interval}&format=ohlc&indicators=rsi`);
       if (!res.ok) return;
       const data = await res.json();
+      
       const map: Record<string, any> = {};
-      for (const item of data.tokens || []) {
-        map[item.address] = item;
+      for (const [address, tokenData] of Object.entries(data)) {
+        const td = tokenData as any;
+        if (td.data && td.data.length > 0) {
+          // Store OHLC data with indicators for richer visualization
+          map[address] = {
+            symbol: td.token?.symbol,
+            data: td.data.slice(-30), // Last 30 candles for trail
+            indicators: td.indicators || {}
+          };
+        }
       }
       setTrailSeriesMap(map);
     } catch (e) {
-      console.error('Failed to fetch trails mini-series', e);
+      console.error('Failed to fetch trails historical data', e);
     }
   }, [showTrailM5, showTrailH1, activeTab, candidateTokens, managedTokens, filters, managedFilters, clientSortBy, managedClientSortBy, chartXAxis, chartYAxis]);
 
@@ -1210,26 +1215,103 @@ export const TokenGodView: React.FC = () => {
     }
   }, []);
 
-  // Fetch window snapshot data
+  // Fetch comprehensive market analysis with technical indicators
   const fetchWindowSnapshot = useCallback(async () => {
     try {
-      const params = new URLSearchParams({
-        tab: activeTab,
-        axes_x: chartXAxis,
-        axes_y: chartYAxis,
-        min_market_cap: '500000',
-        min_volume_24h: '500000'
+      // Get tokens to analyze based on current tab
+      const tokensToAnalyze = activeTab === 'candidates' ? candidateTokens : managedTokens;
+      const addresses = tokensToAnalyze.slice(0, 100).map(t => t.address); // Analyze top 100
+      
+      if (addresses.length === 0) return;
+      
+      const response = await ddApi.fetch('/admin/charts/tokens/bulk-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          addresses,
+          timeframes: ['m5', 'm15', 'h1', 'h4', 'd1'],
+          calculations: {
+            price_changes: true,
+            volatility: true,
+            momentum: true,
+            support_resistance: true
+          },
+          windows: { lookback: '24h' }
+        })
       });
       
-      const response = await ddApi.fetch(`/admin/analytics/token-window/snapshot?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
-        setWindowSnapshot(data);
+        
+        // Calculate market statistics
+        const marketStats = {
+          total_tokens: Object.keys(data).length,
+          bullish_count: 0,
+          bearish_count: 0,
+          avg_volatility: 0,
+          total_volume: 0,
+          top_gainers: [] as any[],
+          top_losers: [] as any[]
+        };
+        
+        const tokens: any[] = [];
+        Object.entries(data).forEach(([address, analysis]: [string, any]) => {
+          const tokenData = {
+            address,
+            symbol: analysis.token?.symbol,
+            name: analysis.token?.name,
+            price: analysis.current?.price || 0,
+            market_cap: analysis.current?.market_cap || 0,
+            volume_24h: analysis.current?.volume_24h || 0,
+            // Technical indicators
+            volatility_1h: analysis.timeframes?.h1?.volatility || 0,
+            momentum_1h: analysis.timeframes?.h1?.momentum || 0,
+            support: analysis.timeframes?.h1?.levels?.support?.[0] || 0,
+            resistance: analysis.timeframes?.h1?.levels?.resistance?.[0] || 0,
+            // Price changes
+            change_5m: analysis.timeframes?.m5?.price_change?.percentage || 0,
+            change_1h: analysis.timeframes?.h1?.price_change?.percentage || 0,
+            change_4h: analysis.timeframes?.h4?.price_change?.percentage || 0,
+            change_24h: analysis.timeframes?.d1?.price_change?.percentage || 0,
+            // Classification
+            trend: analysis.timeframes?.h1?.momentum > 0 ? 'bullish' : 'bearish'
+          };
+          
+          tokens.push(tokenData);
+          
+          // Update market stats
+          if (tokenData.trend === 'bullish') marketStats.bullish_count++;
+          else marketStats.bearish_count++;
+          
+          marketStats.avg_volatility += tokenData.volatility_1h;
+          marketStats.total_volume += tokenData.volume_24h;
+        });
+        
+        // Calculate averages and find top movers
+        marketStats.avg_volatility /= tokens.length;
+        marketStats.top_gainers = tokens.sort((a, b) => b.change_1h - a.change_1h).slice(0, 5);
+        marketStats.top_losers = tokens.sort((a, b) => a.change_1h - b.change_1h).slice(0, 5);
+        
+        // Create snapshot with enhanced data
+        const snapshot = {
+          timestamp: new Date().toISOString(),
+          tokens,
+          market_stats: marketStats,
+          // Calculate green window for filtering
+          green_window: activeTab === 'candidates' ? {
+            x_min: tokens.filter(t => t.change_1h > 0).reduce((min, t) => Math.min(min, t.market_cap), Infinity),
+            x_max: tokens.filter(t => t.change_1h > 0).reduce((max, t) => Math.max(max, t.market_cap), 0),
+            y_min: tokens.filter(t => t.change_1h > 0).reduce((min, t) => Math.min(min, t.volume_24h), Infinity),
+            y_max: tokens.filter(t => t.change_1h > 0).reduce((max, t) => Math.max(max, t.volume_24h), 0)
+          } : null
+        };
+        
+        setWindowSnapshot(snapshot);
         setLastSnapshotUpdate(new Date());
         
         // Update filter bounds based on green window if available
-        if (data.green_window && activeTab === 'candidates') {
-          const greenWindow = data.green_window;
+        if (snapshot.green_window && activeTab === 'candidates') {
+          const greenWindow = snapshot.green_window;
           setFilters(prev => ({
             ...prev,
             minMarketCap: Math.floor(greenWindow.x_min).toLocaleString(),
@@ -1240,30 +1322,90 @@ export const TokenGodView: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch window snapshot:', error);
+      console.error('Failed to fetch market analysis:', error);
     }
-  }, [activeTab, chartXAxis, chartYAxis]);
+  }, [activeTab, candidateTokens, managedTokens]);
 
-  // Fetch window series data  
+  // Fetch enhanced historical series for time-travel playback
   const fetchWindowSeries = useCallback(async () => {
     try {
-      const params = new URLSearchParams({
-        tab: activeTab,
-        axes_x: chartXAxis, 
-        axes_y: chartYAxis,
-        limit: '50' // Get last 50 snapshots
-      });
+      // Get top tokens for historical playback
+      const tokensToAnalyze = activeTab === 'candidates' ? candidateTokens : managedTokens;
+      const topTokens = tokensToAnalyze.slice(0, 20); // Top 20 for smooth playback
+      const addresses = topTokens.map(t => t.address).join(',');
       
-      const response = await ddApi.fetch(`/admin/analytics/token-window/series?${params.toString()}`);
+      if (!addresses) return;
+      
+      // Fetch 24 hours of hourly data with indicators
+      const response = await ddApi.fetch(`/admin/charts/tokens/history?addresses=${addresses}&interval=1h&format=ohlc&indicators=rsi,bollinger`);
+      
       if (response.ok) {
         const data = await response.json();
-        setWindowSeries(data.snapshots || []);
+        
+        // Build time series frames
+        const timeMap = new Map<string, any>();
+        
+        // Process each token's data
+        Object.entries(data).forEach(([address, tokenData]: [string, any]) => {
+          const td = tokenData as any;
+          if (td.data) {
+            td.data.forEach((candle: any, idx: number) => {
+              if (!timeMap.has(candle.timestamp)) {
+                timeMap.set(candle.timestamp, {
+                  timestamp: candle.timestamp,
+                  tokens: [],
+                  market_overview: {
+                    avg_rsi: 0,
+                    bullish_momentum: 0,
+                    bearish_momentum: 0,
+                    volatility_index: 0
+                  }
+                });
+              }
+              
+              const frame = timeMap.get(candle.timestamp);
+              frame.tokens.push({
+                address,
+                symbol: td.token?.symbol || 'UNKNOWN',
+                price: candle.close,
+                open: candle.open,
+                high: candle.high,
+                low: candle.low,
+                volume: candle.volume || 0,
+                change: ((candle.close - candle.open) / candle.open) * 100,
+                rsi: td.indicators?.rsi?.[idx] || 50,
+                bollinger_upper: td.indicators?.bollinger?.upper?.[idx],
+                bollinger_lower: td.indicators?.bollinger?.lower?.[idx]
+              });
+            });
+          }
+        });
+        
+        // Calculate market overview for each frame
+        const frames = Array.from(timeMap.values()).map(frame => {
+          const validTokens = frame.tokens.filter((t: any) => t.price > 0);
+          if (validTokens.length > 0) {
+            frame.market_overview.avg_rsi = validTokens.reduce((sum: number, t: any) => sum + t.rsi, 0) / validTokens.length;
+            frame.market_overview.bullish_momentum = validTokens.filter((t: any) => t.change > 0).length / validTokens.length;
+            frame.market_overview.bearish_momentum = validTokens.filter((t: any) => t.change < 0).length / validTokens.length;
+            frame.market_overview.volatility_index = validTokens.reduce((sum: number, t: any) => 
+              sum + Math.abs(t.high - t.low) / t.price, 0) / validTokens.length * 100;
+          }
+          return frame;
+        });
+        
+        // Sort by timestamp and take last 24 frames
+        const sortedFrames = frames.sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        ).slice(-24);
+        
+        setWindowSeries(sortedFrames);
         setSeriesIndex(0);
       }
     } catch (error) {
-      console.error('Failed to fetch window series:', error);
+      console.error('Failed to fetch historical series:', error);
     }
-  }, [activeTab, chartXAxis, chartYAxis]);
+  }, [activeTab, candidateTokens, managedTokens]);
 
   // Playback control functions
   const startPlayback = useCallback(() => {
@@ -1309,21 +1451,65 @@ export const TokenGodView: React.FC = () => {
     }
   }, [seriesIndex, windowSeries]);
 
-  // Fetch mini-series when token is selected
+  // Fetch comprehensive analysis when token is selected
   useEffect(() => {
     if (selectedToken) {
-      const fetchTokenSeries = async () => {
+      const fetchTokenAnalysis = async () => {
         try {
-          const response = await ddApi.fetch(`/admin/analytics/tokens/${selectedToken.address}/mini-series`);
+          // Use bulk-analysis for single token to get rich data
+          const response = await ddApi.fetch('/admin/charts/tokens/bulk-analysis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              addresses: [selectedToken.address],
+              timeframes: ['m1', 'm5', 'm15', 'h1', 'h4', 'd1'],
+              calculations: {
+                price_changes: true,
+                volatility: true,
+                momentum: true,
+                support_resistance: true
+              },
+              windows: { lookback: '7d' }
+            })
+          });
+          
           if (response.ok) {
             const data = await response.json();
-            setSelectedTokenSeries(data);
+            const analysis = data[selectedToken.address];
+            
+            // Also fetch historical OHLC for charting
+            const historyRes = await ddApi.fetch(
+              `/admin/charts/tokens/history?addresses=${selectedToken.address}&interval=5m&format=ohlc&indicators=rsi,macd,bollinger`
+            );
+            
+            if (historyRes.ok) {
+              const historyData = await historyRes.json();
+              const tokenHistory = historyData[selectedToken.address];
+              
+              // Combine analysis and history for rich visualization
+              setSelectedTokenSeries({
+                analysis,
+                history: tokenHistory,
+                // Extract key insights
+                insights: {
+                  trend: analysis?.timeframes?.h1?.momentum > 0 ? 'Bullish' : 'Bearish',
+                  volatility: analysis?.timeframes?.h1?.volatility || 0,
+                  support: analysis?.timeframes?.h1?.levels?.support?.[0] || 0,
+                  resistance: analysis?.timeframes?.h1?.levels?.resistance?.[0] || 0,
+                  rsi: tokenHistory?.indicators?.rsi?.slice(-1)[0] || 50,
+                  price_targets: {
+                    bullish: (analysis?.current?.price || 0) * 1.1,
+                    bearish: (analysis?.current?.price || 0) * 0.9
+                  }
+                }
+              });
+            }
           }
         } catch (error) {
-          console.error('Failed to fetch token mini-series:', error);
+          console.error('Failed to fetch token analysis:', error);
         }
       };
-      fetchTokenSeries();
+      fetchTokenAnalysis();
     } else {
       setSelectedTokenSeries(null);
     }
