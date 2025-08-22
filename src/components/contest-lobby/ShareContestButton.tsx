@@ -137,6 +137,22 @@ export const ShareContestButton: React.FC<ShareContestButtonProps> = ({
             d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
           />
         </svg>
+        
+        {/* OG Image Preview on Hover */}
+        <div className="absolute bottom-full right-0 mb-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none z-50">
+          <div className="relative">
+            <div className="bg-dark-400 rounded-lg shadow-2xl border border-dark-300 p-2">
+              <OGImage
+                src={ogImageUrl}
+                alt={`${contestName} Preview`}
+                className="w-64 h-auto rounded border-0 ring-0 outline-none"
+                fallbackText=""
+              />
+            </div>
+            {/* Arrow pointing to button */}
+            <div className="absolute top-full right-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-dark-400"></div>
+          </div>
+        </div>
       </motion.button>
 
       {/* Share Menu */}

@@ -280,7 +280,7 @@ export const ContestDetailHeaderNew: React.FC<ContestDetailHeaderNewProps> = ({
                           </div>
                           <div className="text-lg sm:text-2xl font-bold flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent whitespace-nowrap">
                             <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-3 h-3 sm:w-5 sm:h-5 flex-shrink-0" />
-                            <span>{poolValue}</span>
+                            <span>{poolValue.toFixed(9).replace(/\.?0+$/, '')}</span>
                           </div>
                           {Number(contest.entry_fee) > 0 && contest.participant_count < contest.max_participants && displayStatus === "pending" && (
                             <div className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">

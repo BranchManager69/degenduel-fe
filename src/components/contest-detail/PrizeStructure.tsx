@@ -131,13 +131,7 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
                             <>
                               <div className="absolute left-1/2 -top-4 text-[10px] text-white font-medium whitespace-nowrap flex items-center gap-0.5" style={{ transform: 'translateX(-75%)' }}>
                                 <img src="/assets/media/logos/solana.svg" alt="SOL" className="w-2.5 h-2.5" />
-                                {isPending && minPrize !== maxPrize ? (
-                                  <>
-                                    {(Math.floor(minPrize * 1000) / 1000).toFixed(3)}-{(Math.floor(maxPrize * 1000) / 1000).toFixed(3)}
-                                  </>
-                                ) : (
-                                  (Math.floor(prize * 1000) / 1000).toFixed(3)
-                                )}
+                                {(Math.floor(minPrize * 1000) / 1000).toFixed(3)}
                               </div>
                               
                               {/* Percentage label */}
@@ -190,7 +184,7 @@ export const PrizeStructure: React.FC<PrizeStructureProps> = ({
                 {/* Money Line - Vertical divider between winners and losers */}
                 {lastPayingPosition > 0 && lastPayingPosition < positions.length && (
                   <div 
-                    className="absolute top-0 bottom-0 w-0.5 bg-yellow-400"
+                    className="absolute top-0 bottom-0 w-0.5 bg-green-400"
                     style={{
                       left: `${(lastPayingPosition / positions.length) * 100}%`,
                       height: 'calc(100% + 24px)',
