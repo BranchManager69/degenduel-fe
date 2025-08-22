@@ -1091,7 +1091,7 @@ export const LandingPage: React.FC = () => {
       <FloatingButtonStack
         tokenAddress={websocketContractAddress.REAL || FALLBACK_CA_FOR_BUTTONS}
         tokenSymbol={"DUEL"}
-        enabled={forceShowFabs || (websocketContractRevealed && websocketContractAddress)}
+        enabled={forceShowFabs || (websocketContractRevealed && !!websocketContractAddress.REAL)}
         isCountdownComplete={isCountdownComplete}
       />
       
