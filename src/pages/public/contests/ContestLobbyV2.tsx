@@ -612,8 +612,8 @@ export const ContestLobbyV2: React.FC = () => {
                         transition={{ duration: 0.3 }}
                       >
                         {/* Main Grid Layout - List Mode */}
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                          <div className="lg:col-span-3">
+                        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+                          <div className="lg:col-span-7">
                             <MultiParticipantChartV2 
                               contestId={contestIdFromParams!}
                               contestStatus={contest.status === 'active' ? 'active' : 
@@ -625,7 +625,7 @@ export const ContestLobbyV2: React.FC = () => {
                               hoveredParticipant={hoveredParticipant}
                             />
                           </div>
-                          <div className="space-y-6">
+                          <div className="lg:col-span-3 space-y-6">
                             <ParticipantsList 
                               participants={effectiveParticipants} 
                               contestStatus="live"

@@ -1165,7 +1165,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
               <Crown className="w-4 h-4" />
               {performanceSummary.leader?.nickname || 'Leader'}
             </span>
-            {' '}is leading with{' '}
+            {' '}{contestStatus === 'completed' ? 'won with' : 'is leading with'}{' '}
             <span className="font-mono font-semibold text-white">
               {formatCurrency(performanceSummary.leaderValue)}
             </span>
@@ -1175,7 +1175,7 @@ export const MultiParticipantChartV2: React.FC<MultiParticipantChartV2Props> = (
             </span>
             {performanceSummary.userRank && (
               <>
-                {'. '}You are currently in{' '}
+                {'. '}You {contestStatus === 'completed' ? 'finished in' : 'are currently in'}{' '}
                 <span className="font-semibold text-brand-400">
                   {(() => {
                     const rank = performanceSummary.userRank;
