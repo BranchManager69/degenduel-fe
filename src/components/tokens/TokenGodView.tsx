@@ -678,6 +678,67 @@ export const TokenGodView: React.FC = () => {
 
   // Prepare chart data
   const getChartData = () => {
+    // If we're playing time series and have a current frame, use that data
+    if (isPlayingTimeSeries && windowSeries.length > 0 && seriesIndex < windowSeries.length) {
+      const currentFrame = windowSeries[seriesIndex];
+      if (currentFrame && currentFrame.tokens) {
+        // Map historical frame tokens to chart data
+        const chartData = currentFrame.tokens
+          .filter((frameToken: any) => {
+            const xValue = frameToken[chartXAxis] || frameToken.market_cap || 0;
+            const yValue = frameToken[chartYAxis] || frameToken.volume || 0;
+            return xValue > 0 && yValue > 0;
+          })
+          .map((frameToken: any) => {
+            // Find the matching token from current data to get full info
+            const currentTokens = activeTab === 'candidates' ? candidateTokens : managedTokens;
+            const matchedToken = currentTokens.find(t => t.address === frameToken.address) || frameToken;
+            
+            return {
+              x: frameToken[chartXAxis] || frameToken.market_cap || 0,
+              y: frameToken[chartYAxis] || frameToken.volume || 0,
+              token: {
+                ...matchedToken,
+                // Override with historical values
+                market_cap: frameToken.market_cap || matchedToken.market_cap,
+                volume_24h: frameToken.volume || matchedToken.volume_24h,
+                price: frameToken.price || matchedToken.price,
+                liquidity: frameToken.liquidity || matchedToken.liquidity
+              }
+            };
+          });
+        
+        return {
+          datasets: [
+            {
+              label: `Tokens (${new Date(currentFrame.timestamp).toLocaleTimeString()})`,
+              data: chartData,
+              backgroundColor: (context: any) => {
+                const token = context.raw?.token;
+                if (!token) return 'rgba(107, 114, 128, 0.5)';
+                const cls = classifyTokenForDot(token);
+                if (cls === 'green') return 'rgba(34, 197, 94, 0.8)';
+                if (cls === 'amber') return 'rgba(251, 191, 36, 0.8)';
+                return 'rgba(239, 68, 68, 0.8)';
+              },
+              borderColor: (context: any) => {
+                const token = context.raw?.token;
+                if (!token) return 'rgba(107, 114, 128, 1)';
+                const cls = classifyTokenForDot(token);
+                if (cls === 'green') return 'rgba(34, 197, 94, 1)';
+                if (cls === 'amber') return 'rgba(251, 191, 36, 1)';
+                return 'rgba(239, 68, 68, 1)';
+              },
+              borderWidth: 1,
+              pointRadius: 6,
+              pointHoverRadius: 8,
+            }
+          ]
+        };
+      }
+    }
+    
+    // Default behavior - use current tokens
     const currentTokens = activeTab === 'candidates' ? candidateTokens : managedTokens;
     const filteredTokens = activeTab === 'candidates' 
       ? sortTokensClientSide(currentTokens, filters.useFilters, clientSortBy)
@@ -823,10 +884,27 @@ export const TokenGodView: React.FC = () => {
     const xAxisBounds = getAxisBounds(chartXAxis);
     const yAxisBounds = getAxisBounds(chartYAxis);
     
+    // Get current frame timestamp if playing
+    let chartTitle = '';
+    if (isPlayingTimeSeries && windowSeries.length > 0 && seriesIndex < windowSeries.length) {
+      const currentFrame = windowSeries[seriesIndex];
+      if (currentFrame && currentFrame.timestamp) {
+        const date = new Date(currentFrame.timestamp);
+        chartTitle = `📈 Time Travel: ${date.toLocaleDateString()} ${date.toLocaleTimeString()} (Frame ${seriesIndex + 1}/${windowSeries.length})`;
+      }
+    }
+    
     return {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
+        title: {
+          display: isPlayingTimeSeries,
+          text: chartTitle,
+          color: '#F59E0B',
+          font: { size: 14, weight: 'bold' as const },
+          padding: { bottom: 10 }
+        },
         activeBounds: {
           enabled: showActiveBounds,
           color: 'rgba(34, 197, 94, 0.9)',
@@ -1338,10 +1416,20 @@ export const TokenGodView: React.FC = () => {
   // Fetch enhanced historical series for time-travel playback
   const fetchWindowSeries = useCallback(async () => {
     try {
-      // Get top tokens for historical playback
-      const tokensToAnalyze = activeTab === 'candidates' ? candidateTokens : managedTokens;
-      const topTokens = tokensToAnalyze.slice(0, 20); // Top 20 for smooth playback
-      const addresses = topTokens.map(t => t.address).join(',');
+      // Get the tokens currently visible on the chart
+      const currentTokens = activeTab === 'candidates' ? candidateTokens : managedTokens;
+      const filteredTokens = activeTab === 'candidates' 
+        ? sortTokensClientSide(currentTokens, filters.useFilters, clientSortBy)
+        : sortTokensClientSide(currentTokens, managedFilters.useFilters, managedClientSortBy);
+      
+      // Use tokens that are actually displayed on the chart
+      const visibleTokens = filteredTokens.filter(token => {
+        const xValue = getMetricValue(token, chartXAxis);
+        const yValue = getMetricValue(token, chartYAxis);
+        return xValue > 0 && yValue > 0;
+      }).slice(0, 50); // Limit to 50 for performance
+      
+      const addresses = visibleTokens.map(t => t.address).join(',');
       
       if (!addresses) return;
       
@@ -1373,18 +1461,35 @@ export const TokenGodView: React.FC = () => {
               }
               
               const frame = timeMap.get(candle.timestamp);
+              // Find the original token for reference data
+              const originalToken = visibleTokens.find(t => t.address === address);
+              const supply = (originalToken as any)?.total_supply || 1000000000;
+              
+              // The OHLC data includes volume for that period
+              // Market cap can be calculated from price * supply
+              // But liquidity would need to come from the API or be estimated
               frame.tokens.push({
                 address,
-                symbol: td.token?.symbol || 'UNKNOWN',
+                symbol: td.token?.symbol || originalToken?.symbol || 'UNKNOWN',
+                name: originalToken?.name || '',
+                image_url: originalToken?.image_url || '',
                 price: candle.close,
                 open: candle.open,
                 high: candle.high,
                 low: candle.low,
+                // Use the actual volume from the candle data
                 volume: candle.volume || 0,
+                volume_24h: candle.volume || 0,
+                // Calculate market cap from price and supply
+                market_cap: candle.close * supply,
+                // Use original liquidity if available, otherwise estimate
+                liquidity: originalToken?.liquidity || (candle.close * supply * 0.05),
                 change: ((candle.close - candle.open) / candle.open) * 100,
                 rsi: td.indicators?.rsi?.[idx] || 50,
                 bollinger_upper: td.indicators?.bollinger?.upper?.[idx],
-                bollinger_lower: td.indicators?.bollinger?.lower?.[idx]
+                bollinger_lower: td.indicators?.bollinger?.lower?.[idx],
+                // Keep reference to original token for other properties
+                ...originalToken
               });
             });
           }
@@ -1414,7 +1519,7 @@ export const TokenGodView: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch historical series:', error);
     }
-  }, [activeTab, candidateTokens, managedTokens]);
+  }, [activeTab, candidateTokens, managedTokens, filters, managedFilters, clientSortBy, managedClientSortBy, chartXAxis, chartYAxis]);
 
   // Playback control functions
   const startPlayback = useCallback(() => {
