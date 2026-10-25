@@ -124,3 +124,7 @@ wallet-module-check.cjs
 # Build stats
 stats.html
 bundlesize.json
+
+# Local authentication artifact
+/jwt.token
+
